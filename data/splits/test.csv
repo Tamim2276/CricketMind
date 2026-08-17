@@ -1,0 +1,1565 @@
+video_path,label,class_name
+data/raw/CricShoot10kShootDataset/Hook/vid476_24.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid322_9.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid128_11.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid236_16.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid265_0.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid531_54.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid41_9.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid517_66.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid304_22.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid393_29.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid159_31.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid463_20.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid354_14.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid114_10.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid286_14.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid473_20.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid234_2.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid356_27.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Hook/vid207_47.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Upper Cut/vid166_27.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid527_63.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid533_36.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid367_32.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Hook/vid469_41.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Cover Drive/vid304_11.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Scoop/vid53_71.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Hook/vid523_37.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid439_47.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Hook/vid536_19.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Pull/vid86_6.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid69_0.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Pull/vid392_21.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid375_7.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid428_16.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid524_31.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid163_11.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid136_12.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid465_5.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid447_45.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid81_1.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid473_22.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid222_5.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid227_18.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid331_24.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid90_59.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Defensive/vid142_18.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid403_7.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid413_1.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid454_18.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid42_4.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid254_23.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid214_25.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid77_9.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid174_8.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid370_6.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid383_14.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Late Cut/vid220_15.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid362_50.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid240_10.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid59_23.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Late Cut/vid156_7.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid330_6.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid113_29.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid18_22.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid527_13.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid55_76.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid248_2.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid381_19.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Late Cut/vid223_14.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid405_22.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid228_8.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid489_40.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid304_16.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid354_22.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid536_10.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Late Cut/vid312_15.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid459_42.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid356_58.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Hook/vid107_32.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Defensive/vid385_5.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid374_19.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Sweep/vid531_45.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid211_7.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid492_4.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid347_9.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid447_9.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Flick/vid41_1.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid248_47.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid304_8.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid392_23.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Cover Drive/vid315_27.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid375_41.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid300_35.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid133_24.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid513_15.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid67_4.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid257_25.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid253_45.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid428_43.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid152_20.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid115_31.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid533_37.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid244_8.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Defensive/vid213_8.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Pull/vid356_13.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid185_7.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid12_3.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid526_50.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Straight Drive/vid394_14.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid526_62.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid259_6.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Scoop/vid499_20.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Hook/vid89_12.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Square Cut/vid358_57.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid480_51.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid297_6.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid375_10.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Late Cut/vid82_30.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid147_37.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid304_2.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid379_18.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid214_19.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid72_34.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid205_64.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Pull/vid138_18.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Sweep/vid481_14.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid509_8.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Scoop/vid194_10.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid507_6.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid388_11.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid42_5.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid120_4.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid379_1.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Scoop/vid17_14.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Defensive/vid370_16.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Straight Drive/vid455_0.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Scoop/vid505_22.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Sweep/vid526_46.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Straight Drive/vid157_4.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Flick/vid12_39.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid354_19.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid527_27.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid97_19.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Upper Cut/vid514_60.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Pull/vid467_24.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Sweep/vid73_33.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid341_11.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Upper Cut/vid528_57.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid533_46.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid97_24.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid56_48.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid190_2.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Hook/vid523_10.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Defensive/vid82_21.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid515_58.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid486_15.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid297_28.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Flick/vid56_37.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid245_6.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Hook/vid39_28.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Pull/vid422_9.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid300_8.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid247_14.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Sweep/vid484_2.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid362_60.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid400_20.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid527_53.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid522_48.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid370_15.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid56_76.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid356_46.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid69_23.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Scoop/vid116_3.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Square Cut/vid4_9.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid353_5.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid360_70.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid382_27.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid467_17.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Defensive/vid304_23.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid68_4.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid524_18.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid151_25.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Straight Drive/vid137_7.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid5_9.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid377_5.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid530_7.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid15_22.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Pull/vid389_35.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid369_53.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid130_4.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Late Cut/vid82_8.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Late Cut/vid416_19.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Pull/vid381_16.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Flick/vid384_10.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid208_14.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Flick/vid373_6.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid356_25.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid435_12.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Sweep/vid526_8.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid53_78.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid450_45.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Scoop/vid370_51.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Sweep/vid14_22.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid252_33.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid306_2.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid390_12.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid373_22.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Flick/vid315_26.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid73_24.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Cover Drive/vid245_48.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid185_14.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid53_29.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid55_44.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid447_23.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid488_50.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Upper Cut/vid115_18.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid528_8.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid50_41.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid222_26.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid435_17.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Scoop/vid420_27.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid254_28.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid113_19.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Sweep/vid4_33.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Hook/vid300_24.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid97_22.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid313_28.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid101_30.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid356_20.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid447_35.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid486_16.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid506_22.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Scoop/vid534_21.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid397_22.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid432_19.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Late Cut/vid416_9.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid209_7.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid518_44.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid322_25.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid458_23.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid439_44.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Flick/vid260_29.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Flick/vid524_44.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid113_9.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid141_32.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid527_16.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid243_37.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid445_19.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid223_15.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Late Cut/vid434_46.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid454_36.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid528_59.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid327_11.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Flick/vid213_2.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid354_20.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Flick/vid430_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid138_4.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid134_32.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Straight Drive/vid118_19.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid515_62.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid205_9.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Upper Cut/vid366_13.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Pull/vid472_19.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid48_25.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Upper Cut/vid508_55.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid31_39.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Hook/vid487_16.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Cover Drive/vid298_30.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Scoop/vid480_45.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid533_28.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid79_5.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid358_4.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Upper Cut/vid507_1.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Scoop/vid384_5.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Flick/vid159_10.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Sweep/vid439_21.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid77_27.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Sweep/vid439_62.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid434_63.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid426_25.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid227_14.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid508_57.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid489_52.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid14_30.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid367_38.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid372_14.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Scoop/vid167_34.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid435_14.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid69_6.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid300_32.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid530_20.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid428_1.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid390_3.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid513_11.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid465_32.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid390_31.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Scoop/vid49_48.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Pull/vid472_43.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid361_55.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid390_43.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid520_62.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid536_7.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid147_17.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid331_54.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid518_16.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid530_4.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid481_48.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Upper Cut/vid115_12.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid446_41.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Pull/vid324_9.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid536_6.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid531_2.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid252_44.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Straight Drive/vid426_2.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Late Cut/vid252_34.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid473_40.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid287_4.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid337_40.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid215_18.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid434_38.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid530_59.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Sweep/vid439_55.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid457_34.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Hook/vid515_21.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Square Cut/vid251_24.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid450_11.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid98_55.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid134_36.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Hook/vid451_38.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Defensive/vid367_0.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Pull/vid508_10.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid531_23.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid362_31.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid455_15.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid297_36.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid261_25.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid521_14.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Upper Cut/vid374_30.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid418_47.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid60_13.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid484_18.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid53_39.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid217_56.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Upper Cut/vid279_1.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid452_35.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid60_42.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid518_35.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid375_58.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid525_26.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid473_13.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid114_24.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid375_54.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Upper Cut/vid495_37.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Pull/vid91_30.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid508_52.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Flick/vid237_38.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Hook/vid107_35.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid527_39.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid56_95.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid375_51.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Late Cut/vid359_16.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid520_27.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid375_22.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid489_37.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Hook/vid173_16.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid270_3.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid490_12.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Scoop/vid384_47.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Late Cut/vid46_49.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid121_19.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid454_43.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Late Cut/vid374_38.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid527_65.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid503_37.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid237_17.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid378_8.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid471_41.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid159_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid30_11.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid3_11.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Upper Cut/vid376_10.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Flick/vid13_29.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid97_23.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid130_13.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid207_50.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid506_26.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid473_46.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid8_36.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid527_21.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid213_53.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid267_7.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Defensive/vid247_10.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Flick/vid486_29.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Late Cut/vid299_18.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Late Cut/vid299_17.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid360_44.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid168_25.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid507_34.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid394_9.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid75_21.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid392_28.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid390_18.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid234_32.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid44_39.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid459_23.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid368_36.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid495_25.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Hook/vid375_52.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid507_27.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid531_17.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Scoop/vid443_20.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Flick/vid388_38.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Sweep/vid367_22.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid308_0.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Flick/vid390_54.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid531_51.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Hook/vid527_36.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Defensive/vid14_44.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Flick/vid392_47.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Straight Drive/vid142_13.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid364_40.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid362_46.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid248_19.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid522_13.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid164_17.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Upper Cut/vid171_5.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid199_3.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid474_39.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid469_47.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid489_41.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Straight Drive/vid426_4.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Upper Cut/vid370_59.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid439_27.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid247_3.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Flick/vid474_18.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid4_5.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid440_7.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid123_10.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid510_9.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid141_5.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Flick/vid390_36.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid360_50.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid490_18.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid74_12.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid258_34.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Late Cut/vid437_51.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid515_78.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid426_38.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Straight Drive/vid151_8.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid323_4.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid209_36.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid14_31.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid212_42.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid482_34.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Late Cut/vid532_63.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid428_52.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid385_46.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid249_9.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid454_33.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid41_13.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Sweep/vid471_40.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Late Cut/vid463_27.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid447_50.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid418_31.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid392_53.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid313_9.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid28_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Flick/vid388_49.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Flick/vid164_9.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid252_23.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid309_0.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Late Cut/vid87_38.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid211_28.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid457_42.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid5_12.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid392_55.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Hook/vid58_4.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Cover Drive/vid50_57.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Hook/vid433_62.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid510_3.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid465_7.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Straight Drive/vid377_6.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid520_56.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid375_11.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid30_14.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Pull/vid472_46.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid439_2.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid489_31.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid481_36.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid447_20.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid381_32.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Sweep/vid303_17.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid213_40.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid399_11.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid88_30.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid377_30.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid89_2.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid495_43.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid421_12.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid421_8.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid417_19.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Hook/vid487_49.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Straight Drive/vid499_19.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Flick/vid136_16.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid467_18.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid454_14.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid214_34.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid528_26.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Late Cut/vid155_1.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid372_2.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid356_24.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid60_3.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid459_0.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Defensive/vid147_32.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Upper Cut/vid422_34.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Upper Cut/vid516_45.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid422_11.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid378_28.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid524_13.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid64_13.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid249_39.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid524_39.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid121_15.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid217_49.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid394_23.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid416_29.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Late Cut/vid534_8.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Hook/vid536_20.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Defensive/vid101_8.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid492_31.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Pull/vid507_40.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Upper Cut/vid151_18.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid148_43.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid90_35.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Hook/vid83_28.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid435_22.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid16_7.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Defensive/vid203_42.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid214_41.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Hook/vid431_12.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid55_71.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid331_44.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Sweep/vid45_35.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Hook/vid83_23.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Flick/vid307_3.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid443_66.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid405_7.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Defensive/vid203_14.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Flick/vid384_85.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid506_38.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid524_22.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid472_3.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Scoop/vid360_12.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid529_70.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid455_44.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Straight Drive/vid252_52.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Defensive/vid247_29.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Flick/vid249_22.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Straight Drive/vid142_19.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid459_24.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid490_6.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid313_6.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid214_40.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid414_26.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid69_2.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid67_6.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid362_59.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid428_36.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid424_21.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid496_6.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Pull/vid462_7.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Cover Drive/vid411_20.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid245_34.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid428_54.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid284_0.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid369_6.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid435_27.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid413_17.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid397_31.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid442_65.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid416_26.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid471_15.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Sweep/vid362_15.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid109_34.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Late Cut/vid279_4.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid208_22.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid459_33.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid524_43.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid515_70.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid472_16.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Sweep/vid531_58.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid480_31.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Flick/vid213_29.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid57_1.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid379_24.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid40_24.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Scoop/vid38_63.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid515_30.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid419_22.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid369_18.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid497_1.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid458_30.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid241_17.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid38_15.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid213_4.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid144_23.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Defensive/vid23_1.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid300_30.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid242_33.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid367_24.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid77_13.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid142_9.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Hook/vid60_39.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid367_57.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid95_31.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid418_13.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Late Cut/vid124_34.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid147_18.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Straight Drive/vid316_15.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Pull/vid507_13.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid101_6.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid30_45.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid307_1.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid492_8.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid439_51.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid362_42.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid360_18.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid455_48.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid41_7.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid331_11.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Pull/vid105_26.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Late Cut/vid296_9.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Hook/vid259_3.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid121_51.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid163_6.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid112_1.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid368_1.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid486_20.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid477_8.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid115_14.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Defensive/vid8_6.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Hook/vid53_13.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid370_11.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid245_28.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Hook/vid529_58.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid212_31.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Defensive/vid142_20.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Square Cut/vid378_18.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid354_17.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid397_30.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid38_65.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid529_65.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid394_0.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid337_28.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Late Cut/vid320_42.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Upper Cut/vid26_0.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Straight Drive/vid294_5.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid413_20.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid213_32.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid457_5.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Flick/vid434_66.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid458_31.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid482_35.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid448_6.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid130_29.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid390_13.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Hook/vid83_41.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Late Cut/vid504_18.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid224_25.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid422_16.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid397_12.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid450_37.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid372_34.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid110_33.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid383_21.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid531_34.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Pull/vid475_8.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid524_27.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid304_19.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid260_24.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Late Cut/vid312_20.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid204_14.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Defensive/vid459_29.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Square Cut/vid300_26.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid418_48.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Hook/vid527_22.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid176_18.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid507_4.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Cover Drive/vid375_57.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid14_50.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid333_33.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid522_67.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid435_34.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid161_29.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid277_3.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid390_42.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid43_35.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Hook/vid297_20.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid333_38.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid217_51.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid141_38.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid214_51.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid111_4.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid115_24.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid453_10.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Pull/vid535_7.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid443_63.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid369_30.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid442_40.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Upper Cut/vid271_13.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid516_0.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Sweep/vid375_15.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid214_13.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid377_8.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid75_11.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid493_15.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid324_10.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid370_5.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid445_71.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid403_26.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid515_7.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid253_19.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid533_32.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid270_5.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid204_5.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid57_35.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Late Cut/vid292_14.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid248_17.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid50_2.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid113_14.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid252_27.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid42_43.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid486_14.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid70_24.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid85_27.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid92_37.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid306_19.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Straight Drive/vid237_13.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid418_37.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid375_43.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid248_0.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid531_7.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Hook/vid451_49.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid85_15.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Upper Cut/vid148_3.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid67_3.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid452_52.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Hook/vid515_28.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Square Cut/vid360_74.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid121_39.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid486_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Scoop/vid513_26.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Square Cut/vid78_5.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid414_27.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid481_9.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid265_24.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid341_3.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid443_14.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid369_38.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Upper Cut/vid373_44.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid331_33.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid375_45.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid412_7.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid141_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Hook/vid442_28.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Scoop/vid393_46.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Sweep/vid396_3.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid247_6.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Pull/vid88_37.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid130_12.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid520_3.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid261_28.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid245_42.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid531_71.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid383_39.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Defensive/vid39_44.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid513_41.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid248_50.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid100_37.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Hook/vid536_49.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Cover Drive/vid304_29.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Upper Cut/vid523_0.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid536_21.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid370_56.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid293_0.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Defensive/vid142_23.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Defensive/vid136_11.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid362_22.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid443_24.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid504_8.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid308_6.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Hook/vid529_49.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Straight Drive/vid89_4.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Flick/vid525_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Defensive/vid208_3.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid265_3.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid447_5.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Flick/vid443_58.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid362_8.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid57_10.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid513_16.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid465_2.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid454_7.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid506_23.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid178_21.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid527_19.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid442_64.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Cover Drive/vid494_1.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid41_10.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid306_5.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid123_7.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Straight Drive/vid316_7.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid266_14.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid447_10.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Straight Drive/vid152_11.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid531_69.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid465_28.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid113_13.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid497_21.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid239_6.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid147_15.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid4_27.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid30_29.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid447_4.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid440_53.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid527_67.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid481_26.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid372_32.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid265_4.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid48_27.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Scoop/vid433_11.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Cover Drive/vid304_9.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid443_5.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid533_26.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid244_1.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid360_20.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid4_1.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid458_6.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Flick/vid443_45.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid152_10.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid445_50.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid220_27.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid207_54.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Pull/vid356_9.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid95_37.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Cover Drive/vid349_6.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid375_53.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid520_67.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid362_44.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid479_5.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid389_43.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid375_34.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid526_5.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid55_75.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid41_21.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid135_18.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid331_8.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid360_63.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid375_29.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid38_64.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid220_19.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid297_3.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Straight Drive/vid294_10.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Pull/vid432_37.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Straight Drive/vid294_21.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid504_34.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid181_2.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid520_54.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid39_23.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid462_31.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid385_2.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid211_0.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid100_4.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid298_29.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid394_11.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid427_26.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid215_5.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid512_13.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid199_4.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid101_5.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Defensive/vid14_0.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Sweep/vid43_11.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid203_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid476_0.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid57_0.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid100_57.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid77_6.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid267_1.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid530_35.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid42_56.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid370_39.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid121_13.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid471_39.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid209_16.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid428_57.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid270_4.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid510_13.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Late Cut/vid497_11.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Flick/vid249_2.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid367_55.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid390_44.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Late Cut/vid115_33.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Straight Drive/vid142_11.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid489_51.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid481_18.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid455_11.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid375_55.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid148_44.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Hook/vid219_13.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Scoop/vid432_17.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid506_50.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid395_2.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid473_42.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid493_17.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Hook/vid527_41.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Defensive/vid247_18.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Sweep/vid530_41.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid416_23.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid151_29.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid374_7.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid148_5.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid356_48.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Upper Cut/vid516_32.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid115_25.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid64_9.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid369_48.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid300_27.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid13_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid217_57.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid503_36.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid497_6.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid457_46.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid220_26.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Scoop/vid505_25.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid274_4.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid524_1.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid359_25.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid180_17.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid207_44.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Pull/vid418_0.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Defensive/vid147_8.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Hook/vid469_37.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Square Cut/vid159_26.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid134_33.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Scoop/vid516_58.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Upper Cut/vid504_47.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Flick/vid430_44.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Hook/vid507_36.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Straight Drive/vid521_29.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid110_32.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid100_36.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid133_23.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid78_9.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Straight Drive/vid199_21.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Defensive/vid45_1.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid510_28.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid355_13.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Defensive/vid150_10.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid370_50.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid360_65.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid130_14.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid372_16.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid251_47.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Hook/vid89_3.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Pull/vid379_42.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Defensive/vid136_24.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Square Cut/vid509_1.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid5_26.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid69_21.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid379_33.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid307_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Flick/vid159_8.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Hook/vid302_11.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Square Cut/vid377_29.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Hook/vid262_35.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Straight Drive/vid514_7.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid74_27.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Straight Drive/vid42_55.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Flick/vid239_11.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid102_20.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Scoop/vid370_47.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Flick/vid141_1.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid515_31.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid385_36.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid45_30.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid516_47.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Straight Drive/vid102_5.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid252_40.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid324_1.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid302_9.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Scoop/vid274_18.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid356_15.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Defensive/vid244_34.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Flick/vid474_15.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid88_26.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid245_17.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Hook/vid487_8.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid440_59.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid435_36.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid438_28.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid531_38.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid247_37.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid482_5.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid508_58.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid278_7.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid373_45.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid267_11.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid304_3.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid362_14.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid103_5.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid439_56.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid43_61.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid495_42.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid88_8.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Scoop/vid499_31.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Hook/vid207_27.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid68_8.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid385_49.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid146_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Hook/vid13_15.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Sweep/vid439_26.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid68_3.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Flick/vid388_36.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Defensive/vid205_93.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid214_14.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid472_60.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Sweep/vid303_21.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid101_1.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Defensive/vid214_32.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid527_54.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid71_2.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid183_5.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Late Cut/vid434_45.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid56_86.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid356_54.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid134_4.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid497_0.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Scoop/vid435_57.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Square Cut/vid473_48.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid5_3.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid50_52.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Late Cut/vid233_6.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid513_29.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid138_16.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid508_7.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid510_22.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid53_33.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid426_47.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid503_10.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid445_69.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid475_23.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid300_7.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid315_14.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid443_21.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Flick/vid26_1.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Defensive/vid247_15.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Pull/vid496_19.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Straight Drive/vid316_2.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Upper Cut/vid516_70.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid124_16.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Late Cut/vid504_7.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid298_19.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid482_31.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Scoop/vid516_37.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Sweep/vid455_56.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid364_17.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid244_3.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid369_13.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid185_10.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Scoop/vid49_14.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Pull/vid356_51.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid506_28.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Defensive/vid31_14.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid533_23.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid479_10.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid375_26.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid9_12.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid484_1.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid480_52.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid315_5.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid383_28.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid211_36.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid527_50.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid384_14.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Sweep/vid481_38.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid30_44.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid121_43.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid496_12.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid413_22.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid426_21.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid212_11.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid484_8.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid97_14.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Hook/vid207_13.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Cover Drive/vid121_17.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid26_32.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid394_8.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Pull/vid88_15.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid39_47.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid489_24.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid447_28.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid39_24.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid427_20.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid205_33.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid515_34.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid378_31.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid274_1.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid57_13.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid456_14.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid475_2.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Hook/vid40_58.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Pull/vid442_19.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid124_25.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid343_30.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid9_18.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid127_15.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Hook/vid450_58.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Cover Drive/vid16_5.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid136_22.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid69_20.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid68_45.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Flick/vid39_54.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Flick/vid506_44.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Defensive/vid525_13.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid527_49.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid397_27.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Pull/vid432_26.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Sweep/vid5_22.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid443_40.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid428_50.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid91_34.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid435_8.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid416_12.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid123_8.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid389_30.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Defensive/vid154_6.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid486_38.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Straight Drive/vid226_48.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Upper Cut/vid528_45.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid331_9.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Late Cut/vid320_24.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid422_40.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid530_51.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid56_68.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Late Cut/vid153_8.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Scoop/vid393_28.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid55_82.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid360_69.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Hook/vid374_9.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid291_17.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Scoop/vid499_13.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Upper Cut/vid495_31.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Scoop/vid443_19.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid342_46.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid527_59.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid506_6.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid163_8.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid385_47.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid57_7.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid356_5.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid481_15.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid323_36.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid164_12.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid30_33.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid356_47.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid63_7.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid379_32.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid473_33.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid248_12.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Straight Drive/vid142_26.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Pull/vid381_36.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid482_60.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid156_17.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Upper Cut/vid81_19.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid114_31.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid417_15.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Straight Drive/vid252_35.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid300_40.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid377_4.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid362_29.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid43_14.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid3_12.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid120_3.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid397_26.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid123_28.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid447_37.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Straight Drive/vid137_1.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid457_47.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Defensive/vid150_28.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Scoop/vid435_28.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Late Cut/vid299_10.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid248_23.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid358_28.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid46_80.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid397_10.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid55_61.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Scoop/vid516_35.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Flick/vid49_33.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid341_39.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid356_23.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid28_12.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Hook/vid356_62.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid477_0.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid168_28.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid393_5.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid244_25.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid515_91.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid385_22.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid133_1.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid305_3.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid533_25.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Hook/vid527_31.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid97_25.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid72_2.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid228_23.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid240_4.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Scoop/vid183_9.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid21_21.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid56_91.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Defensive/vid164_0.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Pull/vid220_24.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid427_4.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid254_2.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid393_52.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Late Cut/vid252_18.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid481_17.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid168_10.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Defensive/vid101_20.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Upper Cut/vid208_10.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid533_64.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid360_48.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Upper Cut/vid166_0.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid308_2.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Scoop/vid384_86.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Pull/vid381_5.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Sweep/vid88_27.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid515_55.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid124_23.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Defensive/vid247_31.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid439_57.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Hook/vid149_0.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Straight Drive/vid144_25.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid518_48.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid48_0.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Hook/vid433_34.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Pull/vid91_31.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Flick/vid516_71.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Defensive/vid203_20.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Square Cut/vid38_19.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid220_18.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid154_1.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid95_15.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Upper Cut/vid271_10.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Hook/vid536_59.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid367_19.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid473_28.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Pull/vid442_41.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid518_49.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Pull/vid209_23.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Sweep/vid459_1.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid394_7.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid360_1.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid110_30.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid211_18.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Flick/vid41_4.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Sweep/vid5_0.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid133_29.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid244_9.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid56_30.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid507_32.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Flick/vid486_68.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid78_8.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Upper Cut/vid17_12.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid39_21.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Upper Cut/vid336_16.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid324_19.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid152_24.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid333_5.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Scoop/vid499_23.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Square Cut/vid50_33.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid332_8.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid360_58.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid205_49.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Pull/vid205_77.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid159_37.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid379_25.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid69_11.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid506_37.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid527_60.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid153_16.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Sweep/vid367_20.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Hook/vid356_4.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Scoop/vid370_52.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Square Cut/vid390_38.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid518_6.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Cover Drive/vid504_1.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Late Cut/vid429_34.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Straight Drive/vid440_0.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Scoop/vid393_49.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Cover Drive/vid252_13.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Defensive/vid153_14.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Flick/vid297_2.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Sweep/vid56_54.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid446_13.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Sweep/vid45_52.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Scoop/vid12_6.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Straight Drive/vid374_53.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid115_44.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid432_9.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Sweep/vid128_30.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid53_53.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Flick/vid474_23.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid270_15.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid515_4.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Straight Drive/vid316_12.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid507_41.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid459_37.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid233_43.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid6_23.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Straight Drive/vid138_19.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid300_37.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid53_63.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid150_29.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Flick/vid506_43.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid324_27.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Upper Cut/vid418_10.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid459_10.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Hook/vid83_15.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid533_74.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid56_8.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Sweep/vid226_28.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid100_25.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid14_37.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Flick/vid28_31.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Pull/vid205_68.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Sweep/vid455_54.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid367_36.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid484_17.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Defensive/vid304_25.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Scoop/vid433_60.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Square Cut/vid359_22.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid160_46.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Defensive/vid148_35.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid56_97.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid360_54.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Defensive/vid367_26.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid510_15.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid364_50.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid423_10.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid337_14.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid28_14.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid70_32.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid300_13.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid385_28.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid397_13.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid250_29.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Sweep/vid471_42.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Sweep/vid456_32.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Scoop/vid480_1.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Flick/vid237_9.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Straight Drive/vid40_2.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid440_51.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid82_2.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid331_26.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid102_26.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid521_73.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid416_36.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid484_19.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid15_21.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Straight Drive/vid372_1.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid48_13.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid207_52.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid434_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Scoop/vid384_46.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Square Cut/vid394_18.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid369_16.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid362_7.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid42_20.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Straight Drive/vid514_1.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid458_24.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid338_4.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid428_7.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid487_13.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Pull/vid34_32.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid259_42.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid290_10.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Square Cut/vid515_77.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid390_26.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid79_12.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid390_50.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Straight Drive/vid327_26.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Straight Drive/vid226_10.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid524_45.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Sweep/vid38_28.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid356_41.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid338_12.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid432_29.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Late Cut/vid10_25.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid393_20.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Late Cut/vid312_10.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid529_59.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid443_41.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid151_37.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Hook/vid454_5.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Pull/vid53_31.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Hook/vid527_56.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Square Cut/vid219_9.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid531_74.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid402_8.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid56_10.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid443_59.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid442_47.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Late Cut/vid162_55.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Square Cut/vid443_2.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid524_15.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid463_4.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid513_31.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Pull/vid472_63.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Defensive/vid446_0.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Flick/vid259_1.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid356_26.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid482_11.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid27_22.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid114_34.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid375_14.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Square Cut/vid38_14.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Pull/vid467_15.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid331_52.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid185_9.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid209_47.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid462_19.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid393_39.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid465_3.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid362_16.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Flick/vid305_15.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Hook/vid222_12.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Pull/vid91_48.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid518_1.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid536_11.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid217_25.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid37_28.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Defensive/vid136_25.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Pull/vid508_54.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Cover Drive/vid245_3.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid442_39.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid134_26.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Flick/vid21_18.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid3_7.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Flick/vid384_58.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Flick/vid259_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Late Cut/vid46_75.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Scoop/vid500_10.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid370_40.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid338_21.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Scoop/vid443_62.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Straight Drive/vid316_5.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Hook/vid450_14.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Cover Drive/vid298_5.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid151_11.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Square Cut/vid130_3.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Pull/vid86_11.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Hook/vid107_3.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Flick/vid222_15.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Defensive/vid304_6.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid113_18.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Defensive/vid516_3.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid342_48.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid116_10.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid506_7.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid68_12.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid445_74.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid433_29.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Pull/vid442_32.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid454_9.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid479_0.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Upper Cut/vid528_33.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid370_55.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid30_40.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Pull/vid389_26.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Defensive/vid385_11.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Defensive/vid205_57.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid493_14.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Flick/vid28_29.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid422_29.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Scoop/vid234_40.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Late Cut/vid196_0.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid20_4.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Pull/vid442_61.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Pull/vid462_23.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Sweep/vid185_12.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid526_37.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Defensive/vid410_4.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid244_23.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid195_15.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Hook/vid320_29.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Sweep/vid439_16.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Sweep/vid471_36.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Upper Cut/vid26_25.avi,Upper Cut,Upper Cut
+data/raw/CricShoot10kShootDataset/Straight Drive/vid64_32.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Cover Drive/vid438_31.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Straight Drive/vid311_5.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid515_41.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Late Cut/vid167_24.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Straight Drive/vid324_21.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid195_2.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid212_12.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid149_13.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid457_6.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Late Cut/vid87_22.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Flick/vid239_5.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid4_0.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid213_0.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid397_4.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Cover Drive/vid168_5.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid338_13.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid530_54.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Scoop/vid480_33.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid385_48.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid44_0.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Late Cut/vid162_43.avi,Late Cut,Late Cut
+data/raw/CricShoot10kShootDataset/Sweep/vid73_35.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid39_11.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Pull/vid205_8.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Defensive/vid308_10.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Pull/vid356_45.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid416_5.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Sweep/vid524_19.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Hook/vid356_43.avi,Hook,Hook
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid178_8.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Flick/vid516_12.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid440_58.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Lofted Legside/vid531_72.avi,Lofted Legside,Lofted Legside
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid270_0.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Cover Drive/vid16_20.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Straight Drive/vid103_4.avi,Straight Drive,Straight Drive
+data/raw/CricShoot10kShootDataset/Flick/vid480_4.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Square Cut/vid151_5.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid354_5.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Pull/vid205_71.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Square Cut/vid313_8.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid239_1.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid362_3.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid375_16.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Sweep/vid531_59.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid69_12.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid124_4.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Square Cut/vid78_27.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Defensive/vid103_1.avi,Defensive,Defensive
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid482_20.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Scoop/vid167_33.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Sweep/vid121_46.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Cover Drive/vid411_14.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Sweep/vid481_12.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Down The Wicket/vid497_8.avi,Down The Wicket,Down The Wicket
+data/raw/CricShoot10kShootDataset/Square Cut/vid378_22.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Flick/vid486_19.avi,Flick,Flick
+data/raw/CricShoot10kShootDataset/Cover Drive/vid70_31.avi,Cover Drive,Cover Drive
+data/raw/CricShoot10kShootDataset/Pull/vid507_21.avi,Pull,Pull
+data/raw/CricShoot10kShootDataset/Reverse Sweep/vid469_39.avi,Reverse Sweep,Reverse Sweep
+data/raw/CricShoot10kShootDataset/Scoop/vid241_7.avi,Scoop,Scoop
+data/raw/CricShoot10kShootDataset/Square Cut/vid490_30.avi,Square Cut,Square Cut
+data/raw/CricShoot10kShootDataset/Lofted Offside/vid452_42.avi,Lofted Offside,Lofted Offside
+data/raw/CricShoot10kShootDataset/Sweep/vid43_59.avi,Sweep,Sweep
+data/raw/CricShoot10kShootDataset/Scoop/vid17_3.avi,Scoop,Scoop

@@ -1,6 +1,9 @@
 .venv/
 CricShot10k/
-data/
+data/*
+!data/splits/
+data/splits/*
+!data/splits/*.csv
 experiments/*/checkpoints/
 __pycache__/
 *.pt

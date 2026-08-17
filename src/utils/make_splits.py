@@ -35,16 +35,16 @@ def build_splits(data_root, out_dir, train_frac=0.70, val_frac=0.15, seed=42):
 
     for class_name in classes:
         class_dir = os.path.join(data_root, class_name)
-        files = [
+        files = sorted(
             f for f in os.listdir(class_dir)
             if os.path.splitext(f)[1].lower() in VIDEO_EXTS
-        ]
+        )
 
         groups = defaultdict(list)
         for f in files:
             groups[group_id(f)].append(f)
 
-        group_ids = list(groups.keys())
+        group_ids = sorted(groups.keys())
         random.shuffle(group_ids)
 
         n_groups = len(group_ids)
