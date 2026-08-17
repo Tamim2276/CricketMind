@@ -1,0 +1,6 @@
+.venv/
+CricShot10k/
+data/
+experiments/*/checkpoints/
+__pycache__/
+*.pt

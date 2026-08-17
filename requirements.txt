@@ -1,0 +1,15 @@
+torch
+torchvision
+torchaudio
+decord
+opencv-python-headless
+ultralytics
+timm
+einops
+scikit-learn
+pandas
+matplotlib
+seaborn
+tqdm
+tensorboard
+pyyaml
