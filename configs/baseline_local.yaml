@@ -1,0 +1,34 @@
+# ── Full local training config (Arc B580, 12 GB VRAM, 16+ GB RAM) ────────────
+# Run with: python -m src.train --config configs/baseline_local.yaml
+#
+# Effective batch size = batch_size * grad_accum_steps = 4 * 2 = 8
+# (matches the Kaggle config so results are directly comparable)
+
+model_type:   baseline
+num_classes:  15
+pretrained:   true
+compile:      false   # set true to try torch.compile (partial XPU support)
+
+frames_per_clip: 15
+frame_size:      224
+batch_size:      4         # lower than Kaggle (12 GB vs 16 GB)
+grad_accum_steps: 2        # effective batch = 8, same as Kaggle
+num_workers:     4         # parallel data loading
+prefetch_factor: 2         # batches prefetched per worker
+cache:           true      # pre-load all clips into RAM (needs ~15 GB; set false if OOM)
+
+optimizer:       adam
+lr:              1.0e-4
+weight_decay:    1.0e-4
+label_smoothing: 0.1
+
+epochs:              50
+lr_decay_factor:     0.1
+lr_decay_patience:   4
+early_stop_patience: 10
+
+# Paths — local machine
+splits_dir:     data/splits
+processed_root: data/processed
+checkpoint_dir: experiments/baseline/checkpoints
+figure_dir:     experiments/baseline/figures

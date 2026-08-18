@@ -1,0 +1,34 @@
+# ── Multi-Scale CNN local training config (Arc B580) ─────────────────────────
+# Run with: python -m src.train --config configs/multiscale_local.yaml
+#
+# 3 forward passes per frame (full/mid/fine crops) → ~3× VRAM vs baseline.
+# Compensate: batch_size=2, grad_accum=4 → effective batch=8 (same as baseline).
+# Note: 3840-d features → GRU hidden may be bottleneck; keep gru_hidden default.
+
+model_type:   multiscale
+num_classes:  15
+pretrained:   true
+compile:      false
+
+frames_per_clip: 15
+frame_size:      224
+batch_size:      2          # lower: 3 forward passes per frame triples VRAM use
+grad_accum_steps: 4         # effective batch = 8, same as baseline
+num_workers:     4
+prefetch_factor: 2
+cache:           true       # pre-load into RAM (clips are the same .pt files)
+
+optimizer:       adam
+lr:              1.0e-4
+weight_decay:    1.0e-4
+label_smoothing: 0.1
+
+epochs:              50
+lr_decay_factor:     0.1
+lr_decay_patience:   4
+early_stop_patience: 10
+
+splits_dir:     data/splits
+processed_root: data/processed
+checkpoint_dir: experiments/multiscale/checkpoints
+figure_dir:     experiments/multiscale/figures

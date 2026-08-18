@@ -1,0 +1,35 @@
+# ── Combined model local training config (Arc B580) ──────────────────────────
+# Run with: python -m src.train --config configs/combined_local.yaml
+#
+# Multi-Scale CNN (3× forward passes) + Transformer head (3840-d sequence).
+# Most VRAM-intensive of the four configs.
+# batch_size=2, grad_accum=4 keeps effective batch=8.
+# If you hit OOM, drop batch_size to 1 and grad_accum to 8.
+
+model_type:   combined
+num_classes:  15
+pretrained:   true
+compile:      false
+
+frames_per_clip: 15
+frame_size:      224
+batch_size:      2          # conservative: 3-scale encoder + 3840-d transformer
+grad_accum_steps: 4         # effective batch = 8
+num_workers:     4
+prefetch_factor: 2
+cache:           true
+
+optimizer:       adam
+lr:              5.0e-5     # slightly lower LR: combined model is more complex
+weight_decay:    1.0e-4
+label_smoothing: 0.1
+
+epochs:              50
+lr_decay_factor:     0.1
+lr_decay_patience:   4
+early_stop_patience: 10
+
+splits_dir:     data/splits
+processed_root: data/processed
+checkpoint_dir: experiments/combined/checkpoints
+figure_dir:     experiments/combined/figures

@@ -1,0 +1,29 @@
+# ── Local smoke-test config (Arc B580) ──────────────────────────────────────
+# Run with: python src/train.py --config configs/baseline.yaml --smoke_test
+# Goal: confirm forward/backward pass runs without OOM. Do NOT chase accuracy here.
+
+model_type:   baseline
+num_classes:  15
+pretrained:   true
+
+frames_per_clip: 15
+frame_size:      224
+batch_size:      2
+grad_accum_steps: 1
+num_workers:     2
+
+optimizer:   adam
+lr:          1.0e-4
+weight_decay: 1.0e-4
+label_smoothing: 0.1
+
+epochs:              1
+lr_decay_factor:     0.1
+lr_decay_patience:   4
+early_stop_patience: 10
+
+# Paths — relative to project root (local machine)
+splits_dir:     data/splits
+processed_root: data/processed
+checkpoint_dir: experiments/baseline/checkpoints
+figure_dir:     experiments/baseline/figures

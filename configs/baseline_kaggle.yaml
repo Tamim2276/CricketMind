@@ -1,0 +1,29 @@
+# ── Kaggle real-training config (CUDA T4/P100, 16 GB) ───────────────────────
+# Run with: python src/train.py --config configs/baseline_kaggle.yaml
+# Matches the original paper's reported hyperparameters as closely as possible.
+
+model_type:   baseline
+num_classes:  15
+pretrained:   true
+
+frames_per_clip: 15
+frame_size:      224
+batch_size:      8        # paper uses 8; 16 GB Kaggle card comfortably fits this
+grad_accum_steps: 1
+num_workers:     4
+
+optimizer:   adam
+lr:          1.0e-4
+weight_decay: 1.0e-4
+label_smoothing: 0.1
+
+epochs:              50
+lr_decay_factor:     0.1
+lr_decay_patience:   4
+early_stop_patience: 10
+
+# Paths — Kaggle mount points
+splits_dir:     /kaggle/working/cricshot-improve/data/splits
+processed_root: /kaggle/working/preprocessed
+checkpoint_dir: /kaggle/working/checkpoints/baseline
+figure_dir:     /kaggle/working/checkpoints/baseline/figures

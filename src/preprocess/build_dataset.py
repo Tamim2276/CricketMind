@@ -1,33 +1,39 @@
 """
 Full preprocessing pipeline: raw clip -> crop -> sample 15 frames -> segment
--> written into train/val/test/<class_name>/ folders matching data/splits/*.csv,
-so CricShot10k's own create_dataframe()/training notebook can be reused unmodified.
+-> written as .pt tensor files into train/val/test/<class_name>/ folders.
 
-Needs a GPU for the YOLO detection/segmentation models to run at a usable speed
-(Kaggle, not the local smoke test) -- see --device.
+Output format: torch.Tensor of shape (T, H, W, C) uint8 RGB, saved with torch.save().
+This eliminates per-epoch video decode overhead during training (~3-5x speedup).
 
-Usage (smoke test, a couple videos per class, CPU is fine for this):
-    python src/preprocess/build_dataset.py --limit 2 --device cpu
+Usage (local full run, Arc B580 XPU):
+    python -m src.preprocess.build_dataset --device xpu
 
-Usage (real run, Kaggle, GPU):
-    python src/preprocess/build_dataset.py \
-        --data_root /kaggle/input/cricshot10k-clips/CricShoot10kShootDataset \
-        --splits_dir /kaggle/working/cricshot-improve/data/splits \
-        --output_dir /kaggle/working/preprocessed \
-        --striker_model /kaggle/input/cricshot10k-models/Player_Type_Detection_Model.pt \
-        --bat_model /kaggle/input/cricshot10k-models/Bat_Detection_Model.pt \
-        --seg_model /kaggle/input/cricshot10k-models/Striker_Bat_Segmentation_Model.pt \
+Usage (smoke test, 2 videos per class, CPU):
+    python -m src.preprocess.build_dataset --limit 2 --device cpu
+
+Usage (Kaggle CUDA):
+    python -m src.preprocess.build_dataset \\
+        --data_root /kaggle/input/cricshot10k-clips/CricShoot10kShootDataset \\
+        --splits_dir /kaggle/working/cricshot-improve/data/splits \\
+        --output_dir /kaggle/working/preprocessed \\
+        --striker_model /kaggle/input/cricshot10k-models/Player_Type_Detection_Model.pt \\
+        --bat_model /kaggle/input/cricshot10k-models/Bat_Detection_Model.pt \\
+        --seg_model /kaggle/input/cricshot10k-models/Striker_Bat_Segmentation_Model.pt \\
         --device cuda
 """
 import os
 import csv
-import shutil
 import argparse
 import tempfile
+import time
+
+import numpy as np
+import torch
+from tqdm import tqdm
 
 from src.preprocess.crop import crop_video
 from src.preprocess.sample import sample_video
-from src.preprocess.segment import segment_video
+from src.preprocess.segment import segment_video_to_frames
 
 VIDEO_EXTS = {".avi", ".mp4", ".mov"}
 
@@ -46,27 +52,31 @@ def load_split_lookup(splits_dir):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_root", default="data/raw/CricShoot10kShootDataset")
-    parser.add_argument("--splits_dir", default="data/splits")
-    parser.add_argument("--output_dir", default="data/processed")
+    parser.add_argument("--data_root",     default="data/raw/CricShoot10kShootDataset")
+    parser.add_argument("--splits_dir",    default="data/splits")
+    parser.add_argument("--output_dir",    default="data/processed")
     parser.add_argument("--striker_model", default="data/CricShoot10kModels/Player_Type_Detection_Model.pt")
-    parser.add_argument("--bat_model", default="data/CricShoot10kModels/Bat_Detection_Model.pt")
-    parser.add_argument("--seg_model", default="data/CricShoot10kModels/Striker_Bat_Segmentation_Model.pt")
-    parser.add_argument("--device", default="cuda")
-    parser.add_argument("--num_frames", type=int, default=15)
-    parser.add_argument("--limit", type=int, default=None, help="cap videos per class, for smoke testing")
-    parser.add_argument("--classes", nargs="*", default=None, help="restrict to these class names, for smoke testing")
+    parser.add_argument("--bat_model",     default="data/CricShoot10kModels/Bat_Detection_Model.pt")
+    parser.add_argument("--seg_model",     default="data/CricShoot10kModels/Striker_Bat_Segmentation_Model.pt")
+    parser.add_argument("--device",        default="xpu",
+                        help="Device for YOLO models: xpu (Arc B580), cuda (Kaggle), cpu (fallback)")
+    parser.add_argument("--num_frames",    type=int, default=15)
+    parser.add_argument("--limit",         type=int, default=None,
+                        help="Cap videos per class — for smoke testing only")
+    parser.add_argument("--classes",       nargs="*", default=None,
+                        help="Restrict to these class names — for smoke testing only")
     args = parser.parse_args()
 
-    from ultralytics import YOLO  # deferred: only needed once args are parsed
+    from ultralytics import YOLO  # deferred import
 
-    print("Loading models...")
+    print(f"Loading YOLO models on device={args.device!r}...")
     striker_model = YOLO(args.striker_model)
-    bat_model = YOLO(args.bat_model)
-    seg_model = YOLO(args.seg_model)
+    bat_model     = YOLO(args.bat_model)
+    seg_model     = YOLO(args.seg_model)
     striker_model.to(args.device)
     bat_model.to(args.device)
     seg_model.to(args.device)
+    print("Models loaded.")
 
     split_lookup = load_split_lookup(args.splits_dir)
 
@@ -80,10 +90,32 @@ def main():
     skipped_log = []
     total_done = 0
     total_skipped_existing = 0
+    t_start = time.time()
+
+    # Count total videos upfront for the outer progress bar
+    all_videos = []
+    for class_name in classes:
+        class_dir = os.path.join(args.data_root, class_name)
+        vids = sorted(
+            f for f in os.listdir(class_dir)
+            if os.path.splitext(f)[1].lower() in VIDEO_EXTS
+        )
+        if args.limit:
+            vids = vids[:args.limit]
+        for v in vids:
+            all_videos.append((class_name, v))
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_cropped = os.path.join(tmp_dir, "cropped.avi")
         tmp_sampled = os.path.join(tmp_dir, "sampled.avi")
+
+        outer_bar = tqdm(
+            total=len(all_videos),
+            desc="Total clips",
+            unit="clip",
+            dynamic_ncols=True,
+            colour="green",
+        )
 
         for class_name in classes:
             class_dir = os.path.join(args.data_root, class_name)
@@ -94,9 +126,15 @@ def main():
             if args.limit:
                 videos = videos[:args.limit]
 
-            print(f"\n=== {class_name}: {len(videos)} videos ===")
+            inner_bar = tqdm(
+                videos,
+                desc=f"{class_name[:18]:<18}",
+                unit="clip",
+                leave=False,
+                dynamic_ncols=True,
+            )
 
-            for video_name in videos:
+            for video_name in inner_bar:
                 split = split_lookup.get((class_name, video_name))
                 if split is None:
                     skipped_log.append(f"{class_name}/{video_name}: not found in any split CSV")
@@ -104,7 +142,10 @@ def main():
 
                 out_dir = os.path.join(args.output_dir, split, class_name)
                 os.makedirs(out_dir, exist_ok=True)
-                final_path = os.path.join(out_dir, video_name)
+
+                # Output is a .pt tensor file, not .avi
+                stem       = os.path.splitext(video_name)[0]
+                final_path = os.path.join(out_dir, stem + ".pt")
 
                 if os.path.exists(final_path):
                     total_skipped_existing += 1
@@ -112,29 +153,57 @@ def main():
 
                 input_path = os.path.join(class_dir, video_name)
 
+                # Step 1: Crop to striker+bat region
                 n1 = crop_video(input_path, tmp_cropped, striker_model, bat_model)
                 if n1 == 0:
                     skipped_log.append(f"{class_name}/{video_name}: 0 frames after crop (no striker detected)")
+                    outer_bar.update(1)
                     continue
 
+                # Step 2: Uniformly sample num_frames frames
                 n2 = sample_video(tmp_cropped, tmp_sampled, num_frames=args.num_frames)
                 if n2 == 0:
                     skipped_log.append(f"{class_name}/{video_name}: 0 frames after sampling")
+                    outer_bar.update(1)
                     continue
 
-                n3 = segment_video(tmp_sampled, final_path, seg_model)
-                if n3 == 0:
+                # Step 3: Segment (returns RGB numpy frames, not a video file)
+                frames = segment_video_to_frames(tmp_sampled, seg_model)
+                if len(frames) == 0:
                     skipped_log.append(f"{class_name}/{video_name}: 0 frames after segmentation")
-                    if os.path.exists(final_path):
-                        os.remove(final_path)
+                    outer_bar.update(1)
                     continue
+
+                # Pad/truncate to exactly num_frames
+                while len(frames) < args.num_frames:
+                    frames.append(frames[-1])
+                frames = frames[:args.num_frames]
+
+                # Save as (T, H, W, C) uint8 tensor — no float conversion, saves ~4x space
+                clip_tensor = torch.from_numpy(np.stack(frames, axis=0))  # (T, H, W, C) uint8
+                torch.save(clip_tensor, final_path)
 
                 total_done += 1
+                outer_bar.update(1)
+                outer_bar.set_postfix(
+                    done=total_done,
+                    skipped=len(skipped_log),
+                    existing=total_skipped_existing,
+                )
                 if total_done % 50 == 0:
-                    print(f"  processed {total_done} clips so far...")
+                    elapsed = time.time() - t_start
+                    rate    = total_done / elapsed
+                    outer_bar.write(
+                        f"  {total_done} done | {rate:.1f} clip/s | "
+                        f"~{(len(all_videos) - total_done - total_skipped_existing) / max(rate, 1e-9) / 60:.0f} min left"
+                    )
 
+            inner_bar.close()
+        outer_bar.close()
+
+    elapsed = time.time() - t_start
     print(f"\nDone. {total_done} clips processed, {total_skipped_existing} already existed (resumed), "
-          f"{len(skipped_log)} skipped.")
+          f"{len(skipped_log)} skipped. Total time: {elapsed/60:.1f} min")
 
     if skipped_log:
         log_path = os.path.join(args.output_dir, "skipped_videos.txt")
