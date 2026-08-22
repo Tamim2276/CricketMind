@@ -33,14 +33,23 @@ CLASS_NAMES = [
 CLASS_TO_IDX = {c: i for i, c in enumerate(CLASS_NAMES)}
 
 
-def _default_frame_transform(train: bool):
-    if train:
+def _default_frame_transform(train: bool, mimic_author: bool = False):
+    if train and mimic_author:
         return transforms.Compose([
             transforms.ToPILImage(),
             transforms.RandomHorizontalFlip(),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1),
             transforms.ToTensor(),
             transforms.Normalize(_IMAGENET_MEAN, _IMAGENET_STD),
+        ])
+    elif train:
+        return transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(degrees=10),   # bat angle varies ±10°
+            transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, hue=0.05),
+            transforms.ToTensor(),
+            transforms.Normalize(_IMAGENET_MEAN, _IMAGENET_STD),
+            transforms.RandomErasing(p=0.2, scale=(0.02, 0.1)),  # occlude small patches
         ])
     else:
         return transforms.Compose([
@@ -72,11 +81,12 @@ class CricShotDataset(Dataset):
         transform=None,
         smoke_test: bool = False,
         cache: bool = False,
+        mimic_author: bool = False,
     ):
         self.processed_root = processed_root
         self.split          = split
         self.num_frames     = num_frames
-        self.transform      = transform or _default_frame_transform(train=(split == "train"))
+        self.transform      = transform or _default_frame_transform(train=(split == "train"), mimic_author=mimic_author)
         self.cache_enabled  = cache
         self._cache: dict   = {}  # idx -> (T, H, W, C) uint8 tensor
 

@@ -28,6 +28,15 @@ def build_model_from_cfg(cfg):
     if model_type == "baseline":
         from src.models.baseline_model import BaselineModel
         return BaselineModel(num_classes=num_classes, pretrained=False)
+    elif model_type == "multiscale":
+        from src.models.multiscale_model import MultiScaleModel
+        return MultiScaleModel(num_classes=num_classes, pretrained=False)
+    elif model_type == "transformer":
+        from src.models.transformer_model import TransformerModel
+        return TransformerModel(num_classes=num_classes, pretrained=False)
+    elif model_type == "combined":
+        from src.models.combined_model import CombinedModel
+        return CombinedModel(num_classes=num_classes, pretrained=False)
     raise ValueError(f"Unknown model_type: {model_type!r}")
 
 

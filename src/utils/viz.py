@@ -27,7 +27,7 @@ def save_confusion_matrix(cm, class_names, save_path, title="Confusion Matrix"):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
-    print(f"Saved confusion matrix → {save_path}")
+    print(f"Saved confusion matrix -> {save_path}")
 
 
 def save_accuracy_bar(history, save_path, title="Training Accuracy"):

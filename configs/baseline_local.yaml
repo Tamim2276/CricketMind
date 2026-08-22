@@ -18,14 +18,15 @@ prefetch_factor: 2         # batches prefetched per worker
 cache:           true      # pre-load all clips into RAM (needs ~15 GB; set false if OOM)
 
 optimizer:       adam
-lr:              1.0e-4
-weight_decay:    1.0e-4
-label_smoothing: 0.1
+lr:              1.0e-4     # LR for the randomly initialized head
+backbone_lr_multiplier: 0.1 # LR for the pretrained backbone (1e-5)
+weight_decay:    5.0e-4     # stronger L2 regularisation
+label_smoothing: 0.15       # slightly more label smoothing to fight overconfidence
 
-epochs:              50
-lr_decay_factor:     0.1
-lr_decay_patience:   4
-early_stop_patience: 10
+epochs:              60      # more epochs since we LR-decay more slowly
+lr_decay_factor:     0.5    # gentler decay (0.5 instead of 0.1)
+lr_decay_patience:   6      # more patience before decaying
+early_stop_patience: 15     # don't stop too early
 
 # Paths — local machine
 splits_dir:     data/splits

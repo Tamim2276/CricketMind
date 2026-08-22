@@ -19,13 +19,12 @@ cache:           true
 
 optimizer:       adam
 lr:              1.0e-4
-weight_decay:    1.0e-4
-label_smoothing: 0.1
+backbone_lr_multiplier: 0.1
+weight_decay:    5.0e-4
+label_smoothing: 0.15
 
-epochs:              50
-lr_decay_factor:     0.1
-lr_decay_patience:   4
-early_stop_patience: 10
+epochs:              60
+early_stop_patience: 15
 
 splits_dir:     data/splits
 processed_root: data/processed

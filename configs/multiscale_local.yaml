@@ -12,21 +12,20 @@ compile:      false
 
 frames_per_clip: 15
 frame_size:      224
-batch_size:      2          # lower: 3 forward passes per frame triples VRAM use
-grad_accum_steps: 4         # effective batch = 8, same as baseline
+batch_size:      4          # increased: FPN encoder uses 66% less VRAM
+grad_accum_steps: 2         # effective batch = 8, same as baseline
 num_workers:     4
 prefetch_factor: 2
 cache:           true       # pre-load into RAM (clips are the same .pt files)
 
 optimizer:       adam
 lr:              1.0e-4
-weight_decay:    1.0e-4
-label_smoothing: 0.1
+backbone_lr_multiplier: 0.1
+weight_decay:    5.0e-4
+label_smoothing: 0.15
 
-epochs:              50
-lr_decay_factor:     0.1
-lr_decay_patience:   4
-early_stop_patience: 10
+epochs:              60
+early_stop_patience: 15
 
 splits_dir:     data/splits
 processed_root: data/processed

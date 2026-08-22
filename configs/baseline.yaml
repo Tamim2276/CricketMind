@@ -21,7 +21,7 @@ epochs:              1
 lr_decay_factor:     0.1
 lr_decay_patience:   4
 early_stop_patience: 10
-
+    
 # Paths — relative to project root (local machine)
 splits_dir:     data/splits
 processed_root: data/processed

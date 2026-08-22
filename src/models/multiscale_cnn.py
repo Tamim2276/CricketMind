@@ -7,46 +7,51 @@ identified in the original CricShotNet paper by capturing fine-grained
 bat-angle and wrist detail that a single global crop misses.
 
 Architecture (per frame):
-    full  frame (224×224) → shared EfficientNetV2-S → 1280-d
-    mid   crop (112→224)  → shared EfficientNetV2-S → 1280-d
-    fine  crop  (56→224)  → shared EfficientNetV2-S → 1280-d
+    full  frame (224*224) → shared EfficientNetV2-S → 1280-d
+    mid   crop (112->224)  → shared EfficientNetV2-S → 1280-d
+    fine  crop  (56->224)  → shared EfficientNetV2-S → 1280-d
     concat → 3840-d per frame
 
 Shared weights keep parameter count and VRAM identical to a single backbone.
 """
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
-from src.models.backbone import FrameEncoder
-
+from torchvision.models import efficientnet_v2_s, EfficientNet_V2_S_Weights
+from torchvision.models.feature_extraction import create_feature_extractor
 
 class MultiScaleEncoder(nn.Module):
     """
-    Input:  (B, C, H, W)  — single frame, 224×224, ImageNet-normalized
-    Output: (B, out_dim)  — concatenated multi-scale features (out_dim = 1280 * 3)
+    True Multi-Scale Feature Pyramid Encoder.
+    Extracts features at three different depths inside EfficientNetV2-S:
+      - fine   (features.3): 64 channels, 28x28 resolution (local texture/wrist angle)
+      - mid    (features.5): 160 channels, 14x14 resolution (body/arms/bat shape)
+      - global (features.7): 1280 channels, 7x7 resolution (full pose context)
+    
+    This avoids redundant backbone passes and doesn't rely on arbitrary center-crops.
     """
 
     def __init__(self, pretrained: bool = True):
         super().__init__()
-        self.encoder = FrameEncoder(pretrained=pretrained)  # shared across all 3 scales
-        self.out_dim = self.encoder.out_dim * 3             # 3840
-
-    def _center_crop_and_resize(self, x: torch.Tensor, crop_size: int) -> torch.Tensor:
-        """Center-crop to crop_size × crop_size, then resize back to 224 for the backbone."""
-        _, _, h, w = x.shape
-        top  = (h - crop_size) // 2
-        left = (w - crop_size) // 2
-        # clamp so we never go out of bounds if crop_size > h or w
-        top  = max(0, top)
-        left = max(0, left)
-        cs   = min(crop_size, h - top, w - left)
-        patch = x[:, :, top:top + cs, left:left + cs]
-        return F.interpolate(patch, size=224, mode="bilinear", align_corners=False)
+        weights = EfficientNet_V2_S_Weights.DEFAULT if pretrained else None
+        base_model = efficientnet_v2_s(weights=weights)
+        
+        # We hook into 3 intermediate stages of the network
+        return_nodes = {
+            'features.3': 'fine',
+            'features.5': 'mid',
+            'features.7': 'global'
+        }
+        self.extractor = create_feature_extractor(base_model, return_nodes=return_nodes)
+        
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.out_dim = 64 + 160 + 1280  # 1504
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (B, C, 224, 224) — full frame already preprocessed by CricShotNet pipeline
-        full = self.encoder(x)                                   # global context
-        mid  = self.encoder(self._center_crop_and_resize(x, 112))  # upper-body + hands
-        fine = self.encoder(self._center_crop_and_resize(x,  56))  # bat-face detail
-        return torch.cat([full, mid, fine], dim=1)               # (B, 3840)
+        # x: (B, C, 224, 224)
+        features = self.extractor(x)
+        
+        fine   = torch.flatten(self.pool(features['fine']), 1)
+        mid    = torch.flatten(self.pool(features['mid']), 1)
+        glob   = torch.flatten(self.pool(features['global']), 1)
+        
+        return torch.cat([fine, mid, glob], dim=1)  # (B, 1504)

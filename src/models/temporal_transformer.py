@@ -6,7 +6,7 @@ frame 1 (pre-delivery stance) to frame 15 (follow-through), which is
 critical for distinguishing shots like Sweep vs. Reverse Sweep.
 
 Design choices (tuned for CricShot10k's 10k-clip dataset size):
-    - 2–4 layers, 4 heads: deep enough to capture temporal patterns,
+    - 2-4 layers, 4 heads: deep enough to capture temporal patterns,
       shallow enough not to overfit on ~7k training clips.
     - Positional embedding: learnable (not sinusoidal) — more flexible.
     - Temporal mean pooling: more stable than CLS-token on small datasets.
