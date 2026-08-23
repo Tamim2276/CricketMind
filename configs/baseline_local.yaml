@@ -1,35 +1,52 @@
-# ── Full local training config (Arc B580, 12 GB VRAM, 16+ GB RAM) ────────────
-# Run with: python -m src.train --config configs/baseline_local.yaml
+# configs/baseline_local.yaml
+# Full local training config (Arc B580, 12 GB VRAM)
 #
-# Effective batch size = batch_size * grad_accum_steps = 4 * 2 = 8
-# (matches the Kaggle config so results are directly comparable)
+# This is the IMPROVED baseline — not a paper mimic.
+# Goal: beat the author's 89% using proper regularization.
+#
+# Key differences vs mimic_author.yaml:
+#   dropout=0.5          via BaselineModel default (mimic_author=false)
+#   label_smoothing=0.15 softens overconfident predictions
+#   MixUp alpha=0.2      enabled in train_epoch (mimic_author=false)
+#   ColorJitter+Erasing  enabled in dataset (mimic_author=false)
+#   backbone_lr=1e-5     differential LR protects pretrained features
+#   weight_decay=5e-4    L2 regularization
+#   CosineAnnealingLR    smoother decay than ReduceLROnPlateau
+#   grad_accum=2         effective batch=8 (same as paper)
 
-model_type:   baseline
-num_classes:  15
-pretrained:   true
-compile:      false   # set true to try torch.compile (partial XPU support)
+model_type: baseline
+num_classes: 15
+pretrained: true
+compile: false
+mimic_author: false # enables dropout, MixUp, ColorJitter, etc.
 
+# DataLoader
 frames_per_clip: 15
-frame_size:      224
-batch_size:      4         # lower than Kaggle (12 GB vs 16 GB)
-grad_accum_steps: 2        # effective batch = 8, same as Kaggle
-num_workers:     4         # parallel data loading
-prefetch_factor: 2         # batches prefetched per worker
-cache:           true      # pre-load all clips into RAM (needs ~15 GB; set false if OOM)
+frame_size: 224
+batch_size: 4
+grad_accum_steps: 2 # effective batch = 8 (matches paper)
+num_workers: 2
+prefetch_factor: 2
+cache: false # disabled: 6749 clips x 2.15MB = 14.5GB, too close to limit
 
-optimizer:       adam
-lr:              1.0e-4     # LR for the randomly initialized head
-backbone_lr_multiplier: 0.1 # LR for the pretrained backbone (1e-5)
-weight_decay:    5.0e-4     # stronger L2 regularisation
-label_smoothing: 0.15       # slightly more label smoothing to fight overconfidence
+# Optimizer — discriminative LRs
+optimizer: adam
+lr: 1.0e-4 # head LR
+backbone_lr_multiplier: 0.1 # backbone LR = 1e-5 (protects pretrained weights)
+weight_decay: 5.0e-4 # L2 regularization
+label_smoothing: 0.15 # fights overconfidence
 
-epochs:              60      # more epochs since we LR-decay more slowly
-lr_decay_factor:     0.5    # gentler decay (0.5 instead of 0.1)
-lr_decay_patience:   6      # more patience before decaying
-early_stop_patience: 15     # don't stop too early
+# Scheduler
+scheduler: cosine # CosineAnnealingLR
+lr_decay_factor: 0.5 # unused for cosine (kept for reference)
+lr_decay_patience: 6 # unused for cosine (kept for reference)
 
-# Paths — local machine
-splits_dir:     data/splits
+# Training
+epochs: 60
+early_stop_patience: 15 # more patience — cosine needs time
+
+# Paths
+splits_dir: data/splits
 processed_root: data/processed
 checkpoint_dir: experiments/baseline/checkpoints
-figure_dir:     experiments/baseline/figures
+figure_dir: experiments/baseline/figures

@@ -1,33 +1,52 @@
-# ── Multi-Scale CNN local training config (Arc B580) ─────────────────────────
-# Run with: python -m src.train --config configs/multiscale_local.yaml
+# configs/multiscale_local.yaml
+# Multi-Scale CNN (with projection layer) + GRU-256 local training config.
 #
-# 3 forward passes per frame (full/mid/fine crops) → ~3× VRAM vs baseline.
-# Compensate: batch_size=2, grad_accum=4 → effective batch=8 (same as baseline).
-# Note: 3840-d features → GRU hidden may be bottleneck; keep gru_hidden default.
+# KEY FIXES vs previous run (which plateaued at 72%):
+#
+#   OLD MultiScaleEncoder: raw concat 1504-d -> GRU-128
+#     Problem: 11.7x bottleneck, fine/mid features (15%) drowned by global (85%)
+#
+#   NEW MultiScaleEncoder: concat 1504-d -> Linear(1504,1280) -> LN -> GELU
+#     Fix: learned projection balances all three scales
+#     Output: 1280-d (same as baseline, fair comparison)
+#
+#   GRU hidden: 128 -> 256 (more capacity for richer projected features)
+#
+# Expected: 85-90% (vs 72% before fix, vs ~84% baseline)
 
-model_type:   multiscale
-num_classes:  15
-pretrained:   true
-compile:      false
+model_type: multiscale
+num_classes: 15
+pretrained: true
+compile: false
+mimic_author: false
 
+# DataLoader
 frames_per_clip: 15
-frame_size:      224
-batch_size:      4          # increased: FPN encoder uses 66% less VRAM
-grad_accum_steps: 2         # effective batch = 8, same as baseline
-num_workers:     4
+frame_size: 224
+batch_size: 4
+grad_accum_steps: 2 # effective batch = 8
+num_workers: 0
 prefetch_factor: 2
-cache:           true       # pre-load into RAM (clips are the same .pt files)
+cache: false
 
-optimizer:       adam
-lr:              1.0e-4
-backbone_lr_multiplier: 0.1
-weight_decay:    5.0e-4
+# Optimizer
+optimizer: adam
+lr: 1.0e-4
+backbone_lr_multiplier: 0.1 # encoder LR = 1e-5 (protects pretrained weights)
+weight_decay: 5.0e-4
 label_smoothing: 0.15
 
-epochs:              60
+# Scheduler
+scheduler: cosine
+lr_decay_factor: 0.5
+lr_decay_patience: 6
+
+# Training
+epochs: 60
 early_stop_patience: 15
 
-splits_dir:     data/splits
+# Paths
+splits_dir: data/splits
 processed_root: data/processed
 checkpoint_dir: experiments/multiscale/checkpoints
-figure_dir:     experiments/multiscale/figures
+figure_dir: experiments/multiscale/figures

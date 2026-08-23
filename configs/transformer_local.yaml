@@ -13,7 +13,7 @@ frames_per_clip: 15
 frame_size:      224
 batch_size:      4
 grad_accum_steps: 2         # effective batch = 8
-num_workers:     4
+num_workers:     0
 prefetch_factor: 2
 cache:           true
 

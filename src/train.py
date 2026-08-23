@@ -7,8 +7,11 @@ Usage — local smoke test (1 epoch, 50 clips, Arc B580):
 Usage — exact author mimic (target: reproduce 89%):
     python src/train.py --config configs/mimic_author.yaml
 
-Usage — improved baseline:
+Usage — improved baseline on Kaggle:
     python src/train.py --config configs/baseline_kaggle.yaml
+
+The script is model-agnostic: model_type in config selects the architecture.
+Runs on XPU / CUDA / CPU automatically via src/utils/device.py.
 
 KEY DIFFERENCES vs AUTHOR (mimic_author=True restores author behaviour):
   - dropout=0.0 in GRUHead (author has NO Dropout)
@@ -55,7 +58,8 @@ def build_model(model_type: str, num_classes: int, pretrained: bool,
                              dropout=dropout)
     if model_type == "multiscale":
         from src.models.multiscale_model import MultiScaleModel
-        return MultiScaleModel(num_classes=num_classes, pretrained=pretrained)
+        return MultiScaleModel(num_classes=num_classes, pretrained=pretrained,
+                               dropout=dropout)
     if model_type == "transformer":
         from src.models.transformer_model import TransformerModel
         return TransformerModel(num_classes=num_classes, pretrained=pretrained)
@@ -66,7 +70,7 @@ def build_model(model_type: str, num_classes: int, pretrained: bool,
                      f"Choices: baseline | multiscale | transformer | combined")
 
 
-# helpers
+#helpers
 def load_config(path: str) -> dict:
     with open(path, encoding='utf-8') as f:
         return yaml.safe_load(f)
@@ -75,6 +79,10 @@ def load_config(path: str) -> dict:
 def make_dataloader(cfg, split, smoke_test):
     csv_path    = os.path.join(cfg["splits_dir"], f"{split}.csv")
     num_workers = cfg.get("num_workers", 4)
+
+    import platform
+    on_windows = platform.system() == "Windows"
+
     cache = cfg.get("cache", False) and (split == "train") and not smoke_test
     ds = CricShotDataset(
         csv_path=csv_path,
@@ -86,10 +94,17 @@ def make_dataloader(cfg, split, smoke_test):
         mimic_author=cfg.get("mimic_author", False),
     )
     shuffle = (split == "train")
+
+    if cache and num_workers > 0:
+        num_workers = 0
+
     extra = {}
     if num_workers > 0:
-        extra["persistent_workers"] = True
-        extra["prefetch_factor"]     = cfg.get("prefetch_factor", 2)
+        if on_windows:
+            extra["persistent_workers"] = False
+        else:
+            extra["persistent_workers"] = True
+            extra["prefetch_factor"]    = cfg.get("prefetch_factor", 2)
     return DataLoader(
         ds,
         batch_size=cfg.get("batch_size", 8),
@@ -103,13 +118,6 @@ def make_dataloader(cfg, split, smoke_test):
 
 #scheduler factory 
 def build_scheduler(cfg, optimizer, epochs):
-    """
-    Returns the LR scheduler requested by config.
-
-    scheduler: "reduce_lr_on_plateau"  -> author's exact scheduler
-               "cosine"                -> improved variant (default)
-               anything else           -> cosine
-    """
     scheduler_type = cfg.get("scheduler", "cosine").lower()
 
     if scheduler_type == "reduce_lr_on_plateau":
@@ -128,20 +136,20 @@ def build_scheduler(cfg, optimizer, epochs):
     ), "cosine"
 
 
-# mixup helpers
+#mixup helpers 
 import numpy as np
 
 def mixup_data(x, y, alpha=0.2):
-    lam = np.random.beta(alpha, alpha) if alpha > 0 else 1.0
-    index = torch.randperm(x.size(0)).to(x.device)
-    mixed_x = lam * x + (1 - lam) * x[index, :]
-    return mixed_x, y, y[index], lam
+    lam = float(np.random.beta(alpha, alpha)) if alpha > 0 else 1.0
+    index   = torch.randperm(x.size(0))        
+    mixed_x = lam * x + (1 - lam) * x[index]     
+    return mixed_x, y, y[index], lam              
 
 def mixup_criterion(criterion, pred, y_a, y_b, lam):
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
 
 
-# train one epoch
+#train one epoch
 def train_epoch(model, loader, criterion, optimizer, scaler, device, amp_dtype,
                 grad_accum_steps=1, mimic_author=False):
     model.train()
@@ -153,13 +161,16 @@ def train_epoch(model, loader, criterion, optimizer, scaler, device, amp_dtype,
                desc="  train", unit="batch", leave=False, dynamic_ncols=True)
 
     for step, (clips, labels) in bar:
-        clips  = clips.to(device)
-        labels = labels.to(device)
-
-        # MixUp disabled when mimicking author (author uses no online augmentation)
+        # MixUp on CPU BEFORE moving to XPU/CUDA.
+        # Do MixUp while tensors are on CPU, then move to device.
         if not mimic_author:
             clips, targets_a, targets_b, lam = mixup_data(clips, labels, alpha=0.2)
+            clips     = clips.to(device)
+            targets_a = targets_a.to(device)
+            targets_b = targets_b.to(device)
         else:
+            clips     = clips.to(device)
+            labels    = labels.to(device)
             targets_a, targets_b, lam = labels, labels, 1.0
 
         with torch.autocast(
@@ -194,7 +205,7 @@ def train_epoch(model, loader, criterion, optimizer, scaler, device, amp_dtype,
     return total_loss / len(loader), acc
 
 
-# evaluate
+#evaluate
 @torch.no_grad()
 def evaluate(model, loader, criterion, device, amp_dtype):
     model.eval()
@@ -223,7 +234,7 @@ def evaluate(model, loader, criterion, device, amp_dtype):
     return total_loss / len(loader), acc, all_logits, all_labels
 
 
-# main 
+#main
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config",     required=True, help="path to YAML config")
@@ -285,7 +296,7 @@ def main():
     backbone_lr_multiplier = cfg.get("backbone_lr_multiplier", 1.0 if mimic_author else 0.1)
     weight_decay           = cfg.get("weight_decay", 0.0 if mimic_author else 5e-4)
 
-    # Discriminative LRs (or single LR in mimic mode)
+    #Discriminative LRs (or single LR in mimic mode)
     if hasattr(model, "encoder") and hasattr(model, "head") and backbone_lr_multiplier != 1.0:
         param_groups = [
             {"params": model.encoder.parameters(), "lr": base_lr * backbone_lr_multiplier},
@@ -304,7 +315,7 @@ def main():
 
     epochs = cfg.get("epochs", 100 if mimic_author else 60)
 
-    # Scheduler
+    #Scheduler
     scheduler, scheduler_type = build_scheduler(cfg, optimizer, epochs)
     print(f"Scheduler  : {scheduler_type}  |  weight_decay={weight_decay}")
 
@@ -328,9 +339,9 @@ def main():
 
         # Step scheduler
         if scheduler_type == "plateau":
-            scheduler.step(val_loss)   # ReduceLROnPlateau needs the metric
+            scheduler.step(val_loss)   
         else:
-            scheduler.step()           # CosineAnnealing steps every epoch
+            scheduler.step()         
 
         elapsed = time.time() - t0
 
@@ -373,7 +384,7 @@ def main():
         "cfg": cfg,
     }, last_path)
 
-    # save history + figures
+    # history + figures
     history_path = os.path.join(checkpoint_dir, "history.json")
     with open(history_path, "w") as f:
         json.dump(history, f, indent=2)

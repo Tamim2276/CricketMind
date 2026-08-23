@@ -19,7 +19,7 @@ from src.models.temporal_gru import GRUHead
 
 class BaselineModel(nn.Module):
     """
-    Input:  clip  (B, T, C, H, W)  — T=15 frames, each 224×224, ImageNet-normalized
+    Input:  clip  (B, T, C, H, W)  — T=15 frames, each 224*224, ImageNet-normalized
     Output: logits (B, num_classes)
     """
 

@@ -1,12 +1,12 @@
 """
-Baseline temporal head: GRU → BN → FC1 → ReLU → (optional Dropout) → FC2.
+Baseline temporal head: GRU -> BN -> FC1 -> ReLU -> (optional Dropout) -> FC2.
 Architecture from the original CricShotNet paper
 (EfficientNetV2-S + GRU-128 + Dense-1024), reproduced here for the
 Day-2 baseline experiment.
 
 AUTHOR MIMIC NOTE:
 The original Keras notebook has NO Dropout anywhere in this head:
-    GRU(128) → BatchNorm → Dense(1024, relu) → Dense(15, softmax)
+    GRU(128) -> BatchNorm -> Dense(1024, relu) -> Dense(15, softmax)
 The `dropout` param defaults to 0.0 when mimic_author=True (via build_model),
 and 0.5 for all improved variants (adds regularization).
 """
@@ -40,7 +40,6 @@ class GRUHead(nn.Module):
         self.fc2  = nn.Linear(1024, num_classes)
 
     def forward(self, x):
-        # x: (B, T, in_dim)
         _, h = self.gru(x)   # h: (1, B, hidden)
         h = h.squeeze(0)     # (B, hidden)
         h = self.bn(h)
