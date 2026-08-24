@@ -1,49 +1,56 @@
 # configs/baseline_local.yaml
 # Full local training config (Arc B580, 12 GB VRAM)
 #
-# This is the IMPROVED baseline — not a paper mimic.
-# Goal: beat the author's 89% using proper regularization.
+# RETUNED after baseline v1 plateaued at 71% (worse than mimic_author 75.7%)
 #
-# Key differences vs mimic_author.yaml:
-#   dropout=0.5          via BaselineModel default (mimic_author=false)
-#   label_smoothing=0.15 softens overconfident predictions
-#   MixUp alpha=0.2      enabled in train_epoch (mimic_author=false)
-#   ColorJitter+Erasing  enabled in dataset (mimic_author=false)
-#   backbone_lr=1e-5     differential LR protects pretrained features
-#   weight_decay=5e-4    L2 regularization
-#   CosineAnnealingLR    smoother decay than ReduceLROnPlateau
-#   grad_accum=2         effective batch=8 (same as paper)
+# Root cause of 71% plateau:
+#   MixUp(0.2) is too aggressive for fine-grained cricket shots.
+#   Mixing Pull+Hook clips creates ambiguous training samples —
+#   the model learns confused signals instead of subtle differences.
+#   Combined with label_smoothing=0.15 and backbone_lr=1e-5, the
+#   model was under-regularized on val but over-regularized on train.
+#
+# Changes from v1:
+#   MixUp:          alpha=0.2  -> DISABLED (use_mixup=false)
+#   label_smoothing: 0.15     -> 0.05  (softer signal, not confused)
+#   backbone_lr:    1e-5      -> 5e-5  (more backbone adaptation)
+#   ColorJitter + RandomErasing + Dropout(0.5) kept — these help
+#
+# Expected: 80-87% (vs 71% before, vs 75.7% mimic)
 
 model_type: baseline
 num_classes: 15
 pretrained: true
 compile: false
-mimic_author: false # enables dropout, MixUp, ColorJitter, etc.
+mimic_author: false
 
 # DataLoader
 frames_per_clip: 15
 frame_size: 224
 batch_size: 4
-grad_accum_steps: 2 # effective batch = 8 (matches paper)
+grad_accum_steps: 2
 num_workers: 2
 prefetch_factor: 2
-cache: false # disabled: 6749 clips x 2.15MB = 14.5GB, too close to limit
+cache: false
 
-# Optimizer — discriminative LRs
+# Optimizer
 optimizer: adam
-lr: 1.0e-4 # head LR
-backbone_lr_multiplier: 0.1 # backbone LR = 1e-5 (protects pretrained weights)
-weight_decay: 5.0e-4 # L2 regularization
-label_smoothing: 0.15 # fights overconfidence
+lr: 1.0e-4
+backbone_lr_multiplier: 0.5 # backbone LR = 5e-5 (was 1e-5, too frozen)
+weight_decay: 5.0e-4
+label_smoothing: 0.05 # was 0.15, too aggressive for fine-grained
+
+# MixUp — disabled for cricket (fine-grained shots confuse mixed samples)
+use_mixup: false # was true (alpha=0.2), hurt performance
 
 # Scheduler
-scheduler: cosine # CosineAnnealingLR
-lr_decay_factor: 0.5 # unused for cosine (kept for reference)
-lr_decay_patience: 6 # unused for cosine (kept for reference)
+scheduler: cosine
+lr_decay_factor: 0.5
+lr_decay_patience: 6
 
 # Training
 epochs: 60
-early_stop_patience: 15 # more patience — cosine needs time
+early_stop_patience: 15
 
 # Paths
 splits_dir: data/splits

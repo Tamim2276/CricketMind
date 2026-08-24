@@ -43,12 +43,12 @@ from src.utils.viz import save_confusion_matrix, save_accuracy_bar
 from src.datasets.cricshot_dataset import CricShotDataset, CLASS_NAMES
 
 
-#model registry
+# ── model registry ──────────────────────────────────────────────────────────
 def build_model(model_type: str, num_classes: int, pretrained: bool,
                 mimic_author: bool = False):
     """
-    mimic_author=True -> dropout=0.0 in GRUHead (matches author's Keras arch).
-    mimic_author=False -> dropout=0.5 for improved regularisation.
+    mimic_author=True → dropout=0.0 in GRUHead (matches author's Keras arch).
+    mimic_author=False → dropout=0.5 for improved regularisation.
     """
     dropout = 0.0 if mimic_author else 0.5
 
@@ -70,8 +70,10 @@ def build_model(model_type: str, num_classes: int, pretrained: bool,
                      f"Choices: baseline | multiscale | transformer | combined")
 
 
-#helpers
+# ── helpers ─────────────────────────────────────────────────────────────────
 def load_config(path: str) -> dict:
+    # encoding='utf-8' is required on Windows — default cp1252 breaks on
+    # any non-ASCII characters that may appear in YAML comments.
     with open(path, encoding='utf-8') as f:
         return yaml.safe_load(f)
 
@@ -80,6 +82,12 @@ def make_dataloader(cfg, split, smoke_test):
     csv_path    = os.path.join(cfg["splits_dir"], f"{split}.csv")
     num_workers = cfg.get("num_workers", 4)
 
+    # Windows error 1455 (ERROR_COMMITMENT_LIMIT) with DataLoader workers:
+    # Caused by persistent_workers=True keeping shared memory alive across
+    # batches until Windows page file runs out.
+    # Fix: use num_workers=2 (parallel loading) but persistent_workers=FALSE
+    # (workers restart each epoch, releasing shared memory cleanly).
+    # This gives ~8-10 min/epoch speed while avoiding the crash.
     import platform
     on_windows = platform.system() == "Windows"
 
@@ -95,14 +103,26 @@ def make_dataloader(cfg, split, smoke_test):
     )
     shuffle = (split == "train")
 
+    # Windows error 1455 (ERROR_COMMITMENT_LIMIT) fix:
+    #
+    # Root cause: persistent_workers=True keeps worker processes alive between
+    # batches. Their shared memory accumulates until Windows page file exhausts
+    # (error 1455). Fix: persistent_workers=False — workers restart each epoch,
+    # releasing all shared memory cleanly. Slightly slower startup per epoch
+    # but stable, and much faster than num_workers=0 during the epoch itself.
+    #
+    # cache=True: num_workers forced to 0 regardless (data already in RAM).
     if cache and num_workers > 0:
         num_workers = 0
 
     extra = {}
     if num_workers > 0:
         if on_windows:
+            # persistent_workers=False: safe on Windows (no shared memory leak)
+            # prefetch_factor not set: only valid with persistent_workers=True
             extra["persistent_workers"] = False
         else:
+            # Linux/Mac: full persistent workers + prefetch for max throughput
             extra["persistent_workers"] = True
             extra["prefetch_factor"]    = cfg.get("prefetch_factor", 2)
     return DataLoader(
@@ -116,8 +136,15 @@ def make_dataloader(cfg, split, smoke_test):
     )
 
 
-#scheduler factory 
+# ── scheduler factory ────────────────────────────────────────────────────────
 def build_scheduler(cfg, optimizer, epochs):
+    """
+    Returns the LR scheduler requested by config.
+
+    scheduler: "reduce_lr_on_plateau"  → author's exact scheduler
+               "cosine"                → improved variant (default)
+               anything else           → cosine
+    """
     scheduler_type = cfg.get("scheduler", "cosine").lower()
 
     if scheduler_type == "reduce_lr_on_plateau":
@@ -136,22 +163,31 @@ def build_scheduler(cfg, optimizer, epochs):
     ), "cosine"
 
 
-#mixup helpers 
+# ── mixup helpers ────────────────────────────────────────────────────────────
 import numpy as np
 
 def mixup_data(x, y, alpha=0.2):
+    """
+    MixUp on CPU -- MUST be called before .to(device).
+
+    Intel Arc XPU does not support torch.randperm() on XPU or fancy
+    indexing x[index, :] on XPU tensors -- calling these on-device causes
+    a segmentation fault instead of a Python exception.
+
+    Keep MixUp on CPU, move the already-mixed tensor to device after.
+    """
     lam = float(np.random.beta(alpha, alpha)) if alpha > 0 else 1.0
-    index   = torch.randperm(x.size(0))        
-    mixed_x = lam * x + (1 - lam) * x[index]     
-    return mixed_x, y, y[index], lam              
+    index   = torch.randperm(x.size(0))           # CPU only
+    mixed_x = lam * x + (1 - lam) * x[index]     # CPU mixing
+    return mixed_x, y, y[index], lam              # all CPU tensors
 
 def mixup_criterion(criterion, pred, y_a, y_b, lam):
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
 
 
-#train one epoch
+# ── train one epoch ─────────────────────────────────────────────────────────
 def train_epoch(model, loader, criterion, optimizer, scaler, device, amp_dtype,
-                grad_accum_steps=1, mimic_author=False):
+                grad_accum_steps=1, mimic_author=False, use_mixup=True):
     model.train()
     total_loss = 0.0
     all_logits, all_labels = [], []
@@ -162,8 +198,11 @@ def train_epoch(model, loader, criterion, optimizer, scaler, device, amp_dtype,
 
     for step, (clips, labels) in bar:
         # MixUp on CPU BEFORE moving to XPU/CUDA.
+        # XPU (Intel Arc) segfaults on randperm + fancy indexing on-device.
         # Do MixUp while tensors are on CPU, then move to device.
-        if not mimic_author:
+        # use_mixup=False disables MixUp for fine-grained tasks (cricket shots)
+        # where mixing similar classes (Pull+Hook) creates ambiguous samples.
+        if not mimic_author and use_mixup:
             clips, targets_a, targets_b, lam = mixup_data(clips, labels, alpha=0.2)
             clips     = clips.to(device)
             targets_a = targets_a.to(device)
@@ -205,7 +244,7 @@ def train_epoch(model, loader, criterion, optimizer, scaler, device, amp_dtype,
     return total_loss / len(loader), acc
 
 
-#evaluate
+# ── evaluate ─────────────────────────────────────────────────────────────────
 @torch.no_grad()
 def evaluate(model, loader, criterion, device, amp_dtype):
     model.eval()
@@ -234,7 +273,7 @@ def evaluate(model, loader, criterion, device, amp_dtype):
     return total_loss / len(loader), acc, all_logits, all_labels
 
 
-#main
+# ── main ─────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config",     required=True, help="path to YAML config")
@@ -296,7 +335,7 @@ def main():
     backbone_lr_multiplier = cfg.get("backbone_lr_multiplier", 1.0 if mimic_author else 0.1)
     weight_decay           = cfg.get("weight_decay", 0.0 if mimic_author else 5e-4)
 
-    #Discriminative LRs (or single LR in mimic mode)
+    # ── Discriminative LRs (or single LR in mimic mode) ──────────────────
     if hasattr(model, "encoder") and hasattr(model, "head") and backbone_lr_multiplier != 1.0:
         param_groups = [
             {"params": model.encoder.parameters(), "lr": base_lr * backbone_lr_multiplier},
@@ -315,7 +354,7 @@ def main():
 
     epochs = cfg.get("epochs", 100 if mimic_author else 60)
 
-    #Scheduler
+    # ── Scheduler ─────────────────────────────────────────────────────────
     scheduler, scheduler_type = build_scheduler(cfg, optimizer, epochs)
     print(f"Scheduler  : {scheduler_type}  |  weight_decay={weight_decay}")
 
@@ -333,15 +372,17 @@ def main():
         t0 = time.time()
         tr_loss, tr_acc = train_epoch(
             model, train_loader, criterion, optimizer, scaler, device, amp_dtype,
-            grad_accum_steps=grad_accum, mimic_author=mimic_author,
+            grad_accum_steps=grad_accum,
+            mimic_author=mimic_author,
+            use_mixup=cfg.get("use_mixup", True),
         )
         val_loss, val_acc, _, _ = evaluate(model, val_loader, criterion, device, amp_dtype)
 
-        # Step scheduler
+        # ── Step scheduler ────────────────────────────────────────────────
         if scheduler_type == "plateau":
-            scheduler.step(val_loss)   
+            scheduler.step(val_loss)   # ReduceLROnPlateau needs the metric
         else:
-            scheduler.step()         
+            scheduler.step()           # CosineAnnealing steps every epoch
 
         elapsed = time.time() - t0
 
@@ -375,7 +416,7 @@ def main():
                 print(f"Early stopping: {no_improve} epochs without improvement.")
                 break
 
-    # final checkpoint
+    # ── final checkpoint ─────────────────────────────────────────────────
     last_path = os.path.join(checkpoint_dir, "last.pt")
     torch.save({
         "epoch": epoch,
@@ -384,7 +425,7 @@ def main():
         "cfg": cfg,
     }, last_path)
 
-    # history + figures
+    # ── history + figures ─────────────────────────────────────────────────
     history_path = os.path.join(checkpoint_dir, "history.json")
     with open(history_path, "w") as f:
         json.dump(history, f, indent=2)
