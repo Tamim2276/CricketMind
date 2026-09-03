@@ -7,3 +7,6 @@ data/splits/*
 experiments/*/checkpoints/
 __pycache__/
 *.pt
+CricShoot10kModels/
+*.keras
+*.h5
