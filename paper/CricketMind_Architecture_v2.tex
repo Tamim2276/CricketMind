@@ -40,6 +40,7 @@
 \definecolor{gatepurple}{RGB}{112,44,132}  % faithfulness gate
 \definecolor{dbtan}{RGB}{222,196,160}      % databases
 \definecolor{outgrey}{RGB}{45,45,50}       % final output
+\definecolor{gateslate}{RGB}{72,88,104}    % entry branch
 
 % ---------------------------------------------------------------- styles
 \tikzset{
@@ -58,6 +59,7 @@
                    font=\footnotesize\bfseries, inner sep=2pt, line width=0.7pt},
   confgate/.style  = {gate, fill=gatered,    text=white, draw=gatered!55!black},
   faithgate/.style = {gate, fill=gatepurple, text=white, draw=gatepurple!55!black},
+  entrygate/.style = {gate, fill=gateslate,  text=white, draw=gateslate!55!black},
   db/.style     = {draw, cylinder, shape border rotate=90, aspect=0.28,
                    fill=dbtan, align=center, font=\scriptsize,
                    minimum width=1.8cm, minimum height=1.0cm, line width=0.7pt},
@@ -130,6 +132,11 @@ The system takes two inputs simultaneously:
 \resizebox{\textwidth}{!}{%
 \begin{tikzpicture}
 
+% ============================================ 0. entry branch
+% Not every query carries a clip.  A counterfactual about batting order has
+% no video, so the vision chain must be skippable.
+\node[entrygate] (entry) at (-2.6,-1.8) {Clip?};
+
 % ============================================ A. encoding chain (horizontal)
 \node[enc] (n1)   at (1.6,0)    {\textbf{N1} Video Input\\15 Frames};
 \node[enc] (n2)   at (6.2,0)    {\textbf{N2} Vision Encoder\\EfficientNetV2-S};
@@ -179,6 +186,15 @@ The system takes two inputs simultaneously:
 % ==================================================================
 %                              EDGES
 % ==================================================================
+
+% ---- entry branch.  The bypass runs in the clear lane at y=-1.8: below the
+%      encoder row, above the text row, and left of the confident edge at
+%      x=19.8.  It enters N6 from the north so it misses the N3 -> N6 run.
+\draw[flow] (entry.north) -- (-2.6,0) -- (n1.west);
+\node[elab] at (-1.35,0.42) {clip};
+\draw[flow] (entry.south) -- (-2.6,-3.6) -- (n3.west);
+\draw[flow] (entry.east)  -- (15.4,-1.8) -- (n6.north);
+\node[elab] at (7.4,-1.42) {no clip --- text-only query};
 
 % ---- encoding chain
 \draw[flow] (n1) -- (n2);
@@ -276,7 +292,11 @@ FAISS indexes; orange nodes are the two shared analytical services that hold
 exclusive authority to emit numeric claims; green nodes are the twelve
 stakeholder-facing agents dispatched dynamically by the violet supervisor
 router. Red diamonds and red dashed edges are the two agentic correction loops;
-green dashed edges carry agent findings back to the faithfulness gate.}
+green dashed edges carry agent findings back to the faithfulness gate. The slate
+diamond at the left is the entry branch: only a query carrying a clip enters the
+vision chain, while a text-only question --- a counterfactual about batting
+order, for instance --- passes directly to N6 and is grounded on its query
+filters alone. N3 runs on both paths, because every query has text.}
 \label{fig:arch-v2}
 \end{center}
 
@@ -292,11 +312,36 @@ Shot against fast bowlers in the powerplay.''}
 \end{quote}
 
 % ------------------------------------------------------------------
+\subsection{Two Entry Paths}
+
+Not every question carries a clip. \emph{``What if Rohit Sharma had batted at
+number two instead of Kohli?''} is a legitimate query with no video attached:
+there is no stroke to classify, and nothing for the confidence gate to
+adjudicate. The graph therefore branches at entry.
+
+A query carrying a clip enters the vision chain at N1 and reaches N6 through the
+confidence gate, exactly as described below. A text-only query bypasses
+N1--N5 entirely and arrives at N6 directly, where it is grounded on the filters
+N3 extracted from its own text. N3 runs on both paths, because every query has
+text.
+
+The consequence propagates further than the diagram suggests. On the text-only
+path no posture was ever measured, so \texttt{weight\_transfer} is \emph{absent}
+from the sanctioned facts rather than defaulted. Supplying a default would place
+an invented measurement into the exact surface the faithfulness gate treats as
+ground truth --- a fabrication laundered through the mechanism designed to stop
+fabrications. The supervisor router reads the same rule and declines to wake any
+agent whose citations cannot be satisfied, which on this path removes the
+Personal Performance (N11c) and Talent Development (N11j) agents. The resulting
+report is shorter, and everything remaining in it is still grounded.
+
+% ------------------------------------------------------------------
 \subsection{Vision and Text Processing Layer (Blue Nodes)}
 
 \begin{description}[leftmargin=0em,style=nextline]
 \item[N1 --- Video Input (15 Frames).]
-  The user uploads a clip of Kohli batting. The system uniformly samples
+  Reached only when the query carries a clip. The user uploads footage of Kohli
+  batting, and the system uniformly samples
   \textbf{15 frames}, which is the temporal resolution the downstream backbone
   was trained on. Fifteen frames at roughly one second of footage is enough to
   capture the full stroke arc --- backlift, stride, contact, follow-through ---
@@ -355,6 +400,12 @@ Shot against fast bowlers in the powerplay.''}
   record is the sole interface between the perception half of the system and the
   analytics half: everything after N6 consumes Shot DNA and never touches raw
   pixels again.
+
+  N6 is also the entry point for text-only queries, where there is no
+  classification and no posture to fuse. The Shot DNA then carries the query
+  filters alone and records which modality produced it, so that every downstream
+  node --- and the sanctioned-fact surface in particular --- can tell a measured
+  value from an absent one.
 \end{description}
 
 % ------------------------------------------------------------------
