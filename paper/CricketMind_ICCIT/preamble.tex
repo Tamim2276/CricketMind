@@ -13,7 +13,18 @@
 
 % Font and float spacing as in the group's ICCIT template (BD-HAR); the tighter
 % spacing around figures and tables matters for the 6-page limit.
-\usepackage{times}
+% Times on every engine: pdfLaTeX (Overleaf's default) uses the times package,
+% as the template does; XeLaTeX/LuaLaTeX (e.g. Tectonic) cannot use it and would
+% silently fall back to a wider font, so they load TeX Gyre Termes, which has
+% the same letter widths as Times -- the page count is the same either way.
+\usepackage{iftex}
+\iftutex
+  \usepackage{fontspec}
+  \setmainfont{texgyretermes}[Extension=.otf, UprightFont=*-regular,
+    BoldFont=*-bold, ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+\else
+  \usepackage{times}
+\fi
 \setlength{\textfloatsep}{6pt plus 1pt minus 1pt}
 \setlength{\floatsep}{4pt plus 1pt minus 1pt}
 \setlength{\intextsep}{6pt plus 1pt minus 1pt}
