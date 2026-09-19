@@ -1,0 +1,22 @@
+\section{Limitations and Future Work}
+\label{sec:limitations}
+
+Every component other than the router is a deterministic stand-in evaluated on
+a synthetic corpus, so the results characterise the architecture's control flow
+and guarantees rather than the quality of its analyses; the accuracy of the
+perception front end is outside the scope of this paper. The routing comparison
+uses 29 author-written prompts whose targets describe the prompts rather than
+serve as ground truth, and twelve plain prompts are too few for a benchmark, so
+it is indicative; its stability was measured on one machine. The Faith Check's
+guarantee is conditional on the citation contract (Section~\ref{sec:boundary}),
+and a query about a player with no deliveries in the corpus is not yet handled
+gracefully.
+
+Future work replaces the stand-ins: language-model agents constrained to emit
+subject-keyed citations, retrieval over real shot-annotated ball-by-ball data,
+and counterfactual questions such as a changed batting order. Routing before the
+analytics would compute only the statistics the activated agents cite, and
+giving the language-model router a summary of the evidence would let it use the
+signals the keyword router already reads. A further direction is to measure the
+cost of containment: how report completeness and agent invocations change as
+agents fabricate more often, a trade governed by the regeneration budget.

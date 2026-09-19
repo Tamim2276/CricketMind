@@ -1,57 +1,18 @@
 \documentclass[conference]{IEEEtran}
-\IEEEoverridecommandlockouts
-\usepackage{cite}
-\usepackage{amsmath,amssymb,amsfonts}
-\usepackage{graphicx}
-\usepackage{textcomp}
-\usepackage{xcolor}
-\usepackage{booktabs}   % rules in the results tables
-\usepackage{array}      % wrapped columns in the results tables
+\input{preamble}             % packages and layout
 
 \begin{document}
 
-% DRAFT title -- agree on the final wording.
-\title{CricketMind: A Verification-Gated Multi-Agent Architecture for Multi-Stakeholder Cricket Analytics}
+\input{title}                % title, (hidden) authors, \maketitle
+\input{abstract}
+\input{keywords}
 
-% TODO: real names, departments and e-mail addresses; add or remove blocks as needed.
-\author{
-\IEEEauthorblockN{First Author}
-\IEEEauthorblockA{\textit{Dept. of Computer Science and Engineering}\\
-\textit{Military Institute of Science and Technology}\\
-Dhaka, Bangladesh\\
-first.author@example.com}
-\and
-\IEEEauthorblockN{Second Author}
-\IEEEauthorblockA{\textit{Dept. of Computer Science and Engineering}\\
-\textit{Military Institute of Science and Technology}\\
-Dhaka, Bangladesh\\
-second.author@example.com}
-}
-
-\maketitle
-
-% DRAFT abstract -- every number is from the results sections; re-check them
-% if the notebook is re-run.
-\begin{abstract}
-Cricket analytics systems typically serve one audience with one task, and report numbers they never check. We present CricketMind, an agentic architecture that turns a batting-shot clip, or a text-only question, into a stakeholder-specific report in which every cited figure is verified. Two sanctioned engines, a statistics engine and a Monte Carlo what-if simulator, are the only components permitted to produce numbers. A supervisor router activates a subset of twelve stakeholder agents, and a faithfulness gate compares every figure an agent cites with the engines' values, regenerating failing agents within a bounded budget and withholding findings that still fail. We evaluate a reference implementation built as a LangGraph state graph whose components are deterministic stand-ins, apart from the router. Its cost follows a closed-form model that predicts the measured superstep count of seven scenarios exactly, with a worst case of 29 supersteps fixed when the graph is constructed. On paraphrased queries that avoid every routing keyword, a keyword router activated the intended agent for none of twelve queries, while a locally hosted 7B language-model router activated it for nine, with identical decisions across three runs. Because fixed rules follow the router's proposal, the architecture's bounds hold for either router.
-\end{abstract}
-
-\begin{IEEEkeywords}
-multi-agent systems, large language models, sports analytics, cricket, verification, LangGraph
-\end{IEEEkeywords}
-
-\input{introduction}
-
-\input{literature_review}
-
-\input{Methodology}
-
-\section{Results}
-\label{sec:results}
-\input{results_execution_profile}
-\input{results_routing}
-
-% \input{conclusion}   % TODO: write the conclusion
+\input{introduction}         % I.   Introduction
+\input{literature_review}    % II.  Related Work
+\input{Methodology}          % III. Methodology (includes Fig. 1)
+\input{results}              % IV.  Results (A, B, C)
+\input{limitations}          % V.   Limitations and Future Work
+\input{conclusion}           % VI.  Conclusion
 
 \input{references}
 

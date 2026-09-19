@@ -1,0 +1,24 @@
+% =====================================================================
+% Results -- the boundary of the Faith Check (R3).
+% Source: notebook Section 17, test 17A (run_with_template, R3_CASES).
+% Quoted strings and values (142.0, 112.0, 999.0, 61%) come from that test.
+% =====================================================================
+
+\subsection{Boundary of the Faith Check}
+\label{sec:boundary}
+
+To locate what the Faith Check cannot catch, we ran the evaluation query with
+the Coaches agent's answer altered in four ways. The honest answer, ``the Pull
+returns SR 112.0 against the Cover Drive's SR 142.0'', passes. A fabricated
+citation ($\mathit{best\_sr} = 999.0$) is rejected, regenerated once, and never
+reaches the report. Two further answers, however, pass and reach the user. In
+the first, the sentence swaps the two real strike rates onto the wrong shots
+(``the Pull returns SR 142.0 against the Cover Drive's SR 112.0'') while citing
+exactly the same values as the honest answer. In the second, the agent adds a
+figure it never cites (``61\% of his runs from boundaries''). The gate verifies
+citations, not prose. Its guarantee therefore holds only if the citation
+contract is enforced on the agents' output: every numeric token must be emitted
+as a citation that carries its subject, through a JSON schema or a tool
+definition rather than free text, so that the sentence is rendered from
+verified citations. Without that constraint the guarantee degrades silently,
+since an uncited figure is indistinguishable from a verified one.

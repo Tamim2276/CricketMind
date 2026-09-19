@@ -1,0 +1,8 @@
+% =====================================================================
+% Abstract.
+% DRAFT -- every number is from the results sections; re-check them if the
+% notebook is re-run. Keep it about this length: the paper fills 6 pages.
+% =====================================================================
+\begin{abstract}
+Automated cricket analytics is increasingly used in coaching, scouting and broadcasting, yet existing sports-analytics and agentic systems serve one audience with one task and report numbers they never verify against a trusted source. To address this gap, we introduce CricketMind, an agentic architecture that turns a batting-shot clip, or a text-only question, into a stakeholder-specific report. Two sanctioned engines, a statistics engine and a Monte Carlo what-if simulator, are the only components permitted to produce numbers; a supervisor router activates a subset of twelve stakeholder agents, and a faithfulness gate checks every figure an agent cites against the engines, regenerating failing agents within a bounded budget. We evaluate a LangGraph reference implementation whose components, apart from the router, are deterministic stand-ins. A closed-form cost model predicts the measured superstep count of seven scenarios exactly, with a worst case of 29 supersteps fixed when the graph is constructed. On twelve paraphrased queries that avoid every routing keyword, a keyword router activated the intended agent for none, while a locally hosted 7B language-model router activated it for nine, identically across three runs. The gate rejects fabricated citations but not correct figures attached to the wrong subject, showing that language-model agents require a structured citation contract.
+\end{abstract}

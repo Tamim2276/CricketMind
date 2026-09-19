@@ -1,0 +1,19 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper introduced CricketMind, an agentic architecture that answers cricket
+questions, with or without a batting-shot clip, through twelve stakeholder
+agents whose every cited figure must come from one of two sanctioned engines
+and is verified before release. Implemented as a LangGraph state graph, its
+cost followed a closed-form model that predicted all seven measured scenarios
+exactly, with a worst case of 29 supersteps and 12 agent invocations fixed when
+the graph is constructed. On twelve paraphrased queries that avoid every
+routing keyword, a locally hosted 7B language-model router activated the
+intended agent nine times where a keyword router activated it none, with
+identical decisions across three runs, and the fixed rules that follow its
+proposal preserve every bound. The Faith Check rejected fabricated citations
+but not a correct figure attached to the wrong subject or a figure left
+uncited, making a subject-keyed citation contract a requirement for
+language-model agents rather than an implementation detail. CricketMind thus
+offers a verifiable foundation on which the stand-in components can be
+replaced by learned ones without weakening its guarantees.

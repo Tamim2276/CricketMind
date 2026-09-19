@@ -55,29 +55,19 @@
     cover drive vs his pull shot against fast bowlers in the powerplay''}.
     B: \emph{``Is Kohli's workload a fatigue risk before the final?''}. Each
     cell is what the stage wrote to the shared state; agent cells list every
-    figure the agent cites.}
+    figure the agent cites. Stages whose output is identical for both queries
+    (perception, Shot DNA, context retrieval, output) are omitted.}
   \label{tab:prompt-flow}
   \input{tables/tab_prompt_flow}
 \end{table*}
 
-The supervisor router (N10) decides which of the twelve stakeholder agents
-answer a query. We compare two routers behind the same interface. The
-\emph{keyword router} scores each agent by the words of its keyword list that
-appear in the query, plus two structural signals from the analytics (a low
-visual confidence and a large strike-rate spread between shots). The
-\emph{LLM router} is a locally hosted language model, Qwen2.5-7B served through
-Ollama, called with temperature~0 and a fixed seed. To keep the comparison fair,
-the model is given exactly what the keyword router knows---each agent's
-stakeholder name and keyword list---and its reply is constrained by a JSON
-schema to one to four identifiers drawn from the agent registry, so it cannot
-name an agent that does not exist. The instructions were fixed before the
-comparison was run.
-
-Both routers only \emph{propose}. The same rules are then applied to either
-proposal: an agent whose cited facts do not exist for the query is removed, at
-most four agents are kept, and if none remain a default pair (Coaches, Players)
-answers. Because these rules follow the proposal, the bounds of
-Section~\ref{sec:exec-profile} hold whichever router is used.
+We compare the keyword router and the language-model router of
+Section~\ref{sec:method} on the same queries. The language model is Qwen2.5-7B,
+served locally through Ollama with temperature~0 and a fixed seed; for a fair
+comparison it receives exactly what the keyword router knows, each agent's
+stakeholder name and keyword list. The instructions were fixed before the
+comparison was run, and the same rules follow both proposals, so the bounds of
+Section~\ref{sec:exec-profile} hold for either router.
 
 \paragraph{Prompt set}
 For each of the twelve stakeholders we wrote two questions asking for the same
@@ -131,9 +121,5 @@ The trace also exposes a cost: for the medical query, the strike rates and the
 dismissal simulation are computed although the activated agent cites only the
 sample size, because every analytics stage runs before routing.
 
-\paragraph{Limitations}
-The prompts and their intended targets were written by the authors, so the
-targets describe the prompts rather than serve as ground truth, and twelve
-plain prompts are too few for a benchmark; the comparison is indicative. The
-stability result was measured on one machine; floating-point differences
-across GPUs could, rarely, change a decision.
+% The limitations of this comparison (author-written prompts, twelve plain
+% prompts, single-machine stability) are stated once, in limitations.tex.
