@@ -1,0 +1,2085 @@
+{
+ "setup": {
+  "model": "qwen2.5:7b",
+  "runs": 3,
+  "prompts": [
+   [
+    "a-keyword",
+    "Should we keep Kohli in the squad or release him before the auction?"
+   ],
+   [
+    "a-plain",
+    "Should our team keep Kohli next season, or let him go to save money?"
+   ],
+   [
+    "b-keyword",
+    "What field should we set to exploit Kohli's weakness against spin?"
+   ],
+   [
+    "b-plain",
+    "How do we get Kohli out early when he faces spin?"
+   ],
+   [
+    "c-keyword",
+    "How is Kohli's technique on the cover drive trending this season?"
+   ],
+   [
+    "c-plain",
+    "Has Kohli's batting got better or worse this season, and what should he change?"
+   ],
+   [
+    "d-keyword",
+    "Which emerging batters in other leagues play the pull shot like Kohli?"
+   ],
+   [
+    "d-plain",
+    "Find young overseas batters who could become the next Kohli."
+   ],
+   [
+    "e-keyword",
+    "Should I pick Kohli as my fantasy captain for the next match?"
+   ],
+   [
+    "e-plain",
+    "I want to watch Kohli bat live; which home game should I go to?"
+   ],
+   [
+    "f-keyword",
+    "Should the curator prepare a greener pitch to trouble Kohli against pace?"
+   ],
+   [
+    "f-plain",
+    "How should the ground staff get the wicket ready if we want Kohli to struggle?"
+   ],
+   [
+    "g-keyword",
+    "Which sponsor brand gets the most logo visibility when Kohli plays the cover drive?"
+   ],
+   [
+    "g-plain",
+    "Is paying to put our company name on Kohli's bat good value for money?"
+   ],
+   [
+    "h-keyword",
+    "Make a highlight clip with a wagon wheel overlay of Kohli's pull shots"
+   ],
+   [
+    "h-plain",
+    "What on-screen visuals should the TV team show when Kohli walks out to bat?"
+   ],
+   [
+    "i-keyword",
+    "Does Kohli's bat meet ICC eligibility rules?"
+   ],
+   [
+    "i-plain",
+    "Did Kohli break any of the game's official regulations in this innings?"
+   ],
+   [
+    "j-keyword",
+    "Design an academy drill so U-19 batters learn the cover drive"
+   ],
+   [
+    "j-plain",
+    "How can we teach teenage batters to hit the ball through the covers like Kohli?"
+   ],
+   [
+    "k-keyword",
+    "Is Kohli's workload a fatigue risk before the final?"
+   ],
+   [
+    "k-plain",
+    "Is Kohli too tired or sore to play the final safely?"
+   ],
+   [
+    "l-keyword",
+    "What is Kohli's market valuation before the auction?"
+   ],
+   [
+    "l-plain",
+    "How much money should Kohli ask for in his next deal?"
+   ],
+   [
+    "no-signal",
+    "Tell me about this delivery"
+   ],
+   [
+    "many-asked",
+    "Scout, sponsor, injury, broadcast, fantasy and auction view of Kohli's drive"
+   ],
+   [
+    "running-example",
+    "Compare Kohli's cover drive vs his pull shot against fast bowlers in the powerplay"
+   ],
+   [
+    "text-compare",
+    "Compare Kohli's cover drive and pull shot against pace in the powerplay"
+   ],
+   [
+    "text-academy",
+    "Design an academy drill so U-19 batters learn the cover drive"
+   ]
+  ]
+ },
+ "runs": [
+  [
+   {
+    "id": "a-keyword",
+    "style": "keyword",
+    "target": "n11a_club_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11a_club_operations"
+    ],
+    "blocked": [],
+    "reason": "The question is about squad management and contract, which fall under club operations.",
+    "seconds": 2.77461389999371,
+    "woken": [
+     "n11a_club_operations"
+    ],
+    "why": {
+     "n11a_club_operations": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "a-plain",
+    "style": "plain",
+    "target": "n11a_club_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11a_club_operations",
+     "n11c_personal_performance",
+     "n11l_player_representation"
+    ],
+    "blocked": [],
+    "reason": "The question is about the financial and strategic decision regarding a player's contract, which involves budget and contract topics.",
+    "seconds": 3.142818799999077,
+    "woken": [
+     "n11a_club_operations",
+     "n11c_personal_performance",
+     "n11l_player_representation"
+    ],
+    "why": {
+     "n11a_club_operations": "llm",
+     "n11c_personal_performance": "llm",
+     "n11l_player_representation": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "b-keyword",
+    "style": "keyword",
+    "target": "n11b_tactical_analysis",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11b_tactical_analysis"
+    ],
+    "blocked": [],
+    "reason": "The question is about exploiting a player's weakness against spin, which falls under tactical analysis related to coaching.",
+    "seconds": 2.8958803999994416,
+    "woken": [
+     "n11b_tactical_analysis"
+    ],
+    "why": {
+     "n11b_tactical_analysis": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "b-plain",
+    "style": "plain",
+    "target": "n11b_tactical_analysis",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's technique against spin, which falls under personal performance.",
+    "seconds": 2.8002568000083556,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "no"
+   },
+   {
+    "id": "c-keyword",
+    "style": "keyword",
+    "target": "n11c_personal_performance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's technique and its trend, which falls under personal performance analysis.",
+    "seconds": 2.8444533000001684,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "c-plain",
+    "style": "plain",
+    "target": "n11c_personal_performance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's performance and what changes should be made, which falls under personal performance analysis.",
+    "seconds": 2.8863832999923034,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "d-keyword",
+    "style": "keyword",
+    "target": "n11d_global_scouting",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11d_global_scouting"
+    ],
+    "blocked": [],
+    "reason": "The question is about identifying emerging batters who play the pull shot like Kohli, which involves scouting and evaluating players.",
+    "seconds": 2.9694099000043934,
+    "woken": [
+     "n11d_global_scouting"
+    ],
+    "why": {
+     "n11d_global_scouting": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "d-plain",
+    "style": "plain",
+    "target": "n11d_global_scouting",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11d_global_scouting",
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about identifying young overseas batters who could become future stars, which involves scouting and evaluating player performance.",
+    "seconds": 3.0528870999987703,
+    "woken": [
+     "n11d_global_scouting",
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11d_global_scouting": "llm",
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "e-keyword",
+    "style": "keyword",
+    "target": "n11e_fan_concierge",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11e_fan_concierge"
+    ],
+    "blocked": [],
+    "reason": "The question is about selecting a player for fantasy cricket, which falls under player performance and selection.",
+    "seconds": 3.018284699996002,
+    "woken": [
+     "n11c_personal_performance",
+     "n11e_fan_concierge"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11e_fan_concierge": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "e-plain",
+    "style": "plain",
+    "target": "n11e_fan_concierge",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11a_club_operations"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's performance and availability, so it requires an agent who can provide information on player selection and fixture details.",
+    "seconds": 3.0781136000005063,
+    "woken": [
+     "n11c_personal_performance",
+     "n11a_club_operations"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11a_club_operations": "llm"
+    },
+    "target_woken": "no"
+   },
+   {
+    "id": "f-keyword",
+    "style": "keyword",
+    "target": "n11f_stadium_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11f_stadium_operations"
+    ],
+    "blocked": [],
+    "reason": "The question is about pitch preparation for a specific player against a particular type of bowling, which falls under the expertise of the stadium operations agent.",
+    "seconds": 3.0034649000008358,
+    "woken": [
+     "n11f_stadium_operations"
+    ],
+    "why": {
+     "n11f_stadium_operations": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "f-plain",
+    "style": "plain",
+    "target": "n11f_stadium_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11f_stadium_operations",
+     "n11k_injury_management"
+    ],
+    "blocked": [],
+    "reason": "The question is about altering the wicket to affect a specific player's performance, which involves understanding the surface conditions and their impact on a batsman's play.",
+    "seconds": 3.183715300008771,
+    "woken": [
+     "n11f_stadium_operations",
+     "n11k_injury_management"
+    ],
+    "why": {
+     "n11f_stadium_operations": "llm",
+     "n11k_injury_management": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "g-keyword",
+    "style": "keyword",
+    "target": "n11g_sponsorship_intelligence",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11g_sponsorship_intelligence"
+    ],
+    "blocked": [],
+    "reason": "The question involves a specific player's technique and a sponsor's visibility, which requires expertise in both player performance and sponsorship.",
+    "seconds": 3.153756699990481,
+    "woken": [
+     "n11c_personal_performance",
+     "n11g_sponsorship_intelligence"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11g_sponsorship_intelligence": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "g-plain",
+    "style": "plain",
+    "target": "n11g_sponsorship_intelligence",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11g_sponsorship_intelligence"
+    ],
+    "blocked": [],
+    "reason": "The question is about the financial value of sponsorship, which falls under the expertise of n11g_sponsorship_intelligence.",
+    "seconds": 2.9830598999978974,
+    "woken": [
+     "n11g_sponsorship_intelligence"
+    ],
+    "why": {
+     "n11g_sponsorship_intelligence": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "h-keyword",
+    "style": "keyword",
+    "target": "n11h_content_production",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11h_content_production"
+    ],
+    "blocked": [],
+    "reason": "The question is about creating a highlight clip with specific graphics, which falls under the domain of content production.",
+    "seconds": 2.906686999995145,
+    "woken": [
+     "n11h_content_production"
+    ],
+    "why": {
+     "n11h_content_production": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "h-plain",
+    "style": "plain",
+    "target": "n11h_content_production",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11h_content_production"
+    ],
+    "blocked": [],
+    "reason": "The question is about on-screen visuals during a match, which falls under the domain of broadcast production.",
+    "seconds": 2.915828600001987,
+    "woken": [
+     "n11h_content_production"
+    ],
+    "why": {
+     "n11h_content_production": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "i-keyword",
+    "style": "keyword",
+    "target": "n11i_compliance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11i_compliance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's equipment and its compliance with ICC rules, which falls under the expertise of the compliance agent.",
+    "seconds": 2.9982657999935327,
+    "woken": [
+     "n11i_compliance"
+    ],
+    "why": {
+     "n11i_compliance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "i-plain",
+    "style": "plain",
+    "target": "n11i_compliance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11i_compliance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's adherence to regulations, which falls under the expertise of compliance agents.",
+    "seconds": 2.840538300006301,
+    "woken": [
+     "n11i_compliance"
+    ],
+    "why": {
+     "n11i_compliance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "j-keyword",
+    "style": "keyword",
+    "target": "n11j_talent_development",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "blocked": [],
+    "reason": "The question is about designing a training drill for U-19 batters, which falls under the topic of player development and technique.",
+    "seconds": 3.1609545000101207,
+    "woken": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11j_talent_development": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "j-plain",
+    "style": "plain",
+    "target": "n11j_talent_development",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question focuses on teaching a specific technique to teenage batters, which falls under the domain of player performance and technique.",
+    "seconds": 2.897735800012015,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "no"
+   },
+   {
+    "id": "k-keyword",
+    "style": "keyword",
+    "target": "n11k_injury_management",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11k_injury_management"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's workload and fatigue, which falls under the expertise of n11k_injury_management.",
+    "seconds": 2.9493640000000596,
+    "woken": [
+     "n11k_injury_management"
+    ],
+    "why": {
+     "n11k_injury_management": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "k-plain",
+    "style": "plain",
+    "target": "n11k_injury_management",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11k_injury_management",
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's physical condition, so it requires an expert in injury management or a player's personal performance.",
+    "seconds": 3.0797276999946916,
+    "woken": [
+     "n11k_injury_management",
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11k_injury_management": "llm",
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "l-keyword",
+    "style": "keyword",
+    "target": "n11l_player_representation",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11l_player_representation"
+    ],
+    "blocked": [],
+    "reason": "The question is about Kohli's market valuation, which is related to his worth and transfer value, making the player agent or manager the most relevant expert.",
+    "seconds": 3.008226099991589,
+    "woken": [
+     "n11l_player_representation"
+    ],
+    "why": {
+     "n11l_player_representation": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "l-plain",
+    "style": "plain",
+    "target": "n11l_player_representation",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11l_player_representation"
+    ],
+    "blocked": [],
+    "reason": "The question is about the valuation and market worth of a player, which falls under the expertise of n11l_player_representation.",
+    "seconds": 2.9577732000034302,
+    "woken": [
+     "n11l_player_representation"
+    ],
+    "why": {
+     "n11l_player_representation": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "no-signal",
+    "style": "tricky",
+    "target": null,
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a specific delivery in cricket, which is related to a player's technique and performance.",
+    "seconds": 2.927109999989625,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "many-asked",
+    "style": "tricky",
+    "target": null,
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11d_global_scouting",
+     "n11g_sponsorship_intelligence",
+     "n11k_injury_management",
+     "n11h_content_production"
+    ],
+    "blocked": [],
+    "reason": "The question involves scouting, sponsorship, injury management, broadcasting, and fantasy cricket related to Kohli's drive, so it requires agents with expertise in those areas.",
+    "seconds": 3.5008887000003597,
+    "woken": [
+     "n11d_global_scouting",
+     "n11g_sponsorship_intelligence",
+     "n11k_injury_management",
+     "n11h_content_production"
+    ],
+    "why": {
+     "n11d_global_scouting": "llm",
+     "n11g_sponsorship_intelligence": "llm",
+     "n11k_injury_management": "llm",
+     "n11h_content_production": "llm"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "running-example",
+    "style": "tricky",
+    "target": null,
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question focuses on a player's technique (cover drive vs pull shot) against a specific type of bowler (fast) during a particular phase of the innings (powerplay), which falls under 'Personal Performance' expertise.",
+    "seconds": 3.207936399994651,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "text-compare",
+    "style": "tricky",
+    "target": null,
+    "clip": null,
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [
+     "n11c_personal_performance"
+    ],
+    "reason": "The question focuses on a player's technique and form against a specific type of bowling in a particular phase of the innings.",
+    "seconds": 2.9512456999946153,
+    "woken": [
+     "n11b_tactical_analysis"
+    ],
+    "why": {
+     "n11b_tactical_analysis": "default"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "text-academy",
+    "style": "tricky",
+    "target": null,
+    "clip": null,
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "blocked": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "reason": "The question is about designing a training drill for U-19 batters, which falls under the topic of player development and technique.",
+    "seconds": 3.110560000000987,
+    "woken": [
+     "n11b_tactical_analysis"
+    ],
+    "why": {
+     "n11b_tactical_analysis": "default"
+    },
+    "target_woken": null
+   }
+  ],
+  [
+   {
+    "id": "a-keyword",
+    "style": "keyword",
+    "target": "n11a_club_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11a_club_operations"
+    ],
+    "blocked": [],
+    "reason": "The question is about squad management and contract, which fall under club operations.",
+    "seconds": 2.772817999997642,
+    "woken": [
+     "n11a_club_operations"
+    ],
+    "why": {
+     "n11a_club_operations": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "a-plain",
+    "style": "plain",
+    "target": "n11a_club_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11a_club_operations",
+     "n11c_personal_performance",
+     "n11l_player_representation"
+    ],
+    "blocked": [],
+    "reason": "The question is about the financial and strategic decision regarding a player's contract, which involves budget and contract topics.",
+    "seconds": 3.1304270999971777,
+    "woken": [
+     "n11a_club_operations",
+     "n11c_personal_performance",
+     "n11l_player_representation"
+    ],
+    "why": {
+     "n11a_club_operations": "llm",
+     "n11c_personal_performance": "llm",
+     "n11l_player_representation": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "b-keyword",
+    "style": "keyword",
+    "target": "n11b_tactical_analysis",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11b_tactical_analysis"
+    ],
+    "blocked": [],
+    "reason": "The question is about exploiting a player's weakness against spin, which falls under tactical analysis related to coaching.",
+    "seconds": 2.8986409999924945,
+    "woken": [
+     "n11b_tactical_analysis"
+    ],
+    "why": {
+     "n11b_tactical_analysis": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "b-plain",
+    "style": "plain",
+    "target": "n11b_tactical_analysis",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's technique against spin, which falls under personal performance.",
+    "seconds": 2.8571080999972764,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "no"
+   },
+   {
+    "id": "c-keyword",
+    "style": "keyword",
+    "target": "n11c_personal_performance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's technique and its trend, which falls under personal performance analysis.",
+    "seconds": 2.852986600002623,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "c-plain",
+    "style": "plain",
+    "target": "n11c_personal_performance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's performance and what changes should be made, which falls under personal performance analysis.",
+    "seconds": 2.8721740000037244,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "d-keyword",
+    "style": "keyword",
+    "target": "n11d_global_scouting",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11d_global_scouting"
+    ],
+    "blocked": [],
+    "reason": "The question is about identifying emerging batters who play the pull shot like Kohli, which involves scouting and evaluating players.",
+    "seconds": 2.9719218999962322,
+    "woken": [
+     "n11d_global_scouting"
+    ],
+    "why": {
+     "n11d_global_scouting": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "d-plain",
+    "style": "plain",
+    "target": "n11d_global_scouting",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11d_global_scouting",
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about identifying young overseas batters who could become future stars, which involves scouting and evaluating player performance.",
+    "seconds": 3.0825419000029797,
+    "woken": [
+     "n11d_global_scouting",
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11d_global_scouting": "llm",
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "e-keyword",
+    "style": "keyword",
+    "target": "n11e_fan_concierge",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11e_fan_concierge"
+    ],
+    "blocked": [],
+    "reason": "The question is about selecting a player for fantasy cricket, which falls under player performance and selection.",
+    "seconds": 3.128290900000138,
+    "woken": [
+     "n11c_personal_performance",
+     "n11e_fan_concierge"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11e_fan_concierge": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "e-plain",
+    "style": "plain",
+    "target": "n11e_fan_concierge",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11a_club_operations"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's performance and availability, so it requires an agent who can provide information on player selection and fixture details.",
+    "seconds": 3.1140714999928605,
+    "woken": [
+     "n11c_personal_performance",
+     "n11a_club_operations"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11a_club_operations": "llm"
+    },
+    "target_woken": "no"
+   },
+   {
+    "id": "f-keyword",
+    "style": "keyword",
+    "target": "n11f_stadium_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11f_stadium_operations"
+    ],
+    "blocked": [],
+    "reason": "The question is about pitch preparation for a specific player against a particular type of bowling, which falls under the expertise of the stadium operations agent.",
+    "seconds": 3.0055169999977807,
+    "woken": [
+     "n11f_stadium_operations"
+    ],
+    "why": {
+     "n11f_stadium_operations": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "f-plain",
+    "style": "plain",
+    "target": "n11f_stadium_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11f_stadium_operations",
+     "n11k_injury_management"
+    ],
+    "blocked": [],
+    "reason": "The question is about altering the wicket to affect a specific player's performance, which involves understanding the surface conditions and their impact on a batsman's play.",
+    "seconds": 3.180957100004889,
+    "woken": [
+     "n11f_stadium_operations",
+     "n11k_injury_management"
+    ],
+    "why": {
+     "n11f_stadium_operations": "llm",
+     "n11k_injury_management": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "g-keyword",
+    "style": "keyword",
+    "target": "n11g_sponsorship_intelligence",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11g_sponsorship_intelligence"
+    ],
+    "blocked": [],
+    "reason": "The question involves a specific player's technique and a sponsor's visibility, which requires expertise in both player performance and sponsorship.",
+    "seconds": 3.0703221000003396,
+    "woken": [
+     "n11c_personal_performance",
+     "n11g_sponsorship_intelligence"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11g_sponsorship_intelligence": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "g-plain",
+    "style": "plain",
+    "target": "n11g_sponsorship_intelligence",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11g_sponsorship_intelligence"
+    ],
+    "blocked": [],
+    "reason": "The question is about the financial value of sponsorship, which falls under the expertise of n11g_sponsorship_intelligence.",
+    "seconds": 2.982309899991378,
+    "woken": [
+     "n11g_sponsorship_intelligence"
+    ],
+    "why": {
+     "n11g_sponsorship_intelligence": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "h-keyword",
+    "style": "keyword",
+    "target": "n11h_content_production",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11h_content_production"
+    ],
+    "blocked": [],
+    "reason": "The question is about creating a highlight clip with specific graphics, which falls under the domain of content production.",
+    "seconds": 2.851051699995878,
+    "woken": [
+     "n11h_content_production"
+    ],
+    "why": {
+     "n11h_content_production": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "h-plain",
+    "style": "plain",
+    "target": "n11h_content_production",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11h_content_production"
+    ],
+    "blocked": [],
+    "reason": "The question is about on-screen visuals during a match, which falls under the domain of broadcast production.",
+    "seconds": 2.870085599992308,
+    "woken": [
+     "n11h_content_production"
+    ],
+    "why": {
+     "n11h_content_production": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "i-keyword",
+    "style": "keyword",
+    "target": "n11i_compliance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11i_compliance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's equipment and its compliance with ICC rules, which falls under the expertise of the compliance agent.",
+    "seconds": 2.986306800012244,
+    "woken": [
+     "n11i_compliance"
+    ],
+    "why": {
+     "n11i_compliance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "i-plain",
+    "style": "plain",
+    "target": "n11i_compliance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11i_compliance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's adherence to regulations, which falls under the expertise of compliance agents.",
+    "seconds": 2.8505030999949668,
+    "woken": [
+     "n11i_compliance"
+    ],
+    "why": {
+     "n11i_compliance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "j-keyword",
+    "style": "keyword",
+    "target": "n11j_talent_development",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "blocked": [],
+    "reason": "The question is about designing a training drill for U-19 batters, which falls under the topic of player development and technique.",
+    "seconds": 3.0954919999931008,
+    "woken": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11j_talent_development": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "j-plain",
+    "style": "plain",
+    "target": "n11j_talent_development",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question focuses on teaching a specific technique to teenage batters, which falls under the domain of player performance and technique.",
+    "seconds": 2.898797400004696,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "no"
+   },
+   {
+    "id": "k-keyword",
+    "style": "keyword",
+    "target": "n11k_injury_management",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11k_injury_management"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's workload and fatigue, which falls under the expertise of n11k_injury_management.",
+    "seconds": 2.9337481999973534,
+    "woken": [
+     "n11k_injury_management"
+    ],
+    "why": {
+     "n11k_injury_management": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "k-plain",
+    "style": "plain",
+    "target": "n11k_injury_management",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11k_injury_management",
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's physical condition, so it requires an expert in injury management or a player's personal performance.",
+    "seconds": 3.1129049000010127,
+    "woken": [
+     "n11k_injury_management",
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11k_injury_management": "llm",
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "l-keyword",
+    "style": "keyword",
+    "target": "n11l_player_representation",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11l_player_representation"
+    ],
+    "blocked": [],
+    "reason": "The question is about Kohli's market valuation, which is related to his worth and transfer value, making the player agent or manager the most relevant expert.",
+    "seconds": 3.0502673000009963,
+    "woken": [
+     "n11l_player_representation"
+    ],
+    "why": {
+     "n11l_player_representation": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "l-plain",
+    "style": "plain",
+    "target": "n11l_player_representation",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11l_player_representation"
+    ],
+    "blocked": [],
+    "reason": "The question is about the valuation and market worth of a player, which falls under the expertise of n11l_player_representation.",
+    "seconds": 2.985053999989759,
+    "woken": [
+     "n11l_player_representation"
+    ],
+    "why": {
+     "n11l_player_representation": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "no-signal",
+    "style": "tricky",
+    "target": null,
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a specific delivery in cricket, which is related to a player's technique and performance.",
+    "seconds": 2.9100251000054413,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "many-asked",
+    "style": "tricky",
+    "target": null,
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11d_global_scouting",
+     "n11g_sponsorship_intelligence",
+     "n11k_injury_management",
+     "n11h_content_production"
+    ],
+    "blocked": [],
+    "reason": "The question involves scouting, sponsorship, injury management, broadcasting, and fantasy cricket related to Kohli's drive, so it requires agents with expertise in those areas.",
+    "seconds": 3.61816220000037,
+    "woken": [
+     "n11d_global_scouting",
+     "n11g_sponsorship_intelligence",
+     "n11k_injury_management",
+     "n11h_content_production"
+    ],
+    "why": {
+     "n11d_global_scouting": "llm",
+     "n11g_sponsorship_intelligence": "llm",
+     "n11k_injury_management": "llm",
+     "n11h_content_production": "llm"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "running-example",
+    "style": "tricky",
+    "target": null,
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question focuses on a player's technique (cover drive vs pull shot) against a specific type of bowler (fast) during a particular phase of the innings (powerplay), which falls under 'Personal Performance' expertise.",
+    "seconds": 3.2775078999984544,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "text-compare",
+    "style": "tricky",
+    "target": null,
+    "clip": null,
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [
+     "n11c_personal_performance"
+    ],
+    "reason": "The question focuses on a player's technique and form against a specific type of bowling in a particular phase of the innings.",
+    "seconds": 2.9528454999963287,
+    "woken": [
+     "n11b_tactical_analysis"
+    ],
+    "why": {
+     "n11b_tactical_analysis": "default"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "text-academy",
+    "style": "tricky",
+    "target": null,
+    "clip": null,
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "blocked": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "reason": "The question is about designing a training drill for U-19 batters, which falls under the topic of player development and technique.",
+    "seconds": 3.071050500002457,
+    "woken": [
+     "n11b_tactical_analysis"
+    ],
+    "why": {
+     "n11b_tactical_analysis": "default"
+    },
+    "target_woken": null
+   }
+  ],
+  [
+   {
+    "id": "a-keyword",
+    "style": "keyword",
+    "target": "n11a_club_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11a_club_operations"
+    ],
+    "blocked": [],
+    "reason": "The question is about squad management and contract, which fall under club operations.",
+    "seconds": 2.798056900006486,
+    "woken": [
+     "n11a_club_operations"
+    ],
+    "why": {
+     "n11a_club_operations": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "a-plain",
+    "style": "plain",
+    "target": "n11a_club_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11a_club_operations",
+     "n11c_personal_performance",
+     "n11l_player_representation"
+    ],
+    "blocked": [],
+    "reason": "The question is about the financial and strategic decision regarding a player's contract, which involves budget and contract topics.",
+    "seconds": 3.1333397999987938,
+    "woken": [
+     "n11a_club_operations",
+     "n11c_personal_performance",
+     "n11l_player_representation"
+    ],
+    "why": {
+     "n11a_club_operations": "llm",
+     "n11c_personal_performance": "llm",
+     "n11l_player_representation": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "b-keyword",
+    "style": "keyword",
+    "target": "n11b_tactical_analysis",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11b_tactical_analysis"
+    ],
+    "blocked": [],
+    "reason": "The question is about exploiting a player's weakness against spin, which falls under tactical analysis related to coaching.",
+    "seconds": 2.8847139999998035,
+    "woken": [
+     "n11b_tactical_analysis"
+    ],
+    "why": {
+     "n11b_tactical_analysis": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "b-plain",
+    "style": "plain",
+    "target": "n11b_tactical_analysis",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's technique against spin, which falls under personal performance.",
+    "seconds": 2.822529199998826,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "no"
+   },
+   {
+    "id": "c-keyword",
+    "style": "keyword",
+    "target": "n11c_personal_performance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's technique and its trend, which falls under personal performance analysis.",
+    "seconds": 2.836844999997993,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "c-plain",
+    "style": "plain",
+    "target": "n11c_personal_performance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's performance and what changes should be made, which falls under personal performance analysis.",
+    "seconds": 2.8456181999936234,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "d-keyword",
+    "style": "keyword",
+    "target": "n11d_global_scouting",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11d_global_scouting"
+    ],
+    "blocked": [],
+    "reason": "The question is about identifying emerging batters who play the pull shot like Kohli, which involves scouting and evaluating players.",
+    "seconds": 2.949493399995845,
+    "woken": [
+     "n11d_global_scouting"
+    ],
+    "why": {
+     "n11d_global_scouting": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "d-plain",
+    "style": "plain",
+    "target": "n11d_global_scouting",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11d_global_scouting",
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about identifying young overseas batters who could become future stars, which involves scouting and evaluating player performance.",
+    "seconds": 3.0568860999919707,
+    "woken": [
+     "n11d_global_scouting",
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11d_global_scouting": "llm",
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "e-keyword",
+    "style": "keyword",
+    "target": "n11e_fan_concierge",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11e_fan_concierge"
+    ],
+    "blocked": [],
+    "reason": "The question is about selecting a player for fantasy cricket, which falls under player performance and selection.",
+    "seconds": 2.983126600011019,
+    "woken": [
+     "n11c_personal_performance",
+     "n11e_fan_concierge"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11e_fan_concierge": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "e-plain",
+    "style": "plain",
+    "target": "n11e_fan_concierge",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11a_club_operations"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's performance and availability, so it requires an agent who can provide information on player selection and fixture details.",
+    "seconds": 3.1101715999975568,
+    "woken": [
+     "n11c_personal_performance",
+     "n11a_club_operations"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11a_club_operations": "llm"
+    },
+    "target_woken": "no"
+   },
+   {
+    "id": "f-keyword",
+    "style": "keyword",
+    "target": "n11f_stadium_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11f_stadium_operations"
+    ],
+    "blocked": [],
+    "reason": "The question is about pitch preparation for a specific player against a particular type of bowling, which falls under the expertise of the stadium operations agent.",
+    "seconds": 2.9457574999978533,
+    "woken": [
+     "n11f_stadium_operations"
+    ],
+    "why": {
+     "n11f_stadium_operations": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "f-plain",
+    "style": "plain",
+    "target": "n11f_stadium_operations",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11f_stadium_operations",
+     "n11k_injury_management"
+    ],
+    "blocked": [],
+    "reason": "The question is about altering the wicket to affect a specific player's performance, which involves understanding the surface conditions and their impact on a batsman's play.",
+    "seconds": 3.183148700001766,
+    "woken": [
+     "n11f_stadium_operations",
+     "n11k_injury_management"
+    ],
+    "why": {
+     "n11f_stadium_operations": "llm",
+     "n11k_injury_management": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "g-keyword",
+    "style": "keyword",
+    "target": "n11g_sponsorship_intelligence",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11g_sponsorship_intelligence"
+    ],
+    "blocked": [],
+    "reason": "The question involves a specific player's technique and a sponsor's visibility, which requires expertise in both player performance and sponsorship.",
+    "seconds": 3.0588051000086125,
+    "woken": [
+     "n11c_personal_performance",
+     "n11g_sponsorship_intelligence"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11g_sponsorship_intelligence": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "g-plain",
+    "style": "plain",
+    "target": "n11g_sponsorship_intelligence",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11g_sponsorship_intelligence"
+    ],
+    "blocked": [],
+    "reason": "The question is about the financial value of sponsorship, which falls under the expertise of n11g_sponsorship_intelligence.",
+    "seconds": 2.966894199998933,
+    "woken": [
+     "n11g_sponsorship_intelligence"
+    ],
+    "why": {
+     "n11g_sponsorship_intelligence": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "h-keyword",
+    "style": "keyword",
+    "target": "n11h_content_production",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11h_content_production"
+    ],
+    "blocked": [],
+    "reason": "The question is about creating a highlight clip with specific graphics, which falls under the domain of content production.",
+    "seconds": 2.8603058000007877,
+    "woken": [
+     "n11h_content_production"
+    ],
+    "why": {
+     "n11h_content_production": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "h-plain",
+    "style": "plain",
+    "target": "n11h_content_production",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11h_content_production"
+    ],
+    "blocked": [],
+    "reason": "The question is about on-screen visuals during a match, which falls under the domain of broadcast production.",
+    "seconds": 2.8762724999978673,
+    "woken": [
+     "n11h_content_production"
+    ],
+    "why": {
+     "n11h_content_production": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "i-keyword",
+    "style": "keyword",
+    "target": "n11i_compliance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11i_compliance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's equipment and its compliance with ICC rules, which falls under the expertise of the compliance agent.",
+    "seconds": 2.9738598999974784,
+    "woken": [
+     "n11i_compliance"
+    ],
+    "why": {
+     "n11i_compliance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "i-plain",
+    "style": "plain",
+    "target": "n11i_compliance",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11i_compliance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's adherence to regulations, which falls under the expertise of compliance agents.",
+    "seconds": 2.8481560999935027,
+    "woken": [
+     "n11i_compliance"
+    ],
+    "why": {
+     "n11i_compliance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "j-keyword",
+    "style": "keyword",
+    "target": "n11j_talent_development",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "blocked": [],
+    "reason": "The question is about designing a training drill for U-19 batters, which falls under the topic of player development and technique.",
+    "seconds": 3.1061923999950523,
+    "woken": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm",
+     "n11j_talent_development": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "j-plain",
+    "style": "plain",
+    "target": "n11j_talent_development",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question focuses on teaching a specific technique to teenage batters, which falls under the domain of player performance and technique.",
+    "seconds": 2.89719519999926,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "no"
+   },
+   {
+    "id": "k-keyword",
+    "style": "keyword",
+    "target": "n11k_injury_management",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11k_injury_management"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's workload and fatigue, which falls under the expertise of n11k_injury_management.",
+    "seconds": 2.9480480999918655,
+    "woken": [
+     "n11k_injury_management"
+    ],
+    "why": {
+     "n11k_injury_management": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "k-plain",
+    "style": "plain",
+    "target": "n11k_injury_management",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11k_injury_management",
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a player's physical condition, so it requires an expert in injury management or a player's personal performance.",
+    "seconds": 3.0719034999929136,
+    "woken": [
+     "n11k_injury_management",
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11k_injury_management": "llm",
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "l-keyword",
+    "style": "keyword",
+    "target": "n11l_player_representation",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11l_player_representation"
+    ],
+    "blocked": [],
+    "reason": "The question is about Kohli's market valuation, which is related to his worth and transfer value, making the player agent or manager the most relevant expert.",
+    "seconds": 3.041181799999322,
+    "woken": [
+     "n11l_player_representation"
+    ],
+    "why": {
+     "n11l_player_representation": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "l-plain",
+    "style": "plain",
+    "target": "n11l_player_representation",
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11l_player_representation"
+    ],
+    "blocked": [],
+    "reason": "The question is about the valuation and market worth of a player, which falls under the expertise of n11l_player_representation.",
+    "seconds": 2.9618521000084,
+    "woken": [
+     "n11l_player_representation"
+    ],
+    "why": {
+     "n11l_player_representation": "llm"
+    },
+    "target_woken": "signal"
+   },
+   {
+    "id": "no-signal",
+    "style": "tricky",
+    "target": null,
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question is about a specific delivery in cricket, which is related to a player's technique and performance.",
+    "seconds": 2.9099274999898626,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "many-asked",
+    "style": "tricky",
+    "target": null,
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11d_global_scouting",
+     "n11g_sponsorship_intelligence",
+     "n11k_injury_management",
+     "n11h_content_production"
+    ],
+    "blocked": [],
+    "reason": "The question involves scouting, sponsorship, injury management, broadcasting, and fantasy cricket related to Kohli's drive, so it requires agents with expertise in those areas.",
+    "seconds": 3.5025221000105375,
+    "woken": [
+     "n11d_global_scouting",
+     "n11g_sponsorship_intelligence",
+     "n11k_injury_management",
+     "n11h_content_production"
+    ],
+    "why": {
+     "n11d_global_scouting": "llm",
+     "n11g_sponsorship_intelligence": "llm",
+     "n11k_injury_management": "llm",
+     "n11h_content_production": "llm"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "running-example",
+    "style": "tricky",
+    "target": null,
+    "clip": "clips/kohli_01.mp4",
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [],
+    "reason": "The question focuses on a player's technique (cover drive vs pull shot) against a specific type of bowler (fast) during a particular phase of the innings (powerplay), which falls under 'Personal Performance' expertise.",
+    "seconds": 3.21258220000891,
+    "woken": [
+     "n11c_personal_performance"
+    ],
+    "why": {
+     "n11c_personal_performance": "llm"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "text-compare",
+    "style": "tricky",
+    "target": null,
+    "clip": null,
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance"
+    ],
+    "blocked": [
+     "n11c_personal_performance"
+    ],
+    "reason": "The question focuses on a player's technique and form against a specific type of bowling in a particular phase of the innings.",
+    "seconds": 2.937105300006806,
+    "woken": [
+     "n11b_tactical_analysis"
+    ],
+    "why": {
+     "n11b_tactical_analysis": "default"
+    },
+    "target_woken": null
+   },
+   {
+    "id": "text-academy",
+    "style": "tricky",
+    "target": null,
+    "clip": null,
+    "status": "ok",
+    "router": "llm",
+    "proposed": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "blocked": [
+     "n11c_personal_performance",
+     "n11j_talent_development"
+    ],
+    "reason": "The question is about designing a training drill for U-19 batters, which falls under the topic of player development and technique.",
+    "seconds": 3.0851714000018546,
+    "woken": [
+     "n11b_tactical_analysis"
+    ],
+    "why": {
+     "n11b_tactical_analysis": "default"
+    },
+    "target_woken": null
+   }
+  ]
+ ]
+}

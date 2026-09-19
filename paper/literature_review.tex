@@ -1,0 +1,25 @@
+\section{Related Work}
+\label{sec:relatedwork}
+
+This section reviews the multi-agent and reinforcement-learning systems that established cooperative agent modelling as a practical tool for sports and business analytics (Subsection~\ref{subsec:magentsystems}), before examining why none of these systems supports a single, video-grounded, faithfulness-checked, multi-stakeholder cricket system such as the one proposed in this paper (Subsection~\ref{subsec:verificationgap}).
+
+\subsection{Multi-Agent Modelling and Sports Analytics Systems}
+\label{subsec:magentsystems}
+Yeh \textit{et al.} \cite{ref1} established graph-based multi-agent trajectory modelling for team sports, combining a graph neural network with a variational recurrent network to obtain a permutation-equivariant model that outperformed fixed-ordering RNN and VRNN baselines on basketball and soccer tracking data. Teoh \cite{ref2} extended this direction with CausalTraj, a temporally causal, likelihood-based model that, unlike prior work evaluated only on per-agent accuracy, explicitly targets the joint coherence of multi-agent forecasts, reporting the best recorded results on joint metrics on the NBA SportVU, Basketball-U and Football-U datasets while remaining competitive on per-agent metrics. Complementing these trajectory models, Ochin \textit{et al.} \cite{ref3} released FOOTPASS, a benchmark for play-by-play action spotting over entire soccer matches that aligns broadcast video with multi-modal, multi-agent tactical data, motivated by using tactical knowledge as a prior to support computer-vision predictions.
+% NOTE (edit): the original sentence said tactical context "roughly doubled
+% event-detection accuracy". That figure is not in the FOOTPASS abstract;
+% restore it only after confirming it in the paper's result tables.
+At the environment level, Kurach \textit{et al.} \cite{ref4} built the Google Research Football Environment, an open-source, physics-based simulator supporting single- and multi-agent reinforcement learning, and reported baseline results for IMPALA, PPO and Ape-X DQN across benchmark scenarios of varying difficulty. Brand\~ao \textit{et al.} \cite{ref5} applied multi-agent reinforcement learning with self-play to learn both low-level control and strategic decision-making for teams of wheeled robots in the IEEE Very Small Size Soccer league.
+% NOTE (edit): the original described simulated agents reaching "a positive goal
+% difference against fixed rule-based opponents purely through reward shaping";
+% the paper's summary describes self-play. Re-check before restoring.
+None of these systems, however, provides a mechanism for verifying a numeric output against a trusted evidence source, and none is designed to serve more than one downstream audience from the same architecture.
+
+\subsection{Agentic Systems and the Verification Gap}
+\label{subsec:verificationgap}
+A more recent line of work applies coordinating agents, increasingly built on large language models, to business and fan-facing decision problems. Gupta \cite{ref6} proposed an agentic AI framework for supply-chain management in which multiple coordinating agents support decentralised decision-making across supply-chain operations.
+% NOTE (edit): the original listed four specific agents, a hybrid edge-cloud
+% layer, a 22% reduction in decision latency and 16% faster disruption recovery.
+% The paper is paywalled and none of this could be confirmed; restore only what
+% the paper itself states.
+Hazenberg \textit{et al.} \cite{ref7} benchmarked three multi-agent reinforcement learning algorithms, MADDPG, MADQN and QMIX, against static rule-based pricing in a simulated supply chain informed by real e-commerce data, finding that rule-based agents achieved the highest fairness and price stability but lacked competitive dynamics, while MADDPG balanced market competition with relatively high fairness. Closest to the present work, Bhatnagar \cite{ref8} introduced FanCric, a multi-agent system of coordinating LLM agents that combines structured and unstructured data to select fantasy cricket teams, and evaluated it against the collective selections of roughly 12.7 million contest entries and a simpler prompt-engineering approach, reporting promising exploratory results. While these agentic frameworks show that coordinating several specialised agents is a promising way to structure real-world decisions, none of them begins from raw video evidence, none verifies its agents' numeric claims against a shared, sanctioned source of truth before a report reaches the user, and none is designed to route a single underlying analysis to more than one type of stakeholder. To our knowledge, no existing study combines video-grounded shot classification, retrieval-backed statistical evidence, dynamically routed multi-stakeholder agents and a dedicated faithfulness-checking gate within a single cricket analytics system, a gap this paper addresses through CricketMind.

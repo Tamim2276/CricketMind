@@ -1,0 +1,88 @@
+% =====================================================================
+% Results -- execution profile of the CricketMind graph.
+%
+% Paste (or \input) this subsection into the paper's results section.
+% Preamble needs:  \usepackage{booktabs} \usepackage{graphicx} \usepackage{amsmath}
+%
+% The table below is WRITTEN BY THE NOTEBOOK -- never edit it by hand:
+%   tables/tab_execution_profile.tex   notebook test 14I
+%
+% The numbers quoted in the prose (12, 9, 5, 3, 1, 15, 29, 4 x 3 = 12, 6)
+% come from notebook tests 14E and 14F. If the graph changes, re-run the
+% notebook and re-check them.
+%
+% fig:arch-v2 is the architecture figure. Change it to your paper's label.
+% =====================================================================
+
+\subsection{Execution Profile}
+\label{sec:exec-profile}
+
+Node bodies are deterministic, so repeating a query reproduces its execution
+exactly. We therefore characterise the cost of the architecture across
+situations rather than across repetitions, using the evaluation query
+\emph{``Compare Kohli's cover drive vs his pull shot against fast bowlers in
+the powerplay''}. LangGraph executes a graph in \emph{supersteps}---rounds in
+which every scheduled node runs concurrently---and we record the nodes executed
+in each superstep from the framework's debug event stream.
+Table~\ref{tab:exec-profile} reports, for seven scenarios, the number of
+supersteps, the total number of node executions, and the number of
+stakeholder-agent invocations; in deployment, each invocation is a
+language-model call. Fabrication is injected by configuring a named agent to
+corrupt a cited value.
+
+\begin{table}[t]
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \caption{Execution profile of the evaluation query. $r$: vision retries;
+    $g$: regenerations. In the worst case the clip is rejected twice and every
+    activated agent fabricates on every attempt, so its findings are withheld.
+    Each scenario was run once: node bodies are deterministic, so repeated runs
+    are identical.}
+  \label{tab:exec-profile}
+  \input{tables/tab_execution_profile}
+\end{table}
+
+\paragraph{Cost model}
+Each event has a fixed superstep cost that can be read from the topology in
+Fig.~\ref{fig:arch-v2}. A query that reaches the report takes $S_0 = 12$
+supersteps with a clip and $S_0 = 9$ without one. Each vision retry adds five
+(the retry node and the four-stage vision chain), each regeneration adds three
+(preparation, the failed agents in parallel, and a second Faith Check), and
+withholding unverified findings adds one. Hence
+\begin{equation}
+  S = S_0 + 5r + 3g + d, \qquad S_{\text{degrade}} = 4 + 5r + 1,
+  \label{eq:cost}
+\end{equation}
+where $d \in \{0,1\}$ records whether findings were withheld, and
+$S_{\text{degrade}}$ applies when the retry budget is exhausted before
+classification succeeds. Equation~\eqref{eq:cost} predicts the measured
+superstep count of all seven scenarios exactly, confirming that on these paths
+the implementation executes the rounds the topology prescribes.
+
+\paragraph{Bounds}
+Substituting the loop budgets $R_{\max} = G_{\max} = 2$ into \eqref{eq:cost}
+gives a worst case of $12 + 10 + 6 + 1 = 29$ supersteps, fixed when the graph
+is constructed; the worst-case scenario reaches this bound exactly. Because
+agents dispatched together execute in a single superstep, the bound does not
+depend on how many agents the router activates. Agent invocations are bounded
+separately, by $A_{\max}(1 + G_{\max}) = 4 \times 3 = 12$ for an activation cap
+of $A_{\max} = 4$. This bound holds by construction and was not reached in our
+runs: the router activated two agents for the evaluation query, so at most six
+invocations were possible.
+
+\paragraph{Where the cost falls}
+Two properties follow from Table~\ref{tab:exec-profile}. First, failures in
+perception do not propagate cost to the agent layer: a vision retry adds no
+agent invocations, and a clip that exhausts its retry budget terminates after
+15 supersteps with none. Second, verification is targeted. A single
+fabrication re-invokes only the offending agent, adding three supersteps and
+one invocation on both the video and the text-only path.
+
+Supersteps measure the length of the sequential dependency chain, not
+wall-clock time. In deployment, latency will be dominated by the encoders and
+by agent language-model calls, which these counts bound but do not time.
+
+% The execution-trace figure (figures/fig_execution_trace.pdf, notebook test
+% 14H) was removed to fit the 6-page limit; Table I and Eq. (1) carry the
+% result. It remains available for the thesis or a longer version.

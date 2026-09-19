@@ -1,0 +1,139 @@
+% =====================================================================
+% Results -- query-conditioned routing: keyword router vs LLM router,
+% and one query traced through the whole graph.
+%
+% Paste (or \input) this subsection into the paper's results section.
+% Preamble needs:  \usepackage{booktabs} \usepackage{array}
+%
+% All three tables are WRITTEN BY THE NOTEBOOK (test 16D) -- never edit them:
+%   tables/tab_routing_summary.tex   keyword vs LLM totals      (one column)
+%   tables/tab_routing_plain.tex     the twelve plain prompts   (table*, two columns)
+%   tables/tab_prompt_flow.tex       two queries, stage by stage (table*, two columns)
+%
+% Numbers quoted in the prose come from notebook tests 15C, 16B and 16C and
+% from experiments/routing/llm_routing_runs.json. If anything is re-run,
+% re-check them: 29 prompts, 12/12, 0/12, 9/12, 14/29, 2/29, 1.79, 1.41,
+% 29/29, 3.0 s, 2.8-3.6 s, 87 runs, 100 vs 80 deliveries.
+%
+% If space is short, tab_prompt_flow can move to an appendix; the summary
+% table and the plain-prompt table carry the result.
+% =====================================================================
+
+\subsection{Query-Conditioned Routing}
+\label{sec:routing}
+
+% Tables are defined here, in the order the text first cites them, so they
+% are numbered in that order. The wide ones (table*) can only appear at the
+% top of a page AFTER the one they are defined on, so they must come early.
+
+\begin{table}[t]
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{5pt}
+  \caption{Keyword router versus LLM router on the 29 prompts. A target counts
+    as activated only when the router chose it, not when it was reached through
+    the default pair.}
+  \label{tab:routing-summary}
+  \input{tables/tab_routing_summary}
+\end{table}
+
+\begin{table*}[t]
+  \centering
+  \footnotesize
+  \caption{The twelve plain prompts, which avoid every trigger word of their
+    target agent, and the agents the LLM router activated. \textbf{Bold}: the
+    target was activated by the router's own choice. The keyword router
+    activated the default pair (Coaches, Players) for all twelve.}
+  \label{tab:routing-plain}
+  \input{tables/tab_routing_plain}
+\end{table*}
+
+\begin{table*}[t]
+  \centering
+  \footnotesize
+  \caption{Two queries traced through the graph. A: \emph{``Compare Kohli's
+    cover drive vs his pull shot against fast bowlers in the powerplay''}.
+    B: \emph{``Is Kohli's workload a fatigue risk before the final?''}. Each
+    cell is what the stage wrote to the shared state; agent cells list every
+    figure the agent cites.}
+  \label{tab:prompt-flow}
+  \input{tables/tab_prompt_flow}
+\end{table*}
+
+The supervisor router (N10) decides which of the twelve stakeholder agents
+answer a query. We compare two routers behind the same interface. The
+\emph{keyword router} scores each agent by the words of its keyword list that
+appear in the query, plus two structural signals from the analytics (a low
+visual confidence and a large strike-rate spread between shots). The
+\emph{LLM router} is a locally hosted language model, Qwen2.5-7B served through
+Ollama, called with temperature~0 and a fixed seed. To keep the comparison fair,
+the model is given exactly what the keyword router knows---each agent's
+stakeholder name and keyword list---and its reply is constrained by a JSON
+schema to one to four identifiers drawn from the agent registry, so it cannot
+name an agent that does not exist. The instructions were fixed before the
+comparison was run.
+
+Both routers only \emph{propose}. The same rules are then applied to either
+proposal: an agent whose cited facts do not exist for the query is removed, at
+most four agents are kept, and if none remain a default pair (Coaches, Players)
+answers. Because these rules follow the proposal, the bounds of
+Section~\ref{sec:exec-profile} hold whichever router is used.
+
+\paragraph{Prompt set}
+For each of the twelve stakeholders we wrote two questions asking for the same
+thing: a \emph{keyword} version that uses the agent's trigger words (``Is Kohli's
+workload a fatigue risk before the final?'') and a \emph{plain} version that
+avoids all of them (``Is Kohli too tired or sore to play the final safely?'').
+Five further prompts cover a question with no signal, one naming six
+stakeholders at once, the running example, and two text-only questions---29 in
+all. The notebook verifies that every keyword prompt contains its target's
+trigger words and that no plain prompt contains any. Each prompt was routed
+once by the keyword router, which is deterministic, and three times by the LLM
+router.
+
+\paragraph{Results}
+Table~\ref{tab:routing-summary} summarises the comparison. Both routers
+activate the intended agent for all twelve keyword prompts. On the plain
+prompts the keyword router activates none of the twelve: finding no trigger
+word, it falls back to the default pair on every one, and on 14 of the 29
+prompts overall. The LLM router activates the intended agent for nine of the
+twelve plain prompts (Table~\ref{tab:routing-plain}) and falls back only twice.
+Both fall-backs are text-only prompts for which the model proposed only agents
+that cite a posture measurement; with no clip there is no posture, so the
+evidence rule removed them. The LLM router is also more selective, activating
+1.41 agents per prompt against 1.79. On the prompt naming six stakeholders, the
+keyword router's four-agent cap, with ties broken by registry order, discarded
+Sponsors, Medical Teams and Broadcasters; the LLM router kept all three.
+
+The LLM router's answers were identical in all three runs for all 29 prompts,
+and a routing call took 3.0\,s on average (2.8--3.6\,s) on a single consumer
+GPU. Across all 87 LLM-routed runs, no activated agent lacked its evidence and
+no run exceeded the cap; this holds by construction, since the rules follow the
+proposal, and the runs confirm it.
+
+\paragraph{Where the LLM router fails}
+The three plain prompts it missed are informative. Asked how to dismiss Kohli
+cheaply against spin, it chose the batter's perspective (Players) instead of
+the coaching staff's; asked which home game a supporter should attend, and how
+to teach teenage batters a stroke, it again chose Players rather than Fans or
+Academies. The router also sees only the query text. For the running example
+the keyword router additionally activated Coaches because of a 30-point
+strike-rate spread in the analytics, a signal the language model never
+receives.
+
+\paragraph{One query through the graph}
+Table~\ref{tab:prompt-flow} traces two queries through every stage, recorded
+from the framework's update stream rather than written by hand. The same
+pipeline extracts different filters, retrieves different evidence (100 against
+80 deliveries), computes different statistics, and activates different agents,
+and every figure an agent cites is checked against the engines before release.
+The trace also exposes a cost: for the medical query, the strike rates and the
+dismissal simulation are computed although the activated agent cites only the
+sample size, because every analytics stage runs before routing.
+
+\paragraph{Limitations}
+The prompts and their intended targets were written by the authors, so the
+targets describe the prompts rather than serve as ground truth, and twelve
+plain prompts are too few for a benchmark; the comparison is indicative. The
+stability result was measured on one machine; floating-point differences
+across GPUs could, rarely, change a decision.
