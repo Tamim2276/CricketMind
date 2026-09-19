@@ -1,0 +1,133 @@
+% =====================================================================
+% CricketMind architecture -- layered TikZ figure.
+% Needs in the preamble:  \usepackage{tikz}
+%                         \usetikzlibrary{arrows.meta, shapes.geometric, fit}
+% Size: 17.2 cm x 10.8 cm -- no taller than the previous Fig. 1, so the paper
+% stays at 6 pages. Also the blueprint for the Canva version
+% (see ../figure_blueprint/README.md).
+% =====================================================================
+\definecolor{percep}{HTML}{2F6FC0}   % perception: blue
+\definecolor{ground}{HTML}{9A7B1F}   % grounding, retrieval, engines: gold
+\definecolor{router}{HTML}{5B3A9B}   % router and synthesis: purple
+\definecolor{agent}{HTML}{2E7D4F}    % stakeholder agents: green
+\definecolor{gatey}{HTML}{C99A06}    % gates (diamonds): yellow
+\definecolor{loopr}{HTML}{D23B3B}    % correction loops: red
+\definecolor{exitg}{HTML}{6B6B6B}    % exits: grey
+\begin{tikzpicture}[
+  x=1cm, y=1cm, font=\sffamily\scriptsize,
+  box/.style   = {draw, rounded corners=2pt, line width=0.6pt, align=center,
+                  minimum height=0.62cm, inner sep=2pt},
+  pbox/.style  = {box, draw=percep, fill=percep!10, minimum width=1.9cm},
+  gbox/.style  = {box, draw=ground, fill=ground!12, minimum width=1.8cm},
+  rbox/.style  = {box, draw=router, fill=router!10},
+  abox/.style  = {box, draw=agent, fill=agent!10, minimum width=1.8cm,
+                  minimum height=0.66cm, inner sep=1pt},
+  xbox/.style  = {box, draw=exitg, fill=black!5},
+  gate/.style  = {diamond, aspect=1.7, draw=gatey, fill=gatey!22,
+                  line width=0.6pt, align=center, inner sep=0.5pt},
+  db/.style    = {cylinder, shape border rotate=90, aspect=0.22, draw=ground,
+                  fill=ground!8, line width=0.5pt, minimum height=0.42cm,
+                  minimum width=1.5cm, inner sep=0pt, font=\sffamily\tiny},
+  flow/.style  = {-{Stealth[length=1.8mm]}, line width=0.6pt, draw=black!75},
+  loop/.style  = {flow, draw=loopr, dashed},
+  find/.style  = {flow, draw=agent, dashed},
+  lab/.style   = {font=\sffamily\tiny, inner sep=1pt},
+  band/.style  = {font=\sffamily\scriptsize\bfseries, rotate=90, align=center},
+]
+
+% ---------------------------------------------------------------- bands
+\fill[percep!5]  (0,8.2) rectangle (17.2,10.8);
+\fill[ground!6]  (0,5.3) rectangle (17.2,8.2);
+\fill[agent!5]   (0,2.2) rectangle (17.2,5.3);
+\fill[router!5]  (0,0)   rectangle (17.2,2.2);
+\fill[percep!22] (0,8.2) rectangle (0.7,10.8);
+\fill[ground!25] (0,5.3) rectangle (0.7,8.2);
+\fill[agent!22]  (0,2.2) rectangle (0.7,5.3);
+\fill[router!20] (0,0)   rectangle (0.7,2.2);
+\node[band] at (0.35,9.5)  {Input \& Perception};
+\node[band] at (0.35,6.75) {Grounding \&\\Analytics};
+\node[band] at (0.35,3.75) {Agentic Core};
+\node[band] at (0.35,1.1)  {Verification\\\& Output};
+\foreach \y in {2.2,5.3,8.2} \draw[black!30, line width=0.4pt] (0,\y) -- (17.2,\y);
+
+% ---------------------------------------------------------------- input & perception
+\node[box, draw=black!60, fill=white, minimum width=1.3cm] (query) at (1.55,9.7) {User\\query};
+\node[gate]  (clip) at (3.15,9.7)  {Clip?};
+\node[pbox]  (n1)   at (5.05,9.7)  {N1 Video input\\15 frames};
+\node[pbox]  (n2)   at (7.35,9.7)  {N2 Vision encoder\\EfficientNetV2-S};
+\node[pbox]  (n4)   at (9.65,9.7)  {N4 Temporal\\transformer};
+\node[pbox]  (n5)   at (11.95,9.7) {N5 Classifier\\15 shot classes};
+\node[gate]  (conf) at (13.95,9.7) {Conf.\\check};
+\node[xbox]  (exit) at (16.1,9.7)  {stop: low\\confidence};
+\node[pbox, minimum width=1.3cm] (n3) at (1.55,8.62) {N3 Text\\encoder};
+
+\draw[flow] (query) -- (clip);
+\draw[flow] (clip) -- node[lab, above] {clip} (n1);
+\draw[flow] (n1) -- (n2);
+\draw[flow] (n2) -- (n4);
+\draw[flow] (n4) -- (n5);
+\draw[flow] (n5) -- (conf);
+\draw[flow] (conf) -- node[lab, above] {exhausted} (exit);
+\draw[flow] (query) -- node[lab, right] {every query} (n3);
+\draw[loop] (conf.north) -- (13.95,10.55) -- (5.05,10.55)
+            node[lab, pos=0.5, fill=percep!5] {retry, at most 2: re-sample frames}
+            -- (n1.north);
+
+% ---------------------------------------------------------------- grounding & analytics
+\node[gbox, minimum width=2.4cm] (n6) at (3.55,6.75) {N6 Shot DNA\\shot + posture + filters};
+\node[gbox] (n7a) at (6.9,7.2)  {N7a Stats\\retrieval};
+\node[gbox] (n7b) at (6.9,6.3)  {N7b Context\\retrieval};
+\node[db]   (sdb) at (6.9,7.93) {ball-by-ball DB};
+\node[db]   (hdb) at (6.9,5.57) {historical DB};
+\node[gbox] (n8)  at (10.0,7.2) {N8 Stats\\engine};
+\node[gbox] (n9)  at (10.0,6.3) {N9 What-if\\simulator};
+\node[draw=ground, dashed, rounded corners=3pt, line width=0.5pt,
+      fit=(n8)(n9), inner sep=3pt] (eng) {};
+\node[lab, anchor=west, align=left, text=ground!80!black, font=\sffamily\scriptsize]
+      at ([xshift=3pt]eng.east) {sanctioned engines:\\the only source of numbers};
+
+\draw[flow] (clip.south) -- node[lab, right, pos=0.3] {no clip} (clip.south |- n6.north);
+\coordinate (acc) at (4.05,8.4);
+\draw[flow] (conf.south) -- node[lab, right, pos=0.4] {accept} (13.95,8.4) -- (acc)
+            -- (acc |- n6.north);
+\draw[flow, draw=black!50] (n3.south) |- node[lab, pos=0.78, above] {filters} (n6.west);
+\draw[flow] (n6.east) -- (5.5,6.75) |- (n7a.west);
+\draw[flow] (5.5,6.75) |- (n7b.west);
+\draw[flow] (sdb) -- (n7a);
+\draw[flow] (hdb) -- (n7b);
+\draw[flow] (n7a) -- (n8);
+\draw[flow] (n7b) -- (n9);
+
+% ---------------------------------------------------------------- agentic core
+\node[rbox, minimum width=3.0cm, minimum height=1.3cm] (router) at (2.55,3.9)
+      {\textbf{N10 Supervisor router}\\propose: keyword or LLM\\rules: evidence, at most 4};
+\foreach \id/\name/\x/\y in {
+    a/Franchises/5.75/4.3,  b/Coaches/7.7/4.3,        c/Players/9.65/4.3,
+    d/Scouts/11.6/4.3,      e/Fans/13.55/4.3,         f/Stadiums/15.5/4.3,
+    g/Sponsors/5.75/3.35,   h/Broadcasters/7.7/3.35,  i/Governing bodies/9.65/3.35,
+    j/Academies/11.6/3.35,  k/Medical teams/13.55/3.35, l/Player agents/15.5/3.35}
+  \node[abox] (a\id) at (\x,\y) {N11\id\\\name};
+\node[draw=agent, dashed, rounded corners=3pt, line width=0.5pt,
+      fit=(aa)(al)(af)(ag), inner sep=3pt] (grp) {};
+\node[lab, anchor=north east, text=agent!80!black, font=\sffamily\scriptsize]
+      at ([yshift=-1pt]grp.south east) {12 stakeholder agents; the activated ones run in parallel};
+
+\draw[flow] (eng.south) -- (10.0,5.05) -- (2.55,5.05) -- (router.north);
+\draw[flow] (router.east) -- node[lab, above] {activate} (router.east -| grp.west);
+
+% ---------------------------------------------------------------- verification & output
+\node[gate] (faith) at (5.75,1.2)  {Faith\\check};
+\node[rbox, minimum width=2.2cm] (n12) at (9.6,1.2)  {N12 Synthesis\\verified findings only};
+\node[pbox, minimum width=2.2cm] (n13) at (13.4,1.2) {N13 Final report\\+ status};
+\node[xbox] (drop) at (7.75,0.35) {withhold unverified};
+
+\draw[find] (grp.south -| faith.north) -- node[lab, right, pos=0.45] {findings + citations} (faith.north);
+\coordinate (regen) at (4.3,3.1);
+\draw[loop] (faith.west) -- (4.3,1.2) -- (regen) -- (regen -| grp.west);
+\node[lab, align=right, text=loopr, anchor=east] at (4.2,1.7) {regenerate, at most 2:\\only the failed agents};
+\draw[flow] (faith.east) -- node[lab, above] {faithful} (n12.west);
+\draw[flow] (faith.south) |- node[lab, pos=0.75, above] {exhausted} (drop.west);
+\draw[flow] (drop.east) -| (n12.south);
+\draw[flow] (n12) -- (n13);
+
+\end{tikzpicture}
