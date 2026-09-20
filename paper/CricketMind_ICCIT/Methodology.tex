@@ -3,18 +3,14 @@
 
 CricketMind is built as one connected graph that answers two kinds of cricket question: a question about a specific video clip of a shot, and a question that is only text, with no video at all. Fig.~\ref{fig:arch-v2} shows the architecture; the node identifiers N1--N13 used below refer to it.
 
-% NOTE (edit): Clip.png still needs four fixes before submission --
-%  1. N3 must receive input on BOTH paths (every query has text), not only on
-%     the "no clip" path; the text below and the implementation both say so.
-%  2. The red "Regenerate" loop must return to the agents (only the failed
-%     ones are re-run), not to the N10 router.
-%  3. The agents inside each column are drawn as a chain (N11a -> N11b -> ...);
-%     they run in parallel, so they should hang off one dispatch bus.
-%  4. Typos: "States Retrieval", "States Analysis Engine", "States DB" should be
-%     "Stats ...", and "failthful" should be "faithful".
+% Fig. 1 is fig_architecture.png, exported at 300 dpi from the TikZ source
+% fig_architecture.tex (kept in this folder; render it with
+% ../figure_blueprint/architecture_blueprint.tex after any edit).
+% To use a redrawn Canva version instead, replace the file name below with
+% Clip.png and check that the paper is still six pages.
 \begin{figure*}[t]
   \centering
-  \includegraphics[width=0.88\textwidth]{Clip.png}
+  \includegraphics[width=\textwidth]{fig_architecture.png}
   \caption{The CricketMind architecture. A query carrying a clip enters the perception path (N1--N5); a text-only query bypasses it and reaches the Shot DNA (N6) directly. The text encoder (N3) runs on both paths. Red dashed edges are the two bounded correction loops: the confidence retry and the Faith Check regeneration.}
   \label{fig:arch-v2}
 \end{figure*}
