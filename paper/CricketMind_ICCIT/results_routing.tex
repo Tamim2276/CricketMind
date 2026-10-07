@@ -5,12 +5,13 @@
 % Paste (or \input) this subsection into the paper's results section.
 % Preamble needs:  \usepackage{booktabs} \usepackage{array}
 %
-% All three tables are WRITTEN BY THE NOTEBOOK (test 16D) -- never edit them:
+% All three tables are WRITTEN BY notebooks/02_results.ipynb, section B
+% (cricketmind.experiments.tables) -- never edit them by hand:
 %   tables/tab_routing_summary.tex   keyword vs LLM totals      (one column)
 %   tables/tab_routing_plain.tex     the twelve plain prompts   (table*, two columns)
 %   tables/tab_prompt_flow.tex       two queries, stage by stage (table*, two columns)
 %
-% Numbers quoted in the prose come from notebook tests 15C, 16B and 16C and
+% Numbers quoted in the prose come from cricketmind.experiments.routing_eval and
 % from experiments/routing/llm_routing_runs.json. If anything is re-run,
 % re-check them: 29 prompts, 12/12, 0/12, 9/12, 14/29, 2/29, 1.79, 1.41,
 % 29/29, 3.0 s, 2.8-3.6 s, 87 runs, 100 vs 80 deliveries.

@@ -5,11 +5,11 @@
 % Preamble needs:  \usepackage{booktabs} \usepackage{graphicx} \usepackage{amsmath}
 %
 % The table below is WRITTEN BY THE NOTEBOOK -- never edit it by hand:
-%   tables/tab_execution_profile.tex   notebook test 14I
+%   tables/tab_execution_profile.tex   notebooks/02_results.ipynb, section A
 %
 % The numbers quoted in the prose (12, 9, 5, 3, 1, 15, 29, 4 x 3 = 12, 6)
-% come from notebook tests 14E and 14F. If the graph changes, re-run the
-% notebook and re-check them.
+% come from cricketmind.experiments.profile. If the graph changes, re-run
+% notebooks/02_results.ipynb (or `python -m pytest`) and re-check them.
 %
 % fig:arch-v2 is the architecture figure. Change it to your paper's label.
 % =====================================================================
@@ -83,7 +83,8 @@ Supersteps measure the length of the sequential dependency chain, not
 wall-clock time. In deployment, latency will be dominated by the encoders and
 by agent language-model calls, which these counts bound but do not time.
 
-% The execution-trace figure (figures/fig_execution_trace.pdf, notebook test
-% 14H) is left out to fit the 6-page limit; Table I and Eq. (1) carry the
+% The execution-trace figure (figures/fig_execution_trace.pdf, drawn in
+% notebooks/02_results.ipynb) is left out to fit the 6-page limit; Table I
+% and Eq. (1) carry the
 % result. To bring it back, restore this figure block from git history and
 % free about a fifth of a page elsewhere.
