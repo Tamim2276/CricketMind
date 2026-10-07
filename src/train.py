@@ -37,6 +37,9 @@ from torch.utils.data import DataLoader
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from src.utils.checkpoint import (
+    append_result, atomic_save, atomic_write_json, load_resume, save_resume,
+)
 from src.utils.device import get_device, get_amp_settings
 from src.utils.metrics import topk_accuracy, per_class_report, get_confusion_matrix
 from src.utils.viz import save_confusion_matrix, save_accuracy_bar
@@ -283,6 +286,9 @@ def main():
                         help="override model_type from config")
     parser.add_argument("--epochs",     type=int, default=None,
                         help="override epochs from config")
+    parser.add_argument("--fresh", action="store_true",
+                        help="ignore resume.pt and start from epoch 1 "
+                             "(default is to continue an interrupted run)")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -367,8 +373,32 @@ def main():
     best_val_top1 = 0.0
     no_improve    = 0
     history       = {"train_acc": [], "val_acc": [], "train_loss": [], "val_loss": []}
+    start_epoch   = 1
 
-    for epoch in range(1, epochs + 1):
+    # ── Resume an interrupted run ────────────────────────────────────────
+    # Load shedding kills the process with no warning, so continuing is the
+    # default: re-run the identical command and it picks up where it stopped.
+    # Pass --fresh to deliberately start over.
+    resume_path = os.path.join(checkpoint_dir, "resume.pt")
+    if args.fresh and os.path.exists(resume_path):
+        os.remove(resume_path)
+        print("--fresh: discarded resume.pt, starting from epoch 1")
+    ckpt = load_resume(resume_path, model=model, optimizer=optimizer,
+                       scheduler=scheduler, scaler=scaler,
+                       map_location=device) or {}
+    if ckpt:
+        start_epoch   = ckpt["epoch"] + 1
+        history       = ckpt.get("history") or history
+        best_val_top1 = ckpt.get("best_val_top1", 0.0)
+        no_improve    = ckpt.get("no_improve", 0)
+        print(f"RESUMED    : epoch {ckpt['epoch']} finished, continuing at "
+              f"{start_epoch}/{epochs}  |  best val top-1 so far "
+              f"{best_val_top1:.2f}%")
+        if start_epoch > epochs:
+            print("Nothing left to do — this run already reached its last epoch.")
+
+    epoch = start_epoch - 1          # so the tail works even if the loop is empty
+    for epoch in range(start_epoch, epochs + 1):
         t0 = time.time()
         tr_loss, tr_acc = train_epoch(
             model, train_loader, criterion, optimizer, scaler, device, amp_dtype,
@@ -399,11 +429,12 @@ def main():
             f"{elapsed:.1f}s"
         )
 
+        stop_early = False
         if val_acc["top1"] > best_val_top1:
             best_val_top1 = val_acc["top1"]
             no_improve = 0
             ckpt_path = os.path.join(checkpoint_dir, "best.pt")
-            torch.save({
+            atomic_save({
                 "epoch": epoch,
                 "model_state": model.state_dict(),
                 "val_top1": best_val_top1,
@@ -414,11 +445,29 @@ def main():
             no_improve += 1
             if no_improve >= early_stop_pat and not smoke:
                 print(f"Early stopping: {no_improve} epochs without improvement.")
-                break
+                stop_early = True
+
+        # ── Checkpoint for a power cut ───────────────────────────────────
+        # Written every epoch, before any break, so the most this run can
+        # ever lose is the epoch that was in flight.
+        save_resume(resume_path, epoch=epoch, model=model, optimizer=optimizer,
+                    scheduler=scheduler, scaler=scaler, history=history,
+                    best_val_top1=best_val_top1, no_improve=no_improve, cfg=cfg)
+        atomic_write_json(history, os.path.join(checkpoint_dir, "history.json"))
+
+        if stop_early:
+            break
+
+    if epoch < start_epoch:
+        # The resume checkpoint was already at the final epoch; nothing ran.
+        print(f"\nAlready complete. Best val top-1: {best_val_top1:.2f}%")
+        print(f"Run: python src/evaluate.py --checkpoint "
+              f"{os.path.join(checkpoint_dir, 'best.pt')}")
+        return
 
     # ── final checkpoint ─────────────────────────────────────────────────
     last_path = os.path.join(checkpoint_dir, "last.pt")
-    torch.save({
+    atomic_save({
         "epoch": epoch,
         "model_state": model.state_dict(),
         "val_top1": val_acc["top1"],
@@ -427,8 +476,31 @@ def main():
 
     # ── history + figures ─────────────────────────────────────────────────
     history_path = os.path.join(checkpoint_dir, "history.json")
-    with open(history_path, "w") as f:
-        json.dump(history, f, indent=2)
+    atomic_write_json(history, history_path)
+
+    # ── the results registry ──────────────────────────────────────────────
+    # One line per finished run, appended and fsynced, so a number is never
+    # lost to a power cut or to a closed terminal. This is the file the
+    # supervisor's comparison table is built from.
+    if not smoke:
+        append_result({
+            "run":            os.path.basename(os.path.dirname(checkpoint_dir)),
+            "model_type":     model_type,
+            "mimic_author":   mimic_author,
+            "config":         args.config,
+            "epochs_run":     epoch,
+            "epochs_planned": epochs,
+            "best_val_top1":  round(best_val_top1, 4),
+            "final_val_top1": round(val_acc["top1"], 4),
+            "checkpoint":     os.path.join(checkpoint_dir, "best.pt"),
+            "device":         str(device),
+            "params":         sum(p.numel() for p in model.parameters()
+                                  if p.requires_grad),
+        })
+
+    # The run finished, so there is nothing left to resume from.
+    if os.path.exists(resume_path):
+        os.remove(resume_path)
 
     fig_dir = cfg.get("figure_dir", os.path.join(checkpoint_dir, "figures"))
     save_accuracy_bar(

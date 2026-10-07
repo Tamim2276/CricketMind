@@ -3,9 +3,12 @@
 **Goal.** First reproduce what Dihan et al. achieved (89.09% top-1). Then run 30+
 different approaches and record every result. Then combine and tune the best ones.
 
-**How we work.** One small piece at a time: build it → run it → I explain what it
-does → you say "next". Nothing is built ahead of you. Every day ends with
-something finished and a number written into the results ledger.
+**How we work.** You are learning this while building it, so nothing is built
+ahead of you and nothing is left in jargon. Every step follows the same
+five-part loop, set out in [section 1](#1-how-every-step-works). Short version:
+**one small piece → run it → I explain it in plain words → you say "next"**.
+Every day ends with something finished, a number in the ledger, and a line in
+the journal.
 
 **Out of scope for these 20 days.** The LangGraph / CricketMind work is paused.
 Nothing in this plan touches `cricketmind/`, `notebooks/` or `paper/`.
@@ -55,21 +58,101 @@ Three more pieces of evidence:
 **Conclusion: the preprocessing pipeline was never actually applied.** That is
 the whole 14-point gap, and it is Phase 1 of this plan.
 
-### The second bug
+### The second bug — diagnosed 2026-10-08
 
 `transformer` scored **75.93% val but 23.67% test**. A model does not lose 52
-points between validation and test. That is a bug in evaluation — almost
-certainly a class-order mismatch or the wrong checkpoint being loaded in
-`src/evaluate.py`. We fix it on Day 1 because every later experiment uses the
-same evaluation path, and a broken evaluator would silently corrupt all 30
-results.
+points between validation and test, so this is an evaluation problem, not a
+training problem. It has now been diagnosed, and the first guess was wrong.
+
+**It is not a class-order mismatch.** `preds_test.npz` saved the logits,
+predictions and labels, which makes this decidable instead of arguable. Build
+the 15x15 prediction-vs-label matrix and solve for the best possible one-to-one
+relabelling of the predicted classes:
+
+```
+raw accuracy          : 23.67%
+best permutation acc  : 23.67%     <- no relabelling helps at all
+```
+
+A label-mapping bug would be *repaired* by the right permutation. This one is
+not, so the mapping is innocent. The model also never predicts 4 of the 15
+classes and puts 61% of its predictions onto four of them — that is a broken
+model, not a working model with scrambled labels.
+
+**It is a stale artifact.** The file times settle it:
+
+| file | written |
+|---|---|
+| `preds_test.npz`, `report_test.json` | Aug 26, **15:09** |
+| `best.pt` | Aug 26, **21:52** |
+
+The evaluation ran **6h43m before** the checkpoint it supposedly measured. Those
+files belong to an earlier run that `best.pt` later overwrote, and no epoch in
+`history.json` comes near 23.67% (epoch 1 = 10.1%, epoch 2 = 28.7%).
+
+**So the current `transformer` checkpoint has never been evaluated at all.** The
+23.67% is not a result, it is debris — do not report it anywhere. Day 1.4 is
+therefore re-running the evaluation and making this failure impossible to
+repeat, rather than hunting a bug that does not exist.
 
 ---
 
-## 1. Rules for the 20 days
+## 1. How every step works
 
-1. **Every experiment writes one row to `experiments/results.csv`.** If it is not
-   in the ledger it did not happen. Your supervisor gets this file.
+Every numbered step in this plan — `1.1`, `6.2`, `C03` — has the same five
+parts, in the same order, including the easy ones.
+
+**1. Why.** What problem the step solves, in plain words, before any code
+appears. If you cannot say it in one sentence, the step does not start.
+
+**2. Build.** One small piece: a single function, a single file, or a single
+command. Small enough that if the result is wrong, you know which line is
+wrong.
+
+**3. Run.** The exact command, copy-pasteable. Something actually executes — no
+step ends on "this should work".
+
+**4. Check.** What you should see on screen, and the one number or file that
+proves it worked. A step with no check is not finished.
+
+**5. Explain.** What just happened, in easy terms, and the one idea worth
+keeping. This part is what becomes your Implementation chapter and your answers
+in the viva.
+
+Then I stop and wait for **"next"**. I will not run ahead through several steps
+because they look easy.
+
+### Why the steps are small
+
+A step is the right size when only one thing in it can go wrong. If a step
+builds three things and the output is wrong, you have to guess which of the
+three broke — and guessing is slow and teaches you nothing. One piece at a time
+means every failure points straight at its own cause.
+
+### On jargon
+
+Any term that is not plain English gets one sentence of plain English the first
+time it appears — "stratified", "frozen backbone", "logits", "top-1", all of
+them, where they are used rather than assumed. If something is still unclear,
+say so and we stop there. An unexplained step is a step you cannot defend in a
+viva, which makes it worthless even when the code is correct.
+
+### The small steps are written on the day
+
+Days 1–7 are broken into their small steps below, because we already know what
+they are. Phase 3 and Phase 4 are listed as **one line per experiment**, and get
+broken down when we reach them. That is deliberate: the small steps of
+experiment 25 depend on what experiment 24 found, so writing them now would be
+guessing.
+
+---
+
+## 2. Rules for the 20 days
+
+1. **Every experiment appends one row to `experiments/results.jsonl`.** Written
+   and fsynced by `append_result` the moment the run ends, so an outage cannot
+   take it. If it is not in the ledger it did not happen. Your supervisor gets
+   this file.
 2. **One variable at a time.** Change the backbone *or* the temporal head, never
    both, or you cannot attribute the difference.
 3. **Same splits for everything.** Generated once on Day 1, committed, never
@@ -80,6 +163,11 @@ results.
 6. **Preprocess once, reuse forever.** The expensive work happens on Days 2–3 and
    is cached. Everything after that is cheap.
 7. **If a run looks too good, it is a leak.** Check the split first.
+8. **One journal entry a day, in `notes/journal.md`.** What broke and how you
+   fixed it, with a number or a file path behind every claim. This is the raw
+   material for your Implementation chapter.
+9. **Record it before you move on.** An outage between finishing something and
+   writing it down costs you the work twice: the number, and the reason.
 
 ### Your hardware
 
@@ -91,55 +179,163 @@ results.
 
 ---
 
+## 3. Working through load shedding
+
+The power can cut at any moment and the desktop has no battery, so the process
+dies instantly, mid-epoch. The plan is arranged so that costs minutes, not days.
+
+**What is already safe.**
+
+- **Preprocessing.** `build_dataset.py` skips any clip whose output already
+  exists, so the Days 2–3 pipeline over 10,091 videos can be killed and
+  restarted as often as needed. It continues; it does not start over.
+- **Training.** `src/train.py` writes `resume.pt` every epoch — model,
+  optimizer, scheduler, history and the random-number state. Resuming is the
+  **default**: when the power comes back, re-run the identical command.
+
+  ```bash
+  python src/train.py --config configs/mimic_author.yaml
+  #  -> RESUMED : epoch 37 finished, continuing at 38/100 | best val top-1 81.44%
+  ```
+
+  `--fresh` forces a restart from epoch 1. `tests/test_checkpoint.py` holds this
+  to a strict standard: a resumed run must match an uninterrupted one
+  bit-for-bit.
+- **Results.** `append_result` writes one fsynced line to
+  `experiments/results.jsonl` the moment a run finishes, so a measured number is
+  never only in the terminal.
+- **Checkpoints.** Every save is atomic — written to `.tmp`, then `os.replace`
+  — so a cut during a save cannot corrupt the best model you had already earned.
+
+**What is still expensive.** Families B, C, E and F fine-tune end to end, hours
+per run. They resume, but they are the only jobs where an outage costs real
+time. Everything in Families A, D and V trains in minutes from cached features,
+so an outage rarely lands inside one at all.
+
+**How to shape the day.**
+
+| When | What to do |
+|---|---|
+| Power on, long block | Launch the hours-long runs (B, C, E, F) |
+| Power on, short block | The cheap cached-feature experiments (A, D, V) |
+| Outage | Error analysis, reading, the journal, the write-up — no GPU needed |
+
+One cheap UPS, even 650 VA, buys 10–15 minutes: enough to finish an epoch and
+shut down cleanly. It is the only hardware purchase that pays for itself here.
+
+---
+
 # PHASE 1 — Reproduce the authors (Days 1–5)
 
 Target: **89.09% ± 1.5%**. Nothing else starts until this lands.
 
-## Day 1 — Splits, the ledger, and the evaluation bug
+## Day 1 — Splits, and clearing the evaluation debris
 
-### 1.1 Make the splits (≈45 min)
+Nothing trains today. Today is about making every later number trustworthy.
 
-The authors' protocol: test 20% **manually constructed so the same batter's
-shots do not appear in both train and test**, val 20% of the remainder,
-stratified by class.
+> The old step 1.2, "start the results ledger", is **already built**:
+> `append_result` in `src/utils/checkpoint.py`, done 2026-10-07. Four steps
+> remain.
+
+### 1.1 Look at the filenames before writing any code (≈10 min)
+
+**Why.** Every split decision depends on what a filename actually tells you.
+Guessing the naming scheme and finding out on Day 15 that you guessed wrong
+would invalidate everything in between.
+
+**Build.** Nothing. Look at the data first.
+
+**Run.**
+
+```bash
+ls data/CricShoot10kShootDataset | head
+ls data/CricShoot10kShootDataset/*/ | head -20
+```
+
+**Check.** Clip names look like `vid100_41.avi`. Confirm 15 class folders exist
+and the total clip count is near 10,091.
+
+**Explain.** `vid100` is the **source match video**; `_41` means the 41st shot
+cut out of it. So many clips share one `vidNNN`, and clips from the same match
+share the same batter, kit, ground, lighting and camera angle. That is exactly
+the problem step 1.2 exists to prevent.
+
+### 1.2 Write the grouping function, and test it on its own (≈20 min)
+
+**Why.** If `vid100_41.avi` lands in train and `vid100_42.avi` lands in test,
+the model can score well by recognising *that match* rather than the shot. The
+test number comes out high and means nothing. That is a **leak**: information
+from the test set reaching the model during training.
+
+**Build.** One small function — `match_id("vid100_41.avi") -> "vid100"` — and a
+test covering the names that do not fit the pattern.
+
+**Run.**
+
+```bash
+python -m pytest tests/test_splits.py -q
+```
+
+**Check.** The test passes, including the odd filenames.
+
+**Explain.** Two ideas, pulling in opposite directions:
+
+- **Stratified** splitting keeps the same proportion of each shot class in
+  train, val and test. You want this.
+- **Grouped** splitting forces every clip sharing a `vidNNN` into the *same*
+  split. You need this more.
+
+When clips are cut from shared source videos, grouping matters more than
+stratification: a leak inflates your score and invalidates the result, while
+slightly uneven class proportions only add a little noise.
+
+### 1.3 Generate the splits and prove there is no leak (≈20 min)
+
+**Why.** These three files are frozen for all 20 days. Every experiment must use
+them, or the results cannot be compared with each other.
+
+**Build.** `src/utils/make_splits.py` — grouped by match, stratified by class.
+
+**Run.**
 
 ```bash
 python -m src.utils.make_splits --data_root data/CricShoot10kShootDataset \
     --out data/splits --test_frac 0.2 --val_frac 0.2 --seed 42
 ```
 
-**Check:** three CSVs exist; the class proportions match within ~1%; no filename
-appears in two splits. The clip names look like `vid100_41.avi` — `vid100` is the
-source match video, so **group by the `vidNNN` prefix**, not by filename. Two
-clips from the same match in different splits is a leak.
+**Check.** Four things, and all four must hold:
 
-> **You will learn:** why grouped splitting matters more than stratification when
-> clips come from the same source video.
+1. Three CSVs exist in `data/splits/`.
+2. No filename appears in two splits.
+3. **No `vidNNN` appears in two splits** — this is the one that matters.
+4. Class proportions agree across the splits to within about 1%.
 
-### 1.2 Start the results ledger (≈20 min)
+**Explain.** Then commit them immediately. Regenerating splits later, even with
+the same seed, silently makes earlier results incomparable — and that is the
+kind of mistake a results table cannot show you.
 
-One CSV, one row per experiment, appended by the training script:
+### 1.4 Make a stale evaluation impossible (≈30 min)
 
-```
-exp_id, family, backbone, temporal, frames, input, params_M, epochs,
-val_acc, test_acc, test_top3, macro_f1, train_min, seed, notes
-```
+**Why.** `experiments/transformer/` holds a 23.67% test result measured on a
+checkpoint that no longer exists (see *The second bug* above). It has already
+cost one wrong diagnosis.
 
-**Check:** write one dummy row by hand and read it back with pandas.
+**Build.** Two changes to `src/evaluate.py`: record the checkpoint's SHA-256 and
+modification time inside `report_*.json`, and refuse to trust a report whose
+recorded hash does not match the checkpoint in front of it.
 
-### 1.3 Fix the evaluation bug (≈1 h)
+**Run.** The re-evaluation itself needs `data/processed/`, so it waits for Day 3.
+The hash guard can be built and tested today.
 
-Load `experiments/transformer/checkpoints/best.pt`, run it on **val** through
-`src/evaluate.py`, and compare with the 75.93% in `history.json`.
+**Check.** The regenerated `report_test.json` carries a hash matching the
+current `best.pt`, and its test number sits within a few points of the val
+figure, as it does for the other four runs.
 
-The three usual suspects, in order:
-1. `class_names` sorted differently at eval time than at train time → predictions
-   are right but mapped to the wrong labels.
-2. `best.pt` vs `last.pt` confusion.
-3. Eval transforms differ from training transforms (normalisation, resize).
-
-**Check:** re-evaluating on val reproduces 75.93% ± 0.5%. Until it does, do not
-trust any test number.
+**Explain.** The lesson is not really about this bug. A stale result that *looks*
+real cost a wrong diagnosis that survived for weeks. Anything that records a
+measurement should also record **what it measured** — the ledger row, the
+journal entry and the report all name their checkpoint. Cheap to add now,
+impossible to reconstruct later.
 
 > **You will learn:** how to tell a training failure from an evaluation failure.
 > They look identical in a results table and have completely different fixes.
@@ -169,6 +365,7 @@ python -m src.preprocess.build_dataset --limit 2 --device xpu \
 
 **Check — and this is the important one: _look at the pictures_.** Save 10
 processed frames as PNGs and open them. You must see:
+
 - the frame tightly cropped around the striker and the bat, not the whole ground;
 - the striker tinted **blue** and the bat tinted **green**, both at about 50%
   opacity;
@@ -185,6 +382,7 @@ at images here saves a week.
 
 `crop_video` drops frames where no striker is detected, so some clips come out
 with fewer than 15 frames, and a few with zero. Decide and write down:
+
 - fewer than 15 frames → loop/pad the last frame, or re-sample with replacement;
 - zero frames → log the filename to `data/processed/failed.txt` and exclude it.
 
@@ -257,6 +455,7 @@ Top-1, top-2, top-3, precision, recall, macro-F1, AUC-ROC, and the full 15×15
 confusion matrix.
 
 **Target:** 89.09% ± 1.5%. The authors' per-class sanity checks:
+
 - **Late Cut** is the worst class (F1 ≈ 0.745) — it looks like Upper Cut and
   Square Cut;
 - **Scoop** is the best (recall ≈ 1.0) — the most visually distinct.
@@ -268,6 +467,7 @@ matches.
 ### 5.2 If you are short of 89% (≈2–4 h)
 
 In order of likelihood:
+
 1. Crops are wrong → go back to Day 2.2 and look at the images again.
 2. Flip augmentation missing or applied before the split.
 3. Trained too few epochs — they converged around epoch 30 of 100.
@@ -353,16 +553,17 @@ python -m src.experiments.run --family A --exp A03_bilstm
 ```
 
 It must: load the config, set the seed, train, evaluate, append one row to
-`experiments/results.csv`, and save the confusion matrix PNG. No manual steps —
-manual steps are how you lose six results in week three.
+`experiments/results.jsonl` via `append_result`, and save the confusion matrix
+PNG. No manual steps — manual steps are how you lose six results in week three,
+and an outage mid-experiment is how you lose the seventh.
 
 **Check:** run the same experiment twice. Two identical rows (same seed) means
 the harness is deterministic.
 
 ### 7.2 A results notebook (≈1 h)
 
-Reads `results.csv`, prints the leaderboard sorted by val accuracy, and plots
-accuracy per family. Re-run it at the end of every day.
+Reads `results.jsonl` with `read_results`, prints the leaderboard sorted by val
+accuracy, and plots accuracy per family. Re-run it at the end of every day.
 
 ---
 
@@ -388,10 +589,14 @@ finished early, otherwise they are future work and you say so.
 
 ### Daily rhythm
 
-1. Morning: launch the long runs (B, C, E, F take hours — queue them).
-2. While they run: the cheap ones, and read about the next family.
-3. Evening: append rows, regenerate the leaderboard, write two sentences on
-   what surprised you.
+Each experiment below is still one step of the loop in section 1 — why, build,
+run, check, explain — broken down on the day it is run.
+
+1. **Power on, long block:** launch the hours-long runs (B, C, E, F — queue them).
+2. **While they run:** the cheap cached-feature ones, and read about the next family.
+3. **Outage:** error analysis, reading and the journal. None of it needs a GPU.
+4. **End of day:** check the ledger has one row per run, regenerate the
+   leaderboard, and write the journal entry — what broke, and how you fixed it.
 
 ### Rules that keep this honest
 
@@ -418,6 +623,7 @@ mean ± std.
 ## Day 17 — Tune the best one
 
 Only the winner. One axis at a time:
+
 - learning rate: 3e-5, 1e-4, 3e-4
 - frames: 15, 20, 25
 - backbone LR multiplier: 0.1, 0.5, 1.0
@@ -448,7 +654,7 @@ This section is what turns a results table into a paper.
 
 # Day 20 — The package for your supervisor
 
-1. `experiments/results.csv` — all 43+ rows
+1. `experiments/results.jsonl` — all 43+ rows (export to CSV for the write-up)
 2. A leaderboard table, sorted, grouped by family
 3. Confusion matrix of the baseline and of the best model, side by side
 4. Accuracy-vs-parameters scatter (which models earn their size)
@@ -679,7 +885,7 @@ model — Phase 1 is proof of that.
 | Symptom | Most likely cause |
 |---|---|
 | Accuracy stuck near 6.7% | Labels shuffled, or `class_names` sorted differently in train and eval |
-| Val 75%, test 24% | The Day 1.3 bug — class-order mismatch at evaluation |
+| Val 75%, test 24% | A report measured on a checkpoint that was later overwritten. Compare the file times before suspecting the labels (Day 1.4) |
 | Val much higher than test | Leak: clips from one `vidNNN` in both splits |
 | Train 99%, val 76% | Overfitting — add dropout, more augmentation, or stop earlier |
 | Stuck at exactly ~75% | You are reading uncropped data. Check `processed_root`. |
@@ -687,6 +893,8 @@ model — Phase 1 is proof of that.
 | `GradScaler` error on Arc | Do not use it on XPU — bf16 needs no scaler |
 | Preprocessing crawls | Check the YOLO models are on XPU, not CPU |
 | 3D models will not fit | Move to the RTX 3070 or Kaggle |
+| A run restarted from epoch 1 after an outage | No `resume.pt` — either `--fresh` was passed, or the previous run had already finished |
+| `best.pt` will not load | A cut during a non-atomic save. Use `atomic_save`; `best.pt.tmp` next to it is the giveaway |
 
 ---
 
@@ -694,11 +902,11 @@ model — Phase 1 is proof of that.
 
 | Days | Phase | Output |
 |---|---|---|
-| 1 | Splits, ledger, fix the eval bug | clean foundation |
+| 1 | Grouped splits; clear the stale evaluation artifacts | trustworthy foundation |
 | 2–3 | Preprocessing: crop + segment | `data/processed/` |
 | 4–5 | Author replication | **89% baseline, tagged** |
 | 6–7 | Feature cache + harness | 30 experiments made affordable |
-| 8–15 | 36 core experiments (58 listed, A–E + V) | `results.csv` |
+| 8–15 | 36 core experiments (58 listed, A–E + V) | `results.jsonl` |
 | 16–19 | Combine, tune, ensemble, error analysis | best model + mean ± std |
 | 20 | Package for supervisor | leaderboard, figures, summary |
 
