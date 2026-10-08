@@ -213,6 +213,13 @@ guessing.
   already handles this — always import `get_device()` and `get_amp_settings()`.
 - No CUDA on this machine. The RTX 3070 machine and Kaggle are both options for
   the heavier Phase 3 runs; configs for Kaggle already exist.
+- **16 GB RAM, and that is the binding constraint.** Three intermittent
+  failures during Day 2 -- a clip decoding 0 frames, an XPU "bad allocation",
+  and a `MemoryError` in `np.stack` -- were all allocation failures under
+  memory pressure. The Python process peaked at 0.96 GB; VS Code was holding
+  **3.73 GB**, leaving 3.78 GB free. **Close the editor before preprocessing or
+  a long training run.** One 49-frame clip needs a 68 MB contiguous block, and
+  `np.stack` briefly needs it twice.
 
 ---
 
@@ -410,6 +417,63 @@ That last row is the one that matters. A `vidNNN` is a whole broadcast that
 several different shots were cut from, so splitting by filename would scatter
 one match across train, val and test almost every time. 534 groups is plenty to
 split 70/20/10 cleanly — this is a constraint you can satisfy, not a problem.
+
+### Most clips are really 24 unique frames
+
+Measured 2026-10-09 over 400 random clips, in step 2.4. The 28- and 29-frame
+clips are **24-frame clips with duplicates inserted** -- frame-rate conversion,
+not extra content:
+
+| frames | clips | duplicate frames | unique frames |
+|---|---|---|---|
+| 24 | 302 | 0% | 24.0 |
+| 28 | 54 | **14%** | **24.2** |
+| 29 | 1 | **17%** | **24.0** |
+| 49 | 41 | 6% | 46.2 |
+
+You can see it in the raw frame-to-frame differences -- every sixth frame is
+near-identical to the one before:
+
+```
+ 3-> 4  0.35     9->10  0.16    15->16  0.13    21->22  0.75
+```
+
+So the real story is simpler than "lengths vary from 22 to 49": **nearly all of
+the dataset is 24 unique frames**, and only the 49-frame clips are genuinely
+longer. `sample.py` must drop duplicates before sampling (Day 4.1), or it
+spends its 15 slots on repeats.
+
+### 29% of clips contain a camera cut, always near the end
+
+Same 400-clip sample:
+
+| | |
+|---|---|
+| clips with a camera cut | **29%** |
+| clips with none | **71%** |
+| cuts falling in the first half of a clip | **0** |
+| median position of the first cut | **88% through** |
+| cut rate among the 49-frame clips | **41%** |
+
+**The shot itself is never interrupted.** Not one cut in 400 clips landed
+before the halfway point. What the cut marks is the broadcast moving on after
+the shot: following the ball to the boundary, panning to the crowd, cutting to
+a fielder.
+
+Two examples, both looked at directly: `Cover Drive/vid1_0.avi` cuts at frame
+20 of 29 to a wide stadium shot, and `Sweep/vid306_8.avi` cuts at frame 16 of
+24 to the camera tracking the ball into the crowd. In both, the post-cut frames
+contain no batter, no bat and no pitch.
+
+> **Not yet measured.** "No batter after the cut" has been confirmed by eye on
+> two clips, not quantified. The check is written
+> (`scratchpad/yolo_cut_check.py`): run the authors' Striker detector over the
+> frames before and after the cut, with no-cut clips as a control, and report
+> the detection rate in each. Do this before Day 4.1 depends on it.
+
+This matters in two places: `crop.py` (Day 3.3) must decide deliberately what
+to do on a frame with no striker, and `sample.py` (Day 4.1) should trim at the
+cut rather than sampling across it.
 
 ### The class imbalance
 
@@ -888,6 +952,11 @@ on one frame.
 **Build.** `src/preprocess/detect.py`, loading YOLOv11 from
 `CricShoot10kModels/` and running it on one image.
 
+Two notes, checked 2026-10-09. `Player_Type_Detection_Model.pt` and
+`Striker_Bat_Segmentation_Model.pt` are **byte-identical** (same MD5) -- one
+model shipped twice, classes `{0: Striker, 1: Bat}`, task `segment`. Load one.
+And it runs on the Arc: `model.predict(frame, device=str(get_device()))`.
+
 **Code to understand.** What a detection *is* — a box as four numbers, a class
 id and a confidence — and what the confidence threshold does. Also how to put
 the model on the Arc GPU, and how to tell it actually went there rather than
@@ -936,7 +1005,14 @@ boxes across the clip** before cropping.
 **Code to understand.** Why one box for the whole clip is too coarse (the batter
 moves) and a per-frame independent box is too noisy; the middle ground is a
 running average, plus padding around the box so the bat does not get cut off.
-Also what happens on frames with no detection at all — carry the last good box.
+
+Then the case that is now known to be common: **frames with no striker at
+all.** 29% of clips end with a camera cut after which there is no batter in
+shot (section 5). Carrying the last good box over those frames crops empty
+grass or crowd and calls it a cricket shot. The options are to carry the box,
+to drop the frame, or to stop the clip at the cut — decide deliberately,
+record which, and prefer stopping at the cut, because the frames after it are
+not part of the shot.
 
 **Run.** Crop one clip, save the 24 cropped frames as a grid.
 
@@ -982,11 +1058,27 @@ bug here. And the case that matters most: a 49-frame clip and a 24-frame clip
 must both come out as 15 frames covering **the whole shot**, so the step size
 has to come from the clip, never from a constant.
 
-**Run.** Sample a 24-frame clip, a 28-frame clip and a 49-frame clip; print the
-chosen indices for each.
+**Two things have to happen before the sampling**, both from section 5:
 
-**Check.** 15 indices every time; first and last frame always included; the
-spacing differs between the three.
+1. **Drop duplicate frames.** 14–17% of the frames in 28- and 29-frame clips
+   are repeats from frame-rate conversion. Sampling across them spends slots on
+   identical pictures. After de-duplication almost the whole dataset is 24
+   unique frames, which also makes the clips far more uniform than they look.
+2. **Trim at the camera cut.** 29% of clips end with footage that is not the
+   shot. Cuts never occur before the halfway point, so trimming is safe; the
+   detector is the same frame-difference measure used in section 5, about ten
+   lines. A fixed "use the first half" rule would also be safe but throws away
+   the follow-through on the 71% of clips that need no trimming at all.
+
+Order matters: de-duplicate, then trim, then sample 15 from what is left.
+
+**Run.** Sample a 24-frame clip, a 28-frame clip, a 49-frame clip and one with
+a camera cut (`Sweep/vid306_8.avi`, cut at frame 16 of 24); print the chosen
+indices for each.
+
+**Check.** 15 indices every time; first and last of the *kept* frames always
+included; no index lands on a duplicate or past a cut. For `vid306_8` every
+index must be below 16.
 
 **Takeaway.** Resampling to a fixed length is also what *removes* the
 frame-count difference between matches. After this step, clip length carries no

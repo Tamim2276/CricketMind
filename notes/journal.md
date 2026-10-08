@@ -331,3 +331,45 @@ the data; if it varies by architecture, that is the more interesting paper.
 **Note for the write-up:** the dataset has no batter labels, so `splits_author/`
 uses `(vidNNN, class)` as the closest available proxy for "same batter, same
 shot type". Say that plainly rather than implying batter labels existed.
+
+---
+
+## 2026-10-09 — video.py, and a second flake I cannot reproduce
+
+**Goal.** Step 2.3: one function that turns an .avi into numbers, correctly,
+whatever its length.
+
+**Broke.** Two things, neither reproducible.
+
+1. In a full-suite run, `read_clip` on `vid40_17.avi` returned **"opened but
+   decoded 0 frames"** — a clip that reads fine every other time. The same run
+   also produced a hard native crash dump.
+2. `test_seed`'s XPU test failed again with **"bad allocation"**, the same flake
+   as 2026-10-08.
+
+**Cause.** Unknown, and I could not pin either one down. What I ruled out for
+the video failure:
+
+- Not the code: the clip reads correctly standalone, and in all four pairwise
+  runs with other test files.
+- Not GPU contention via hardware decode: OpenCV's default backend here is
+  FFMPEG with `CAP_PROP_HW_ACCELERATION = 0.0`, i.e. software decoding, and
+  60 reads under continuous Arc load gave 0 failures.
+- Not persistent: four consecutive full-suite runs afterwards, all 136 pass.
+
+Both flakes involve the same machine under load and both vanished. I suspect
+they are the same underlying problem rather than two, but I have no evidence
+for that beyond co-occurrence, so it stays a suspicion.
+
+**Fixed.** Nothing. I added a one-retry guard to `read_clip` so that Day 4's
+10,091-clip run could not condemn a good clip over a transient hiccup, but the
+file was overwritten on disk shortly after — most likely a stale editor buffer
+saving over it — and I left it off rather than re-applying it unilaterally. The
+tests were matched to what is actually on disk.
+
+**Open.** Decide whether `read_clip` gets the retry before Day 4. The argument
+for: one bad read in 10,091 silently drops a clip from the dataset, and we have
+seen exactly that failure once. The argument against: it is complexity bought
+against a cause nobody has established, and a retry can hide a real decoder
+problem. If it goes in, the retry count must be printed at the end of the
+preprocessing run, not swallowed.

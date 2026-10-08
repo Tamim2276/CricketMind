@@ -1,0 +1,71 @@
+"""Save a clip as one picture, so you can actually look at it.
+
+Used in step 2.4 on raw clips, and again in 3.4 to judge crops by eye. Judging
+a crop by eye is not laziness -- there is no number that tells you the box is
+round the batter rather than the keeper.
+"""
+import os
+
+import cv2
+import numpy as np
+
+from src.data.video import read_clip
+
+__all__ = ["frame_grid", "compare"]
+
+
+def frame_grid(clip, out, cols: int = 6, width: int = 300, label: bool = True):
+    """Tile every frame of a clip into a single PNG. Returns the path.
+
+    `clip` is an array from read_clip, or a path.
+    """
+    if isinstance(clip, (str, os.PathLike)):
+        clip = read_clip(clip)
+
+    scale = width / clip.shape[2]
+    h = int(round(clip.shape[1] * scale))
+    tiles = [cv2.resize(f, (width, h), interpolation=cv2.INTER_AREA) for f in clip]
+
+    if label:
+        for i, t in enumerate(tiles):
+            cv2.putText(t, str(i), (6, 22), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.7, (0, 0, 0), 4, cv2.LINE_AA)       # outline first
+            cv2.putText(t, str(i), (6, 22), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.7, (255, 255, 0), 1, cv2.LINE_AA)
+
+    rows = int(np.ceil(len(tiles) / cols))
+    blank = np.zeros_like(tiles[0])
+    tiles += [blank] * (rows * cols - len(tiles))             # pad the last row
+    sheet = np.vstack([np.hstack(tiles[r * cols:(r + 1) * cols])
+                       for r in range(rows)])
+
+    os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
+    cv2.imwrite(out, cv2.cvtColor(sheet, cv2.COLOR_RGB2BGR))  # imwrite wants BGR
+    return out
+
+
+def compare(before, after, out, width: int = 420, titles=("before", "after")):
+    """One frame from each of two clips, side by side. The thesis figure."""
+    if isinstance(before, (str, os.PathLike)):
+        before = read_clip(before)
+    if isinstance(after, (str, os.PathLike)):
+        after = read_clip(after)
+
+    panes = []
+    for img, title in zip((before[len(before) // 2], after[len(after) // 2]),
+                          titles):
+        h = int(round(img.shape[0] * width / img.shape[1]))
+        pane = cv2.resize(img, (width, h), interpolation=cv2.INTER_AREA)
+        cv2.putText(pane, title, (8, 26), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8, (0, 0, 0), 4, cv2.LINE_AA)
+        cv2.putText(pane, title, (8, 26), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8, (255, 255, 0), 1, cv2.LINE_AA)
+        panes.append(pane)
+
+    # the two clips need not be the same height -- pad the shorter one
+    tall = max(p.shape[0] for p in panes)
+    panes = [np.pad(p, ((0, tall - p.shape[0]), (0, 0), (0, 0))) for p in panes]
+
+    os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
+    cv2.imwrite(out, cv2.cvtColor(np.hstack(panes), cv2.COLOR_RGB2BGR))
+    return out

@@ -16,9 +16,20 @@ Cricket Shot Classification*, IEEE Access 2026 (doi:10.1109/ACCESS.2026.3663220)
 ## Running it
 
 ```bash
-python -m pytest                      # 58 checks, ~2 s
+python -m pytest                      # 113 checks, ~20 s
 jupyter lab notebooks/                # the two notebooks
 ```
+
+**Use `.venv`.** There are two Python 3.10 installs on this machine with the
+same packages, and it is easy to run tests in one while editing for the other:
+
+```bash
+source .venv/Scripts/activate         # git bash
+.venv/Scripts/python.exe -m pytest    # or call it directly
+```
+
+If you see `No module named pytest`, you are in `.venv` and it is missing:
+`.venv/Scripts/python.exe -m pip install pytest`.
 
 `torch` is installed **per machine** with a different wheel — do not pin it in
 a shared requirements file, or one of the two setups breaks:
