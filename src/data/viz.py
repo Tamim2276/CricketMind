@@ -69,3 +69,22 @@ def compare(before, after, out, width: int = 420, titles=("before", "after")):
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
     cv2.imwrite(out, cv2.cvtColor(np.hstack(panes), cv2.COLOR_RGB2BGR))
     return out
+
+
+def draw_boxes(frame, dets, out=None, colors=None):
+    """Draw detections on a frame. Returns the annotated copy."""
+    colors = colors or {"Striker": (0, 200, 255), "Bat": (0, 255, 80)}
+    img = frame.copy()
+    for d in dets:
+        x1, y1, x2, y2 = (int(v) for v in d.box)
+        c = colors.get(d.cls, (255, 0, 255))
+        cv2.rectangle(img, (x1, y1), (x2, y2), c, 2)
+        tag = f"{d.cls} {d.conf:.2f}"
+        cv2.putText(img, tag, (x1, max(16, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.55, (0, 0, 0), 4, cv2.LINE_AA)
+        cv2.putText(img, tag, (x1, max(16, y1 - 6)), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.55, c, 1, cv2.LINE_AA)
+    if out:
+        os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
+        cv2.imwrite(out, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+    return img

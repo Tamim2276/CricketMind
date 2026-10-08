@@ -373,3 +373,147 @@ seen exactly that failure once. The argument against: it is complexity bought
 against a cause nobody has established, and a retry can hide a real decoder
 problem. If it goes in, the retry count must be printed at the end of the
 preprocessing run, not swallowed.
+
+---
+
+## 2026-10-09 (3.1) — the detector was running at 224px
+
+**Goal.** Step 3.1: run the authors' YOLO on one frame and see what comes back.
+Also settle, with the detector rather than by eye, whether the frames after a
+camera cut contain a batter.
+
+**Broke.** The detector barely worked. Striker found in a mean of **48%** of
+frames across 40 random clips, ranging from **0%** to 96%. On
+`Cover Drive/vid302_23.avi` it found the batter in **0 of 24 frames**, in a clip
+where the batter is plainly visible and reasonably large.
+
+**Cause.** Ultralytics takes `imgsz` from the checkpoint, and this checkpoint
+says **224**. So every 896x540 broadcast frame was being squashed to 224px
+before detection, and the batter became a few pixels. Nothing warns you; it
+just quietly finds less.
+
+```
+clip            imgsz=224 (default)    640      896 (native)
+vid302_23            0/24              9/24       17/24
+vid148_8             1/24             18/24       24/24
+vid412_12            1/24              8/24       20/24
+vid1_0              11/29             24/29       27/29
+```
+
+**Fixed.** `src/preprocess/detect.py` pins `IMGSZ = 896`. Striker detection over
+25 clips went from mean 48% (min 0%) to **mean 92%, median 96%, min 71%**.
+
+Two smaller fixes fell out of it. At 896 the segmentation head exhausted the
+Arc mid-run (`UR_RESULT_ERROR_OUT_OF_HOST_MEMORY` inside `process_mask`), so I
+dropped the batch to 4 and emptied the cache after each clip. **Both halves of
+that were wrong**, see the next entry. And ultralytics reads numpy arrays as BGR,
+so `detect()` converts from the project's RGB convention first -- handing it RGB
+gives 22 striker detections over 16 frames at mean confidence 0.522 instead of
+17 at 0.767, i.e. more boxes, less often right.
+
+**I was also wrong about the camera cuts.** With a working detector, over 30
+clips with a cut and 20 without:
+
+| | striker found in |
+|---|---|
+| no-cut control | 94.4% of frames |
+| before the cut | 90.4% |
+| after the cut | **71.0%** |
+
+Only 4 of 30 cut clips (13%) have no striker at all after the cut. I had
+generalised "the post-cut frames contain no batter" from two clips I happened to
+look at, and that is false — most cuts go to another angle that still shows the
+batter. The reason to trim at a cut is the viewpoint discontinuity, not an
+absent batter. The plan has been corrected.
+
+**Open.** Nothing blocking. But note how this one was found: not by a failing
+test, but by rendering a clip the detector had scored 0% on and seeing a batter
+in it. Numbers that disagree with a picture are worth chasing.
+
+---
+
+## 2026-10-09 (3.1, corrected) — the OOM was another model, and my fix cost 3.4x speed
+
+**Goal.** Check a suggestion: that the Arc running out of memory was caused by
+another project's model using the GPU at the same time, not by my batch size.
+
+**Broke.** My own fix. I had reacted to one OOM by dropping the batch to 4 *and*
+calling `torch.xpu.empty_cache()` after every clip, without measuring either.
+
+**Cause.** The GPU was idle when I checked: **10.88 GB free of 11.67**. So the
+earlier crash was contention, as suggested. Benchmarked on the idle card, 77
+frames at imgsz=896:
+
+| batch | empty_cache | fps | peak GPU |
+|---|---|---|---|
+| 4 | True | 6.3 | 1.03 GB |
+| 4 | **False** | **21.6** | 1.02 GB |
+| 8 | False | 20.1 | 1.81 GB |
+| 16 | False | 21.5 | 4.05 GB |
+| 24 | either | fails | — |
+
+`empty_cache` was costing **3.4x speed and saving nothing** — peak memory is
+identical with and without it, because torch reuses its cached blocks anyway.
+Batch size barely affects speed at all; only memory. And batch 24 fails even
+with the card to itself, so that limit is real.
+
+**Fixed.** Removed the `empty_cache` call. Kept batch 4, now for a reason that
+holds up: it is the cheapest of the equally-fast options, which leaves the card
+free for whatever else is running.
+
+Over 40 clips end to end: **17.5 fps, peak 1.03 GB, no accumulation**. That puts
+Day 4's detection pass at about **4 hours** instead of roughly 11.5.
+
+**Open.** Nothing. The lesson is the cost of fixing a symptom without measuring:
+a single crash with an unexamined external cause produced a change that would
+have added seven hours to the longest job in the project.
+
+---
+
+## 2026-10-09 (3.2, before writing it) — the plan's own selection rule picks a fielder
+
+**Goal.** Look at real detections before writing the striker-selection logic,
+instead of coding the rule the plan proposed and testing it afterwards.
+
+**Broke.** The proposed rule, on the first frame I tried. `Sweep/vid306_8.avi`
+frame 5 returns **6 detections for one batter and one bat** — 3 Strikers, 3 Bats:
+
+```
+Bat      0.55  centre ( 867, 165)   1.7% of frame
+Bat      0.54  centre ( 211, 259)   1.6%
+Striker  0.45  centre ( 390, 221)  10.0%   <- the real batter
+Bat      0.39  centre ( 218, 261)   2.7%
+Striker  0.30  centre ( 865, 128)   3.2%   <- a fielder, detected twice
+Striker  0.30  centre ( 872, 112)   2.2%
+```
+
+"The striker is the person nearest the bat" picks the fielder. The strongest
+detection in the whole frame is a Bat at 0.55 standing next to him, 480 px from
+the batter:
+
+| rule | picks | right? |
+|---|---|---|
+| largest striker box | batter | yes |
+| highest-confidence striker | batter | yes |
+| nearest the centre of frame | batter | yes |
+| nearest the best bat | **fielder** | **no** |
+
+Frame 10 of the same clip repeats it — bat 115 px from the wrong person, 147 px
+from the right one — while area (41716 vs 25393) and confidence (0.71 vs 0.35)
+both pick correctly.
+
+**Cause.** The bat is 1.7% of the frame against the batter's 10%, so bat
+detection is the *less* reliable of the two. Keying selection on it puts the
+weak signal in front of the strong one and inherits its false positives.
+
+**Fixed.** Not yet — 3.2 is deferred until the GPU is free. The plan's 3.2
+section now carries this measurement and the rule it points to: score Strikers
+on area, confidence and centrality, with bat overlap as confirmation only.
+
+**Open.** Two frames is not a sample. Measure the candidate rules over a few
+hundred frames across classes before settling, and keep the 20-frame eyeball
+check as the acceptance test. Also unresolved: the keeper, who is large and
+central in some angles and would beat the batter on those scores.
+
+**Note.** The GPU was busy (**8.11 GB of 11.67 in use, 1.63 GB RAM free**) so
+this ran on CPU for a single frame. Fine for looking; not for 10,091 clips.

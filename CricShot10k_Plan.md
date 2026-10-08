@@ -460,16 +460,32 @@ before the halfway point. What the cut marks is the broadcast moving on after
 the shot: following the ball to the boundary, panning to the crowd, cutting to
 a fielder.
 
-Two examples, both looked at directly: `Cover Drive/vid1_0.avi` cuts at frame
-20 of 29 to a wide stadium shot, and `Sweep/vid306_8.avi` cuts at frame 16 of
-24 to the camera tracking the ball into the crowd. In both, the post-cut frames
-contain no batter, no bat and no pitch.
+**What is after the cut, measured.** Run the authors' Striker detector over 30
+clips with a cut and 20 without, 2026-10-09:
 
-> **Not yet measured.** "No batter after the cut" has been confirmed by eye on
-> two clips, not quantified. The check is written
-> (`scratchpad/yolo_cut_check.py`): run the authors' Striker detector over the
-> frames before and after the cut, with no-cut clips as a control, and report
-> the detection rate in each. Do this before Day 4.1 depends on it.
+| | striker found in |
+|---|---|
+| clips with no cut (control) | **94.4%** of frames |
+| cut clips, frames **before** the cut | **90.4%** |
+| cut clips, frames **after** the cut | **71.0%** |
+
+The control at 94.4% is what makes the rest trustworthy -- the detector is
+reliable when the batter is there.
+
+**This corrects an earlier claim.** Two clips were examined by eye
+(`Cover Drive/vid1_0.avi` cuts to a wide stadium shot, `Sweep/vid306_8.avi`
+follows the ball into the crowd) and both had no batter after the cut, from
+which it was wrongly generalised that post-cut frames contain no batter. They
+usually do: only **4 of 30** cut clips (13%) have no striker at all after the
+cut, and 9 of 30 (30%) are more than half striker-free. Most cuts are to
+another angle that still shows the batter, not to the crowd.
+
+So the reason to trim at the cut is **not** "there is no batter there". It is
+that the footage after a cut is a different camera angle on a shot that has
+already finished -- a discontinuity handed to a model whose entire job is
+reading motion through time. That is still a good reason, but a weaker and
+different one, and it makes trimming a judgement call rather than an
+obligation.
 
 This matters in two places: `crop.py` (Day 3.3) must decide deliberately what
 to do on a frame with no striker, and `sample.py` (Day 4.1) should trim at the
@@ -980,10 +996,43 @@ confidently mislabelled training example.
 
 **Build.** The selection rule, then test it against frames you have looked at.
 
-**Code to understand.** The rule and its justification: the striker is the person
-nearest the bat detection; if there is no bat, the largest person near the frame
-centre. Then the failure cases — what happens when the keeper is closer to the
-bat than the batter is, and why a tie-break on box area is reasonable.
+> **The rule this plan originally proposed is wrong.** Measured 2026-10-09 on
+> `Sweep/vid306_8.avi` before writing any of 3.2. Frame 5 has **6 detections**
+> for one batter and one bat — 3 Strikers, 3 Bats:
+>
+> ```
+> Bat      0.55  centre ( 867, 165)   1.7% of frame
+> Bat      0.54  centre ( 211, 259)   1.6%
+> Striker  0.45  centre ( 390, 221)  10.0%   <- the real batter
+> Bat      0.39  centre ( 218, 261)   2.7%
+> Striker  0.30  centre ( 865, 128)   3.2%   <- a fielder, detected twice
+> Striker  0.30  centre ( 872, 112)   2.2%
+> ```
+>
+> | rule | picks | right? |
+> |---|---|---|
+> | largest striker box | batter | yes |
+> | highest-confidence striker | batter | yes |
+> | nearest the centre of frame | batter | yes |
+> | **nearest the best bat** | **fielder** | **no** |
+>
+> The highest-confidence detection in the frame is a Bat at 0.55 sitting beside
+> that fielder, 480 px from the batter. Frame 10 fails the same way: its bat is
+> 115 px from the wrong person and 147 px from the right one.
+>
+> The reason is structural, not bad luck. A bat is 1.7% of the frame, so bat
+> detection is *less* reliable than person detection — "nearest the bat" chains
+> the weaker signal in front of the stronger one and inherits its errors.
+
+**Code to understand.** The rule, built on the evidence above: score each
+Striker on **box area, confidence and distance from the frame centre**, and take
+the best. The bat is a confirmation signal, not the primary one — a bat
+overlapping the chosen person supports the pick, a bat 480 px away is noise.
+
+Then the failure cases: one person detected twice (overlapping boxes, as above),
+and the keeper, who is genuinely large and central in some camera angles. Design
+the rule from a few hundred measured frames rather than from two, then look at
+the 20.
 
 **Run.** Run the selection over 20 frames from different classes, draw the
 chosen box, and look at all 20.
