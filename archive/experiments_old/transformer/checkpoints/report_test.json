@@ -1,0 +1,110 @@
+{
+  "Cover Drive": {
+    "precision": 0.5,
+    "recall": 0.08547008547008547,
+    "f1-score": 0.145985401459854,
+    "support": 117.0
+  },
+  "Defensive": {
+    "precision": 0.27419354838709675,
+    "recall": 0.18888888888888888,
+    "f1-score": 0.2236842105263158,
+    "support": 90.0
+  },
+  "Down The Wicket": {
+    "precision": 0.27169811320754716,
+    "recall": 0.576,
+    "f1-score": 0.36923076923076925,
+    "support": 125.0
+  },
+  "Flick": {
+    "precision": 0.2972972972972973,
+    "recall": 0.16296296296296298,
+    "f1-score": 0.21052631578947367,
+    "support": 135.0
+  },
+  "Hook": {
+    "precision": 0.3333333333333333,
+    "recall": 0.031746031746031744,
+    "f1-score": 0.057971014492753624,
+    "support": 63.0
+  },
+  "Late Cut": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 43.0
+  },
+  "Lofted Legside": {
+    "precision": 0.22784810126582278,
+    "recall": 0.569620253164557,
+    "f1-score": 0.325497287522604,
+    "support": 158.0
+  },
+  "Lofted Offside": {
+    "precision": 0.1590909090909091,
+    "recall": 0.07692307692307693,
+    "f1-score": 0.1037037037037037,
+    "support": 182.0
+  },
+  "Pull": {
+    "precision": 0.3333333333333333,
+    "recall": 0.1015625,
+    "f1-score": 0.15568862275449102,
+    "support": 128.0
+  },
+  "Reverse Sweep": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 44.0
+  },
+  "Scoop": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 49.0
+  },
+  "Square Cut": {
+    "precision": 0.18604651162790697,
+    "recall": 0.34782608695652173,
+    "f1-score": 0.24242424242424243,
+    "support": 161.0
+  },
+  "Straight Drive": {
+    "precision": 0.375,
+    "recall": 0.058823529411764705,
+    "f1-score": 0.1016949152542373,
+    "support": 51.0
+  },
+  "Sweep": {
+    "precision": 0.232,
+    "recall": 0.4603174603174603,
+    "f1-score": 0.30851063829787234,
+    "support": 126.0
+  },
+  "Upper Cut": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 36.0
+  },
+  "accuracy": 0.236737400530504,
+  "macro avg": {
+    "precision": 0.21265607650288312,
+    "recall": 0.17734272505609,
+    "f1-score": 0.14966114143042114,
+    "support": 1508.0
+  },
+  "weighted avg": {
+    "precision": 0.24151625937282656,
+    "recall": 0.236737400530504,
+    "f1-score": 0.19148462663505394,
+    "support": 1508.0
+  },
+  "_topk": {
+    "top1": 23.6737400530504,
+    "top2": 42.639257294429704,
+    "top3": 54.64190981432361
+  }
+}

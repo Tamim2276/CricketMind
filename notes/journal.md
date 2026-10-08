@@ -185,3 +185,149 @@ builds. Two actions recorded for Day 1.3:
 
 **Open.** Both of the above. Note for the write-up: do not report 23.67%
 anywhere — it measures a model that no longer exists.
+
+---
+
+## 2026-10-08 — the dataset is not what the paper says
+
+**Goal.** Decide whether the CricShot10k copy on disk is usable or has to be
+downloaded again, before building a pipeline on top of it.
+
+**Broke.** Nothing was broken — but a 45-clip sample nearly caused a real bug.
+Three clips per class all came back 896×540, 24 frames, 30 fps, exactly as the
+paper states, and on that basis `sample.py` would have been written as a fixed
+`24 → 15`.
+
+**Cause.** The sample was too small and not drawn across source matches. Decoding
+**every frame of all 10,091 clips** gives a different picture:
+
+| frames | clips | matches |
+|---|---|---|
+| 22 | 57 | 2 |
+| 23 | 6 | 1 |
+| **24** | **7,657** | **442** |
+| 28 | 1,390 | 45 |
+| 29 | 25 | 1 |
+| **49** | **956** | **43** |
+
+Only **75.9%** of clips have the 24 frames the paper claims. The structure
+behind it is clean: **all 534 source matches have one consistent frame count,
+zero matches mix.** So frame count is a property of the broadcast each clip was
+cut from, not of the clip, and it is spread across all 15 classes roughly in
+proportion — which means clip length is *not* a shortcut to the label.
+
+Also found: 27 clips are off-resolution (`vid121` × 25 at 598×360, `vid22` × 2
+at 896×494), and **529 of 534 matches span more than one shot class**, which
+independently confirms that grouped splitting is mandatory rather than merely
+prudent.
+
+**Fixed.** No re-download — 0 files fail to open, 0 zero-byte, 0 frames fail to
+decode, 3.94 GB total, and the original `.rar` is still at
+`data/unnecessary/raw/` as a fallback. Two plan steps rewritten before any code
+was written against the wrong assumption: Day 2.3 (`video.py` must return the
+real length) and Day 4.1 (`sample.py` is `T → 15` for any `T` in 22–49, step
+size taken from the clip). Recorded as section 5 of the plan.
+
+**Open.** Nothing. But note for the write-up: the paper's "24 frames" claim is
+wrong for the released data, and that is worth a sentence — it is a small,
+checkable correction to a published dataset description.
+
+**What this cost to find:** about four minutes of decoding. A hardcoded `24 → 15`
+would have silently mangled a quarter of the dataset, still run without error,
+and shown up only as a couple of accuracy points I could never have explained.
+
+---
+
+## 2026-10-08 (later) — an XPU flake I could not reproduce
+
+**Goal.** Build `src/utils/seed.py` (step 1.3) and test it.
+
+**Broke.** On the first run of `tests/test_seed.py`, one test failed:
+
+```
+test_model_init_is_reproducible_on_the_gpu
+>   assert torch.equal(a, b)
+E   RuntimeError: bad allocation
+```
+
+Two 64-element tensors on `xpu:0`.
+
+**Cause.** Unknown, and I want that written down rather than guessed at. What I
+ruled out:
+
+- Not logic: the same three lines pass outside pytest.
+- Not test pollution: the test passes alone, and passes when paired with each
+  of the five tests that precede it, one at a time.
+- Not persistent: five consecutive full-file runs afterwards, all 10 tests pass.
+
+"bad allocation" is a `std::bad_alloc` surfacing from the Level Zero / SYCL
+runtime, so the likely source is the Intel driver, not torch and not this code.
+
+**Fixed.** Nothing. There is nothing to fix yet, and wrapping the test in a
+retry would only hide a recurrence.
+
+**Open.** Watch for it. If an Arc allocation can fail at random, then a long
+training run can die at random too — which makes the resume machinery from
+2026-10-07 more valuable than I thought when I built it, and means a dead run
+is not automatically a bug in my code. If it recurs, note the run and whether
+anything else was using the GPU at the time.
+
+---
+
+## 2026-10-08 (later still) — the authors split at clip level
+
+**Goal.** Answer a question I should have asked before writing the plan: did
+Dihan et al. group their splits by source match?
+
+**Broke.** The plan's Day 7 target. It said "reproduce 89.09%" and said to
+group strictly by `vidNNN`. Those two instructions are not compatible, and I had
+not noticed.
+
+**Cause.** They split at **clip level**. Their whole protocol:
+
+> "The test sets were manually constructed, comprising 20% of the total videos.
+> Care was taken to ensure that similar types of shots from the same batter do
+> not overlap between the training and test sets. From the remaining videos,
+> 20% were taken randomly for the validation test."
+
+"Videos" means clips — the paper says "10,086 videos" for the dataset and
+"536 **match** videos" when it means matches. So the constraint is
+batter-plus-shot-type, and validation has no constraint at all.
+
+What that leaves open: same batter different shot type, same match different
+batter, same ground / lighting / camera / broadcast graphics. Measured on our
+copy: under a clip-level 20% test split, **489 of 534 matches (91.6%)** are
+expected to have clips on both sides. A 19-clip match straddles with p=0.986,
+and the mean match has 18.9 clips.
+
+To be fair to them, they are careful about leakage elsewhere — they insist on
+augmenting only after splitting, and they criticise earlier work for train/test
+overlap possibly inflating a reported 93%. They controlled the sharpest case and
+hand-built the test set rather than randomising it. They just did not reach
+match-level grouping.
+
+**Fixed.** The plan now builds **two** split sets and runs all 44 experiments on
+both, 88 rows. `splits_author/` reproduces their protocol and is what the
+89.09% comparison is made against; `splits_grouped/` is the honest one. The
+reason for keeping both: if I grouped strictly and landed on 84%, "my pipeline
+is broken" and "their number is inflated" would be indistinguishable, and
+separating them would cost days.
+
+Running all 44 twice is affordable because **a frozen backbone's features depend
+only on the clip, not on the split** — one cache serves both. The 28 cached
+experiments cost 1.7 extra hours for 28 extra rows; the 16 end-to-end ones cost
+60. That also caught a real design bug: the cache was specified as
+`features/<split>/<class>/<clip>.pt`, which would have forced a full
+re-extraction on every split change. It is flat now.
+
+Phase 3 becomes 123 GPU-hours and the plan is about 31 days; the file is renamed
+`CricShot10k_Plan.md` since the "20 day" title was no longer true.
+
+**Open.** Nothing blocking. The interesting question is now empirical: **does the
+leak gap depend on the architecture?** The 28 cached runs answer that before any
+of the 60 expensive hours are spent. If the gap is stable it is a property of
+the data; if it varies by architecture, that is the more interesting paper.
+
+**Note for the write-up:** the dataset has no batter labels, so `splits_author/`
+uses `(vidNNN, class)` as the closest available proxy for "same batter, same
+shot type". Say that plainly rather than implying batter labels existed.

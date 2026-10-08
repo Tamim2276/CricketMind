@@ -1,32 +1,61 @@
+"""Pick the GPU, and the right precision for it.
+
+Two machines: Arc B580 (XPU) here, RTX 3070 or Kaggle T4 elsewhere. Hardcoding
+"cuda" breaks one of them, so nothing in this project names a backend.
 """
-Device auto-detection: XPU (local Arc B580) → CUDA (Kaggle T4/P100) → CPU.
-Import get_device() and get_amp_settings() everywhere instead of
-hardcoding a device string -- the same training script then runs
-unmodified on both machines.
-"""
+from typing import NamedTuple, Optional
+
 import torch
+
+__all__ = ["get_device", "get_amp_settings", "AmpSettings", "describe"]
 
 
 def get_device() -> torch.device:
-    """XPU (local Arc B580) takes priority if present; falls back to CUDA
-    (Kaggle T4/P100) or CPU. hasattr guards against older torch builds
-    that don't ship the xpu module at all."""
+    """Best available: XPU, then CUDA, then CPU."""
+    # a torch built without Intel support has no .xpu attribute at all
     if hasattr(torch, "xpu") and torch.xpu.is_available():
-        return torch.device("xpu")
+        return torch.device("xpu", 0)
     if torch.cuda.is_available():
-        return torch.device("cuda")
+        return torch.device("cuda", 0)
     return torch.device("cpu")
 
 
-def get_amp_settings(device: torch.device):
-    """Mixed-precision settings differ by hardware:
-    - Arc B580 (xpu): bf16 autocast, no GradScaler needed
-    - T4 / P100 (cuda): fp16 autocast + GradScaler
-    - cpu: no autocast
-    Returns (dtype_or_None, use_scaler: bool)
+class AmpSettings(NamedTuple):
+    dtype: Optional[torch.dtype]   # None = no autocast
+    use_scaler: bool
+    device_type: str               # what torch.autocast() wants
+
+
+def get_amp_settings(device: torch.device) -> AmpSettings:
+    """Autocast dtype, and whether a GradScaler is needed.
+
+    bf16 keeps fp32's range, so gradients can't underflow and no scaler is
+    needed. fp16 can't, and does. CUDA stays on fp16 because the Kaggle T4 has
+    no real bf16 support.
     """
     if device.type == "xpu":
-        return torch.bfloat16, False
+        return AmpSettings(torch.bfloat16, False, "xpu")   # a scaler errors here
     if device.type == "cuda":
-        return torch.float16, True
-    return None, False
+        return AmpSettings(torch.float16, True, "cuda")
+    return AmpSettings(None, False, "cpu")
+
+
+def describe(device: Optional[torch.device] = None) -> str:
+    """One line for the top of a training log."""
+    device = device or get_device()
+    amp = get_amp_settings(device)
+    dtype = "off" if amp.dtype is None else str(amp.dtype).replace("torch.", "")
+
+    name = "CPU"
+    if device.type == "xpu":
+        name = torch.xpu.get_device_name(device.index or 0)
+    elif device.type == "cuda":
+        name = torch.cuda.get_device_name(device.index or 0)
+
+    return (f"device={device} ({name})  autocast={dtype}  "
+            f"grad_scaler={'on' if amp.use_scaler else 'off'}  "
+            f"torch={torch.__version__}")
+
+
+if __name__ == "__main__":
+    print(describe())

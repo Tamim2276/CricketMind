@@ -1,32 +1,8 @@
 """Crash-safe checkpointing, for training through load shedding.
 
-The problem this solves: a desktop has no battery, so a power cut kills the
-process instantly, at an arbitrary instruction. Three things go wrong if you
-just call ``torch.save`` in the training loop:
-
-1. **A half-written file.** ``torch.save`` streams hundreds of MB. Lose power
-   in the middle and ``best.pt`` is a truncated file that will not load -- so
-   the cut costs you not only the current epoch but the best model you had
-   already earned. ``atomic_save`` writes to a temporary file in the same
-   directory and then calls ``os.replace``, which is atomic on NTFS and POSIX
-   alike: the old file is intact until the new one is complete, so the
-   checkpoint on disk is always loadable.
-
-2. **Nothing to resume from.** A checkpoint holding only ``model_state`` cannot
-   continue training: Adam's moment estimates, the LR scheduler's position and
-   the early-stopping counter are all gone, and restarting from epoch 1 with a
-   warm model is not the same run. ``save_resume`` stores every piece of
-   mutable training state, so the restarted run is a continuation rather than
-   a new experiment the supervisor cannot compare.
-
-3. **Results that live only in the terminal.** Over 30+ experiments, a number
-   you measured and did not write down is a number you have to measure again.
-   ``append_result`` appends one JSON object per finished run and fsyncs it, so
-   a result survives the moment it is recorded.
-
-Nothing here is specific to a model or a dataset, and nothing here imports a
-device: every function takes what it needs. See ``load_resume`` for the one
-subtlety, which is ``weights_only``.
+The desktop has no battery, so a power cut kills the process mid-instruction.
+Three things to get right: saves that can't be left half-written, checkpoints
+you can actually resume from, and results that don't live only in the terminal.
 """
 import json
 import os
@@ -45,13 +21,12 @@ __all__ = [
 ]
 
 
-# ── atomic primitives ────────────────────────────────────────────────────────
+# atomic primitives
 
 def _replace_atomically(tmp_path: str, path: str) -> None:
-    """fsync the temp file, then move it into place. Never leaves a partial."""
     os.replace(tmp_path, path)
-    # Also fsync the directory, so the rename itself reaches the disk. Best
-    # effort: Windows does not allow opening a directory, hence the guard.
+    # also fsync the directory so the rename itself lands; Windows won't let
+    # you open one, hence the guard
     try:
         fd = os.open(os.path.dirname(path) or ".", os.O_RDONLY)
     except (OSError, AttributeError):
@@ -65,14 +40,10 @@ def _replace_atomically(tmp_path: str, path: str) -> None:
 
 
 def atomic_save(obj, path: str) -> str:
-    """``torch.save`` that cannot leave a truncated file behind.
-
-    The write goes to ``<path>.tmp`` in the same directory -- same directory
-    matters, because ``os.replace`` is only atomic within one filesystem.
-    """
+    """torch.save that can't leave a truncated file behind."""
     path = os.fspath(path)
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    tmp = path + ".tmp"
+    tmp = path + ".tmp"          # same directory, or os.replace isn't atomic
     with open(tmp, "wb") as fh:
         torch.save(obj, fh)
         fh.flush()
@@ -82,7 +53,7 @@ def atomic_save(obj, path: str) -> str:
 
 
 def atomic_write_json(obj, path: str, indent: int = 2) -> str:
-    """Same guarantee for JSON: history, metrics, configs."""
+    """Same guarantee for history, metrics, configs."""
     path = os.fspath(path)
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     tmp = path + ".tmp"
@@ -94,14 +65,10 @@ def atomic_write_json(obj, path: str, indent: int = 2) -> str:
     return path
 
 
-# ── resumable training state ─────────────────────────────────────────────────
+# resumable training state
 
 def _rng_state() -> dict:
-    """Capture every random stream that affects training."""
-    state = {
-        "python": random.getstate(),
-        "torch": torch.get_rng_state(),
-    }
+    state = {"python": random.getstate(), "torch": torch.get_rng_state()}
     try:
         import numpy as np
         state["numpy"] = np.random.get_state()
@@ -140,10 +107,11 @@ def save_resume(
     cfg=None,
     **extra,
 ):
-    """Write everything needed to continue this exact run after a power cut.
+    """Everything needed to continue this run. `epoch` is the last one finished.
 
-    ``epoch`` is the last epoch that *finished*, so the resumed run starts at
-    ``epoch + 1``.
+    Weights alone aren't enough: without Adam's moments, the scheduler position
+    and the early-stop counter you get a different run that happens to start
+    warm.
     """
     payload = {
         "epoch": epoch,
@@ -164,18 +132,15 @@ def save_resume(
 
 def load_resume(path: str, model=None, optimizer=None, scheduler=None,
                 scaler=None, map_location="cpu", restore_rng: bool = True):
-    """Load a ``save_resume`` checkpoint, restoring any object passed in.
+    """Load a save_resume checkpoint, restoring whatever is passed in.
 
-    Returns the raw payload, or ``None`` if there is nothing to resume from --
-    so the caller can write ``ckpt = load_resume(p, ...) or {}`` and treat a
-    first run and a resumed run the same way.
-
-    ``weights_only=False`` is required and safe here: the payload holds the
-    config dict and RNG tuples, which the restricted unpickler rejects, and the
-    file was written by this training run on this machine.
+    Returns None if there's nothing to resume, so callers can write
+    `load_resume(p, ...) or {}` and treat first and resumed runs alike.
     """
     if not path or not os.path.exists(path):
         return None
+    # weights_only=False: the payload holds the cfg dict and RNG tuples, which
+    # the restricted unpickler rejects. Written by this run, on this machine.
     payload = torch.load(path, map_location=map_location, weights_only=False)
 
     if model is not None and payload.get("model_state") is not None:
@@ -191,30 +156,24 @@ def load_resume(path: str, model=None, optimizer=None, scheduler=None,
     return payload
 
 
-# ── the results registry ─────────────────────────────────────────────────────
+# the results registry
 
 RESULTS_PATH = os.path.join("experiments", "results.jsonl")
 
 
 def append_result(row: dict, path: str = RESULTS_PATH) -> str:
-    """Append one finished run to the registry, durably.
+    """Append one finished run, durably.
 
-    JSON Lines, not CSV or a single JSON array: appending a line needs no read
-    of what is already there, so two runs cannot clobber each other and a cut
-    mid-append can at worst leave one damaged final line -- ``read_results``
-    skips it. A JSON array would have to be rewritten whole every time, which
-    is exactly the operation a power cut destroys.
-
-    The one trap, which the test for this caught: a cut mid-append leaves a
-    final line with no newline, and a naive append would then glue the *next*
-    result onto the damaged one, losing a good number as well as a bad one. So
-    terminate the file first if it does not end in a newline. Binary mode,
-    because seeking from the end is only well defined there.
+    JSON Lines, not a JSON array: appending needs no read of the file, so a cut
+    can damage at most the last line. An array would be rewritten whole every
+    time, which is the operation a power cut destroys.
     """
     path = os.fspath(path)
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     row = {"recorded_at": time.strftime("%Y-%m-%d %H:%M:%S"), **row}
     with open(path, "ab+") as fh:
+        # terminate a line a cut left unfinished, or this result gets glued
+        # onto the damaged one and both are lost
         fh.seek(0, os.SEEK_END)
         if fh.tell():
             fh.seek(-1, os.SEEK_END)
@@ -227,7 +186,7 @@ def append_result(row: dict, path: str = RESULTS_PATH) -> str:
 
 
 def read_results(path: str = RESULTS_PATH) -> list:
-    """Every recorded run. Silently drops a line a power cut cut in half."""
+    """Every recorded run. Skips a line a power cut cut in half."""
     if not os.path.exists(path):
         return []
     rows = []
@@ -239,5 +198,5 @@ def read_results(path: str = RESULTS_PATH) -> list:
             try:
                 rows.append(json.loads(line))
             except json.JSONDecodeError:
-                continue   # truncated final line from an interrupted append
+                continue
     return rows
