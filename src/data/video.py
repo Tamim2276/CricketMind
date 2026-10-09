@@ -68,14 +68,18 @@ def _read_once(path, rgb: bool) -> np.ndarray:
             if not ok:
                 break
             # OpenCV hands back BGR; every ImageNet-pretrained model wants RGB
-            frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) if rgb else frame)
+            if rgb:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frames.append(frame)
     finally:
         cap.release()
 
     if not frames:
         raise ClipError(f"opened but decoded 0 frames: {path}")
 
-    shapes = {f.shape for f in frames}
+    shapes = set()
+    for frame in frames:
+        shapes.add(frame.shape)
     if len(shapes) > 1:
         raise ClipError(f"frames differ in size {sorted(shapes)}: {path}")
 

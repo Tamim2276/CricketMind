@@ -44,7 +44,15 @@ def describe(device: Optional[torch.device] = None) -> str:
     """One line for the top of a training log."""
     device = device or get_device()
     amp = get_amp_settings(device)
-    dtype = "off" if amp.dtype is None else str(amp.dtype).replace("torch.", "")
+    if amp.dtype is None:
+        dtype = "off"
+    else:
+        dtype = str(amp.dtype).replace("torch.", "")
+
+    if amp.use_scaler:
+        scaler = "on"
+    else:
+        scaler = "off"
 
     name = "CPU"
     if device.type == "xpu":
@@ -53,8 +61,7 @@ def describe(device: Optional[torch.device] = None) -> str:
         name = torch.cuda.get_device_name(device.index or 0)
 
     return (f"device={device} ({name})  autocast={dtype}  "
-            f"grad_scaler={'on' if amp.use_scaler else 'off'}  "
-            f"torch={torch.__version__}")
+            f"grad_scaler={scaler}  torch={torch.__version__}")
 
 
 if __name__ == "__main__":

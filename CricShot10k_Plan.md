@@ -1408,6 +1408,23 @@ matching the CSV.
 **Takeaway.** Check a Dataset by indexing it directly, before a DataLoader is
 anywhere near it. One `d[0]` finds more bugs than an epoch of training.
 
+**Done 2026-10-10.** `src/data/dataset.py`, 104 lines, 14 tests. The check
+passes: `6341 torch.Size([15, 3, 224, 224]) torch.float32 0`, values running
+-2.12 to 2.39 with mean +0.121, which is what ImageNet normalisation looks
+like (plain 0-1 scaling would be 0 to 1).
+
+The 4.4 dependency is handled -- missing clips are dropped at construction and
+listed in `.missing`, or `strict=True` raises. The arithmetic confirms it:
+
+```
+grouped  train 121 + val 43 + test 47 = 211
+author   train 146 + val 30 + test 35 = 211
+```
+
+211 from both split sets, which partition the same clips differently, so that
+is a check rather than a coincidence. Both variants hold the same clips
+(6341/1569/1970), so box vs seg is a comparison on identical data.
+
 ### 5.2 `encoder.py` — the same CNN on all 15 frames (≈40 min)
 
 **Why.** Each frame needs turning into a feature vector before anything temporal
@@ -1429,6 +1446,19 @@ jobs instead of one large one.
 
 **Takeaway.** "Apply a 2D model across time" is a reshape, not a new
 architecture. That one idea covers most video models built on image backbones.
+
+**Done 2026-10-10.** `src/models/encoder.py`, 76 lines, 15 tests. The check
+passes on the Arc: `(2, 15, 3, 224, 224) -> (30, 3, 224, 224) -> (30, 1280) ->
+(2, 15, 1280)`, 20.2 M trainable parameters.
+
+Two things beyond the reshape. **The backbone is a parameter**, since Phase 3
+swaps it ten times; torchvision puts the ImageNet head on `.classifier` for
+efficientnet and `.fc` for resnet, so `_strip_classifier` finds whichever,
+records its `in_features` and replaces it with Identity. Downstream reads
+`encoder.out_dim`, never 1280. **A frozen backbone is kept in eval**, because
+BatchNorm updates its running statistics in train mode with or without
+gradients -- freezing the weights alone would still let the features drift,
+which defeats Phase 3's frozen-feature runs.
 
 ### 5.3 `head.py` — GRU-128 and the classifier (≈30 min)
 
@@ -1454,6 +1484,22 @@ doing both at once).
 one or the other, never both at once, and that is only easy if they were
 separate from the start.
 
+**Done 2026-10-10.** `src/models/head.py`, 68 lines, 17 tests. The check
+passes on the Arc: `(2, 15, 1280) -> (2, 15)`, and end to end
+`(2, 15, 3, 224, 224) -> (2, 15, 1280) -> (2, 15)`.
+
+0.69 M parameters in the head against 20.2 M in the encoder -- nearly all the
+capacity is in the frame encoder.
+
+Three tests are worth copying elsewhere, because a broken head still returns
+the right shape: reversing the clip must change the prediction, changing only
+the *first* frame must change it, and the output must **not** sum to 1 (it is
+logits; softmax belongs inside the loss).
+
+> **Constraint for Day 6.** `BatchNorm1d` raises on a batch of one in training
+> mode. Either drop the last batch or keep the batch size above 1, or a run
+> dies at the end of an epoch whose last batch has a single clip.
+
 ### 5.4 One batch through the whole model (≈20 min)
 
 **Why.** Before any training, confirm data flows end to end and gradients reach
@@ -1471,6 +1517,32 @@ non-zero.
 
 **Takeaway.** `ln(num_classes)` is the number to expect from an untrained
 classifier. Knowing it turns the first printed loss into a test.
+
+**Done 2026-10-10.** Loss **2.6406** against ln(15) = 2.7081, gradient norm at
+the first convolution **2.82**, and **0 of 460 parameter tensors without a
+gradient**. `src/models/model.py` (36 lines, 8 tests) wires the halves
+together -- slightly more than "build nothing", because Day 6 needs it and
+`build_model()` sizes the head from `encoder.out_dim`.
+
+> **The memory wall, found here.** The encoder sees **B x T images at once**,
+> so a batch of 8 clips is 120 images through EfficientNetV2-S with
+> activations kept for the backward pass. Batch 8 in fp32 is an OOM.
+>
+> | batch | images | fp32 | bf16 | bf16 step |
+> |---|---|---|---|---|
+> | 2 | 30 | 4.44 GB | 2.43 GB | 0.160 s |
+> | 4 | 60 | 8.93 GB | 4.67 GB | 0.218 s |
+> | 6 | 90 | 13.19 GB | **6.82 GB** | 0.353 s |
+> | 8 | 120 | **OOM** | | |
+>
+> An XPU OOM also **poisons the context**: every later allocation in that
+> process failed with `UR_RESULT_ERROR_OUT_OF_RESOURCES`. Day 6 must treat OOM
+> as fatal -- checkpoint and exit, let resume restart it.
+
+> **Phase 3 arithmetic.** At batch 6, 0.353 s a step, 6,341 train clips is
+> ~1,057 steps, about **6 minutes an epoch**: 3 hours for a 30-epoch run and
+> **~11 days of GPU for 88 runs**. Fine-tuning end to end every time is not
+> affordable. The frozen-encoder rows are how most of that table gets filled.
 
 ---
 

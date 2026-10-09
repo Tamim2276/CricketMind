@@ -7,8 +7,13 @@ leaves his outline -- measured width swing within one clip is x2.3.
 Four things happen here, in this order, because each changes what the next
 sees:
 
-  1. reject rogue boxes   8% of picks sit more than one body-height from the
-                          clip's median centre: a fielder in a crowd shot
+  1. track the batter     two passes. Centrality alone picks the wrong person
+                          somewhere in 22% of clips, so pass 1 establishes the
+                          clip's dominant track and pass 2 re-picks each frame
+                          against it, taking the runner-up where the leader
+                          disagrees with the clip as a whole. Two passes, not a
+                          running chain: chaining off the previous frame lets
+                          one bad frame poison every frame after it
   2. choose a shot        split the clip at its camera cuts and keep the shot
                           holding the most detections. Gaps inside it are the
                           detector blinking, whatever their length, and get
@@ -25,7 +30,7 @@ sees:
                           Measured over 596 frames: the bat stays whole in 84%
                           and the batter fills 67% of the crop
 """
-from typing import List, NamedTuple, Optional, Sequence, Tuple
+from typing import List, NamedTuple, Optional, Sequence
 
 import cv2
 import numpy as np
@@ -34,8 +39,7 @@ from src.preprocess.cuts import find_cuts
 from src.preprocess.striker import candidates, pick_striker
 
 __all__ = ["crop_clip", "track_boxes", "track_picks", "segment",
-           "frame_mask",
-           "smooth_boxes", "CropResult",
+           "frame_mask", "carried_mask", "smooth_boxes", "CropResult",
            "OUTLIER", "PAD", "SIZE", "MIN_FRAMES", "MIN_DETECTED",
            "BAT_REACH"]
 
@@ -60,28 +64,57 @@ class CropResult(NamedTuple):
 def _iou(a, b) -> float:
     ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
     iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
-    i = ix * iy
-    u = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - i
-    return i / u if u > 0 else 0.0
+    overlap = ix * iy
+    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - overlap
+    if union <= 0:
+        return 0.0
+    return overlap / union
+
+
+def _centre(box):
+    return (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+
+
+def _as_box(pick) -> Optional[tuple]:
+    """A pick's box as plain floats, or None."""
+    if pick is None:
+        return None
+    box = []
+    for v in pick.box:
+        box.append(float(v))
+    return tuple(box)
 
 
 def _strays(boxes) -> List[Optional[tuple]]:
     """Drop picks too far from the clip's median centre to be the same person."""
-    found = [b for b in boxes if b]
+    found = []
+    for box in boxes:
+        if box:
+            found.append(box)
     if len(found) < 3:
         return list(boxes)                 # too few to know what normal is
 
-    cs = np.array([[(b[0] + b[2]) / 2, (b[1] + b[3]) / 2] for b in found])
-    mx, my = np.median(cs, axis=0)
-    body = float(np.median([b[3] - b[1] for b in found])) or 1.0
+    centres = []
+    heights = []
+    for box in found:
+        centres.append(_centre(box))
+        heights.append(box[3] - box[1])
+    mx, my = np.median(np.array(centres), axis=0)
+    body = float(np.median(heights))
+    if body == 0:
+        body = 1.0
 
     out = []
-    for b in boxes:
-        if b is None:
+    for box in boxes:
+        if box is None:
             out.append(None)
             continue
-        stray = (abs((b[0] + b[2]) / 2 - mx) + abs((b[1] + b[3]) / 2 - my)) / body
-        out.append(None if stray > OUTLIER else b)
+        cx, cy = _centre(box)
+        stray = (abs(cx - mx) + abs(cy - my)) / body
+        if stray > OUTLIER:
+            out.append(None)
+        else:
+            out.append(box)
     return out
 
 
@@ -91,14 +124,28 @@ def _reference(boxes) -> Optional[List[Optional[tuple]]]:
     Built from the majority, so a run of frames that picked a fielder is
     outvoted rather than followed.
     """
-    found = [b for b in boxes if b]
+    found = []
+    for box in boxes:
+        if box:
+            found.append(box)
     if len(found) < 3:
         return None
-    med = tuple(np.median(np.array(found), axis=0))
-    core = [b if b and _iou(b, med) >= TRACK_IOU else None for b in boxes]
-    if not any(core):
+    median_box = tuple(np.median(np.array(found), axis=0))
+
+    core = []
+    for box in boxes:
+        if box and _iou(box, median_box) >= TRACK_IOU:
+            core.append(box)
+        else:
+            core.append(None)
+
+    seen = []
+    for i, box in enumerate(core):
+        if box is not None:
+            seen.append(i)
+    if not seen:
         return None
-    seen = [i for i, b in enumerate(core) if b]
+
     # no reference outside the agreed stretch. Holding the end box there lets
     # the bowler running in before the batter is detected pass as the batter,
     # which is every remaining error measured over 60 clips
@@ -110,29 +157,56 @@ def _reference(boxes) -> Optional[List[Optional[tuple]]]:
 def track_picks(per_frame, shape) -> List[Optional[object]]:
     """The chosen Detection per frame: the batter, tracked across the clip."""
     h, w = shape[:2]
-    cands = [candidates(d, (h, w)) for d in per_frame]
-    first = _strays([c[0].box if c else None for c in cands])
 
-    ref = _reference(first)
+    cands = []
+    for dets in per_frame:
+        cands.append(candidates(dets, (h, w)))
+
+    leaders = []
+    for frame_cands in cands:
+        if frame_cands:
+            leaders.append(frame_cands[0].box)
+        else:
+            leaders.append(None)
+    leaders = _strays(leaders)
+
+    ref = _reference(leaders)
     if ref is None:
-        return [c[0] if c and b else None for c, b in zip(cands, first)]
+        out = []
+        for frame_cands, box in zip(cands, leaders):
+            if frame_cands and box:
+                out.append(frame_cands[0])
+            else:
+                out.append(None)
+        return out
 
     # pass 2: the most central box is not always the batter, but the batter is
     # almost always on the list
     out = []
-    for c, r in zip(cands, ref):
-        if r is None or not c:
+    for frame_cands, want in zip(cands, ref):
+        if want is None or not frame_cands:
             out.append(None)
             continue
-        best = max(c, key=lambda d: _iou(d.box, r))
-        out.append(best if _iou(best.box, r) >= TRACK_IOU else None)
+        best = None
+        best_iou = -1.0
+        for det in frame_cands:
+            overlap = _iou(det.box, want)
+            if overlap > best_iou:
+                best_iou = overlap
+                best = det
+        if best_iou >= TRACK_IOU:
+            out.append(best)
+        else:
+            out.append(None)
     return out
 
 
 def track_boxes(per_frame, shape) -> List[Optional[tuple]]:
     """One box per frame: the batter, tracked across the clip."""
-    return [None if p is None else tuple(map(float, p.box))
-            for p in track_picks(per_frame, shape)]
+    out = []
+    for pick in track_picks(per_frame, shape):
+        out.append(_as_box(pick))
+    return out
 
 
 def frame_mask(striker, dets=()):
@@ -144,36 +218,41 @@ def frame_mask(striker, dets=()):
     """
     if striker is None or striker.mask is None:
         return None
-    m = striker.mask.astype(bool)
-    x1, y1, x2, y2 = striker.box
-    cx, cy, bh = (x1 + x2) / 2, (y1 + y2) / 2, (y2 - y1) or 1.0
-    for d in dets:
-        if d.cls != "Bat" or d.mask is None:
+    mask = striker.mask.astype(bool)
+    cx, cy = _centre(striker.box)
+    body = striker.box[3] - striker.box[1]
+    if body == 0:
+        body = 1.0
+
+    for det in dets:
+        if det.cls != "Bat" or det.mask is None:
             continue
-        bx, by = (d.box[0] + d.box[2]) / 2, (d.box[1] + d.box[3]) / 2
-        if ((bx - cx) ** 2 + (by - cy) ** 2) ** 0.5 / bh <= BAT_REACH:
-            m |= d.mask.astype(bool)
-    return m
+        bx, by = _centre(det.box)
+        gap = ((bx - cx) ** 2 + (by - cy) ** 2) ** 0.5 / body
+        if gap <= BAT_REACH:
+            mask |= det.mask.astype(bool)
+    return mask
 
 
 def segment(frame, striker, dets=(), mask=None):
     """Black out everything that is not the batter or his bat."""
-    m = frame_mask(striker, dets) if mask is None else mask
-    if m is None:
+    if mask is None:
+        mask = frame_mask(striker, dets)
+    if mask is None:
         return frame
     out = np.zeros_like(frame)
-    out[m] = frame[m]
+    out[mask] = frame[mask]
     return out
 
 
-def _shift(m, dx: int, dy: int):
+def _shift(mask, dx: int, dy: int):
     """Translate a mask without wrapping content round the edges."""
-    out = np.zeros_like(m)
-    h, w = m.shape
+    out = np.zeros_like(mask)
+    h, w = mask.shape
     ys, ye = max(0, dy), min(h, h + dy)
     xs, xe = max(0, dx), min(w, w + dx)
     if ye > ys and xe > xs:
-        out[ys:ye, xs:xe] = m[ys - dy:ye - dy, xs - dx:xe - dx]
+        out[ys:ye, xs:xe] = mask[ys - dy:ye - dy, xs - dx:xe - dx]
     return out
 
 
@@ -186,54 +265,108 @@ def carried_mask(picks, per_frame, i: int, box):
     bounding box in as a rectangle. So carry, and take whichever side is
     nearer.
     """
-    cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
-    for d in range(1, len(picks)):
-        for j in (i - d, i + d):
-            if not 0 <= j < len(picks):
+    cx, cy = _centre(box)
+    for step in range(1, len(picks)):
+        for j in (i - step, i + step):
+            if j < 0 or j >= len(picks):
                 continue
-            m = frame_mask(picks[j], per_frame[j])
-            if m is None:
+            mask = frame_mask(picks[j], per_frame[j])
+            if mask is None:
                 continue
-            q = picks[j].box
-            return _shift(m, int(round(cx - (q[0] + q[2]) / 2)),
-                          int(round(cy - (q[1] + q[3]) / 2)))
+            qx, qy = _centre(picks[j].box)
+            return _shift(mask, int(round(cx - qx)), int(round(cy - qy)))
     return None
 
 
 def _fill(boxes, lo: int, hi: int):
     """Linear interpolation across the blinks inside the span."""
-    out = [boxes[i] for i in range(lo, hi + 1)]
-    known = [i for i, b in enumerate(out) if b is not None]
+    out = []
+    for i in range(lo, hi + 1):
+        out.append(boxes[i])
+
+    known = []
+    for i, box in enumerate(out):
+        if box is not None:
+            known.append(i)
+
     for a, b in zip(known, known[1:]):
         for k in range(a + 1, b):
             t = (k - a) / (b - a)
-            out[k] = tuple(out[a][j] + t * (out[b][j] - out[a][j]) for j in range(4))
+            point = []
+            for j in range(4):
+                point.append(out[a][j] + t * (out[b][j] - out[a][j]))
+            out[k] = tuple(point)
     return out
 
 
 def smooth_boxes(boxes: Sequence[tuple]) -> np.ndarray:
     """Median filter to kill spikes, then a mean to take the shake out."""
-    a = np.asarray(boxes, dtype=np.float64)
-    for width, fn in ((MEDIAN_W, np.median), (MEAN_W, np.mean)):
+    series = np.asarray(boxes, dtype=np.float64)
+    for width, reduce in ((MEDIAN_W, np.median), (MEAN_W, np.mean)):
         r = width // 2
-        pad = np.pad(a, ((r, r), (0, 0)), mode="edge")
-        a = np.stack([fn(pad[i:i + width], axis=0) for i in range(len(a))])
-    return a
+        padded = np.pad(series, ((r, r), (0, 0)), mode="edge")
+        rows = []
+        for i in range(len(series)):
+            rows.append(reduce(padded[i:i + width], axis=0))
+        series = np.stack(rows)
+    return series
 
 
-def _runmean(v: np.ndarray, width: int) -> np.ndarray:
+def _runmean(values: np.ndarray, width: int) -> np.ndarray:
     r = width // 2
-    pad = np.pad(v, (r, r), mode="edge")
-    return np.array([pad[i:i + width].mean() for i in range(len(v))])
+    padded = np.pad(values, (r, r), mode="edge")
+    out = []
+    for i in range(len(values)):
+        out.append(padded[i:i + width].mean())
+    return np.array(out)
 
 
 def _square(box, side: float, fw: int, fh: int):
     """A square of fixed size on the box centre, nudged to stay in frame."""
-    cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+    cx, cy = _centre(box)
     s = min(side, fw, fh)                       # cannot be bigger than the frame
     x1 = min(max(cx - s / 2, 0), fw - s)
     y1 = min(max(cy - s / 2, 0), fh - s)
     return int(round(x1)), int(round(y1)), int(round(s))
+
+
+def _count_changes(per_frame, boxes, fh: int, fw: int):
+    """How often pass 2 overruled pass 1: dropped the pick, or swapped it."""
+    rogue = 0
+    swapped = 0
+    for dets, box in zip(per_frame, boxes):
+        leader = pick_striker(dets, (fh, fw))
+        if leader is None:
+            continue
+        if box is None:
+            rogue += 1
+        elif _iou(tuple(leader.box), box) < TRACK_IOU:
+            swapped += 1
+    return rogue, swapped
+
+
+def _best_shot(clip, boxes, cuts):
+    """The stretch between camera cuts holding the most detections."""
+    bounds = [0]
+    if cuts is None:
+        bounds.extend(find_cuts(clip))
+    else:
+        bounds.extend(cuts)
+    bounds.append(len(clip))
+
+    best = range(0, len(clip))
+    best_found = -1
+    for a, b in zip(bounds, bounds[1:]):
+        if b <= a:
+            continue
+        found = 0
+        for i in range(a, b):
+            if boxes[i] is not None:
+                found += 1
+        if found > best_found:
+            best_found = found
+            best = range(a, b)
+    return best
 
 
 def crop_clip(clip: np.ndarray, per_frame, size: int = SIZE, pad: float = PAD,
@@ -247,19 +380,19 @@ def crop_clip(clip: np.ndarray, per_frame, size: int = SIZE, pad: float = PAD,
     """
     fh, fw = clip.shape[1:3]
     picks = track_picks(per_frame, (fh, fw))
-    boxes = [None if p is None else tuple(map(float, p.box)) for p in picks]
-    rogue = sum(1 for p, b in zip(per_frame, boxes)
-                if b is None and pick_striker(p, (fh, fw)) is not None)
-    swapped = sum(1 for p, b in zip(per_frame, boxes)
-                  if b is not None and (lambda f: f is not None
-                                        and _iou(tuple(f.box), b) < TRACK_IOU)
-                  (pick_striker(p, (fh, fw))))
+
+    boxes = []
+    for pick in picks:
+        boxes.append(_as_box(pick))
+
+    rogue, swapped = _count_changes(per_frame, boxes, fh, fw)
     empty = np.empty((0, size, size, 3), np.uint8)
 
-    bounds = [0] + (list(cuts) if cuts is not None else find_cuts(clip)) + [len(clip)]
-    shot = max((range(a, b) for a, b in zip(bounds, bounds[1:]) if b > a),
-               key=lambda r: sum(boxes[i] is not None for i in r))
-    seen = [i for i in shot if boxes[i] is not None]
+    shot = _best_shot(clip, boxes, cuts)
+    seen = []
+    for i in shot:
+        if boxes[i] is not None:
+            seen.append(i)
     if not seen:
         return CropResult(empty, [], "no striker anywhere")
 
@@ -271,22 +404,25 @@ def crop_clip(clip: np.ndarray, per_frame, size: int = SIZE, pad: float = PAD,
     if len(span) < min_frames:
         return CropResult(empty, [], f"shot only {len(span)} frames")
 
-    sm = smooth_boxes(span)
+    smoothed = smooth_boxes(span)
     # size on height, not on max(w, h): width is the bat, height is the camera
-    sides = _runmean(sm[:, 3] - sm[:, 1], SIZE_W) * (1 + 2 * pad)
+    sides = _runmean(smoothed[:, 3] - smoothed[:, 1], SIZE_W) * (1 + 2 * pad)
 
     out = np.empty((len(span), size, size, 3), np.uint8)
-    nomask = carried = 0
-    for k, box in enumerate(sm):
+    nomask = 0
+    carried = 0
+    for k, box in enumerate(smoothed):
         x, y, s = _square(box, float(sides[k]), fw, fh)
         src = clip[lo + k]
         if segmented:
-            m = frame_mask(picks[lo + k], per_frame[lo + k])
-            if m is None:
-                m = carried_mask(picks, per_frame, lo + k, box)
-                carried += m is not None
-            nomask += m is None
-            src = segment(src, None, mask=m)
+            mask = frame_mask(picks[lo + k], per_frame[lo + k])
+            if mask is None:
+                mask = carried_mask(picks, per_frame, lo + k, box)
+                if mask is not None:
+                    carried += 1
+            if mask is None:
+                nomask += 1
+            src = segment(src, None, mask=mask)
         patch = src[y:y + s, x:x + s]
         out[k] = cv2.resize(patch, (size, size), interpolation=cv2.INTER_AREA)
 

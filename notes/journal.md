@@ -990,3 +990,210 @@ striker. All three are guards refusing to invent data rather than bugs.
 **Next, and it is a real dependency.** The split CSVs still name all 10,091
 clips, 211 of which have no output. Day 5's loader must filter the splits
 against the manifest or it will fail on a missing file.
+
+---
+
+## 2026-10-10 (5.1) — the dataset, and the 211 clips that are not there
+
+**Built.** `src/data/dataset.py` (104 lines, 14 tests). Reads a Day 1 split
+CSV, loads the `.npy` build_dataset.py wrote, hands back a tensor and a label.
+
+The shape contract, written into the docstring because everything downstream
+assumes it:
+
+```
+on disk      (T, 224, 224, 3) uint8
+__getitem__  (T, 3, 224, 224) float32, normalised
+DataLoader   (B, T, 3, 224, 224)
+```
+
+ImageNet mean/std rather than plain 0-1, because the pretrained encoder was
+fitted on inputs scaled that way and any other scaling shifts every feature it
+has ever seen. Verified by eye on real data: the output runs -2.12 to 2.39
+with mean +0.121, which is what ImageNet normalisation of ordinary photographs
+looks like. Plain 0-1 would have come out 0 to 1.
+
+**The dependency from 4.4 is handled.** The split CSVs still name all 10,091
+clips. Missing ones are dropped at construction and listed in `.missing`, with
+`strict=True` to raise instead. The arithmetic checks out exactly:
+
+```
+grouped  train 121 + val 43 + test  47 = 211 dropped
+author   train 146 + val 30 + test  35 = 211 dropped
+```
+
+211 both times, from two independently built splits -- which is a real check,
+not a coincidence, since the two CSVs partition the same clips differently.
+
+**Both variants hold the same clips**: box and seg come out at 6341/1569/1970
+each, so any box-vs-seg comparison is on identical data and identical labels.
+
+**Broke.** A typo of mine in the tests -- `transform=torch.flip_ := None`, a
+walrus operator used on an attribute, which is a syntax error. Caught at
+collection, fixed in the test, nothing to do with the module.
+
+**Check from the plan passes:** `6341 torch.Size([15, 3, 224, 224])
+torch.float32 0`.
+
+---
+
+## 2026-10-10 (5.2) — one image model, fifteen frames
+
+**Built.** `src/models/encoder.py` (76 lines, 15 tests). The plan's check
+passes on real data on the Arc:
+
+```
+batch of clips      (2, 15, 3, 224, 224)
+folded into photos  (30, 3, 224, 224)
+CNN describes each  (30, 1280)
+unfolded to clips   (2, 15, 1280)
+```
+
+20.2 M trainable parameters, features mean +0.021 std 0.310. The ImageNet
+weights were already cached, so no download -- worth knowing, because a
+download mid-loadshedding is a bad time to discover one is needed.
+
+**Two decisions that are not just the reshape.**
+
+*The backbone is a parameter.* Phase 3 swaps it ten times, so
+`FrameEncoder("resnet18")` has to work too. Different torchvision models put
+the ImageNet head on different attributes -- `.classifier` for efficientnet,
+`.fc` for resnet -- so `_strip_classifier` tries each, finds the Linear inside
+it, records `in_features` and replaces it with Identity. Everything downstream
+reads `encoder.out_dim` rather than hardcoding 1280. There is a test that
+builds a resnet18 and checks it comes out 512 wide.
+
+*Freezing the weights is not enough to freeze a backbone.* BatchNorm updates
+its running mean and variance in train mode whether or not it has gradients,
+so a "frozen" encoder's features would drift anyway. `train()` is overridden
+to keep a frozen backbone in eval. This matters for Phase 3's frozen-feature
+experiments, where the whole point is that the features do not move.
+
+**The tests worth having** are the ones that would catch a wrong reshape,
+since that is the only real risk here and a wrong one still produces tensors
+of the right shape:
+
+- the same frame repeated four times gives four identical vectors
+- a frame encoded inside a clip matches that frame encoded alone
+- two clips in a batch do not leak into each other
+
+A transpose instead of a flatten would pass a shape assertion and fail all
+three.
+
+---
+
+## 2026-10-10 (5.3) — the GRU head
+
+**Built.** `src/models/head.py` (68 lines, 17 tests). The authors' stack:
+GRU(128) -> BatchNorm -> Dense(1024, ReLU) -> Dense(15), **no dropout**,
+because they have none and this is the reproduction before it is an
+improvement. Dropout is a parameter defaulting to 0, so Phase 3 can turn it on
+without a rewrite.
+
+Check passes on the Arc, encoder and head wired together:
+
+```
+encoder   (2, 15, 3, 224, 224) -> (2, 15, 1280)
+head      (2, 15, 1280)        -> (2, 15)
+```
+
+0.69 M parameters in the head against 20.2 M in the encoder -- almost all the
+capacity is in the frame encoder, which is worth remembering when Phase 3 asks
+where the accuracy is coming from.
+
+**The output is logits and that is deliberate.** Summed over classes the first
+clip gives -0.02, not 1.00, and some entries are negative. `CrossEntropyLoss`
+does softmax and log together in one numerically stable step; doing them
+separately loses precision exactly where the model is most confident. A test
+asserts the output is *not* a probability distribution, which is the kind of
+thing that is easy to "fix" wrongly later.
+
+**Tests worth having.** Two attack the thing that would make this not a
+temporal model at all:
+
+- reversing the clip changes the prediction
+- changing only the **first** frame changes the prediction, so the summary
+  really carries the whole sequence rather than collapsing to the final pose
+
+Both would pass trivially if the head were broken in a way that still returned
+the right shape -- for instance taking `x[:, -1]` and ignoring the GRU.
+
+A third pins a real constraint: `BatchNorm1d` raises on a batch of one in
+training mode. Better to fail loudly in a test than to discover it at the end
+of an epoch when the last batch happens to have one clip left over. Day 6 must
+either drop the last batch or keep batch size above 1.
+
+**Also noted:** an untrained head scores cross-entropy 2.71 on random labels,
+which is `ln(15)`. That is 5.4's check, and it already holds.
+
+---
+
+## 2026-10-10 (5.4) — one batch end to end, and the memory wall
+
+**Check passes.**
+
+```
+clip batch      (6, 15, 3, 224, 224)
+logits          (6, 15)
+loss            2.6406
+ln(15)          2.7081   difference 0.0674
+first conv      (24, 3, 3, 3)   gradient norm 2.816625
+tensors with no gradient: 0 of 460
+```
+
+Loss sits where an untrained 15-class model should, gradients reach the very
+first convolution, and **no parameter is left unconnected** -- 0 of 460, which
+is a stronger check than the plan asked for and would catch a head wired to
+the wrong tensor.
+
+**Built, slightly beyond the plan.** The plan says "build nothing", but
+`src/models/model.py` (36 lines, 8 tests) makes this a one-liner and Day 6
+needs it anyway. `ShotModel` just holds the two halves; `build_model()` sizes
+the head from `encoder.out_dim`, so swapping to resnet18 resizes it to 512
+with nothing edited by hand.
+
+**Broke: out of memory, at the first attempt.** Batch 8 in fp32 died. The
+reason is the reshape from 5.2: the encoder sees **B x T images at once**, so
+8 clips is 120 images through EfficientNetV2-S with activations held for the
+backward pass.
+
+| batch | images | fp32 peak | bf16 peak | bf16 fwd+bwd |
+|---|---|---|---|---|
+| 2 | 30 | 4.44 GB | 2.43 GB | 0.160 s |
+| 3 | 45 | 6.73 GB | 3.59 GB | 0.204 s |
+| 4 | 60 | 8.93 GB | 4.67 GB | 0.218 s |
+| 6 | 90 | 13.19 GB | **6.82 GB** | 0.353 s |
+| 8 | 120 | **OOM** | not measured | |
+
+bf16 autocast roughly halves it, which is what `get_amp_settings` was written
+for on Day 1 and this is the first time it has mattered.
+
+**Worth knowing: an XPU out-of-memory poisons the context.** After the batch-8
+failure every later allocation in the same process died with
+`UR_RESULT_ERROR_OUT_OF_RESOURCES`, including ones that had just succeeded.
+The sweep had to be split across two processes. **Day 6 must treat OOM as
+fatal** -- catch it, checkpoint, exit, and let the resume logic restart -- not
+try to carry on with a smaller batch.
+
+**Arithmetic Phase 3 needs to see now.** At batch 6 and 0.353 s a step, 6,341
+train clips is 1,057 steps, about **6 minutes an epoch**. Thirty epochs is 3
+hours a run, and 88 runs is roughly **11 days of GPU**. Fine-tuning everything
+every time is not affordable; the frozen-encoder experiments are not a variant
+to try but the only way most of that table gets filled.
+
+**Also confirmed:** `BatchNorm1d` raised at batch 1 during the sweep, exactly
+as the 5.3 test predicted. Day 6 drops the last batch or keeps batch >= 2.
+
+**Follow-up, same day.** Suggested that the batch-8 OOM might have been other
+software holding memory -- a good hypothesis, since exactly that caused three
+failures on Day 2. Tested rather than argued: retried batch 8 fp32 on an idle
+machine, **11.08 GB VRAM and 9.62 GB RAM free, Chrome closed**. Still out of
+memory. The scaling says why -- 4.44, 6.73, 8.93, 13.19 GB for batches 2, 3,
+4, 6, so batch 8 needs about 17.6 GB against a 11.6 GB card.
+
+But the mechanism in the hypothesis is real and worth recording: **batch 6
+fp32 reported 13.19 GB allocated on an 11.6 GB card**, so roughly 1.6 GB came
+from shared system memory. Any configuration that spills does depend on free
+RAM, and there other software matters. bf16 at batch 6 peaks at 6.82 GB and
+stays inside the card entirely -- a second reason to use autocast beyond the
+saving itself.

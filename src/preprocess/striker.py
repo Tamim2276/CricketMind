@@ -24,6 +24,13 @@ ASPECT = (0.15, 2.5)    # width / height -- people are not ribbons
 EDGE_PX = 2             # the broadcaster's logo lives against the border
 
 
+def _frame_size(shape):
+    """(h, w) from either a frame or a plain (h, w) tuple."""
+    if hasattr(shape, "shape"):
+        return shape.shape[0], shape.shape[1]
+    return shape[0], shape[1]
+
+
 def plausible(det, w: int, h: int) -> bool:
     """Could this box be a person? Rejects logos, scorebars and slivers."""
     x1, y1, x2, y2 = det.box
@@ -43,14 +50,18 @@ def candidates(dets: Sequence, shape) -> list:
     crop.py needs the runners-up: one frame in five picks the wrong person,
     and the right one is usually sitting second on this list.
     """
-    h, w = shape[:2] if not hasattr(shape, "shape") else shape.shape[:2]
+    h, w = _frame_size(shape)
 
-    def off_centre(d):
-        x1, y1, x2, y2 = d.box
+    def off_centre(det):
+        x1, y1, x2, y2 = det.box
         return ((x1 + x2) / 2 - w / 2) ** 2 + ((y1 + y2) / 2 - h / 2) ** 2
 
-    return sorted((d for d in dets
-                   if d.cls == "Striker" and plausible(d, w, h)), key=off_centre)
+    found = []
+    for det in dets:
+        if det.cls == "Striker" and plausible(det, w, h):
+            found.append(det)
+    found.sort(key=off_centre)
+    return found
 
 
 def pick_striker(dets: Sequence, shape) -> Optional[object]:
@@ -59,5 +70,7 @@ def pick_striker(dets: Sequence, shape) -> Optional[object]:
     `shape` is the frame, or (h, w). None is a real answer, not a failure --
     9% of frames genuinely contain no batter, mostly after a camera cut.
     """
-    c = candidates(dets, shape)
-    return c[0] if c else None
+    found = candidates(dets, shape)
+    if not found:
+        return None
+    return found[0]

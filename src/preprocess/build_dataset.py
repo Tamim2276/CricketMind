@@ -41,25 +41,42 @@ VARIANTS = ("box", "seg")
 def _progress(done: int, total: int, failed: int, t0: float, tty: bool) -> str:
     """One line, rewritten in place on a terminal, appended in a log file."""
     rate = done / max(time.time() - t0, 1e-9)
-    left = (total - done) / rate / 3600 if rate else 0.0
-    bad = (f"{_RED}{failed} failed{_OFF}" if failed and tty
-           else f"{failed} failed")
+    if rate:
+        left = (total - done) / rate / 3600
+    else:
+        left = 0.0
+
+    if failed and tty:
+        bad = f"{_RED}{failed} failed{_OFF}"
+    else:
+        bad = f"{failed} failed"
+
     tail = f"{rate:4.1f} clips/s  {bad}  ~{left:4.1f} h left"
     if not tty:
         return f"  {done}/{total}  {tail}"
-    on = round(done / total * BAR) if total else BAR
-    dots = f"{_GREEN}{chr(0x25CF) * on}{_OFF}{_DIM}{chr(0xB7) * (BAR - on)}{_OFF}"
-    return f"\r[{dots}] {done}/{total} {done / max(total, 1):5.1%}  {tail} "
+
+    if total:
+        on = round(done / total * BAR)
+        share = done / total
+    else:
+        on = BAR
+        share = 1.0
+    filled = chr(0x25CF) * on
+    rest = chr(0xB7) * (BAR - on)
+    dots = f"{_GREEN}{filled}{_OFF}{_DIM}{rest}{_OFF}"
+    return f"\r[{dots}] {done}/{total} {share:5.1%}  {tail} "
 
 
 def clip_list(root: str = ROOT):
     """Every clip, as (class, relative path). Sorted, so runs are comparable."""
     out = []
     for cls in sorted(os.listdir(root)):
-        d = os.path.join(root, cls)
-        if os.path.isdir(d):
-            out += [(cls, f"{cls}/{n}") for n in sorted(os.listdir(d))
-                    if n.endswith(".avi")]
+        folder = os.path.join(root, cls)
+        if not os.path.isdir(folder):
+            continue
+        for name in sorted(os.listdir(folder)):
+            if name.endswith(".avi"):
+                out.append((cls, f"{cls}/{name}"))
     return out
 
 
@@ -107,8 +124,14 @@ def build(limit=None, out_dir=OUT, variants=VARIANTS, root=ROOT,
     clips = clip_list(root)
     if limit:
         clips = clips[:limit]
-    done = {r["clip"] for r in read_results(manifest)}
-    todo = [(c, r) for c, r in clips if r not in done]
+    done = set()
+    for row in read_results(manifest):
+        done.add(row["clip"])
+
+    todo = []
+    for cls, rel in clips:
+        if rel not in done:
+            todo.append((cls, rel))
 
     model = load_detector()
     device = device or str(get_device())

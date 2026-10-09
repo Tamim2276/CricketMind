@@ -23,9 +23,15 @@ RATIO = 3.0         # ... or this many times the clip's own typical motion
 
 def frame_diffs(clip) -> np.ndarray:
     """Mean absolute greyscale change between consecutive frames."""
-    g = [cv2.cvtColor(cv2.resize(f, SMALL), cv2.COLOR_RGB2GRAY).astype(np.float32)
-         for f in clip]
-    return np.array([np.abs(g[i + 1] - g[i]).mean() for i in range(len(g) - 1)])
+    grey = []
+    for frame in clip:
+        small = cv2.resize(frame, SMALL)
+        grey.append(cv2.cvtColor(small, cv2.COLOR_RGB2GRAY).astype(np.float32))
+
+    diffs = []
+    for i in range(len(grey) - 1):
+        diffs.append(np.abs(grey[i + 1] - grey[i]).mean())
+    return np.array(diffs)
 
 
 def find_cuts(clip) -> List[int]:
@@ -42,12 +48,24 @@ def find_cuts(clip) -> List[int]:
     # top decile first; duplicate frames are excluded from the other end
     calm = d[d <= np.percentile(d, 90)]
     moving = calm[calm > 1.0]
-    typical = float(np.median(moving)) if len(moving) else 1.0
+    if len(moving):
+        typical = float(np.median(moving))
+    else:
+        typical = 1.0
     thr = max(RATIO * typical, FLOOR)
-    return [i + 1 for i, v in enumerate(d) if v > thr]
+
+    cuts = []
+    for i, value in enumerate(d):
+        if value > thr:
+            cuts.append(i + 1)
+    return cuts
 
 
 def shots(clip) -> List[range]:
     """The clip split into continuous shots at its cuts."""
     bounds = [0] + find_cuts(clip) + [len(clip)]
-    return [range(a, b) for a, b in zip(bounds, bounds[1:]) if b > a]
+    out = []
+    for a, b in zip(bounds, bounds[1:]):
+        if b > a:
+            out.append(range(a, b))
+    return out

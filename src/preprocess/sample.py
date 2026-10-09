@@ -32,8 +32,9 @@ def drop_duplicates(clip: np.ndarray, tol: float = DUP_TOL) -> Tuple[np.ndarray,
         return clip, list(range(len(clip)))
     keep = [0]
     for i in range(1, len(clip)):
-        d = np.abs(clip[i].astype(np.int16) - clip[keep[-1]].astype(np.int16)).mean()
-        if d >= tol:
+        last = clip[keep[-1]].astype(np.int16)
+        diff = np.abs(clip[i].astype(np.int16) - last).mean()
+        if diff >= tol:
             keep.append(i)
     return clip[keep], keep
 
@@ -48,7 +49,10 @@ def sample_indices(n: int, k: int = TARGET) -> List[int]:
         raise ValueError("no frames to sample")
     if n == 1:
         return [0] * k
-    return [int(round(v)) for v in np.linspace(0, n - 1, k)]
+    out = []
+    for position in np.linspace(0, n - 1, k):
+        out.append(int(round(position)))
+    return out
 
 
 def sample(frames: np.ndarray, k: int = TARGET) -> np.ndarray:

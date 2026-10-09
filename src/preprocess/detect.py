@@ -72,23 +72,45 @@ def detect(frames, conf: float = 0.25, model=None, device=None,
     device = device or str(get_device())
 
     single = isinstance(frames, np.ndarray) and frames.ndim == 3
-    imgs = [frames] if single else list(frames)
+    if single:
+        imgs = [frames]
+    else:
+        imgs = list(frames)
     if rgb:
-        imgs = [cv2.cvtColor(f, cv2.COLOR_RGB2BGR) for f in imgs]
+        converted = []
+        for frame in imgs:
+            converted.append(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+        imgs = converted
 
     out = []
     for i in range(0, len(imgs), batch):
-        for img, r in zip(imgs[i:i + batch],
-                          model.predict(imgs[i:i + batch], device=device,
-                                        conf=conf, imgsz=imgsz, verbose=False)):
-            mm = _masks(r, img.shape[:2]) if masks else None
-            out.append([
-                Detection(model.names[int(c)], float(p), tuple(map(float, b)),
-                          None if mm is None else mm[k])
-                for k, (c, p, b) in enumerate(zip(r.boxes.cls, r.boxes.conf,
-                                                  r.boxes.xyxy.tolist()))
-            ])
-    return out[0] if single else out
+        chunk = imgs[i:i + batch]
+        results = model.predict(chunk, device=device, conf=conf,
+                                imgsz=imgsz, verbose=False)
+        for img, result in zip(chunk, results):
+            if masks:
+                frame_masks = _masks(result, img.shape[:2])
+            else:
+                frame_masks = None
+
+            found = []
+            boxes = result.boxes.xyxy.tolist()
+            for k in range(len(boxes)):
+                box = []
+                for v in boxes[k]:
+                    box.append(float(v))
+                if frame_masks is None:
+                    mask = None
+                else:
+                    mask = frame_masks[k]
+                name = model.names[int(result.boxes.cls[k])]
+                found.append(Detection(name, float(result.boxes.conf[k]),
+                                       tuple(box), mask))
+            out.append(found)
+
+    if single:
+        return out[0]
+    return out
 
 
 def _masks(result, shape):
@@ -97,5 +119,8 @@ def _masks(result, shape):
     if result.masks is None:
         return None
     h, w = shape
-    m = result.masks.data.cpu().numpy().astype(np.uint8)
-    return [cv2.resize(x, (w, h), interpolation=cv2.INTER_NEAREST) for x in m]
+    raw = result.masks.data.cpu().numpy().astype(np.uint8)
+    out = []
+    for mask in raw:
+        out.append(cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST))
+    return out

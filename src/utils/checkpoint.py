@@ -93,6 +93,13 @@ def _restore_rng(state) -> None:
             pass
 
 
+def _state_of(thing):
+    """An optimizer/scheduler/scaler's state, or None if there isn't one."""
+    if thing is None:
+        return None
+    return thing.state_dict()
+
+
 def save_resume(
     path: str,
     *,
@@ -116,9 +123,9 @@ def save_resume(
     payload = {
         "epoch": epoch,
         "model_state": model.state_dict(),
-        "optimizer_state": optimizer.state_dict() if optimizer is not None else None,
-        "scheduler_state": scheduler.state_dict() if scheduler is not None else None,
-        "scaler_state": scaler.state_dict() if scaler is not None else None,
+        "optimizer_state": _state_of(optimizer),
+        "scheduler_state": _state_of(scheduler),
+        "scaler_state": _state_of(scaler),
         "history": history or {},
         "best_val_top1": best_val_top1,
         "no_improve": no_improve,
