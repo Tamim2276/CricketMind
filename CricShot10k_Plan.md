@@ -1737,8 +1737,15 @@ batch 4, 100 epochs, early-stop patience 10, plateau patience 4, and the flip.
 **Run.**
 
 ```bash
-python src/train.py --config configs/mimic_author.yaml
+python -m src.train --config configs/mimic_author.yaml
 ```
+
+`python src/train.py` does **not** work -- the module imports `src.*`, which
+needs the package on the path. Run it with `-m`.
+
+**Measured before launching, 2026-10-11:** 6,320 train / 1,584 val clips at
+batch 4 is 1,580 steps, **~9 minutes an epoch**, so 100 epochs is **15.5 h**
+worst case. Early stopping with patience 10 should cut it well short.
 
 **Check at epoch 5.** Val accuracy should already be past 60%. If it is stuck
 near 7% the labels are shuffled. **If it is near 75%, you are reading uncropped
@@ -1751,7 +1758,7 @@ means the crops are not being read.
 
 **Why.** It is in the authors' pipeline and worth about 1.5 points.
 
-**Build.** Offline flip, **training split only**, applied *after* the split.
+**Build.** Flip the **training split only**, *after* the split.
 
 **Code to understand.** Why flipping after the split is essential: flip first
 and a clip's mirror image can land in test while the original is in train — a
@@ -1759,7 +1766,26 @@ leak that is very hard to spot later. Also why flipping is safe for cricket
 shots at all (it turns a right-hander into a left-hander, which is a real thing
 that happens) while a vertical flip would not be.
 
-**Check.** The training set roughly doubles; val and test are untouched.
+**Done 2026-10-11, online rather than offline.** `src/data/augment.py`'s
+`ClipFlip` is attached to the training `Dataset` only, so the leak the plan
+warns about is impossible **by construction** -- there is no flipped file that
+could be split into test, because there are no flipped files.
+
+Three reasons it beats writing the doubled set to disk:
+
+| | offline | online |
+|---|---|---|
+| extra disk | +21 GB per variant | none |
+| steps an epoch | 3,160 | 1,580 |
+| 100 epochs | ~30 h | **~15.5 h** |
+| what the model sees | the same two copies every epoch | a fresh coin-flip each epoch |
+
+The doubling is what costs the time, and it buys a *fixed* pair rather than
+variety. One decision per clip, never per frame -- flipping frame 7 and not
+frame 8 invents the camera jump Day 3 spent its time removing.
+
+**Check.** `val_loader.dataset.transform is None` while the training one is a
+`ClipFlip`. There is a test for exactly that.
 
 **Takeaway.** Every augmentation needs this question asked: does it produce an
 image that could really occur?
