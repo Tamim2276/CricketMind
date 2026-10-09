@@ -149,3 +149,35 @@ def test_clip_list_is_sorted_and_classed(tmp_path):
     got = bd.clip_list(str(tmp_path))
     assert got == [("Pull", "Pull/vid1_0.avi"), ("Pull", "Pull/vid2_0.avi"),
                    ("Sweep", "Sweep/vid1_0.avi"), ("Sweep", "Sweep/vid2_0.avi")]
+
+
+# ---- the progress line --------------------------------------------------
+
+def test_the_bar_fills_up():
+    import time as _t
+    t0 = _t.time() - 10
+    start = bd._progress(0, 100, 0, t0, True)
+    half = bd._progress(50, 100, 0, t0, True)
+    end = bd._progress(100, 100, 0, t0, True)
+    dot = chr(0x25CF)
+    assert start.count(dot) == 0
+    assert half.count(dot) == bd.BAR // 2
+    assert end.count(dot) == bd.BAR
+
+
+def test_the_bar_rewrites_one_line():
+    line = bd._progress(5, 100, 0, __import__("time").time() - 5, True)
+    assert line.startswith("\r") and "\n" not in line
+
+
+def test_no_escape_codes_when_output_is_not_a_terminal():
+    """A log file should not fill up with colour codes and carriage returns."""
+    line = bd._progress(5, 100, 2, __import__("time").time() - 5, False)
+    assert "\033" not in line and "\r" not in line
+    assert "5/100" in line and "2 failed" in line
+
+
+def test_failures_are_coloured_only_when_there_are_some():
+    t0 = __import__("time").time() - 5
+    assert bd._RED in bd._progress(5, 100, 1, t0, True)
+    assert bd._RED not in bd._progress(5, 100, 0, t0, True)

@@ -1347,6 +1347,30 @@ python -m src.preprocess.build_dataset --split all
 Expect a few hundred failures out of 10,091; read the failure log and make sure
 they are not all from one class.
 
+**Done 2026-10-10. 10,091 clips, 9,880 usable (97.9%), 211 failed, 4.53 h.**
+Zero `read_clip` retries. 9,880 `.npy` files in each variant against 9,880 `ok`
+rows, **no `.tmp` left behind**, 42 GB -- within 1% of the projection.
+
+The failure rate *was* uneven and the cause turned out to be the footage.
+Scoop 8.6%, Reverse Sweep 5.2%, Straight Drive 5.0%, against Hook 0.0% and
+Pull 0.8%. Scoop's failures are 20 "too short" to 4 "too little detected", and
+surviving Scoop clips keep a median of 19 frames against 22-23 elsewhere: a
+scoop sends the ball over the keeper, the broadcast cuts away sooner, more of
+the clip is correctly trimmed. The trim is right.
+
+Effect on the imbalance, which is the thing that would matter:
+
+```
+before : 1123:252 = 4.46:1
+after  : 1108:239 = 4.64:1
+```
+
+Negligible. One sentence in the thesis, not a re-run.
+
+> **Day 5 depends on this.** The split CSVs still name all 10,091 clips, 211
+> of which have no output. `dataset.py` must filter the splits against
+> `data/processed/manifest.jsonl` or it will fail on a missing file.
+
 **Takeaway.** While it runs, read the authors' notebook in
 `data/unnecessary/cricshot10k-models.zip` and compare their preprocessing to
 yours. Differences you find now are cheap.

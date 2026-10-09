@@ -933,3 +933,60 @@ working directory from `sys.path`. `-I` is the habit for scripts that read
 untrusted data, not for the project's own modules.
 
 **Open.** Nothing blocking. The run is ready to launch.
+
+---
+
+## 2026-10-10 (4.4) — the full run: 10,091 clips in 4.53 hours
+
+**Done.** 10,091 clips, **9,880 usable (97.9%)**, 211 failed, 4.53 h at 0.6
+clips/s. No `read_clip` retries at all, so no flaky decodes over the whole
+dataset.
+
+Output is consistent with the manifest, which is the check that matters:
+
+```
+box: 9880 .npy files, 0 leftover .tmp   21 GB
+seg: 9880 .npy files, 0 leftover .tmp   21 GB
+```
+
+9,880 files in each variant against 9,880 `ok` rows, and **no `.tmp` files
+left behind** -- the atomic save never got caught mid-write. 42 GB total,
+within 1% of the 42.4 GB projected from 25 sample crops. Spot-checked 8 random
+clips: all `(15, 224, 224, 3)` uint8, segmented versions 12-17% non-black.
+
+**The failure rate is uneven, and I said to investigate that.** So:
+
+| class | clips | failed | rate |
+|---|---|---|---|
+| Scoop | 279 | 24 | **8.6%** |
+| Reverse Sweep | 252 | 13 | 5.2% |
+| Straight Drive | 423 | 21 | 5.0% |
+| ... | | | |
+| Pull | 745 | 6 | 0.8% |
+| Hook | 534 | 0 | **0.0%** |
+
+**Cause found, and it is the footage, not a bug.** Scoop's failures are
+overwhelmingly "too short" (20 of 24, against 4 "too little detected"), and
+surviving Scoop clips keep a median of **19 frames against 22-23** for other
+classes. A scoop sends the ball over the keeper, so the broadcast cuts away
+sooner, so more of the clip is correctly trimmed, so more clips fall under
+`MIN_FRAMES = 8`. The trim is right; the shots are just shorter on screen.
+
+**Does it distort the dataset?** Barely. The two worst-hit classes were already
+the smallest, so the worry was that preprocessing would amplify the imbalance:
+
+```
+imbalance before : 1123:252 = 4.46:1
+imbalance after  : 1108:239 = 4.64:1
+```
+
+4.46 to 4.64. Not nothing, but not a distortion worth re-running 4.5 hours
+for. Worth one sentence in the thesis: preprocessing costs the rarest classes
+slightly more because their shots leave the screen sooner.
+
+**Failure reasons overall:** 115 too short, 93 too little detected, 3 no
+striker. All three are guards refusing to invent data rather than bugs.
+
+**Next, and it is a real dependency.** The split CSVs still name all 10,091
+clips, 211 of which have no output. Day 5's loader must filter the splits
+against the manifest or it will fail on a missing file.

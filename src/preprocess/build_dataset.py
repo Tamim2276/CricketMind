@@ -29,10 +29,27 @@ from src.utils.device import get_device
 
 __all__ = ["process_clip", "build", "VARIANTS"]
 
+BAR = 28
+_GREEN, _RED, _DIM, _OFF = "[32m", "[31m", "[2m", "[0m"
+
 ROOT = os.path.join("data", "CricShoot10kShootDataset")
 OUT = os.path.join("data", "processed")
 MANIFEST = os.path.join(OUT, "manifest.jsonl")
 VARIANTS = ("box", "seg")
+
+
+def _progress(done: int, total: int, failed: int, t0: float, tty: bool) -> str:
+    """One line, rewritten in place on a terminal, appended in a log file."""
+    rate = done / max(time.time() - t0, 1e-9)
+    left = (total - done) / rate / 3600 if rate else 0.0
+    bad = (f"{_RED}{failed} failed{_OFF}" if failed and tty
+           else f"{failed} failed")
+    tail = f"{rate:4.1f} clips/s  {bad}  ~{left:4.1f} h left"
+    if not tty:
+        return f"  {done}/{total}  {tail}"
+    on = round(done / total * BAR) if total else BAR
+    dots = f"{_GREEN}{chr(0x25CF) * on}{_OFF}{_DIM}{chr(0xB7) * (BAR - on)}{_OFF}"
+    return f"\r[{dots}] {done}/{total} {done / max(total, 1):5.1%}  {tail} "
 
 
 def clip_list(root: str = ROOT):
@@ -100,6 +117,7 @@ def build(limit=None, out_dir=OUT, variants=VARIANTS, root=ROOT,
     print(f"device={device}  variants={','.join(variants)}  -> {out_dir}\n",
           flush=True)
 
+    tty = sys.stdout.isatty()
     t0, failed = time.time(), 0
     for n, (cls, rel) in enumerate(todo, 1):
         try:
@@ -107,16 +125,17 @@ def build(limit=None, out_dir=OUT, variants=VARIANTS, root=ROOT,
         except Exception as e:            # one bad clip must not kill the run
             row = {"clip": rel, "ok": False,
                    "reason": f"{type(e).__name__}: {e}"}
+            if tty:
+                print()                   # do not scribble over the bar
             traceback.print_exc(limit=1)
         row["class"] = cls
         append_result(row, manifest)
         failed += not row["ok"]
 
-        if n % 25 == 0 or n == len(todo):
-            rate = n / (time.time() - t0)
-            left = (len(todo) - n) / rate / 3600
-            print(f"  {n}/{len(todo)}  {rate:.1f} clips/s  "
-                  f"{failed} failed  ~{left:.1f} h left", flush=True)
+        if tty:
+            print(_progress(n, len(todo), failed, t0, True), end="", flush=True)
+        elif n % 25 == 0 or n == len(todo):
+            print(_progress(n, len(todo), failed, t0, False), flush=True)
 
     secs = time.time() - t0
     print(f"\ndone in {secs/3600:.2f} h   {failed} failed of {len(todo)}")
