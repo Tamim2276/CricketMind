@@ -8,7 +8,7 @@ the tensor along:
 """
 import torch.nn as nn
 
-from src.models.encoder import DEFAULT_BACKBONE, FrameEncoder
+from src.models.encoder import DEFAULT_BACKBONE, DEFAULT_SIZE, FrameEncoder
 from src.models.head import DENSE, HIDDEN, NUM_CLASSES, GRUHead
 
 __all__ = ["ShotModel", "build_model"]
@@ -29,8 +29,13 @@ class ShotModel(nn.Module):
 def build_model(num_classes: int = NUM_CLASSES,
                 backbone: str = DEFAULT_BACKBONE, pretrained: bool = True,
                 freeze: bool = False, hidden: int = HIDDEN,
-                dense: int = DENSE, dropout: float = 0.0) -> ShotModel:
-    """The default stack. The head is sized from the encoder, never hardcoded."""
-    encoder = FrameEncoder(backbone, pretrained, freeze)
+                dense: int = DENSE, dropout: float = 0.0,
+                pool: str = "avg", size: int = DEFAULT_SIZE) -> ShotModel:
+    """The default stack. The head is sized from the encoder, never hardcoded.
+
+    `pool="flatten"` reproduces the authors: the GRU sees the whole 7x7 grid
+    instead of a pooled summary, which is 62720 features rather than 1280.
+    """
+    encoder = FrameEncoder(backbone, pretrained, freeze, pool, size)
     head = GRUHead(encoder.out_dim, num_classes, hidden, dense, dropout)
     return ShotModel(encoder, head)

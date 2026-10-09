@@ -1569,6 +1569,23 @@ optimizer only every N batches.
 **overfit** it to near 100%. A model that cannot memorise 50 clips has a bug,
 and you will find it in two minutes instead of two hours.
 
+**Done 2026-10-10.** `src/engine.py`, 118 lines, 17 tests.
+
+> **Take the subset from every class.** The first attempt used the first 50
+> rows of the split CSV, which is ordered by class -- all 50 were Cover Drive,
+> and "100% accuracy" only meant the model had learned to say one word. Four
+> clips from each of the 15 classes instead:
+>
+> ```
+> epoch 1   loss 2.7234   top-1  15.0%
+> epoch 3   loss 2.1745   top-1  75.0%
+> epoch 6   loss 1.5433   top-1 100.0%
+> epoch 20  loss 0.2248   top-1 100.0%
+> ```
+>
+> Epoch 1 at 2.7234 against ln(15) = 2.7081 is 5.4's anchor appearing again
+> unprompted. 2.5 s an epoch at batch 6.
+
 ### 6.2 `evaluate` (≈30 min)
 
 **Why.** Validation accuracy decides everything in Phase 3, so it must be
@@ -1588,6 +1605,25 @@ it, on an untrained model, means labels are leaking in somewhere.
 
 **Takeaway.** Both of your "is this right?" anchors are now in place:
 `ln(15)` for the loss and `1/15` for the accuracy.
+
+**Done 2026-10-10.** `evaluate` and `topk_correct` in `src/engine.py`, 27
+tests. On the real val set, untrained:
+
+```
+loss    2.7369   ln(15) = 2.7081
+top-1    2.42%   chance  6.67%
+top-2    6.37%   top-3  12.81%
+```
+
+> **Below chance is the right answer here, and the plan's "about 6.7%" is
+> loose.** An untrained net is biased, not uniform: this one puts 65.6% of its
+> predictions on Scoop and 27.6% on Reverse Sweep, the two *rarest* classes
+> (2.6% and 2.4% of val). Expected top-1 for that bias is **2.80%**; measured
+> 2.42%, within one standard error. The loss agrees -- 2.7369 is slightly
+> above ln(15), which is what concentration costs.
+>
+> The test is **materially above chance**, which would mean a leak. A
+> symmetric tolerance around 6.7% is the wrong check.
 
 ### 6.3 The loop, with resume wired in (≈40 min)
 
@@ -1611,6 +1647,29 @@ deliberately now**, while a lost run costs seconds.
 **Takeaway.** Rehearse the recovery before you need it. An untested backup is
 not a backup.
 
+**Done 2026-10-10.** `src/train.py`, 260 lines, 11 tests. Rehearsed with a
+**hard kill**, not Ctrl-C, since a power cut gives no chance to save on the
+way out:
+
+```
+killed during epoch 4
+resume.pt says epoch 3, best 10.00%, 3 epochs of history
+
+... same command again ...
+RESUMED from experiments\smoke2
+esume.pt -- starting at epoch 4 with best 10.00%
+
+epochs in history: [1, 2, 3, 4, 5, 6]
+resume.pt after a clean finish: False
+```
+
+No gap, no repeated epoch, file cleaned up.
+
+Two things folded in from earlier days: `--limit_clips` takes its subset
+**across all classes** (6.1's lesson), and the processed-data directory is a
+config key rather than a constant, so a second preprocessing run can be
+trained against without editing code.
+
 ### 6.4 `configs/mimic_author.yaml` (≈30 min)
 
 **Why.** Reproducing the authors means their settings, not ones that look
@@ -1632,6 +1691,42 @@ to guess, in the journal.
 
 **Takeaway.** "Reproduce" means their numbers, including the ones you would have
 chosen differently. Your own choices come after the baseline lands.
+
+**Done 2026-10-11.** `configs/mimic_author.yaml`.
+
+> **There is no notebook in either archive.** The evidence is their shipped
+> `.keras` file, which is better -- it is what produced the weights. Its
+> `config.json` confirms no dropout, a **trainable** (not frozen) encoder,
+> GRU(128), Dense(1024), Adam with no weight decay.
+>
+> **The saved learning rate is 1e-9**, which nobody starts from. It is where
+> `ReduceLROnPlateau(factor=0.1)` lands after five cuts from 1e-4 -- so both
+> numbers are corroborated by one they never wrote down.
+
+> **The finding that made this real work.** Their GRU kernel is
+> **(62720, 384)**: 384 is 3 gates x 128, and **62720 is 7 x 7 x 1280**. They
+> do not pool -- the Flatten hands the GRU the whole spatial map. We were
+> average-pooling to 1280, which discards *where* the bat is relative to the
+> body.
+>
+> | | GRU params | model |
+> |---|---|---|
+> | theirs (flatten) | 24.13 M | 44.5 M |
+> | ours (avg) | 0.54 M | 20.9 M |
+>
+> `FrameEncoder` now takes `pool="avg"|"flatten"`, and `out_dim` is measured
+> by a dummy forward rather than derived. It returns 62720, matching their
+> kernel exactly.
+
+Also added for this config: `src/data/augment.py` (`ClipFlip`, one decision
+per clip) and `ReduceLROnPlateau` stepped on validation top-1.
+
+**Re-measured, because the architecture changed:** flatten at batch 4 is
+**5.60 GB and 0.264 s a step**, so their batch fits and an epoch is about
+**7 minutes**. 100 epochs is ~12 h before early stopping.
+
+**Five values could not be read from the file** and say so in the config:
+batch 4, 100 epochs, early-stop patience 10, plateau patience 4, and the flip.
 
 ---
 

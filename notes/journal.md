@@ -1197,3 +1197,251 @@ from shared system memory. Any configuration that spills does depend on free
 RAM, and there other software matters. bf16 at batch 6 peaks at 6.82 GB and
 stays inside the card entirely -- a second reason to use autocast beyond the
 saving itself.
+
+---
+
+## 2026-10-10 (6.1) — train_epoch, and an overfit check that proved nothing
+
+**Built.** `src/engine.py` (118 lines, 17 tests). One epoch: zero, forward,
+loss, backward, step. Returns mean loss, top-1, clips and optimizer steps.
+
+**Broke: my own check.** First run said "50 clips ... loss 2.62 -> 0.05,
+**100% accuracy**", which looked like a pass. It was not. The line above it
+said **"1 classes present"**. The split CSV is ordered by class, so the first
+50 rows are all Cover Drive, and the model had learned to say one word. A
+single-class subset makes 100% meaningless.
+
+Re-ran on **4 clips from each of the 15 classes**:
+
+```
+  epoch    loss   top-1
+      1  2.7234   15.0%
+      3  2.1745   75.0%
+      6  1.5433  100.0%
+     20  0.2248  100.0%
+```
+
+That is the real check. Epoch 1 at **2.7234 against ln(15) = 2.7081** is 5.4's
+anchor turning up again on its own, and 100% by epoch 6 means the whole chain
+-- dataset, encoder, head, loss, optimizer -- can carry a gradient that
+actually changes predictions.
+
+**Tests are mostly about the silent failures**, since a broken epoch loop
+still returns plausible numbers:
+
+- *gradients are cleared between batches.* Run with lr=0 so the weights cannot
+  move, and watch the gradient magnitude at each step. Without `zero_grad` it
+  grows every batch; the test fails if the largest is more than 3x the
+  smallest.
+- *accumulation matches one big batch.* Four batches of 2 with `accum=4`
+  produce the same gradient as one batch of 8, to 1e-5. This is what catches
+  forgetting to divide the loss by N -- without it the gradient is 4x too
+  large and training looks "fast" then diverges.
+- *the scheduler steps per optimizer step, not per batch.* 6 batches with
+  accum=2 must advance it 3 times.
+- *the model is put into train mode*, because BatchNorm quietly uses stored
+  statistics otherwise.
+
+**Timing.** 2.5 s an epoch over 10 batches, so ~0.25 s a step at batch 6,
+which matches 5.4's 0.353 s including its backward through a cold cache. The
+first epoch costs 15 s extra for warm-up and weight loading.
+
+**Flaky test found and fixed, same day.** The full suite failed on
+`test_the_last_frame_is_not_the_only_one_that_counts`, which had passed
+earlier -- it used an unseeded random clip and asserted the effect of changing
+frame 0 exceeded 1e-4. Measured over 40 seeds: median **2.17e-04**, min
+5.09e-05, and **1 in 40 falls below 1e-4**. So it failed about 2.5% of runs on
+chance alone.
+
+The measurement is worth keeping for its own sake: an **untrained** GRU feels
+frame 0 about a thousand times more weakly than frame 14 (2.2e-04 against
+2.7e-01). That is expected -- forgetting is the default and training is what
+builds the memory -- but it means any tolerance in that test was testing the
+seed. Now seeded, and asserting only that the effect is non-zero, which is the
+property actually worth pinning.
+
+---
+
+## 2026-10-10 (6.2) — evaluate, and why below chance is the right answer
+
+**Built.** `evaluate` and `topk_correct` in `src/engine.py` (221 lines now,
+27 tests). Returns loss and top-1/2/3, optionally collecting predictions and
+labels for a confusion matrix later.
+
+**On the real validation set, untrained:**
+
+```
+loss    2.7369   ln(15) = 2.7081
+top-1    2.42%   chance  6.67%
+top-2    6.37%   chance 13.33%
+top-3   12.81%   chance 20.00%
+```
+
+**Top-1 came out below chance and that needed explaining, not excusing.** An
+untrained network is biased, not uniform. This one lands 65.6% of its
+predictions on Scoop and 27.6% on Reverse Sweep -- and those are the two
+*rarest* classes, 2.6% and 2.4% of the validation set.
+
+So the arithmetic:
+
+```
+expected for a model with this bias   2.80%
+measured                              2.42%
+a uniform guesser                     6.67%
+```
+
+2.42% against 2.80% predicted is within one standard error on 1,569 clips
+(0.42%). Below chance is exactly right for a model that always says Scoop.
+
+The loss agrees independently: 2.7369 is slightly **above** ln(15), which is
+what bias costs -- a uniform predictor scores exactly ln(15) and any
+concentration raises it.
+
+**My pass condition was badly written.** I coded `abs(top1 - chance) < 0.04`,
+which flagged this as a CHECK. The plan says *materially above* chance means a
+leak; below chance rules one out. Symmetric tolerance was the wrong test and
+I should have written the one the plan states.
+
+**Broke: my own hand-worked test.** `test_topk_counts_a_hit_at_each_depth` had
+logits `[3.0, 5.0, 4.0]` with true label 2, which I called "top 3, not top 1".
+It is rank 2. The code returned `[1, 3, 3]` and was right; my expected
+`[1, 2, 3]` was wrong. Rewrote the fixture as the same ranking three times
+with the true label at rank 1, 2 and 3 in turn, which is unambiguous.
+
+**The useful test here** is a deliberately cheating model that reads the label
+off its input and must score exactly 1.0. A metric that silently mis-indexes
+still produces plausible numbers on a real model; it cannot produce 1.0 on
+that one.
+
+---
+
+## 2026-10-10 (6.3) — the loop, and pulling the plug on purpose
+
+**Built.** `src/train.py` (260 lines, 11 tests). Epoch loop, best-checkpoint
+tracking, early stopping, `save_resume` every epoch, one ledger row at the
+end.
+
+**Three decisions, all about the power rather than the accuracy.**
+
+`save_resume` runs **before** any `break`, so an early stop cannot lose the
+epoch that triggered it. There is a test: the last epoch in `history.json`
+must equal `epochs_run` in the ledger row.
+
+`resume.pt` is **deleted on a clean finish**, so its presence means exactly
+one thing -- interrupted -- and never "a finished run left a file lying
+about". Also tested, from both directions.
+
+**Resuming is the default**; `--fresh` is the flag. When the power comes back
+you press up-arrow and enter.
+
+**The rehearsal, done with a hard kill rather than Ctrl-C** -- no cleanup, no
+exception handler, no chance to save on the way out, which is what a cut
+actually is:
+
+```
+killed during epoch 4
+files now: ['best.pt', 'resume.pt']
+resume.pt says epoch 3, best 10.00%, 3 epochs of history
+
+... the same command again ...
+
+RESUMED from experiments\smoke2\resume.pt -- starting at epoch 4 with best 10.00%
+  epoch   4  val 13.33%  *
+  epoch   5  val 10.00%
+  epoch   6  val 11.67%
+  completed; best val top-1 13.33%
+
+epochs in history: [1, 2, 3, 4, 5, 6]
+resume.pt after a clean finish: False
+```
+
+No gap, no repeat, and the file cleaned itself up. That is Day 1's
+`checkpoint.py` finally doing the job it was written for.
+
+**Design change made while testing.** `CricShotDataset`'s processed directory
+is now a config key rather than a constant, because the test needed to point
+at a temporary dataset and monkeypatching the module was the alternative. A
+config key is better than a patch, and it also means a second preprocessing
+run can be trained against without editing code.
+
+**Also folded in:** `_subset_across_classes` so `--limit_clips` takes clips
+from every class. 6.1's lesson, now in the code rather than only in a note.
+
+**`.gitignore`.** Per-run folders are regenerable and full of `.pt` files;
+`experiments/results.jsonl` is the ledger of what was actually run and must
+survive. Now `experiments/*/` ignored with the ledger negated.
+
+---
+
+## 2026-10-11 (6.4) — reading their model instead of their notebook
+
+**Neither archive contains the notebook.** `cricshot10k-models.zip` holds five
+model files and `drive-download-*.zip` holds the YOLO training data. So "every
+value traces to their notebook" could not be done as written.
+
+**Their shipped `.keras` file is better evidence anyway** -- it is what
+actually produced the weights. `config.json` inside it gives the architecture
+and the compile config:
+
+```
+Input (15, 224, 224, 3)
+TimeDistributed(EfficientNetV2-S)   trainable=True
+TimeDistributed(Flatten)
+GRU(128)  dropout=0.0  recurrent_dropout=0.0
+BatchNormalization -> Dense(1024, relu) -> Dense(15, softmax)
+Adam  beta_1 0.9  beta_2 0.999  epsilon 1e-07  weight_decay null
+loss  sparse_categorical_crossentropy
+```
+
+So: no dropout confirmed, encoder **not** frozen confirmed, 15 frames at 224
+confirmed.
+
+**The learning rate is a fingerprint.** The saved value is **1e-9**. Nobody
+starts there. It is where `ReduceLROnPlateau(factor=0.1)` lands after five
+reductions from 1e-4: 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9. Both the starting
+rate and the factor are corroborated by a number neither was written down in.
+
+**And the finding that made 6.4 real work.** Their GRU kernel has shape
+**(62720, 384)**. 384 is 3 gates x 128. **62720 is 7 x 7 x 1280** -- their
+EfficientNet stops at `top_activation` with no pooling, and the Flatten hands
+the GRU the entire spatial map.
+
+**We were average-pooling to 1280.** That throws away *where* things are, and
+for a cricket shot the bat's position relative to the body is much of the
+signal.
+
+```
+their GRU  24.13 M parameters      their model  44.5 M
+our GRU     0.54 M                 our model    20.9 M
+ratio        44.6x
+```
+
+**Built.** `pool="avg"|"flatten"` on `FrameEncoder`, with `out_dim` now
+**measured by one dummy forward pass** rather than read off the classifier --
+deriving it means knowing each backbone's stride and whether it pools, and a
+forward pass just answers. It reproduces 62720 for EfficientNetV2-S and 25088
+for resnet18 (512 x 7 x 7), and 62720 matching their kernel exactly is the
+confirmation that the reading was right.
+
+Also built: `src/data/augment.py` with `ClipFlip` (one decision per clip, not
+per frame -- flipping frame 7 and not frame 8 invents the camera jump Day 3
+spent its time removing), and `ReduceLROnPlateau` in `train.py`, stepped on
+**validation top-1** after each epoch rather than inside `train_epoch`.
+
+**Memory, re-measured because the architecture changed:**
+
+| pool | batch | params | peak | step |
+|---|---|---|---|---|
+| avg | 4 | 20.9 M | 4.67 GB | 0.233 s |
+| avg | 6 | 20.9 M | 6.83 GB | 0.378 s |
+| flatten | 4 | **44.5 M** | **5.60 GB** | 0.264 s |
+| flatten | 6 | 44.5 M | 7.76 GB | 0.410 s |
+
+Their batch of 4 fits. At 0.264 s a step and 1,580 steps, that is about
+**7 minutes an epoch**, so 100 epochs is ~12 hours -- early stopping with
+patience 10 will almost certainly cut it short.
+
+**Four values could not be sourced from the file** and are marked as such in
+the config: batch 4, 100 epochs, early-stop patience 10, plateau patience 4,
+and the flip itself. Those come from the paper, which the plan already warns
+disagrees with the notebook in places.

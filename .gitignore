@@ -8,7 +8,9 @@ data/splits*/*
 
 # frame grids: 7.7 MB and regenerable with one command (src/data/viz.py)
 notes/figures/
-experiments/*/checkpoints/
+# per-run outputs are regenerable; the ledger of what was run is not
+experiments/*/
+!experiments/results.jsonl
 __pycache__/
 *.pt
 CricShoot10kModels/
