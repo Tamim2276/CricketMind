@@ -832,3 +832,104 @@ Segmented versions of the same 30: clean silhouettes, bat kept, background
 gone -- apart from the unsegmented frames above, which stand out immediately
 when you look at a sheet of them. Looking at the output is how that was found;
 no number reported it.
+
+---
+
+## 2026-10-09 (3.3e + 4.1) — carry the mask, and any length down to 15
+
+**The no-mask decision, settled by measurement.** An interpolated frame has no
+silhouette (9.6% of frames, 57% of clips). Three options were on the table, so
+I tested them on 463 frames that *do* have a mask, by pretending they do not:
+
+| stand-in | IoU with the real silhouette |
+|---|---|
+| bounding box filled in as a rectangle | 0.51 |
+| **carry the mask from 1 frame away** | **0.80** |
+| carry from 2 frames away | 0.71 |
+| carry from 3 frames away | 0.65 |
+
+Carrying wins outright, and still beats the rectangle three frames out. So
+`carried_mask()` takes the nearest real silhouette from whichever side is
+nearer and shifts it onto the interpolated box. `_shift` rather than
+`np.roll`, so nothing wraps round the frame edge.
+
+**4.1 `sample.py`.** Drop duplicates, then sample 15 evenly.
+
+The duplicate threshold is not a guess. Nothing in this dataset is
+bit-identical -- the clips were re-encoded -- but over 150 clips there is an
+**empty gap**: duplicate pairs top out at a mean absolute difference of
+**0.927** and real motion starts at **1.045**. A threshold of 1.0 sits in the
+gap with nothing near it. Duplicates by length: 24-frame 0.4%, 28-frame 15.3%,
+49-frame 0.0% -- which reproduces Day 2's finding from a different direction.
+
+Comparing each frame to the **last kept** frame, not the previous frame: a run
+of sub-threshold steps would otherwise delete a slow pan entirely. There is a
+test for that.
+
+**End to end on real clips** (read -> dedupe -> detect -> crop -> sample):
+
+```
+clip            raw  dedup  kept  out
+vid306_8.avi     24     24    16   15   all indices < 16, the measured cut
+vid1_0.avi       29     26    17   15   3 duplicates removed
+vid368_14.avi    28     23    23   15   5 duplicates removed (18%)
+vid317_9.avi     49     49    49   15   spread 0..48, not truncated
+vid385_27.avi    49     49    32   15   trimmed 17 at a cut
+```
+
+Exactly 15 out every time, first and last always included, never backwards.
+The `vid306_8` check the plan asked for passes: no sampled index lands past
+the camera cut.
+
+**Open.** Storage format for Day 4.3. Measured on real crops: raw 42.4 GB for
+both variants, PNG 11.3 GB lossless, JPEG q95 3.0 GB, WebP q90 1.4 GB. Staying
+lossless keeps the decision reversible -- the 4-hour run is the expensive part
+and raw <-> PNG transcodes for free, while JPEG is one-way.
+
+---
+
+## 2026-10-09 (4.3) — the driver, built around the power cuts
+
+**Goal.** Walk 10,091 clips, write both variants, and survive an interruption.
+
+**Built.** `src/preprocess/build_dataset.py` (143 lines, 9 tests). Per clip:
+read -> drop duplicates -> detect -> crop box -> crop segmented -> sample 15 ->
+save. Each clip is finished and recorded before the next starts, so a cut costs
+**one clip**. Re-running the same command skips whatever the manifest lists.
+
+Most of the tests are about interruption rather than about cropping:
+
+- a second run redoes nothing and does not touch the files already written
+- a run stopped after one clip resumes and finishes the other two
+- a manifest line cut in half mid-write is skipped, and that clip is simply
+  redone -- `read_results` was written for this on Day 1 and this is the first
+  time it has been needed
+- one unreadable clip records its reason and the run carries on
+
+`_save` writes `.npy.tmp` then `os.replace`, so a cut can never leave a
+half-written array that loads as a valid file with garbage in it.
+
+**Measured on real clips.** 12 then 20, the second run picking up from the
+first:
+
+```
+20 clips, 12 already done, 8 to go
+box (15, 224, 224, 3) uint8   nonzero 100%
+seg (15, 224, 224, 3) uint8   nonzero  14%
+```
+
+**0.5 clips/s, so about 5.6 hours** for the full dataset. That is slower than
+Day 3's 4 h estimate because masks and a second crop pass were added since;
+the 30% is the price of the segmented variant and it is paid once.
+
+Disk: 86.1 MB for 20 clips over both variants, projecting to **42.4 GB** --
+within 1% of the estimate made from 25 sample crops, which is reassuring about
+the estimate rather than about the number.
+
+**Broke.** Two small things. `except (ClipError, Exception)` -- redundant,
+since `ClipError` is an `Exception`; the bare catch is deliberate and now says
+so. And running the module with `python -I -m` failed: isolated mode strips the
+working directory from `sys.path`. `-I` is the habit for scripts that read
+untrusted data, not for the project's own modules.
+
+**Open.** Nothing blocking. The run is ready to launch.

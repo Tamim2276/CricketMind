@@ -1188,10 +1188,11 @@ probably part of the recipe we were missing. `detect(masks=True)` +
 `crop_clip(segmented=True)` blacks out everything but the batter and his bat.
 Free -- same model, same inference, masks we already pay for.
 
-> **One open decision.** An interpolated frame has no mask and keeps its
-> background: **9.6% of frames across 57% of clips**. Choose before Day 4:
-> fall back to the box as a rectangle, carry the nearest real mask, or drop
-> the frame.
+**Settled.** An interpolated frame has no mask (9.6% of frames, 57% of clips).
+Tested on 463 frames that *do* have one, by pretending they do not: carrying
+the nearest real silhouette scores **IoU 0.80** one frame away and 0.65 at
+three, against **0.51** for filling the bounding box in as a rectangle. So
+`carried_mask()` carries, from whichever side is nearer.
 
 **Run.** 30 clips, 30 grids, opened and examined one by one.
 
@@ -1243,6 +1244,45 @@ indices for each.
 **Check.** 15 indices every time; first and last of the *kept* frames always
 included; no index lands on a duplicate or past a cut. For `vid306_8` every
 index must be below 16.
+
+**Done 2026-10-09.** `src/preprocess/sample.py`, 26 tests.
+
+The duplicate threshold was measured, not chosen. Nothing is bit-identical --
+the clips were re-encoded -- but over 150 clips there is an **empty gap**:
+duplicate pairs top out at a mean absolute difference of **0.927**, real motion
+starts at **1.045**. A threshold of 1.0 sits in the gap. Duplicates by length:
+24-frame 0.4%, 28-frame **15.3%**, 49-frame 0.0%, reproducing Day 2 from a
+different direction.
+
+End to end, read -> dedupe -> detect -> crop -> sample:
+
+```
+clip            raw  dedup  kept  out
+vid306_8.avi     24     24    16   15   every index < 16, the measured cut
+vid1_0.avi       29     26    17   15   3 duplicates removed
+vid368_14.avi    28     23    23   15   5 duplicates removed (18%)
+vid317_9.avi     49     49    49   15   spread 0..48, not truncated
+vid385_27.avi    49     49    32   15   trimmed 17 at a cut
+```
+
+**4.2 is already done** -- segmentation lives in `crop_clip(segmented=True)`,
+so Day 4 is 4.1, 4.3 and the run.
+
+**Storage, decided.** Raw uint8 `.npy`, one file per clip per variant.
+Measured on real crops over 10,091 clips: raw **42.4 GB**, PNG 11.3 GB
+(lossless), JPEG q95 3.0 GB, WebP q90 1.4 GB. Raw costs disk but the expensive
+thing is the run, not the bytes -- raw and PNG convert to each other for free,
+JPEG is one way. The smoke run over 20 real clips projects to 42.4 GB, within
+1% of the estimate.
+
+**4.3 done 2026-10-09.** `build_dataset.py`, 143 lines, 9 tests, most of them
+about interruption rather than cropping: a second run redoes nothing, a run
+stopped early resumes, a manifest line cut in half mid-write is skipped and
+that clip redone, and one unreadable clip records its reason and the run
+carries on. `_save` writes `.tmp` then `os.replace`.
+
+**Measured rate: 0.5 clips/s, about 5.6 h** for the full dataset -- slower than
+Day 3's 4 h because masks and a second crop pass were added since.
 
 **Takeaway.** Resampling to a fixed length is also what *removes* the
 frame-count difference between matches. After this step, clip length carries no

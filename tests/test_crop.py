@@ -3,7 +3,8 @@ smoothing, and the square crop geometry."""
 import numpy as np
 import pytest
 
-from src.preprocess.crop import (SIZE, _fill, _square, crop_clip, segment,
+from src.preprocess.crop import (SIZE, _fill, _square, carried_mask,
+                                 crop_clip, frame_mask, segment,
                                  smooth_boxes, track_boxes)
 from src.preprocess.striker import pick_striker
 from src.preprocess.detect import Detection
@@ -237,12 +238,35 @@ def test_segment_without_a_mask_is_a_no_op():
     assert np.array_equal(segment(frame, None), frame)
 
 
-def test_segmented_crop_runs_and_reports_missing_masks():
+def test_a_frame_without_a_mask_borrows_its_neighbour():
     per = [[_with_mask(det(*BATTER), (280, 500, 380, 480))] for _ in range(12)]
     per[3] = [det(*BATTER)]                       # one frame with no mask
     r = crop_clip(clip(12), per, segmented=True)
     assert r.frames.shape == (12, SIZE, SIZE, 3)
-    assert "1 unsegmented" in r.note
+    assert "1 carried" in r.note and "unsegmented" not in r.note
+    assert r.frames[3].any()                      # not a black square
+
+
+def test_the_carried_mask_moves_with_the_batter():
+    """It is shifted onto the new box, not pasted where it used to be."""
+    a = _with_mask(det(300, 390), (280, 500, 250, 350))
+    m = carried_mask([a, None], [[a], []], 1, (480, 280, 580, 500))
+    ys, xs = np.nonzero(m)
+    assert abs(xs.mean() - 530) < 15, xs.mean()   # followed the box across
+    assert abs(ys.mean() - 390) < 15, ys.mean()
+
+
+def test_nothing_to_carry_leaves_the_frame_alone():
+    per = [[det(*BATTER)] for _ in range(10)]     # no masks anywhere
+    r = crop_clip(clip(10), per, segmented=True)
+    assert "10 unsegmented" in r.note
+
+
+def test_frame_mask_unions_the_bat_in():
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    bat = _with_mask(det(500, 330, w=20, h=90, cls="Bat"), (300, 360, 490, 510))
+    assert frame_mask(s, [s, bat])[330, 500]
+    assert not frame_mask(s, [s])[330, 500]
 
 
 def test_unsegmented_crop_is_unaffected_by_masks():
