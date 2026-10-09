@@ -994,7 +994,10 @@ and it is where the accuracy actually comes from.
 **Why.** Crop the wrong person and the clip is worse than useless — it is a
 confidently mislabelled training example.
 
-**Build.** The selection rule, then test it against frames you have looked at.
+**Build.** `src/preprocess/striker.py` — `pick_striker(dets, shape)`, 54 lines,
+13 tests. Returns `None` rather than a guess: 9% of frames contain no batter
+at all, and on 6% of multi-striker frames the detector misses the batter even
+though he is there.
 
 > **The rule this plan originally proposed is wrong.** Measured 2026-10-09 on
 > `Sweep/vid306_8.avi` before writing any of 3.2. Frame 5 has **6 detections**
@@ -1024,15 +1027,40 @@ confidently mislabelled training example.
 > detection is *less* reliable than person detection — "nearest the bat" chains
 > the weaker signal in front of the stronger one and inherits its errors.
 
-**Code to understand.** The rule, built on the evidence above: score each
-Striker on **box area, confidence and distance from the frame centre**, and take
-the best. The bat is a confirmation signal, not the primary one — a bat
-overlapping the chosen person supports the pick, a bat 480 px away is noise.
+**Settled 2026-10-09**, by labelling 36 random multi-striker frames from the
+train split by eye and scoring every candidate rule (a pick correct at IoU >=
+0.5, so a duplicate box of the same person is not punished):
 
-Then the failure cases: one person detected twice (overlapping boxes, as above),
-and the keeper, who is genuinely large and central in some camera angles. Design
-the rule from a few hundred measured frames rather than from two, then look at
-the 20.
+| rule | correct |
+|---|---|
+| **nearest the frame centre** | **33/34 = 97%** |
+| nearest the best bat | 30/34 = 88% |
+| largest box | 26/34 = 76% |
+| highest confidence | 23/34 = 68% |
+
+So the simplest rule wins outright, and adding area and confidence on top of
+centrality makes it *worse* (32/34). Over 720 frames from 120 clips, **51% have
+two or more Strikers**, so this choice is made on half of all frames, and
+largest-box and highest-confidence disagree on 45.8% of them.
+
+Centrality wins for a reason that is worth stating in the thesis: the true
+batter's box centre sits at **x = 0.44 to 0.54** of frame width in 80% of
+frames. CricShot10k is already built around the batter. That is a property of
+the dataset, not of cricket, and the rule would not transfer to uncropped
+broadcast footage.
+
+**Code to understand.** Why the one-line rule beat the clever ones, and the
+difference between a rule that is right and a rule that is right *for a reason
+you can state*. Also the plausibility filter — the detector calls the station
+logo and the scorebar people, and both sit against the frame border.
+
+**Known failure.** F19 of the labelled set: the batter is 131 px from centre, a
+fielder 113 px. 18 px decided it. Only 3 of 34 frames are decided by under 20
+px, median margin 286 px, so most picks are not close.
+
+**Not done.** 34 frames is small. The 97%-to-76% gap is far too large to be
+noise; the 97%-to-94% gap is not, so no choice was made on it. A second
+labelled batch before Day 4 would firm up the number.
 
 **Run.** Run the selection over 20 frames from different classes, draw the
 chosen box, and look at all 20.
@@ -1063,10 +1091,78 @@ to drop the frame, or to stop the clip at the cut — decide deliberately,
 record which, and prefer stopping at the cut, because the frames after it are
 not part of the shot.
 
-**Run.** Crop one clip, save the 24 cropped frames as a grid.
+**Done 2026-10-09.** `src/preprocess/crop.py`, 148 lines, 19 tests. Both
+thresholds measured rather than guessed:
+
+- **outlier cutoff 1.0 body-heights** from the clip's median centre. Strays are
+  median 0.21, 90th pct 0.76, 99th 2.30, so 1.0 rejects 8.0% — which matches
+  the independently measured 9.3% of frame-to-frame jumps over 150 px.
+- **padding 25%**, measured against the square crop actually taken (squaring a
+  tall person box already adds width where the bat is):
+
+| padding | bat stays whole | batter fills crop |
+|---|---|---|
+| 0% | 37% | 100% |
+| 20% | 77% | 71% |
+| **25%** | **84%** | **67%** |
+| 40% | 93% | 56% |
+
+**Validation that was not circular.** Two clips whose cuts were found on Day 2
+by frame differencing come out right without being told: `vid1_0.avi` 29 -> 20
+frames (cut measured at 20) and `vid306_8.avi` 24 -> 16 (cut measured at 16).
+
+**Run.** Crop one clip, save the cropped frames as a grid.
 
 **Check.** The batter stays roughly centred and roughly the same size across all
 the clip. Jitter means the smoothing is not working.
+
+**Gap policy, fixed the same day.** The first version called any gap over two
+frames a camera cut and dropped 7% of clips. Measured over 60 clips: of the
+gaps 3+ frames long, only **21% sit next to a real cut**; the other 79% are the
+detector failing mid-shot, worth **230 frames against 48**.
+
+So `src/preprocess/cuts.py` (`find_cuts`, `shots`, 11 tests) splits the clip at
+its cuts, `crop_clip` keeps the shot with the most detections, and gaps inside
+that shot are interpolated whatever their length.
+
+| | before | after |
+|---|---|---|
+| median frames kept | 20 | **22** |
+| 10th percentile | 10 | **15** |
+| clips dropped entirely | 7% | **2%** |
+| clips with 15+ frames for Day 4 | 75% | **90%** |
+
+The cut threshold changed slightly (drop the top decile before taking the
+median, so cuts cannot set the bar they are measured against). On 120 real
+clips old and new agree on 117, and Day 2's findings are reproduced exactly:
+first cut at median 88% through, none in the first half.
+
+**Crop size comes from box height**, smoothed over 9 frames, not from a
+clip-wide constant. Height varies x1.3 within a clip against width's x2.3 --
+width is the bat leaving his outline, height is the camera. A constant size
+clips the bat off when the broadcast zooms in (`Flick/vid116_8.avi`).
+
+**Temporal link, done the same day.** The crop walking off the batter was
+reported as 0.4% of frame *pairs*, which undersold it: a switch ruins a run of
+frames, and at frame level it was **2.2% of frames across 22% of clips**.
+
+`track_boxes` now runs two passes — centrality, then a reference track built
+from the frames that agree with each other, then a re-pick against it. Two
+passes rather than chaining off the previous frame, because a chain lets one
+bad frame poison everything after it.
+
+| | start | two passes | + no end-hold |
+|---|---|---|---|
+| frames cropping the wrong person | 2.2% | 1.5% | **0.6%** |
+| clips affected | 22% | 17% | **8%** |
+| clips with 15+ frames for Day 4 | 90% | 92% | **92%** |
+
+**The stopping rule is worth copying.** After two passes the remainder looked
+tunable, so instead of tuning I asked whether it was fixable at all: of the 21
+frames still wrong, **0 had a correct box available and 21 had none**. Nothing
+was left for selection to do. The last change was therefore to stop guessing
+— no reference outside the agreed stretch, so a frame showing only the bowler
+is trimmed instead of cropped onto him.
 
 **Takeaway.** Temporal consistency is a requirement of the preprocessing, not
 just of the model.
@@ -1077,6 +1173,25 @@ just of the model.
 means doing all of it again.
 
 **Build.** Nothing — run 3.3 over two clips per class and look at every one.
+
+**Done 2026-10-09.** 15 classes x 2 clips x 3 moments = 90 frames, both crop
+variants. **29 of 30 clips are right**: batter centred, bat in frame, shot
+readable. The exception is `Defensive/vid239_7.avi`, whose final frame zooms in
+far enough to show a fielder's legs. End frames run tighter than start frames
+across the board, because crop size follows box height and broadcasts zoom in
+during a shot.
+
+**The segmented variant exists now too.** The authors' detector is a
+*segmentation* model (`task: segment`, mAP50(M) 0.897) and their classifier is
+named `..._NEEDS_CROPPED_SEGMENTED_SHOTS.keras`, so background removal is
+probably part of the recipe we were missing. `detect(masks=True)` +
+`crop_clip(segmented=True)` blacks out everything but the batter and his bat.
+Free -- same model, same inference, masks we already pay for.
+
+> **One open decision.** An interpolated frame has no mask and keeps its
+> background: **9.6% of frames across 57% of clips**. Choose before Day 4:
+> fall back to the box as a rectangle, carry the nearest real mask, or drop
+> the frame.
 
 **Run.** 30 clips, 30 grids, opened and examined one by one.
 

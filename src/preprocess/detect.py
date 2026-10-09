@@ -32,6 +32,7 @@ class Detection(NamedTuple):
     cls: str
     conf: float
     box: tuple          # x1, y1, x2, y2 in pixels
+    mask: object = None # uint8 (h, w), only when detect(masks=True)
 
     @property
     def area(self) -> float:
@@ -54,12 +55,18 @@ def load_detector(path: str = MODEL_PATH):
 
 
 def detect(frames, conf: float = 0.25, model=None, device=None,
-           rgb: bool = True, imgsz: int = IMGSZ, batch: int = BATCH):
+           rgb: bool = True, imgsz: int = IMGSZ, batch: int = BATCH,
+           masks: bool = False):
     """Detections per frame. Pass one frame or a list; always get a list back.
 
     `rgb=True` means the frames came from read_clip. Ultralytics reads numpy
     arrays as BGR, so they are converted here -- handing it RGB silently costs
     accuracy rather than raising.
+
+    `masks=True` also returns the silhouettes. This is a yolo11x-seg model and
+    the authors' own classifier file is named NEEDS_CROPPED_SEGMENTED_SHOTS,
+    so the masks are not an extra -- they are what the weights were trained to
+    produce. They cost memory, not time, so they are off by default.
     """
     model = model or load_detector()
     device = device or str(get_device())
@@ -71,11 +78,24 @@ def detect(frames, conf: float = 0.25, model=None, device=None,
 
     out = []
     for i in range(0, len(imgs), batch):
-        for r in model.predict(imgs[i:i + batch], device=device, conf=conf,
-                               imgsz=imgsz, verbose=False):
+        for img, r in zip(imgs[i:i + batch],
+                          model.predict(imgs[i:i + batch], device=device,
+                                        conf=conf, imgsz=imgsz, verbose=False)):
+            mm = _masks(r, img.shape[:2]) if masks else None
             out.append([
-                Detection(model.names[int(c)], float(p), tuple(map(float, b)))
-                for c, p, b in zip(r.boxes.cls, r.boxes.conf,
-                                   r.boxes.xyxy.tolist())
+                Detection(model.names[int(c)], float(p), tuple(map(float, b)),
+                          None if mm is None else mm[k])
+                for k, (c, p, b) in enumerate(zip(r.boxes.cls, r.boxes.conf,
+                                                  r.boxes.xyxy.tolist()))
             ])
     return out[0] if single else out
+
+
+def _masks(result, shape):
+    """Masks at the frame's own size. Ultralytics returns them padded to a
+    multiple of 32 -- 544 rows for a 540-row frame -- so they need resizing."""
+    if result.masks is None:
+        return None
+    h, w = shape
+    m = result.masks.data.cpu().numpy().astype(np.uint8)
+    return [cv2.resize(x, (w, h), interpolation=cv2.INTER_NEAREST) for x in m]
