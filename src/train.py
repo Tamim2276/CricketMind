@@ -53,7 +53,9 @@ DEFAULTS = {
     "flip": 0.0,              # horizontal flip probability on train clips
     "optimizer": "adam",
     "lr": 1e-4,
+    "backbone_lr": None,      # None gives the backbone the same lr as the head
     "weight_decay": 0.0,
+    "clip_grad": 0.0,         # 0 is off; when on, the epoch line says how often
     "scheduler": "none",      # or "plateau"
     "lr_factor": 0.1,
     "lr_patience": 4,
@@ -134,22 +136,82 @@ def _make_loaders(cfg):
     return train_loader, val_loader, classes
 
 
+def _trainable(module):
+    found = []
+    for p in module.parameters():
+        if p.requires_grad:
+            found.append(p)
+    return found
+
+
+def _param_groups(cfg, model):
+    """One group, or a smaller lr for the pretrained half.
+
+    The backbone is 20M ImageNet parameters; the head is 65M new ones. One lr
+    for both moved the backbone a median 18.65% off its ImageNet weights in
+    five epochs -- one bias by 65x its own norm -- and the blown-up features
+    saturated 20 of the GRU's 128 units. A 10x smaller lr on the pretrained
+    half is the standard fix.
+
+    `backbone_lr: null` keeps the single group, so every earlier result still
+    reproduces exactly.
+    """
+    groups = [{"params": None, "lr": cfg["lr"], "name": "all"}]
+    backbone_lr = cfg.get("backbone_lr")
+    encoder = getattr(model, "encoder", None)
+    head = getattr(model, "head", None)
+
+    if backbone_lr is None or encoder is None or head is None:
+        groups[0]["params"] = _trainable(model)
+        return groups
+
+    groups = [{"params": _trainable(head), "lr": cfg["lr"], "name": "head"}]
+    backbone = _trainable(encoder)
+    if backbone:
+        groups.append({"params": backbone, "lr": backbone_lr,
+                       "name": "backbone"})
+    return groups
+
+
 def _make_optimizer(cfg, model):
     name = cfg["optimizer"].lower()
-    params = []
-    for p in model.parameters():
-        if p.requires_grad:
-            params.append(p)
+    groups = _param_groups(cfg, model)
     if name == "adam":
-        return torch.optim.Adam(params, lr=cfg["lr"],
+        return torch.optim.Adam(groups, lr=cfg["lr"],
                                 weight_decay=cfg["weight_decay"])
     if name == "adamw":
-        return torch.optim.AdamW(params, lr=cfg["lr"],
+        return torch.optim.AdamW(groups, lr=cfg["lr"],
                                  weight_decay=cfg["weight_decay"])
     if name == "sgd":
-        return torch.optim.SGD(params, lr=cfg["lr"], momentum=0.9,
+        return torch.optim.SGD(groups, lr=cfg["lr"], momentum=0.9,
                                weight_decay=cfg["weight_decay"])
     raise ValueError(f"unknown optimizer: {cfg['optimizer']}")
+
+
+def _saturation(model):
+    """(pinned, dead) fractions of the head's hidden units, or (None, None).
+
+    Watched every epoch because it is the failure that cost this project two
+    runs: the loss column cannot see it -- epoch 5 of the second run had a
+    *rising* top-1 of 55.11% while 20 units sat dead at tanh's rail.
+    """
+    head = getattr(model, "head", None)
+    if not hasattr(head, "pinned_fraction"):
+        return None, None
+    return head.pinned_fraction(), head.dead_fraction()
+
+
+def _lr_text(optimizer):
+    """The lr column: one number, or head/backbone when they differ."""
+    rates = []
+    for group in optimizer.param_groups:
+        rates.append(group["lr"])
+    if len(rates) == 1 or rates[0] == rates[1]:
+        return f"{rates[0]:.0e}"
+    parts = []
+    for rate in rates:
+        parts.append(f"{rate:.0e}")
+    return "/".join(parts)
 
 
 def _make_scheduler(cfg, optimizer):
@@ -204,6 +266,7 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
     os.makedirs(out, exist_ok=True)
     resume_path = os.path.join(out, "resume.pt")
     best_path = os.path.join(out, "best.pt")
+    history_path = os.path.join(out, "history.json")
 
     train_loader, val_loader, classes = _make_loaders(cfg)
     model = build_model(num_classes=len(classes), backbone=cfg["backbone"],
@@ -251,6 +314,7 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
         try:
             tr = train_epoch(model, train_loader, optimizer, criterion, device,
                              scaler=scaler, accum=cfg["accum"],
+                             clip_grad=cfg["clip_grad"],
                              max_batches=cfg["max_train_batches"],
                              on_batch=_ticker(f"  epoch {epoch:3d} train ", quiet))
             va = evaluate(model, val_loader, criterion, device,
@@ -265,6 +329,8 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
                         history=history, best_val_top1=best_top1,
                         no_improve=no_improve, cfg=cfg)
             raise
+
+        pinned, dead = _saturation(model)
 
         if scheduler is not None:
             scheduler.step(va.top1)
@@ -283,6 +349,10 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
                         "train_top1": tr.top1, "val_loss": va.loss,
                         "val_top1": va.top1, "val_top3": va.top3,
                         "lr": optimizer.param_groups[0]["lr"],
+                        "lrs": _lr_text(optimizer),
+                        "pinned": pinned, "dead": dead,
+                        "grad_norm": tr.grad_norm, "clipped": tr.clipped,
+                        "steps": tr.steps,
                         "secs": time.time() - tick})
 
         # before the break, always: an early stop must not lose the epoch
@@ -290,19 +360,35 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
                     optimizer=optimizer, scheduler=scheduler, scaler=scaler,
                     history=history, best_val_top1=best_top1,
                     no_improve=no_improve, cfg=cfg)
+        # and every epoch, not just at the end: a run killed at epoch 13 used
+        # to leave its twelve finished epochs only in the terminal scrollback
+        atomic_write_json(history, history_path)
 
         if not quiet:
-            mark = "  *" if improved else ""
-            lr = optimizer.param_groups[0]["lr"]
-            print(f"  epoch {epoch:3d}  train {tr.loss:6.4f}/{tr.top1:6.2%}  "
-                  f"val {va.loss:6.4f}/{va.top1:6.2%}  top3 {va.top3:6.2%}  "
-                  f"lr {lr:.1e}  {time.time() - tick:5.1f}s{mark}", flush=True)
+            if improved:
+                mark = "  *"
+            else:
+                mark = ""
+            if pinned is None:
+                watch = ""
+            else:
+                watch = f"pin {pinned:.0%} "
+            watch += f"gn {tr.grad_norm:.3g} "
+            if tr.clipped > 0:
+                watch += f"clip {tr.clipped / max(tr.steps, 1):.0%} "
+            print(f"  epoch {epoch:3d}  "
+                  f"train loss {tr.loss:6.4f} top1 {tr.top1:6.2%}   "
+                  f"val loss {va.loss:6.4f} top1 {va.top1:6.2%} "
+                  f"top3 {va.top3:6.2%}   "
+                  f"{watch} lr {_lr_text(optimizer)}  "
+                  f"{(time.time() - tick) / 60:4.1f}m{mark}",
+                  flush=True)
 
         if no_improve >= cfg["patience"]:
             stopped = f"early stop after {no_improve} epochs without a gain"
             break
 
-    atomic_write_json(history, os.path.join(out, "history.json"))
+    atomic_write_json(history, history_path)
 
     row = {"name": cfg["name"], "split": cfg["split"], "variant": cfg["variant"],
            "backbone": cfg["backbone"], "frozen": cfg["freeze"],
@@ -331,6 +417,9 @@ def main(argv=None):
     ap.add_argument("--batch_size", type=int)
     ap.add_argument("--accum", type=int)
     ap.add_argument("--lr", type=float)
+    ap.add_argument("--backbone_lr", type=float,
+                    help="a smaller lr for the pretrained half")
+    ap.add_argument("--clip_grad", type=float)
     ap.add_argument("--limit_clips", type=int)
     ap.add_argument("--pool", choices=("avg", "flatten"))
     ap.add_argument("--flip", type=float)

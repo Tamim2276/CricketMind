@@ -1,0 +1,49 @@
+# Dihan et al.'s settings, not ones that look sensible.
+#
+# Every value below traces to evidence, and the evidence is their shipped
+# model rather than their notebook -- neither archive contains the notebook,
+# but `Efficientnetv2-s_GRU_128_NEEDS_CROPPED_SEGMENTED_SHOTS.keras` holds the
+# architecture and the compile config, which is what actually produced the
+# weights. Where a value could not be read from that file it says so.
+#
+# From the .keras config.json:
+#   input            (15, 224, 224, 3)
+#   TimeDistributed(EfficientNetV2-S)  trainable=True, so NOT frozen
+#   TimeDistributed(Flatten)           GRU kernel is (62720, 384)
+#                                      62720 = 7 x 7 x 1280, 384 = 3 x 128
+#   GRU(128)         dropout 0.0, recurrent_dropout 0.0
+#   BatchNormalization -> Dense(1024, relu) -> Dense(15, softmax)
+#   Adam             beta_1 0.9, beta_2 0.999, epsilon 1e-07, no weight decay
+#   loss             sparse_categorical_crossentropy
+#
+# The saved learning rate is 1e-9. That is not what they started with -- it is
+# where ReduceLROnPlateau(factor=0.1) left it after five reductions from 1e-4,
+# which corroborates both numbers.
+
+name: mimic_author_seg
+split: data/splits_author          # their protocol; splits_grouped is the honest one
+variant: seg                       # their file: NEEDS_CROPPED_SEGMENTED_SHOTS
+pool: flatten                      # 62720 features, from the GRU kernel shape
+backbone: efficientnet_v2_s
+pretrained: true
+freeze: false                      # trainable=True in their config
+hidden: 128
+dense: 1024
+dropout: 0.0                       # dropout 0.0 and recurrent_dropout 0.0
+
+optimizer: adam
+lr: 1.0e-4                         # inferred from the 1e-9 endpoint, see above
+weight_decay: 0.0                  # weight_decay: null in their config
+scheduler: plateau
+lr_factor: 0.1
+lr_patience: 4                     # NOT in the .keras file -- from the paper
+min_lr: 0.0
+
+batch_size: 4                      # NOT in the .keras file -- from the paper
+accum: 1
+epochs: 100                        # NOT in the .keras file -- from the paper
+patience: 10                       # NOT in the .keras file -- from the paper
+flip: 0.5                          # horizontal flip only; NOT in the .keras file
+
+workers: 0
+seed: 42

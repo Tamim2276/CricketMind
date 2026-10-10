@@ -1,9 +1,13 @@
+import json
 import math
+import os
+import zipfile
 
 import pytest
 import torch
 
-from src.models.head import DENSE, HIDDEN, NUM_CLASSES, GRUHead
+from src.models.head import (BN_EPS, BN_MOMENTUM, DENSE, HIDDEN,
+                             NUM_CLASSES, GRUHead)
 
 B, T, D = 4, 15, 1280
 
@@ -165,3 +169,97 @@ def test_the_biases_start_at_zero():
     h = GRUHead(512)
     assert torch.equal(h.gru.bias_ih_l0, torch.zeros_like(h.gru.bias_ih_l0))
     assert torch.equal(h.gru.bias_hh_l0, torch.zeros_like(h.gru.bias_hh_l0))
+
+
+# ---- the saturation watch, which the loss column cannot see -------------
+
+def test_a_fresh_head_is_not_saturated():
+    h = GRUHead(D)
+    assert h.pinned_fraction() == 0.0
+    assert h.dead_fraction() == 0.0
+
+
+def test_pinned_units_are_counted():
+    """Reproduces what best.pt held at epoch 5: 20 of 128 at tanh's rail."""
+    h = GRUHead(D)
+    h.norm.running_mean[:20] = 1.0
+    h.norm.running_mean[20:26] = -0.95
+    assert h.pinned_fraction() == pytest.approx(20 / HIDDEN)
+
+
+def test_dead_units_are_counted_separately():
+    """A unit can be pinned at -1 and still be the one BatchNorm amplifies."""
+    h = GRUHead(D)
+    h.norm.running_var[:15] = 0.0
+    assert h.dead_fraction() == pytest.approx(15 / HIDDEN)
+    assert h.pinned_fraction() == 0.0
+
+
+def test_the_watch_survives_a_head_without_batchnorm():
+    """Phase 3 swaps the head; a missing layer must not crash the epoch loop."""
+    h = GRUHead(D)
+    h.norm = torch.nn.Identity()
+    assert h.pinned_fraction() is None
+    assert h.dead_fraction() is None
+
+
+# ---- BatchNorm, the second Keras/torch default that cost a run ----------
+
+AUTHORS_KERAS = os.path.join(
+    "CricShoot10kModels",
+    "Efficientnetv2-s_GRU_128_NEEDS_CROPPED_SEGMENTED_SHOTS.keras")
+
+
+def test_batchnorm_uses_the_authors_epsilon_not_torchs():
+    """1e-3 against torch's 1e-5. On a dead unit that is 31.6x instead of
+    316x, and on the epoch-5 weights it was val loss 1.4819 against 3.1031."""
+    h = GRUHead(D)
+    assert h.norm.eps == BN_EPS == 1e-3
+
+
+def test_batchnorm_momentum_is_keras_0_99_translated():
+    """Keras keeps `momentum` of the old value; torch takes `momentum` of the
+    new one. Their 0.99 is 0.01 here, not 0.99 and not torch's 0.1."""
+    h = GRUHead(D)
+    assert h.norm.momentum == BN_MOMENTUM == 0.01
+
+
+@pytest.mark.skipif(not os.path.exists(AUTHORS_KERAS),
+                    reason="the authors' .keras file is not in the tree")
+def test_our_batchnorm_matches_the_one_in_their_shipped_model():
+    """Read straight out of their file, so this cannot drift unnoticed."""
+    with zipfile.ZipFile(AUTHORS_KERAS) as z:
+        cfg = json.loads(z.read("config.json"))
+
+    theirs = None
+    for layer in cfg["config"]["layers"]:
+        if layer.get("class_name") == "BatchNormalization":
+            theirs = layer["config"]
+    assert theirs is not None, "no BatchNormalization in their model"
+
+    h = GRUHead(D)
+    assert h.norm.eps == theirs["epsilon"]
+    assert h.norm.momentum == pytest.approx(1.0 - theirs["momentum"])
+
+
+@pytest.mark.skipif(not os.path.exists(AUTHORS_KERAS),
+                    reason="the authors' .keras file is not in the tree")
+def test_their_gru_settings_are_the_ones_torch_already_gives_us():
+    """reset_after=True is what torch's GRU does -- it has a separate b_hn for
+    exactly that. Worth asserting so nobody 'fixes' it later."""
+    with zipfile.ZipFile(AUTHORS_KERAS) as z:
+        cfg = json.loads(z.read("config.json"))
+
+    gru = None
+    for layer in cfg["config"]["layers"]:
+        if layer.get("class_name") == "GRU":
+            gru = layer["config"]
+    assert gru is not None
+
+    assert gru["reset_after"] is True
+    assert gru["activation"] == "tanh"
+    assert gru["recurrent_activation"] == "sigmoid"
+    assert gru["units"] == HIDDEN
+    assert gru["kernel_initializer"]["class_name"] == "GlorotUniform"
+    assert gru["recurrent_initializer"]["class_name"] == "Orthogonal"
+    assert gru["bias_initializer"]["class_name"] == "Zeros"

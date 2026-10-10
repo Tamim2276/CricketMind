@@ -1,0 +1,37 @@
+# The isolation test: can the head alone, on untouched ImageNet features,
+# beat the 55.11% that full fine-tuning peaked at?
+#
+# If yes, the backbone fine-tuning is the bug and nothing else is. If no, the
+# problem is upstream -- the features, the crops, or the head itself.
+# Epochs are much faster with no backbone backward pass.
+
+name: author_frozen
+split: data/splits_author
+variant: box
+pool: flatten
+backbone: efficientnet_v2_s
+pretrained: true
+freeze: true                       # BatchNorm stays in eval too, so the
+                                   # running stats cannot drift either
+hidden: 128
+dense: 1024
+dropout: 0.0
+
+optimizer: adam
+lr: 1.0e-4
+weight_decay: 0.0
+scheduler: plateau
+lr_factor: 0.1
+lr_patience: 4
+min_lr: 0.0
+
+clip_grad: 0.0                     # see author_backbone_lr.yaml
+
+batch_size: 4
+accum: 1
+epochs: 100
+patience: 10
+flip: 0.5
+
+workers: 0
+seed: 42

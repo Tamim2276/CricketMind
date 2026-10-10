@@ -1582,3 +1582,231 @@ One memorises by epoch 7. The other is still climbing at epoch 15. That is the
 `variant: box`, but the authors' classifier file is named
 `..._NEEDS_CROPPED_SEGMENTED_SHOTS.keras`. Segmented input is the faithful
 choice and is also a planned Phase 3 comparison. One variable at a time.
+
+## Day 7 (10 Oct 2026) -- 55.11%, and the second way to saturate a GRU
+
+The init fix worked: epoch 1 went from 15.40% to 51.45% val top-1, top-3 from
+39.20% to 83.84%. Then the run peaked at epoch 5 and came apart.
+
+```
+epoch  train loss  train top1   val loss  val top1  val top3
+  1      2.1163      30.59%      1.4693    51.45%    83.84%
+  2      1.6170      46.50%      1.6096    49.12%    81.31%
+  3      1.5985      46.27%      2.2296    49.31%    81.82%
+  4      1.5776      47.75%      2.3103    53.79%    84.79%
+  5      1.5683      47.50%      3.1031    55.11%    83.96%   <- best.pt
+  6      1.4278      51.66%      4.8299    48.86%    81.63%
+  7      1.5019      48.64%      2.7058    39.14%    71.72%
+```
+
+Val loss triples while val top-1 *rises*. Nothing in those columns says why,
+so I read the checkpoint instead of guessing.
+
+**Measured in `experiments/mimic_author/best.pt` (epoch 5):**
+
+```
+backbone drift from ImageNet, median over 670 tensors       18.65%
+worst tensor, features.4.0.block.3.1.bias                  65x its norm
+GRU units with |running_mean| > 0.99 (tanh's rail)          20 of 128
+GRU units with running_var exactly 0.0                      15 of 128
+BatchNorm's eval-time scale on those, 1/sqrt(0 + 1e-5)      316x
+units amplified more than 50x                               18 of 128
+```
+
+**The chain.** One param group at `lr 1e-4` over 20M pretrained parameters at
+batch 4 (`train.py:144`, as it was). The backbone moved a median 18.65% off
+ImageNet in five epochs -- healthy fine-tuning moves under 2% -- so its
+activations blew up, so the GRU's pre-activations blew up, so `tanh` saturated
+and 20 units pinned at +-1 on every clip. A pinned unit has zero variance. In
+training BatchNorm divides by the *batch* std, which is also ~0, so it cancels
+and the train loss never notices. At eval it divides by `running_var = 0.0`,
+i.e. multiplies by 316. Float-level noise becomes a huge activation, through
+`fc1`, through `fc2`, into the logits: violently confident and wrong on a
+minority of clips. Mean cross-entropy 4.83, argmax barely moved, top-3 still
+81%. That is the whole shape of the table above.
+
+The number that mattered most was not in the val column. **Train top-1 stuck
+at 47%** -- 74 of 128 units had |mean| > 0.5, so most of the GRU sat in tanh's
+flat region. The model could not fit its own training set. Not overfitting;
+there was nothing to regularise away.
+
+Same disease as the 32.39% run, different road. `_init_gru_like_keras` fixed
+the starting point; it could not fix the dynamics.
+
+**Fixed.**
+
+- `backbone_lr` in `train.py` builds a second param group for the pretrained
+  half (`_param_groups`). `null` keeps the single group, so every earlier
+  result still reproduces exactly. `ReduceLROnPlateau` cuts both groups --
+  tested, because rescuing only the head would have been a silent bug.
+- `load_resume` now refuses a resume whose optimizer group count changed, and
+  names `backbone_lr` as the cause. Torch's own error does not.
+- `GRUHead.pinned_fraction()` / `dead_fraction()` read the saturation straight
+  off the BatchNorm running stats. Free -- the stats are already there -- and
+  printed every epoch as `pin`, so this shows up at epoch 2 instead of 7.
+- The gradient norm is **always** measured and printed as `gn`; clipping stays
+  off unless asked for. Measuring is what tells you a threshold is worth
+  setting, so it must not be conditional on having set one. It goes through
+  `_grad_norm`, not `clip_grad_norm_(inf)`, because that one multiplies every
+  gradient by its coefficient on the way out and a single non-finite gradient
+  makes the coefficient NaN.
+
+**One thing I nearly got wrong.** I had `clip_grad: 1.0` written into the new
+config before testing it. On the toy model the first epoch reported
+`gn 422, clip 100%` -- every step clipped. A limit that fires on every step is
+not a safety net, it is the optimizer, and it is a deviation the authors' compile
+config (no clipnorm) does not have. So `clip_grad: 0.0` ships, `gn` gets
+printed, and the threshold comes from that number when there is one. The same
+mistake as `MIN_DETECTED = 0.4`: chosen, not measured.
+
+New epoch line:
+
+```
+  epoch   1  train loss 1.1643 top1 22.22%   val loss 1.0968 top1 33.33% top3 100.00%   pin 0% gn 422  lr 1e-04/1e-05   0.0m  *
+```
+
+`configs/mimic_author.yaml` is unchanged -- it stays the faithful record of
+what their `.keras` file specifies. The two deviations live in
+`configs/author_backbone_lr.yaml` (head 1e-4, backbone 1e-5) and
+`configs/author_frozen.yaml` (the isolation test: can the head alone, on
+untouched ImageNet features, beat 55.11%?). Separate `name:`, so separate
+`experiments/` directories, so epoch 5's `best.pt` is not clobbered.
+
+405 tests pass, 19 of them new.
+
+### Day 7, later -- the frozen run refuted me, and found the real bug
+
+I predicted: freeze the backbone and `pin` stays at 0%, because frozen features
+cannot blow up. **It was 41% at epoch 1.** The prediction was wrong, which is
+the most useful thing the run produced.
+
+```
+epoch  train top1  val top1  val loss  pin   gn
+  1      23.07%     30.37%    2.3739   41%  10.9
+  4      33.94%     39.65%    3.1871   48%  14.6
+  8      40.66%     42.61%    2.5205   40%  15.9
+ 11      44.30%     43.56%    3.2223   44%  16.6     <- best, then interrupted
+```
+
+Two things that kills:
+
+1. **Backbone drift did not cause the saturation.** With the backbone frozen
+   and its BatchNorm in eval, 41% of the GRU is pinned by the end of epoch 1.
+   The cause is upstream of training entirely: 62720 non-centred post-SiLU
+   features summed into a tanh GRU.
+2. **Freezing is worse, not better.** 43.56% at epoch 11 against full
+   fine-tuning's 55.11% at epoch 5. The backbone fine-tuning was helping. My
+   "lr 1e-4 on the backbone is the bug" was wrong about causation; the 18.65%
+   drift is real but is not what capped the run.
+
+So I went back to their `.keras` file and read the BatchNormalization layer,
+which I had skimmed the first time:
+
+```
+epsilon  = 0.001      torch defaults to 1e-5      100x smaller
+momentum = 0.99       torch defaults to 0.1       10x more reactive
+```
+
+Keras keeps `momentum` of the old running value; torch takes `momentum` of the
+new one. Their 0.99 is **0.01** here. And epsilon is the exact denominator from
+the morning's measurement: a pinned unit has zero variance, so its eval-time
+scale is `1/sqrt(0 + eps)`. Theirs caps at 31.6x. Ours was **316x** -- which is
+the number I measured in `best.pt` and attributed to the backbone.
+
+**The test, on the same weights, nothing retrained:**
+
+```
+eps 1e-05   loss 3.1031   top1 55.11%  top2 74.81%  top3 83.96%
+eps 0.001   loss 1.4819   top1 56.50%  top2 76.39%  top3 86.43%
+```
+
+1e-5 reproduces the recorded 55.11% exactly, so the eval path is sound. One
+constant halves the loss and adds 1.39 points of top-1 and 2.47 of top-3. The
+"exploding val loss" was mostly a PyTorch default.
+
+Same class of bug as the GRU init, and I should have found it at the same time:
+both are Keras defaults that torch does not share. The lesson is that I read
+their config for *architecture* and skipped the numeric defaults inside each
+layer.
+
+Also checked, and already correct: `reset_after=true` is what torch's GRU does
+natively -- it has a separate `b_hn` for exactly that -- plus GlorotUniform
+kernel, Orthogonal recurrent, zero bias. Tests now assert our BatchNorm against
+their file directly, by reading the zip, so this cannot drift again.
+
+**Fixed.**
+
+- `BN_EPS = 1e-3`, `BN_MOMENTUM = 0.01` in `head.py`, as defaults, because they
+  are *their* values -- this makes `mimic_author` more faithful, not less.
+- `history.json` is now written every epoch instead of only at the end. The
+  frozen run's twelve epochs existed nowhere but the terminal when it was
+  killed at epoch 13. A power cut would have cost the same.
+- `experiments/mimic_author` renamed to `mimic_author_bn1e-5` so the epoch-5
+  checkpoint behind the table above survives the next run.
+
+**Still open:** 41% of the GRU is pinned regardless, and correct BatchNorm
+limits the damage rather than preventing it. If the re-run stalls again, the
+62720-wide flatten into a tanh GRU is the next suspect -- but it is also
+provably what the authors shipped, so that is an improvement, not a
+reproduction. One variable at a time.
+
+410 tests pass.
+
+### Day 7, evening -- the BatchNorm fix in full, and a split theory that died
+
+With the authors' BatchNorm constants, the same config that stalled at 47%
+train top-1 ran as follows:
+
+```
+ep  train loss  trtop1   val loss  valtop1  valtop3   pin   lr
+ 1    2.0071   33.97%     1.3106   56.00%   87.63%    0%  1e-04
+ 4    1.2535   58.18%     1.0359   64.52%   90.91%    0%  1e-04
+11    1.0949   64.24%     0.9355   68.69%   93.12%    1%  1e-04
+15    1.0494   64.94%     0.9854   68.31%   91.29%    0%  1e-04
+16    1.0701   64.79%     1.0104   66.29%   90.78%    2%  1e-05  <- plateau cut
+19    0.8105   72.69%     0.7892   74.05%   94.26%    1%  1e-05
+22    0.6990   76.69%     0.7578   75.06%   95.20%    1%  1e-05
+24    0.6628   78.47%     0.7424   75.19%   95.45%    1%  1e-05
+```
+
+`pin` stayed at 0-2% for 24 epochs against 40-54% before the fix, which
+retires the "62720-wide flatten saturates the GRU" theory from this morning.
+The epsilon was causing the saturation, not merely amplifying it at eval:
+BatchNorm's *backward* pass scales the gradient into the GRU by
+`1/sqrt(batch_var + eps)`, and at batch 4 a unit's variance over four samples
+is often near zero by chance. With eps 1e-5 that is a gradient spike of up to
+316x into the GRU, which lifts its weights, which saturates it, which lowers
+the variance further. eps 1e-3 floors the spike at 31.6x and the loop never
+starts. Three symptoms -- the frozen run's 41% pinning, the exploding val loss,
+the train-loss stall -- one constant.
+
+The first lr cut was worth 6.5 points on its own (68.69% -> 75.19% over epochs
+17-24), which is the thing to remember before declaring any future run capped.
+
+**Train crossed above val at epoch 20.** Not a regime change; the train metric
+is an epoch *average* while val is an end-of-epoch snapshot, so a fast-moving
+model is scored against its own worse earlier self. At lr 1e-5 it barely moves
+within an epoch and the handicap disappears. Flip-on-train-only and
+BatchNorm's batch statistics account for the rest.
+
+**A theory I had and discarded.** I suspected `splits_author` inflates 89.09%
+by putting near-duplicate clips on both sides. Measured:
+
+```
+val clips whose source video also appears in train   1612 of 1614  (99.9%)
+val clips with the same source video AND same class      0 of 1614  ( 0.0%)
+```
+
+So their split groups by **(video, class)**, not by clip. `vid447` sends its
+Cover Drives to val and its Pulls to train. Shared stadium and broadcast style,
+but the label is never given away, because the same video's training clips
+belong to a different class. Not the leak that inflates a score. `splits_grouped`
+(grouped by video alone, 0 shared ids) is still the stricter protocol and still
+the honest number, but the gap between the two will be smaller than I assumed,
+and the authors' 89.09% does not get explained away this cheaply.
+
+**Remaining known deviations, ranked:** training length (epoch 24 of 100, one
+of the five lr cuts their 1e-9 implies, train top-1 still climbing); then
+`variant: seg`, which their filename names outright; then `flip: 0.5`, which is
+my guess from the paper rather than anything in their config, and which is
+train-only and so suppresses exactly the number that is currently limiting.

@@ -5,7 +5,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from src.engine import EpochStats, make_scaler, train_epoch
+from src.engine import (EpochStats, _grad_norm, make_scaler,
+                        train_epoch)
 
 N, D, C = 24, 8, 3
 
@@ -255,3 +256,83 @@ def test_evaluate_reports_progress_too():
     evaluate(tiny(), data(), device=torch.device("cpu"),
              on_batch=lambda i, total, loss: seen.append((i, total)))
     assert seen == [(0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6)]
+
+
+# ---- gradient clipping, added after the backbone-drift collapse ---------
+
+def big_grad_data():
+    """Inputs large enough that the first step's gradient is well over 1.0."""
+    torch.manual_seed(0)
+    x = torch.randn(N, D) * 50
+    y = torch.randint(0, C, (N,))
+    return DataLoader(TensorDataset(x, y), batch_size=4)
+
+
+def test_clipping_is_off_by_default_but_the_norm_is_still_measured():
+    """Measuring must not depend on having already decided to clip."""
+    model = tiny()
+    stats = train_epoch(model, data(), torch.optim.SGD(model.parameters(), 0.1),
+                        device=torch.device("cpu"))
+    assert stats.clipped == 0
+    assert stats.grad_norm > 0.0
+
+
+def test_measuring_the_norm_does_not_touch_the_gradients():
+    """The reason this does not go through clip_grad_norm_ with an infinite
+    limit: that multiplies every gradient by a coefficient on the way out."""
+    model = nn.Linear(3, 2)
+    model(torch.ones(1, 3)).sum().backward()
+    before = model.weight.grad.detach().clone()
+
+    got = _grad_norm(model)
+
+    assert torch.equal(model.weight.grad, before)
+    flat = torch.cat([model.weight.grad.flatten(), model.bias.grad.flatten()])
+    assert got == pytest.approx(flat.norm().item(), rel=1e-5)
+
+
+def test_the_norm_of_a_model_with_no_gradients_is_zero():
+    assert _grad_norm(nn.Linear(3, 2)) == 0.0
+
+
+def test_a_big_gradient_is_counted_as_clipped():
+    model = tiny()
+    stats = train_epoch(model, big_grad_data(),
+                        torch.optim.SGD(model.parameters(), 1e-4),
+                        device=torch.device("cpu"), clip_grad=1.0)
+    assert stats.clipped > 0
+    assert stats.clipped <= stats.steps
+
+
+def test_the_reported_norm_is_the_one_before_clipping():
+    """A post-clip norm would read 1.0 every step and say nothing."""
+    model = tiny()
+    stats = train_epoch(model, big_grad_data(),
+                        torch.optim.SGD(model.parameters(), 1e-4),
+                        device=torch.device("cpu"), clip_grad=1.0)
+    assert stats.grad_norm > 1.0, stats.grad_norm
+
+
+def test_clipping_actually_bounds_the_step():
+    """Same big gradients, same lr: clipped must move the weights less."""
+    loose = tiny()
+    tight = tiny()
+    start = loose.weight.detach().clone()
+
+    train_epoch(loose, big_grad_data(), torch.optim.SGD(loose.parameters(), 0.1),
+                device=torch.device("cpu"))
+    train_epoch(tight, big_grad_data(), torch.optim.SGD(tight.parameters(), 0.1),
+                device=torch.device("cpu"), clip_grad=1.0)
+
+    moved_loose = (loose.weight.detach() - start).norm().item()
+    moved_tight = (tight.weight.detach() - start).norm().item()
+    assert moved_tight < moved_loose / 10, (moved_loose, moved_tight)
+
+
+def test_a_small_gradient_is_left_alone():
+    """0% clipped is the proof that clipping changed nothing about a run."""
+    model = tiny()
+    stats = train_epoch(model, data(), torch.optim.SGD(model.parameters(), 1e-6),
+                        device=torch.device("cpu"), clip_grad=1000.0)
+    assert stats.clipped == 0
+    assert 0.0 < stats.grad_norm < 1000.0

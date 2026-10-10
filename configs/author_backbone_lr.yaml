@@ -1,0 +1,51 @@
+# mimic_author with one variable changed: the backbone gets its own, smaller lr.
+#
+# Why, measured on experiments/mimic_author/best.pt (epoch 5, val top-1 55.11%):
+#   backbone drift from ImageNet, median over 670 tensors   18.65%
+#   worst tensor (features.4.0.block.3.1.bias)                 65x its norm
+#   GRU units pinned at |running_mean| > 0.99                20 of 128
+#   GRU units with running_var exactly 0.0                   15 of 128
+#   BatchNorm's eval-time scale on those, 1/sqrt(0 + 1e-5)      316x
+#
+# One lr of 1e-4 over 20M pretrained parameters at batch 4 destroyed the
+# ImageNet features; the blown-up activations saturated the GRU; BatchNorm then
+# amplified the dead units 316x at eval, which is the val loss going 1.47 ->
+# 4.83 while top-1 stayed flat. Everything else is unchanged from
+# configs/mimic_author.yaml -- read that file for the provenance of each value.
+
+name: author_backbone_lr
+split: data/splits_author
+variant: box
+pool: flatten
+backbone: efficientnet_v2_s
+pretrained: true
+freeze: false
+hidden: 128
+dense: 1024
+dropout: 0.0
+
+optimizer: adam
+lr: 1.0e-4                         # head: unchanged, the authors' value
+backbone_lr: 1.0e-5                # NOT the authors'; 10x down, standard practice
+weight_decay: 0.0
+scheduler: plateau
+lr_factor: 0.1
+lr_patience: 4
+min_lr: 0.0
+
+clip_grad: 0.0                     # off, and deliberately so. The authors have
+                                   # no clipnorm, and nobody has yet measured
+                                   # what this model's gradient norm actually
+                                   # is -- a limit of 1.0 clipped 100% of steps
+                                   # on a toy. The epoch line now prints `gn`
+                                   # every epoch; set a threshold from that
+                                   # number, not from a habit.
+
+batch_size: 4
+accum: 1
+epochs: 100
+patience: 10
+flip: 0.5
+
+workers: 0
+seed: 42

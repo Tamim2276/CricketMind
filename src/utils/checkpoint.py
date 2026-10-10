@@ -153,6 +153,15 @@ def load_resume(path: str, model=None, optimizer=None, scheduler=None,
     if model is not None and payload.get("model_state") is not None:
         model.load_state_dict(payload["model_state"])
     if optimizer is not None and payload.get("optimizer_state") is not None:
+        saved = len(payload["optimizer_state"].get("param_groups") or [])
+        live = len(optimizer.param_groups)
+        if saved != live:
+            # changing backbone_lr splits one group into two; torch's own
+            # error for this does not say which knob caused it
+            raise ValueError(
+                f"{path} was saved with {saved} parameter group(s) and this "
+                f"run builds {live}. The optimizer config changed "
+                f"(backbone_lr); this run cannot resume that one. Use --fresh.")
         optimizer.load_state_dict(payload["optimizer_state"])
     if scheduler is not None and payload.get("scheduler_state") is not None:
         scheduler.load_state_dict(payload["scheduler_state"])

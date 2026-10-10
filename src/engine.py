@@ -20,6 +20,13 @@ this machine, batch 6 fills 6.82 GB, so accum=2 gives the gradient of a batch
 of 12 at the memory of 6. The loss is divided by N before backward, or the
 summed gradient would be N times too large.
 
+**The gradient norm is always measured; clipping is off unless asked for.**
+Measuring is what tells you a threshold is worth setting, so it must not be
+conditional on having set one -- that was how the backbone got to drift 18.65%
+off ImageNet unnoticed. The authors' compile config has no clipnorm, so a run
+that clips is not their run; `clipped` comes back in the stats so a run that
+clips on 0 steps can prove it still is.
+
 An out-of-memory here is fatal and must not be caught: an XPU OOM leaves every
 later allocation in the process failing too, so the caller should checkpoint
 and exit rather than retry smaller.
@@ -40,6 +47,8 @@ class EpochStats(NamedTuple):
     top1: float         # 0-1
     clips: int
     steps: int          # optimizer steps, fewer than batches when accumulating
+    clipped: int = 0    # steps whose gradient was over the limit
+    grad_norm: float = 0.0   # mean gradient norm, measured before clipping
 
 
 class EvalStats(NamedTuple):
@@ -61,8 +70,29 @@ def make_scaler(device=None):
     return torch.amp.GradScaler(amp.device_type)
 
 
+def _grad_norm(model):
+    """The global gradient norm, without touching the gradients.
+
+    `clip_grad_norm_` would also return this, but it multiplies every gradient
+    by its clip coefficient on the way out -- and with an infinite limit a
+    single non-finite gradient makes that coefficient NaN and takes the whole
+    model with it. Measuring has to be safe enough to leave switched on.
+
+    One sync at the end rather than one per tensor: 700 `.item()` calls a step
+    would cost more than the backward pass.
+    """
+    norms = []
+    for p in model.parameters():
+        if p.grad is not None:
+            norms.append(torch.linalg.vector_norm(p.grad.detach()))
+    if not norms:
+        return 0.0
+    return float(torch.linalg.vector_norm(torch.stack(norms)))
+
+
 def train_epoch(model, loader, optimizer, criterion=None, device=None,
                 scaler=None, accum: int = 1, scheduler=None,
+                clip_grad: float = 0.0,
                 max_batches: Optional[int] = None,
                 on_batch=None) -> EpochStats:
     """One pass over `loader`. Returns mean loss and top-1 over the epoch."""
@@ -83,6 +113,8 @@ def train_epoch(model, loader, optimizer, criterion=None, device=None,
     correct = 0
     clips = 0
     steps = 0
+    clipped = 0
+    norm_sum = 0.0
 
     for i, (x, y) in enumerate(loader):
         if i >= planned:
@@ -112,6 +144,17 @@ def train_epoch(model, loader, optimizer, criterion=None, device=None,
 
         last = (i + 1) == planned
         if (i + 1) % accum == 0 or last:
+            if scaler is not None:
+                # measure and clip the real gradient, not the scaled one
+                scaler.unscale_(optimizer)
+            if clip_grad > 0:
+                norm = float(torch.nn.utils.clip_grad_norm_(
+                    model.parameters(), clip_grad))
+                if norm > clip_grad:
+                    clipped += 1
+            else:
+                norm = _grad_norm(model)
+            norm_sum += norm
             if scaler is None:
                 optimizer.step()
             else:
@@ -131,7 +174,12 @@ def train_epoch(model, loader, optimizer, criterion=None, device=None,
 
     if clips == 0:
         raise RuntimeError("the loader produced no batches")
-    return EpochStats(loss_sum / clips, correct / clips, clips, steps)
+    if steps > 0:
+        mean_norm = norm_sum / steps
+    else:
+        mean_norm = 0.0
+    return EpochStats(loss_sum / clips, correct / clips, clips, steps,
+                      clipped, mean_norm)
 
 
 def topk_correct(logits, y, ks=(1, 2, 3)):

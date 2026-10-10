@@ -228,3 +228,186 @@ def test_flipping_is_only_applied_to_training_clips(workspace):
     train_loader, val_loader, _ = T._make_loaders(cfg)
     assert isinstance(train_loader.dataset.transform, ClipFlip)
     assert val_loader.dataset.transform is None
+
+
+# ---- 7.4: the backbone's own learning rate ------------------------------
+#
+# The epoch-5 checkpoint of the first working run had the backbone a median
+# 18.65% away from its ImageNet weights and 20 of 128 GRU units pinned at
+# tanh's rail. These check the knob that is supposed to stop that.
+
+def small_model():
+    return T.build_model(num_classes=3, pretrained=False, pool="avg")
+
+
+def test_one_param_group_when_backbone_lr_is_unset():
+    """Every earlier result has to keep reproducing exactly."""
+    cfg = dict(T.DEFAULTS)
+    cfg["lr"] = 1e-3
+    opt = T._make_optimizer(cfg, small_model())
+    assert len(opt.param_groups) == 1
+    assert opt.param_groups[0]["lr"] == 1e-3
+
+
+def test_the_backbone_gets_its_own_rate():
+    cfg = dict(T.DEFAULTS)
+    cfg["lr"] = 1e-4
+    cfg["backbone_lr"] = 1e-5
+    model = small_model()
+    opt = T._make_optimizer(cfg, model)
+
+    assert len(opt.param_groups) == 2
+    by_name = {}
+    for group in opt.param_groups:
+        by_name[group["name"]] = group
+    assert by_name["head"]["lr"] == 1e-4
+    assert by_name["backbone"]["lr"] == 1e-5
+
+    backbone_ids = set()
+    for p in model.encoder.parameters():
+        backbone_ids.add(id(p))
+    for p in by_name["backbone"]["params"]:
+        assert id(p) in backbone_ids
+
+
+def test_every_trainable_parameter_lands_in_exactly_one_group():
+    """A parameter left out of the optimizer never trains, and never says so."""
+    cfg = dict(T.DEFAULTS)
+    cfg["backbone_lr"] = 1e-5
+    model = small_model()
+    opt = T._make_optimizer(cfg, model)
+
+    seen = []
+    for group in opt.param_groups:
+        for p in group["params"]:
+            seen.append(id(p))
+    expected = []
+    for p in model.parameters():
+        if p.requires_grad:
+            expected.append(id(p))
+
+    assert len(seen) == len(set(seen)), "a parameter is in two groups"
+    assert set(seen) == set(expected)
+
+
+def test_a_frozen_backbone_contributes_no_group():
+    cfg = dict(T.DEFAULTS)
+    cfg["freeze"] = True
+    cfg["backbone_lr"] = 1e-5
+    model = T.build_model(num_classes=3, pretrained=False, pool="avg",
+                          freeze=True)
+    opt = T._make_optimizer(cfg, model)
+    assert len(opt.param_groups) == 1
+    assert opt.param_groups[0]["name"] == "head"
+
+
+def test_the_plateau_cut_reaches_both_groups():
+    """ReduceLROnPlateau must not quietly rescue only the head."""
+    cfg = dict(T.DEFAULTS)
+    cfg["lr"] = 1e-4
+    cfg["backbone_lr"] = 1e-5
+    cfg["scheduler"] = "plateau"
+    cfg["lr_patience"] = 0
+    opt = T._make_optimizer(cfg, small_model())
+    sched = T._make_scheduler(cfg, opt)
+    sched.step(0.5)          # sets the best
+    sched.step(0.1)          # one bad epoch, and patience is 0, so one cut
+    assert opt.param_groups[0]["lr"] == pytest.approx(1e-5)
+    assert opt.param_groups[1]["lr"] == pytest.approx(1e-6)
+
+
+def test_the_lr_column_shows_one_rate_or_two():
+    cfg = dict(T.DEFAULTS)
+    cfg["lr"] = 1e-4
+    one = T._make_optimizer(cfg, small_model())
+    assert T._lr_text(one) == "1e-04"
+
+    cfg["backbone_lr"] = 1e-5
+    two = T._make_optimizer(cfg, small_model())
+    assert T._lr_text(two) == "1e-04/1e-05"
+
+    cfg["backbone_lr"] = 1e-4
+    same = T._make_optimizer(cfg, small_model())
+    assert T._lr_text(same) == "1e-04"
+
+
+def test_resuming_a_run_whose_optimizer_shape_changed_is_refused(tmp_path):
+    """Editing backbone_lr mid-run; torch's own message names no knob."""
+    from src.utils.checkpoint import load_resume, save_resume
+    model = torch.nn.Linear(4, 2)
+    path = str(tmp_path / "resume.pt")
+    save_resume(path, epoch=1, model=model,
+                optimizer=torch.optim.Adam(model.parameters(), lr=1e-3))
+
+    split = torch.optim.Adam([{"params": [model.weight], "lr": 1e-3},
+                              {"params": [model.bias], "lr": 1e-4}])
+    with pytest.raises(ValueError, match="backbone_lr"):
+        load_resume(path, model, split)
+
+
+def test_the_saturation_watch_is_recorded_every_epoch(workspace):
+    cfg = base_cfg(workspace, epochs=2)
+    T.train(cfg, quiet=True)
+    history = json.load(open(os.path.join(cfg["out"], cfg["name"],
+                                          "history.json"), encoding="utf-8"))
+    for row in history:
+        assert row["pinned"] == 0.0, row
+        assert row["dead"] == 0.0, row
+        assert "grad_norm" in row and "clipped" in row
+
+
+def test_the_two_new_configs_load_and_every_key_is_known():
+    for name in ("author_backbone_lr.yaml", "author_frozen.yaml"):
+        cfg = T.load_config(os.path.join("configs", name))
+        for key in cfg:
+            assert key in T.DEFAULTS, (name, key)
+
+    tuned = T.load_config(os.path.join("configs", "author_backbone_lr.yaml"))
+    mimic = T.load_config(os.path.join("configs", "mimic_author.yaml"))
+    assert tuned["backbone_lr"] == 1e-5
+    assert tuned["clip_grad"] == 0.0      # measure before choosing a limit
+    assert tuned["lr"] == mimic["lr"]              # the head is unchanged
+    assert tuned["name"] != mimic["name"]          # its own experiments dir
+
+
+def test_the_epoch_line_names_every_number_it_prints(workspace, capsys):
+    """The old line read `train 2.1163/30.59%`, which cost a round trip to
+    ask which number was which."""
+    cfg = base_cfg(workspace, epochs=1, backbone_lr=1e-5, clip_grad=1.0)
+    T.train(cfg, quiet=False)
+    out = capsys.readouterr().out
+
+    line = ""
+    for text in out.splitlines():
+        if text.strip().startswith("epoch "):
+            line = text
+    assert "train loss" in line and "top1" in line
+    assert "val loss" in line and "top3" in line
+    assert "pin " in line
+    assert "gn " in line
+    assert "lr 1e-03/1e-05" in line, line
+
+
+def test_history_is_on_disk_after_every_epoch_not_just_at_the_end(workspace):
+    """A run killed at epoch 13 used to leave its twelve finished epochs
+    nowhere but the terminal."""
+    split, out, proc = workspace
+    history_path = os.path.join(out, "t", "history.json")
+
+    seen = {}
+
+    real = T.atomic_write_json
+
+    def spy(data, path):
+        if path == history_path:
+            seen[len(data)] = True
+        return real(data, path)
+
+    T.atomic_write_json = spy
+    try:
+        T.train(base_cfg(workspace, epochs=3), quiet=True)
+    finally:
+        T.atomic_write_json = real
+
+    assert 1 in seen, "epoch 1 was not written until the run ended"
+    assert 2 in seen and 3 in seen
