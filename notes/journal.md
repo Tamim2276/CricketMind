@@ -1516,3 +1516,69 @@ hand, including the case that matters: a class the model never predicts scores
 **Also:** the progress bar moved to `src/utils/progress.py` so training and
 preprocessing share one implementation, and `evaluate` gained the `on_batch`
 callback `train_epoch` already had.
+
+---
+
+## 2026-10-10 (7.1 result) — 32.39%, and the reason was one line of initialisation
+
+**First, a misreading of my own.** I twice reported the run as "still inside
+epoch 1". It had finished at 05:23. My check looked only for `resume.pt`, and
+its absence means *either* "epoch 1 not done yet" *or* "completed cleanly" --
+I had written that ambiguity into the design deliberately and then fell for
+it. The right check is `history.json` existing, or the ledger row.
+
+**The result.** Best val **32.39%** at epoch 4, early stop at 14, 1.56 h. The
+target is 89.09% and the plan's epoch-5 gate is 60%; we had 30.93%.
+
+```
+  ep   train     val
+   4  24.49%  32.39%   <- best
+   8  25.49%  27.78%
+   9  17.90%  12.44%   <- collapsed, lr unchanged at 1e-4
+  14  21.74%  24.24%
+```
+
+**Train accuracy peaked at 26.72%.** That is the diagnostic. A 44.5 M model
+fine-tuned end to end on 6,320 clips should be able to *memorise* far more
+than a quarter of them. This was not a generalisation failure; it was barely
+fitting.
+
+**Cause: PyTorch initialises GRU weights as `uniform(+-1/sqrt(hidden))`,
+ignoring fan-in.** Keras uses `glorot_uniform`, which divides by
+`sqrt(fan_in + fan_out)`. At 1280 inputs the two differ by 1.5x and it does
+not matter. At **62720** inputs -- which is what `pool: flatten` gives, the
+setting 6.4 added to match the authors -- they differ by **9.1x**:
+
+```
+input width 62720
+   pytorch   uniform(+-0.0884)   gate pre-activation std 13.06   64.9% saturated
+   glorot    uniform(+-0.0098)   gate pre-activation std  1.33    0.0% saturated
+```
+
+A saturated sigmoid has gradient near zero, so **two thirds of the GRU's
+gates were dead from the first step**.
+
+This also explains why nothing caught it earlier: every smoke test through Day
+6 ran on the *pooled* 1280-wide model, where the mismatch is harmless. The
+flatten path was introduced in 6.4 and its first real exercise was this run.
+
+**Fix.** `_init_gru_like_keras` in `head.py`: `xavier_uniform_` on the input
+weights, orthogonal per gate-block on the recurrent weights, zero biases --
+Keras's three defaults. On by default, with `keras_init=False` kept so the
+broken behaviour stays reproducible, and a test that asserts it really is
+broken.
+
+**A/B on the same 60 clips, same seed, only the init differing:**
+
+```
+torch default   8% 10% 18% 28% 22% 22% 33% 30% 35% 42% 50% 67% 68% 75% 78%   loss 2.11
+keras glorot   10% 45% 67% 82% 93% 98% 100% 100% ...                          loss 0.56
+```
+
+One memorises by epoch 7. The other is still climbing at epoch 15. That is the
+32.39% explained.
+
+**Still open, and deliberately not changed at the same time:** the config uses
+`variant: box`, but the authors' classifier file is named
+`..._NEEDS_CROPPED_SEGMENTED_SHOTS.keras`. Segmented input is the faithful
+choice and is also a planned Phase 3 comparison. One variable at a time.
