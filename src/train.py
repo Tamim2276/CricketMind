@@ -32,6 +32,7 @@ from src.models.encoder import DEFAULT_BACKBONE
 from src.models.model import build_model
 from src.utils.checkpoint import (append_result, atomic_save,
                                   atomic_write_json, load_resume, save_resume)
+from src.utils import progress
 from src.utils.device import describe, get_device
 from src.utils.seed import make_generator, seed_worker, set_seed
 
@@ -164,6 +165,33 @@ def _make_scheduler(cfg, optimizer):
     raise ValueError(f"unknown scheduler: {cfg['scheduler']}")
 
 
+def _ticker(label: str, quiet: bool):
+    """A callback for train_epoch/evaluate that redraws one progress line."""
+    if quiet or not progress.is_tty():
+        return None
+
+    state = {"start": time.time(), "loss": 0.0, "n": 0}
+
+    def tick(i, total, loss):
+        state["loss"] += loss
+        state["n"] += 1
+        done = i + 1
+        gone = time.time() - state["start"]
+        rate = done / max(gone, 1e-9)
+        left = (total - done) / max(rate, 1e-9)
+        tail = (f"loss {state['loss'] / state['n']:6.4f}  "
+                f"~{left / 60:4.1f} min left")
+        sys.stdout.write(progress.line(done, total, tail, prefix=label))
+        sys.stdout.flush()
+
+    return tick
+
+
+def _clear_line():
+    if progress.is_tty():
+        sys.stdout.write(chr(13) + " " * 100 + chr(13))
+
+
 def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
     """Run one experiment. Returns the ledger row that was recorded."""
     cfg = dict(DEFAULTS)
@@ -223,9 +251,12 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
         try:
             tr = train_epoch(model, train_loader, optimizer, criterion, device,
                              scaler=scaler, accum=cfg["accum"],
-                             max_batches=cfg["max_train_batches"])
+                             max_batches=cfg["max_train_batches"],
+                             on_batch=_ticker(f"  epoch {epoch:3d} train ", quiet))
             va = evaluate(model, val_loader, criterion, device,
-                          max_batches=cfg["max_val_batches"])
+                          max_batches=cfg["max_val_batches"],
+                          on_batch=_ticker(f"  epoch {epoch:3d}   val ", quiet))
+            _clear_line()
         except torch.OutOfMemoryError:
             # an XPU OOM poisons the process: every later allocation fails
             # too, so save what we have and let the next run resume

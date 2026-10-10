@@ -123,3 +123,45 @@ def test_batchnorm_needs_more_than_one_clip_in_training():
     h = GRUHead(D).train()
     with pytest.raises(ValueError):
         h(feats(1, T))
+
+
+# ---- initialisation, which is what cost the first real run -------------
+
+def test_the_gru_is_not_saturated_at_a_wide_input():
+    """PyTorch's default ignores fan-in. At 62720 inputs that kills the GRU."""
+    torch.manual_seed(0)
+    h = GRUHead(62720)
+    x = torch.randn(64, 62720).abs()
+    z = x @ h.gru.weight_ih_l0.t()
+    saturated = (z.abs() > 6).float().mean().item()
+    assert saturated < 0.01, f"{saturated:.1%} of gates saturated at init"
+
+
+def test_torch_default_init_really_is_the_broken_one():
+    """Kept as evidence: this is what the 32.39% run was running."""
+    torch.manual_seed(0)
+    h = GRUHead(62720, keras_init=False)
+    x = torch.randn(64, 62720).abs()
+    z = x @ h.gru.weight_ih_l0.t()
+    assert (z.abs() > 6).float().mean().item() > 0.3
+
+
+def test_the_input_weights_scale_with_fan_in():
+    narrow = GRUHead(1280).gru.weight_ih_l0.std().item()
+    wide = GRUHead(62720).gru.weight_ih_l0.std().item()
+    assert wide < narrow / 4, (narrow, wide)
+
+
+def test_the_recurrent_weights_are_orthogonal_per_gate():
+    h = GRUHead(256)
+    w = h.gru.weight_hh_l0
+    for i in range(0, w.shape[0], h.hidden):
+        block = w[i:i + h.hidden]
+        eye = block @ block.t()
+        assert torch.allclose(eye, torch.eye(h.hidden), atol=1e-4)
+
+
+def test_the_biases_start_at_zero():
+    h = GRUHead(512)
+    assert torch.equal(h.gru.bias_ih_l0, torch.zeros_like(h.gru.bias_ih_l0))
+    assert torch.equal(h.gru.bias_hh_l0, torch.zeros_like(h.gru.bias_hh_l0))

@@ -1445,3 +1445,74 @@ patience 10 will almost certainly cut it short.
 the config: batch 4, 100 epochs, early-stop patience 10, plateau patience 4,
 and the flip itself. Those come from the paper, which the plan already warns
 disagrees with the notebook in places.
+
+---
+
+## 2026-10-11 (7.1 launched, 7.2, 7.3) — evaluation that cannot go stale
+
+**7.1 is running.** `mimic_author`: 6,320 train / 1,584 val, batch 4, pool
+flatten, 100 epochs. Measured before launch: 1,580 steps an epoch at 0.264 s,
+so ~9 min an epoch and 15.5 h worst case.
+
+**A plan bug found at launch.** The plan said `python src/train.py --config
+...`, which fails -- the module imports `src.*` and needs `-m`. Corrected.
+
+## 7.2 — flip, online rather than offline
+
+The plan called for an offline flip that doubles the training set on disk.
+Built as a transform on the training `Dataset` instead. The leak the plan
+warns about -- a clip's mirror landing in test while the original is in train
+-- is impossible **by construction**, because no flipped files exist to be
+split.
+
+| | offline | online |
+|---|---|---|
+| extra disk | +21 GB per variant | none |
+| steps an epoch | 3,160 | 1,580 |
+| 100 epochs | ~30 h | **~15.5 h** |
+| what it sees | the same two copies forever | a fresh coin-flip each epoch |
+
+The doubling is what costs the fifteen hours, and it buys a *fixed* pair
+rather than variety.
+
+## 7.3 — `src/evaluate.py`
+
+Top-1/2/3, per-class precision/recall/F1, macro averages, the 15x15 confusion
+matrix, and the guard this project actually needs.
+
+**Every report carries the checkpoint's SHA-256, size and mtime**, and
+`load_report` re-hashes the file and raises `StaleReport` if it has moved.
+
+*A hash rather than a timestamp*, because an mtime proves very little: a file
+can be rewritten with the same one, clocks drift, and copying moves it. There
+is a test that touches a file with `os.utime` without changing a byte and
+asserts the report still loads -- a timestamp check would false-alarm there.
+
+*It raises rather than warns*, because a warning inside a six-hour log is a
+warning nobody reads. The message says what to do.
+
+**Proved end to end on CPU** (the Arc is busy), by training a small model,
+scoring it, then retraining underneath the report:
+
+```
+report top-1  0.3889
+history best  0.3889
+difference    0.0000          <- the plan's "val matches history" check
+
+... retrain, then try to read the old report ...
+
+  report : cc12f9ad0d10462b  2026-10-10 12:58:31
+  on disk: a0f0d884d5b01f9d  2026-10-10 12:58:33
+  Re-run the evaluation; do not read these numbers.
+```
+
+That is the 23.67% failure made impossible rather than merely unlikely.
+
+**Metrics are hand-checked, not trusted.** `per_class` is nine lines of
+arithmetic off the confusion matrix with a test that works the numbers out by
+hand, including the case that matters: a class the model never predicts scores
+0.0 rather than NaN, because one NaN silently poisons the macro average.
+
+**Also:** the progress bar moved to `src/utils/progress.py` so training and
+preprocessing share one implementation, and `evaluate` gained the `on_batch`
+callback `train_epoch` already had.

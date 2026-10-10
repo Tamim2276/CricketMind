@@ -156,7 +156,7 @@ def topk_correct(logits, y, ks=(1, 2, 3)):
 
 def evaluate(model, loader, criterion=None, device=None,
              max_batches: Optional[int] = None, use_amp: bool = True,
-             collect: bool = False) -> EvalStats:
+             collect: bool = False, on_batch=None) -> EvalStats:
     """Top-1/2/3 and loss, with nothing learned.
 
     Both `model.eval()` and `torch.no_grad()` are needed and they do different
@@ -207,6 +207,9 @@ def evaluate(model, loader, criterion=None, device=None,
             if collect:
                 preds.append(logits.argmax(dim=1).cpu())
                 labels.append(y.cpu())
+
+            if on_batch is not None:
+                on_batch(i, planned, loss.item())
 
     if clips == 0:
         raise RuntimeError("the loader produced no batches")

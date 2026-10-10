@@ -248,3 +248,10 @@ def test_a_perfect_model_scores_one():
 def test_evaluate_stops_early_when_asked():
     stats = evaluate(tiny(), data(), device=torch.device("cpu"), max_batches=2)
     assert stats.clips == 8
+
+
+def test_evaluate_reports_progress_too():
+    seen = []
+    evaluate(tiny(), data(), device=torch.device("cpu"),
+             on_batch=lambda i, total, loss: seen.append((i, total)))
+    assert seen == [(0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6)]

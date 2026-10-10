@@ -24,13 +24,11 @@ from src.data.video import read_clip, reset_retries, retries
 from src.preprocess.crop import crop_clip
 from src.preprocess.detect import detect, load_detector
 from src.preprocess.sample import TARGET, drop_duplicates, sample
+from src.utils import progress
 from src.utils.checkpoint import append_result, read_results
 from src.utils.device import get_device
 
 __all__ = ["process_clip", "build", "VARIANTS"]
-
-BAR = 28
-_GREEN, _RED, _DIM, _OFF = "[32m", "[31m", "[2m", "[0m"
 
 ROOT = os.path.join("data", "CricShoot10kShootDataset")
 OUT = os.path.join("data", "processed")
@@ -47,24 +45,12 @@ def _progress(done: int, total: int, failed: int, t0: float, tty: bool) -> str:
         left = 0.0
 
     if failed and tty:
-        bad = f"{_RED}{failed} failed{_OFF}"
+        bad = f"{progress.RED}{failed} failed{progress.OFF}"
     else:
         bad = f"{failed} failed"
 
     tail = f"{rate:4.1f} clips/s  {bad}  ~{left:4.1f} h left"
-    if not tty:
-        return f"  {done}/{total}  {tail}"
-
-    if total:
-        on = round(done / total * BAR)
-        share = done / total
-    else:
-        on = BAR
-        share = 1.0
-    filled = chr(0x25CF) * on
-    rest = chr(0xB7) * (BAR - on)
-    dots = f"{_GREEN}{filled}{_OFF}{_DIM}{rest}{_OFF}"
-    return f"\r[{dots}] {done}/{total} {share:5.1%}  {tail} "
+    return progress.line(done, total, tail, prefix="  ", tty=tty)
 
 
 def clip_list(root: str = ROOT):

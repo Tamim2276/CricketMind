@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 from src.preprocess import build_dataset as bd
+from src.utils import progress
 from src.preprocess.detect import Detection
 
 FH, FW = 540, 896
@@ -161,8 +162,8 @@ def test_the_bar_fills_up():
     end = bd._progress(100, 100, 0, t0, True)
     dot = chr(0x25CF)
     assert start.count(dot) == 0
-    assert half.count(dot) == bd.BAR // 2
-    assert end.count(dot) == bd.BAR
+    assert half.count(dot) == progress.WIDTH // 2
+    assert end.count(dot) == progress.WIDTH
 
 
 def test_the_bar_rewrites_one_line():
@@ -179,5 +180,5 @@ def test_no_escape_codes_when_output_is_not_a_terminal():
 
 def test_failures_are_coloured_only_when_there_are_some():
     t0 = __import__("time").time() - 5
-    assert bd._RED in bd._progress(5, 100, 1, t0, True)
-    assert bd._RED not in bd._progress(5, 100, 0, t0, True)
+    assert progress.RED in bd._progress(5, 100, 1, t0, True)
+    assert progress.RED not in bd._progress(5, 100, 0, t0, True)

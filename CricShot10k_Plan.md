@@ -1829,6 +1829,27 @@ their model. If it does not, something differs even when the headline matches.
 **Takeaway.** Always reproduce a known number on val before computing an unknown
 one on test. Test is touched once, at the end.
 
+**Built 2026-10-11.** `src/evaluate.py`, 15 tests. Every report carries the
+checkpoint's SHA-256, size and mtime; `load_report` re-hashes and raises
+`StaleReport` on a mismatch.
+
+A hash rather than a timestamp: there is a test that `os.utime`s the file
+without changing a byte and asserts the report still loads, which a timestamp
+check would fail. And it raises rather than warns, because a warning in a
+six-hour log is a warning nobody reads.
+
+Proved end to end on CPU -- trained a small model, scored it (`report top-1
+0.3889` against `history best 0.3889`, difference 0.0000), then retrained
+underneath the report and watched it be refused.
+
+Run it when the real training finishes:
+
+```bash
+python -m src.evaluate experiments/mimic_author/best.pt     data/splits_author/val.csv --out experiments/mimic_author/val_report.json
+```
+
+Val first and only then test, as the takeaway says.
+
 ### 7.4 If you are short of 89% (≈2–4 h)
 
 In order of likelihood:
