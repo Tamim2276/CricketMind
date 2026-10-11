@@ -40,6 +40,7 @@ from src.preprocess.striker import candidates, pick_striker
 
 __all__ = ["crop_clip", "track_boxes", "track_picks", "segment",
            "frame_mask", "carried_mask", "smooth_boxes", "CropResult",
+           "overlay", "blackout", "SEG_MODE", "ALPHA", "TINT",
            "OUTLIER", "PAD", "SIZE", "MIN_FRAMES", "MIN_DETECTED",
            "BAT_REACH"]
 
@@ -48,6 +49,13 @@ TRACK_IOU = 0.2     # overlap with the dominant track to count as the batter
 BAT_REACH = 1.0     # body-heights; further than this is not his bat
 MIN_DETECTED = 0.4  # of a shot must be real detections, or the track is fiction
 PAD = 0.25          # each side, as a fraction of the square's side
+# The segmentation layer. The paper says "a semi-transparent overlay is
+# applied to the batter and bat" and gives neither colour nor weight, so both
+# are parameters and tools/overlay_sweep.py renders them to be looked at.
+SEG_MODE = "overlay"
+ALPHA = 0.4
+TINT = (0, 170, 0)  # BGR, the order cv2 reads and writes
+
 MEDIAN_W = 5        # spike removal
 MEAN_W = 3          # the actual smoothing
 SIZE_W = 9          # the crop size is smoothed harder; a pulse is very visible
@@ -234,8 +242,14 @@ def frame_mask(striker, dets=()):
     return mask
 
 
-def segment(frame, striker, dets=(), mask=None):
-    """Black out everything that is not the batter or his bat."""
+def blackout(frame, striker, dets=(), mask=None):
+    """Black out everything that is not the batter or his bat.
+
+    This is **not** what the paper describes, and it is kept only so the
+    result stays reproducible: the `seg` variant built from it scored 62.37%
+    against box's 79.23%, because deleting the pitch and the fielders deletes
+    what separates a Lofted Offside from a Lofted Legside.
+    """
     if mask is None:
         mask = frame_mask(striker, dets)
     if mask is None:
@@ -243,6 +257,43 @@ def segment(frame, striker, dets=(), mask=None):
     out = np.zeros_like(frame)
     out[mask] = frame[mask]
     return out
+
+
+def overlay(frame, striker, dets=(), mask=None, alpha=ALPHA, colour=TINT):
+    """Tint the batter and bat, keeping the background. The paper's layer.
+
+    "To reduce the effect of jersey color and lighting variations, a
+    semi-transparent overlay is applied to the batter and bat." Section III.
+    Blending towards one fixed colour pulls every jersey towards the same
+    hue, so the model stops keying on kit colour, while the pitch and the
+    fielders -- which say where the ball went -- stay where they are.
+
+    `alpha` is the weight of the tint: 0 leaves the frame alone, 1 is the
+    blackout above with a different colour. The paper does not state it, so
+    it is a parameter to be measured, not a constant to be guessed.
+    """
+    if not 0.0 <= alpha <= 1.0:
+        raise ValueError(f"alpha must be in [0, 1], got {alpha}")
+    if mask is None:
+        mask = frame_mask(striker, dets)
+    if mask is None or alpha == 0.0:
+        return frame
+
+    out = frame.copy()
+    tint = np.array(colour, dtype=np.float32)
+    kept = out[mask].astype(np.float32)
+    out[mask] = np.rint((1.0 - alpha) * kept + alpha * tint).astype(frame.dtype)
+    return out
+
+
+def segment(frame, striker, dets=(), mask=None, mode=SEG_MODE, alpha=ALPHA,
+            colour=TINT):
+    """The segmentation layer. `mode` picks which one."""
+    if mode == "overlay":
+        return overlay(frame, striker, dets, mask, alpha=alpha, colour=colour)
+    if mode == "blackout":
+        return blackout(frame, striker, dets, mask)
+    raise ValueError(f"unknown segmentation mode: {mode!r}")
 
 
 def _shift(mask, dx: int, dy: int):
@@ -371,12 +422,14 @@ def _best_shot(clip, boxes, cuts):
 
 def crop_clip(clip: np.ndarray, per_frame, size: int = SIZE, pad: float = PAD,
               min_frames: int = MIN_FRAMES, min_detected: float = MIN_DETECTED,
-              cuts=None, segmented: bool = False) -> CropResult:
+              cuts=None, segmented: bool = False, seg_mode: str = SEG_MODE,
+              alpha: float = ALPHA, colour=TINT) -> CropResult:
     """Crop a clip to the batter. `per_frame` is detect()'s output for it.
 
-    `segmented=True` blacks out the background first, which needs
-    detect(masks=True). It is a variant to compare, not a default -- the
-    authors' classifier wants it, but that is their claim, not a measurement.
+    `segmented=True` applies the segmentation layer first, which needs
+    detect(masks=True). `seg_mode="overlay"` is the paper's version: tint the
+    batter and bat, keep the background. `"blackout"` is the one this project
+    built first by misreading them, and it is 16.86 points worse.
     """
     fh, fw = clip.shape[1:3]
     picks = track_picks(per_frame, (fh, fw))
@@ -422,7 +475,8 @@ def crop_clip(clip: np.ndarray, per_frame, size: int = SIZE, pad: float = PAD,
                     carried += 1
             if mask is None:
                 nomask += 1
-            src = segment(src, None, mask=mask)
+            src = segment(src, None, mask=mask, mode=seg_mode,
+                          alpha=alpha, colour=colour)
         patch = src[y:y + s, x:x + s]
         out[k] = cv2.resize(patch, (size, size), interpolation=cv2.INTER_AREA)
 

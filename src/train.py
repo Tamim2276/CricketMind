@@ -30,6 +30,7 @@ from src.data.dataset import CricShotDataset
 from src.engine import evaluate, make_scaler, train_epoch
 from src.models.encoder import DEFAULT_BACKBONE
 from src.models.model import build_model
+from src.plot import FIGURES, plot_run
 from src.utils.checkpoint import (append_result, atomic_save,
                                   atomic_write_json, load_resume, save_resume)
 from src.utils import progress
@@ -70,6 +71,7 @@ DEFAULTS = {
     "max_train_batches": None,
     "max_val_batches": None,
     "out": "experiments",
+    "figures": FIGURES,   # the copy git keeps; null to skip
 }
 
 
@@ -396,6 +398,13 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
            "stopped": stopped, "minutes": (time.time() - started) / 60,
            "device": str(device), "cfg": cfg}
     append_result(row, os.path.join(cfg["out"], "results.jsonl"))
+
+    # the figure, before the resume file goes: a run you cannot see is a run
+    # you will re-read as a wall of numbers
+    try:
+        plot_run(out, name=cfg["name"], mirror=cfg["figures"])
+    except Exception as err:
+        print(f"  (no figure: {err})", flush=True)
 
     # last, and only on a clean finish: resume.pt existing means interrupted
     if os.path.exists(resume_path):

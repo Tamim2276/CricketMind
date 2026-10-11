@@ -1810,3 +1810,185 @@ of the five lr cuts their 1e-9 implies, train top-1 still climbing); then
 `variant: seg`, which their filename names outright; then `flip: 0.5`, which is
 my guess from the paper rather than anything in their config, and which is
 train-only and so suppresses exactly the number that is currently limiting.
+
+## Day 7 result (7.3) -- 78.14% test top-1 against the authors' 89.09%
+
+Early stop at epoch 45, best at epoch 35, 199.2 min on the Arc.
+
+`best.pt` scored **79.23%** on `splits_author/val.csv`, which reproduces
+`history.json` to the digit -- the eval path is sound and the number is not a
+stale report. Then, on the split that compares to the paper:
+
+```
+                    val (1584 clips)   test (1976 clips)
+top-1                   79.23%             78.14%
+top-2                   92.30%             91.30%
+top-3                   95.96%             96.05%
+macro-F1                0.7785             0.7605
+loss                    0.6931             0.7152
+```
+
+Authors: **89.09%**. Short by **10.95 points**.
+
+**The per-class shape matches theirs even though the level does not.** Late Cut
+is the worst class on both splits -- F1 0.562 val, 0.586 test -- and the paper
+also reports Late Cut worst. The confusions are physically sensible rather than
+random:
+
+```
+Lofted Offside  -> Lofted Legside   28    the same shot, other side of the wicket
+Pull            -> Hook             26    genuinely similar; differ in ball height
+Upper Cut       -> Square Cut       15
+Late Cut        -> Square Cut       12
+```
+
+That is a model that has learned cricket and is losing on the hard pairs, not
+one with a wiring bug. It is the first run of this project whose errors are
+worth reading.
+
+65 clips had no preprocessed output across the two splits (30 val, 35 test), out
+of the 211 that failed to build.
+
+**Not done, and deliberately:** this checkpoint must never be scored on
+`splits_grouped/test.csv`. The two protocols partition the same 10,091 clips, so
+most of grouped's test set sits inside author's train set. The grouped number
+needs its own training run, not a second evaluation of this one.
+
+**Next:** `configs/mimic_author_seg.yaml`, which differs from `mimic_author` in
+exactly two keys -- `variant` and `name` -- with a test asserting that, because
+"one variable at a time" is worth more as an assertion than as an intention.
+Their classifier is named `..._NEEDS_CROPPED_SEGMENTED_SHOTS.keras`, so this is
+the deviation with their own words behind it.
+
+411 tests pass.
+
+## Day 8 (11 Oct 2026) -- seg loses by 13 points, and what their filename meant
+
+Clean finish: 58 epochs, early stop, 391.0 min. Load shedding arrived after
+11:27, which is when the ledger row was written, so nothing was lost.
+
+**Checking whether a run finished, since I got this wrong once before.** The
+row in `experiments/results.jsonl` is the only *positive* proof -- it is
+appended last, after `history.json` and before `resume.pt` is removed.
+`resume.pt` present means interrupted. `resume.pt` absent is **ambiguous**:
+either a clean finish or a run that never completed epoch 1. Use the ledger.
+
+```
+                     box (mimic_author)   seg (mimic_author_seg)
+val  top-1                 79.23%               62.37%
+test top-1                 78.14%               65.08%
+test top-3                 96.05%               91.60%
+test macro-F1              0.7605               0.6303
+best TRAIN top-1           86.88%               64.32%
+epochs to early stop          45                   58
+```
+
+**box wins by 13.06 points on test.** Both checkpoints reproduced their
+`history.json` value exactly on val before I looked at test.
+
+The number that explains it is `best TRAIN top-1`: **64.32% against 86.88%**.
+The segmented model could not fit its own training set either, 22 points below
+what the same architecture manages on box crops. That is not an optimisation
+failure -- the same lr schedule, the same init, the same everything -- it is
+less information reaching the model. Masking out the pitch, the stumps, the
+keeper and the fielders removes the context that tells a Lofted Offside from a
+Lofted Legside. The shot is defined by where the ball goes, and the background
+is what says where that is.
+
+**So I had their filename wrong.**
+`Efficientnetv2-s_GRU_128_NEEDS_CROPPED_SEGMENTED_SHOTS.keras` -- I read
+"segmented" as pixel masking, and deferred it for days as the most likely
+explanation of the 10.95-point gap. The likelier reading is **segmented in
+time**: clips cut at camera boundaries so each one holds exactly one shot,
+which is what `cuts.py` already does. On that reading `box` was the faithful
+variant from the start, and this experiment did not test their deviation -- it
+tested mine.
+
+Worth the 6.5 hours anyway: it is now measured rather than assumed, it closes
+the variable the plan had open, and the per-class table shows *why* background
+matters, which the box run alone could not show.
+
+**Still 10.95 points short of 89.09%, with seg eliminated as the explanation.**
+Next: `configs/mimic_author_noflip.yaml`, differing from `mimic_author` in
+`flip` and `name` only. `flip: 0.5` is my guess from the paper, is absent from
+their config, applies to train only, and train-set fit is exactly what is
+capping both runs. If it is costing points, this finds out in one run.
+
+### Figures, from now on automatically
+
+`src/plot.py` draws one figure per run from `history.json`, and `train.py`
+calls it on a clean finish, so nobody has to remember. Both completed runs have
+been drawn retroactively.
+
+Four stacked panels sharing the epoch axis -- loss, accuracy, learning rate,
+gradient norm. **Not a twin y-axis**, which was tempting for lr-over-accuracy
+and would have been a lie about which curve belongs to which ruler. Four
+scales, four panels.
+
+The lr cuts get a vertical hairline across every panel. Every sharp bend in
+this project's curves has turned out to be a plateau cut -- epoch 16 of the box
+run was worth 6.5 points -- and unmarked, the bend reads as the model
+spontaneously deciding to learn.
+
+`pin` is in the subtitle, not a panel: on a healthy run it is a flat line at
+zero and the only interesting thing is its peak. A fifth panel showing nothing
+is worse than a number.
+
+Colours are categorical slots 1/2/3 from the data-viz reference palette,
+validated rather than eyeballed -- worst adjacent CVD deltaE 9.2 light / 9.4 dark
+against a >=8 target. Aqua comes in at 2.74:1 on the light surface, under the
+3:1 bar, so the top-3 series carries a visible endpoint label instead of
+relying on its hue. Dark mode is its own stepping of the same three hues, not a
+flipped copy, and a test asserts the two tuples differ.
+
+Two bugs the render-and-look pass caught that no test would have: the title
+overlapping its subtitle, and the "best 62.37% (epoch 48)" label running off
+the right edge when the best epoch lands late. The label now flips inward past
+two-thirds of the x-range.
+
+A drawing failure cannot kill a run -- `plot_run` is wrapped, and a test
+monkeypatches it to raise and asserts the run still finishes, writes its
+history and clears `resume.pt`. Six hours of training will not be lost to
+matplotlib.
+
+424 tests pass.
+
+### Tracking the evidence, not just the figures
+
+I said `notes/figures/` was tracked. It is not -- `.gitignore:10` excludes it,
+with a fair reason (frame grids, 7.7 MB, regenerable from `src/data/viz.py`).
+Checking properly turned up a bigger hole than the figures:
+
+```
+experiments/*/history.json     IGNORED   the only per-epoch record
+experiments/*/report_*.json    IGNORED   per-class scores + checkpoint sha256
+experiments/*/best.pt          ignored   178 MB, correctly
+```
+
+80 KB of irreplaceable evidence was being thrown away while the checkpoints
+were correctly excluded. `history.json` cannot be regenerated at all once the
+run is gone, and `report_*.json` carries the sha256 that ties its numbers to a
+specific checkpoint -- the whole point of `src/evaluate.py`.
+
+`.gitignore` now keeps `history.json`, `report_*.json`, and
+`notes/figures/runs/`, and still excludes every `.pt` and the frame grids.
+1.7 MB tracked in total.
+
+**A defect I introduced and then found.** Pointing the default figure output at
+a tracked directory meant every test that calls `train()` dropped a PNG into
+the repo -- `a.png`, `b.png`, `myrun.png`, `t.png` all turned up in
+`notes/figures/runs/` the first time I previewed `git add`. Fixed with
+`tests/conftest.py`: an autouse fixture that repoints `DEFAULTS["figures"]` at
+a tmp directory for every test, plus explicit `mirror=` on the tests that call
+`plot_run` directly, since a default argument is bound at def time and the
+fixture cannot reach it. The whole suite now runs and leaves the directory with
+exactly the four real figures in it.
+
+**One inconsistency left alone deliberately.** `experiments/mimic_author_bn1e-5/`
+holds `best.pt` from the epoch-5 run (55.11%) but a `history.json` from the
+*earlier* 14-epoch 32.39% run, because that run was killed before history was
+written per-epoch. Two different runs in one directory. Nothing reads it, but
+it is precisely the stale-evidence trap `file_fingerprint` exists to catch, so
+it is written down rather than quietly tidied.
+
+428 tests pass.

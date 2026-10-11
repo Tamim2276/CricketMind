@@ -47,3 +47,13 @@ flip: 0.5                          # horizontal flip only; NOT in the .keras fil
 
 workers: 0
 seed: 42
+
+# RESULT (11 Oct 2026): this loses badly. 62.37% val / 65.08% test against
+# box's 79.23% / 78.14% -- 13.06 points worse on test. And train top-1 topped
+# out at 64.32% against box's 86.88%, so the masked input carries less
+# learnable signal; it is not an optimisation failure.
+#
+# Reading of their filename, revised: "CROPPED_SEGMENTED_SHOTS" most likely
+# means shots segmented *in time* -- clips cut at camera boundaries into one
+# shot each, which is what cuts.py does -- not pixels masked out. On that
+# reading `box` is already the faithful variant and always was.

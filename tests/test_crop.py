@@ -3,9 +3,10 @@ smoothing, and the square crop geometry."""
 import numpy as np
 import pytest
 
-from src.preprocess.crop import (SIZE, _fill, _square, carried_mask,
-                                 crop_clip, frame_mask, segment,
-                                 smooth_boxes, track_boxes)
+from src.preprocess.crop import (ALPHA, SIZE, TINT, _fill, _square,
+                                 blackout, carried_mask, crop_clip,
+                                 frame_mask, overlay, segment, smooth_boxes,
+                                 track_boxes)
 from src.preprocess.striker import pick_striker
 from src.preprocess.detect import Detection
 
@@ -209,33 +210,33 @@ def _with_mask(d, region):
     return d._replace(mask=m)
 
 
-def test_segment_keeps_the_batter_and_drops_the_rest():
+def test_blackout_keeps_the_batter_and_drops_the_rest():
     frame = np.full((FH, FW, 3), 200, np.uint8)
     s = _with_mask(det(*BATTER), (280, 500, 380, 480))
-    out = segment(frame, s)
+    out = blackout(frame, s)
     assert out[300, 400].tolist() == [200, 200, 200]      # inside the mask
     assert out[50, 50].tolist() == [0, 0, 0]              # background
 
 
-def test_segment_keeps_his_bat_too():
+def test_blackout_keeps_his_bat_too():
     """Dropping the bat would throw away the cue that names the shot."""
     frame = np.full((FH, FW, 3), 200, np.uint8)
     s = _with_mask(det(*BATTER), (280, 500, 380, 480))
     bat = _with_mask(det(500, 330, w=20, h=90, cls="Bat"), (300, 360, 490, 510))
-    assert segment(frame, s, [s, bat])[330, 500].tolist() == [200, 200, 200]
+    assert blackout(frame, s, [s, bat])[330, 500].tolist() == [200, 200, 200]
 
 
 def test_a_distant_bat_is_somebody_elses():
     frame = np.full((FH, FW, 3), 200, np.uint8)
     s = _with_mask(det(*BATTER), (280, 500, 380, 480))
     far = _with_mask(det(860, 60, w=20, h=90, cls="Bat"), (20, 100, 850, 875))
-    assert segment(frame, s, [s, far])[60, 860].tolist() == [0, 0, 0]
+    assert blackout(frame, s, [s, far])[60, 860].tolist() == [0, 0, 0]
 
 
-def test_segment_without_a_mask_is_a_no_op():
+def test_blackout_without_a_mask_is_a_no_op():
     frame = np.full((FH, FW, 3), 200, np.uint8)
-    assert np.array_equal(segment(frame, det(*BATTER)), frame)
-    assert np.array_equal(segment(frame, None), frame)
+    assert np.array_equal(blackout(frame, det(*BATTER)), frame)
+    assert np.array_equal(blackout(frame, None), frame)
 
 
 def test_a_frame_without_a_mask_borrows_its_neighbour():
@@ -275,3 +276,114 @@ def test_unsegmented_crop_is_unaffected_by_masks():
     b = crop_clip(clip(12), per, segmented=True)
     assert not np.array_equal(a.frames, b.frames)
     assert a.frames.shape == b.frames.shape
+
+
+# ---- the segmentation layer the paper actually describes ----------------
+#
+# "To reduce the effect of jersey color and lighting variations, a
+# semi-transparent overlay is applied to the batter and bat." The first
+# reading of that was blackout, which cost 16.86 points.
+
+def test_the_overlay_keeps_the_background():
+    """The whole difference from blackout, and the whole 16.86 points."""
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+
+    out = overlay(frame, s)
+
+    assert out[50, 50].tolist() == [200, 200, 200]    # pitch still there
+    assert out[300, 400].tolist() != [200, 200, 200]  # batter tinted
+
+
+def test_the_batter_is_blended_not_replaced():
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+
+    out = overlay(frame, s, alpha=0.5, colour=(0, 0, 0))
+
+    assert out[300, 400].tolist() == [100, 100, 100]   # halfway to black
+
+
+def test_two_jerseys_are_pulled_towards_each_other():
+    """The stated purpose: kit colour should stop mattering so much."""
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    blue = np.zeros((FH, FW, 3), np.uint8)
+    blue[:, :] = (200, 20, 20)
+    red = np.zeros((FH, FW, 3), np.uint8)
+    red[:, :] = (20, 20, 200)
+
+    before = abs(int(blue[300, 400][0]) - int(red[300, 400][0]))
+    after = abs(int(overlay(blue, s)[300, 400][0])
+                - int(overlay(red, s)[300, 400][0]))
+
+    assert after < before, (before, after)
+
+
+def test_alpha_zero_changes_nothing():
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    assert np.array_equal(overlay(frame, s, alpha=0.0), frame)
+
+
+def test_alpha_one_is_a_flat_tint_on_the_batter_only():
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+
+    out = overlay(frame, s, alpha=1.0, colour=(1, 2, 3))
+
+    assert out[300, 400].tolist() == [1, 2, 3]
+    assert out[50, 50].tolist() == [200, 200, 200]
+
+
+@pytest.mark.parametrize("bad", [-0.1, 1.1])
+def test_an_impossible_alpha_is_refused(bad):
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    with pytest.raises(ValueError, match="alpha"):
+        overlay(frame, s, alpha=bad)
+
+
+def test_the_overlay_takes_the_bat_as_well():
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    bat = _with_mask(det(500, 330, w=20, h=90, cls="Bat"), (300, 360, 490, 510))
+
+    out = overlay(frame, s, [s, bat])
+
+    assert out[330, 500].tolist() != [200, 200, 200]
+
+
+def test_no_mask_leaves_the_frame_alone():
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    assert np.array_equal(overlay(frame, det(*BATTER)), frame)
+    assert np.array_equal(overlay(frame, None), frame)
+
+
+def test_the_default_mode_is_the_paper_not_the_misreading():
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    assert np.array_equal(segment(frame, s), overlay(frame, s))
+    assert segment(frame, s)[50, 50].tolist() == [200, 200, 200]
+
+
+def test_blackout_is_still_reachable_so_the_old_result_reproduces():
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    out = segment(frame, s, mode="blackout")
+    assert out[50, 50].tolist() == [0, 0, 0]
+
+
+def test_an_unknown_mode_is_refused():
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    with pytest.raises(ValueError, match="unknown segmentation mode"):
+        segment(frame, s, mode="blur")
+
+
+def test_the_overlay_does_not_write_through_to_the_caller():
+    """A preprocessing pass that mutates its input corrupts the box variant."""
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    keep = frame.copy()
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    overlay(frame, s)
+    assert np.array_equal(frame, keep)

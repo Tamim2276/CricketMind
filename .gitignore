@@ -7,9 +7,15 @@ data/splits*/*
 !data/splits*/*.json
 
 # frame grids: 7.7 MB and regenerable with one command (src/data/viz.py)
-notes/figures/
-# per-run outputs are regenerable; the ledger of what was run is not
-experiments/*/
+notes/figures/*
+# run figures are not regenerable once experiments/ is gone -- keep these
+!notes/figures/runs/
+# checkpoints are huge and regenerable. The evidence they produced is neither:
+# history.json is the only per-epoch record, and report_*.json carries the
+# per-class scores plus the checkpoint's sha256. 80 KB for both runs.
+experiments/*/*
+!experiments/*/history.json
+!experiments/*/report_*.json
 !experiments/results.jsonl
 __pycache__/
 *.pt

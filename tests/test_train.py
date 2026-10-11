@@ -411,3 +411,18 @@ def test_history_is_on_disk_after_every_epoch_not_just_at_the_end(workspace):
 
     assert 1 in seen, "epoch 1 was not written until the run ended"
     assert 2 in seen and 3 in seen
+
+
+def test_the_seg_config_changes_exactly_one_variable():
+    """One variable at a time, asserted rather than trusted. `name` differs
+    only so the run gets its own experiments/ directory."""
+    box = T.load_config(os.path.join("configs", "mimic_author.yaml"))
+    seg = T.load_config(os.path.join("configs", "mimic_author_seg.yaml"))
+
+    differ = []
+    for key in sorted(set(box) | set(seg)):
+        if box.get(key) != seg.get(key):
+            differ.append(key)
+
+    assert differ == ["name", "variant"], differ
+    assert seg["variant"] == "seg"
