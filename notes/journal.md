@@ -1992,3 +1992,119 @@ it is precisely the stale-evidence trap `file_fingerprint` exists to catch, so
 it is written down rather than quietly tidied.
 
 428 tests pass.
+
+### The mask measurement, which refuted me
+
+I claimed from six pictures that the masks "cut off at the pad line" and
+recommended fine-tuning YOLO *before* the 4.5-hour rebuild. `tools/mask_quality.py`
+measured it on **2,662 frames from 120 clips sampled across all 15 classes**:
+
+```
+mask coverage of the striker's box     p10 40.7%   median 52.3%   p90 63.9%
+how far down the box it reaches        p10 0.90    median 1.00    p90 1.00
+  stops above 90% of the box           264 of 2662 frames (9.9%)
+bat masked within reach of the striker 1735 of 2662 (65.2%)
+no striker picked at all               475 of 3137 frames (15.1%)
+```
+
+**The masks reach the feet.** Median 1.00, and only 9.9% stop short. The pad
+hypothesis is dead, and with it the argument for fine-tuning YOLO first.
+
+The band profile does fall from 70.7% at the torso to 40.0% at the feet, and
+that is exactly the number I would have quoted as proof if I had not stopped to
+think: **it is confounded by anatomy.** Legs are narrower than a torso, so a
+lower band has less of its width covered by any correct silhouette. The metric
+cannot separate "mask missing" from "body narrower", so it cannot support the
+claim. The figure now says so on its face, because a chart that invites the
+wrong conclusion is worse than no chart.
+
+**The real gap is the bat: masked in 65.2% of frames.** The paper applies the
+overlay to "the batter and bat", so a third of frames get no bat tint. Less
+damaging than it sounds -- the overlay exists to normalise *jersey colour and
+lighting*, and a bat is pale wood in every clip, so there is little colour
+variation there to remove. Worth recording, not worth blocking on.
+
+**Verdict: rebuild now.** The masks are good enough, the overlay is worth
++3.33 points by the authors' own ablation, and fine-tuning YOLOv11 needs
+labelled cricket data -- days of work, not hours. It stays on the list, behind
+the thing that is already measured.
+
+Settings, from `tools/overlay_sweep.py` across 6 clips at four alphas and three
+tints: **grey (150,150,150) at alpha 0.4**. Green was the first guess and the
+sweep killed it -- grass is green, so tinting the batter green destroys
+figure/ground separation, visibly, at alpha >= 0.45. Between grey 150 and 200
+the difference is cosmetic: the tint target shifts the mean but the variance
+removed is set by alpha alone, so it is not worth an 8-hour run to settle.
+
+## Day 9 (12 Oct 2026) -- the overlay lost too, and the authors' own weights
+
+The paper's segmentation layer, implemented as the semi-transparent overlay it
+describes, finished cleanly at 55 epochs in 373.4 min.
+
+```
+                    box      seg blackout   seg overlay   authors
+val  top-1         79.23%       62.37%        74.94%         -
+test top-1         78.14%       65.08%        75.51%      89.09%
+test top-3         96.05%       91.60%        95.19%      99.25%
+test macro-F1      0.7605       0.6303        0.7328      0.8847
+peak TRAIN top-1   86.88%       64.32%        82.37%         -
+```
+
+The overlay recovers **10.4 points** over the blackout, so the misreading
+diagnosis was right and the background does matter enormously. But it still
+sits **2.6 points below plain cropping**, where the paper reports +3.33. Both
+of my readings of "segmentation" have now lost.
+
+Peak train top-1 says why: **82.37% against box's 86.88%.** The overlay model
+fits its own training data *worse*, so it is destroying information rather
+than normalising nuisance variation -- consistent with tinting over masks
+whose boundaries move frame to frame.
+
+**The stale-report guard earned its keep without being asked.** `report_*.json`
+in that directory were still the blackout run's, written 10-11 against a
+checkpoint replaced on 10-12. `load_report` refused them and printed both
+hashes. That is the mechanism built after losing a day to exactly this.
+
+Guessing at their preprocessing has now cost about 14 hours of compute across
+two runs and produced two negative results. Time to stop guessing.
+
+### Their shipped weights, and why the first number was a lie
+
+`CricShoot10kModels/` holds not just the classifier but
+`Striker_Bat_Segmentation_Model.pt` -- **their fine-tuned YOLO**, which
+`detect.py` has been loading all along as `Player_Type_Detection_Model.pt`
+(byte-identical). So "fine-tune YOLOv11", which I twice put at the top of the
+remaining work, was already done. The masks measured yesterday are their masks.
+
+`tools/authors_model.py` scores their trained classifier on our crops, which
+partitions the remaining gap: near 89% means our preprocessing is faithful and
+our training is the gap; near 78% means our crops are not their crops.
+
+The first run returned **16.07%**, and the honest answer is that it means
+nothing:
+
+```
+their config.json  backbone names:  stem_conv, stem_bn, block1a_project_conv
+their weights.h5   backbone names:  conv2d, batch_normalization, activation
+                   canonical names found in the h5:  0 of 513
+```
+
+Their own file is internally inconsistent -- architecture recorded with
+canonical names, weights stored with generic ones -- so `load_weights` cannot
+match by name and silently falls back to **positional order**. The head
+verified clean against the h5 by name (0 mismatched); the 20M-parameter
+backbone could not be verified at all. 16% against a 6.7% chance line is what
+a misaligned backbone looks like.
+
+The tool now **refuses to emit a number from that path** unless
+`--allow_positional` is passed. A diagnostic that quietly reports an
+untrustworthy figure is worse than one that fails.
+
+The fix is the version that wrote the file: metadata.json says **Keras 3.8.0**,
+installed is 3.12.4, and `TimeDistributed(Functional)` deserialisation broke
+between them. An isolated venv with keras 3.8.0 and tensorflow 2.18 leaves the
+working `.venv` untouched.
+
+Also measured, and it kills a worry: TensorFlow has no GPU on native Windows
+at 2.11+, and the card is an Arc so WSL2+CUDA would not help either -- but CPU
+inference is **13 minutes for all 1,976 test clips**, so it does not matter.

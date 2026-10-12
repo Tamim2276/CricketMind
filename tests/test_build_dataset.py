@@ -182,3 +182,68 @@ def test_failures_are_coloured_only_when_there_are_some():
     t0 = __import__("time").time() - 5
     assert progress.RED in bd._progress(5, 100, 1, t0, True)
     assert progress.RED not in bd._progress(5, 100, 0, t0, True)
+
+
+# ---- rebuilding one variant --------------------------------------------
+
+def test_the_manifest_path_reaches_build_from_the_command_line():
+    """Without this, rebuilding one variant is a silent no-op: every clip is
+    already in data/processed/manifest.jsonl, so todo comes out empty."""
+    seen = {}
+
+    def fake_build(limit=None, out_dir=None, variants=None, root=None,
+                   manifest=None, frames=None, device=None):
+        seen["manifest"] = manifest
+        seen["variants"] = variants
+        return 0
+
+    real = bd.build
+    bd.build = fake_build
+    try:
+        bd.main(["--variants", "seg", "--manifest", "fresh.jsonl"])
+    finally:
+        bd.build = real
+
+    assert seen["manifest"] == "fresh.jsonl"
+    assert seen["variants"] == ("seg",)
+
+
+def test_no_manifest_flag_still_defaults_to_the_one_in_out():
+    seen = {}
+
+    def fake_build(limit=None, out_dir=None, variants=None, root=None,
+                   manifest=None, frames=None, device=None):
+        seen["manifest"] = manifest
+        return 0
+
+    real = bd.build
+    bd.build = fake_build
+    try:
+        bd.main([])
+    finally:
+        bd.build = real
+
+    assert seen["manifest"] is None     # build() then uses <out>/manifest.jsonl
+
+
+def test_building_only_seg_writes_only_seg(tmp_path, monkeypatch):
+    """The box arrays behind the 79.23% result must not be touched."""
+    out = str(tmp_path / "processed")
+    rel = "Cover Drive/vid1_0.avi"
+
+    monkeypatch.setattr(bd, "read_clip",
+                        lambda path: np.zeros((6, 64, 64, 3), np.uint8))
+    monkeypatch.setattr(bd, "drop_duplicates", lambda clip: (clip, []))
+    monkeypatch.setattr(bd, "detect", lambda *a, **k: [[] for _ in range(6)])
+
+    class Fake:
+        frames = np.zeros((6, 224, 224, 3), np.uint8)
+        note = "ok"
+
+    monkeypatch.setattr(bd, "crop_clip", lambda *a, **k: Fake())
+    monkeypatch.setattr(bd, "sample", lambda frames, k: frames[:k])
+
+    bd.process_clip(rel, None, "cpu", out_dir=out, variants=("seg",))
+
+    assert os.path.exists(bd.out_path(out, "seg", rel))
+    assert not os.path.exists(bd.out_path(out, "box", rel))

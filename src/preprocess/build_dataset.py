@@ -162,9 +162,13 @@ def main(argv=None):
     p.add_argument("--variants", default=",".join(VARIANTS))
     p.add_argument("--frames", type=int, default=TARGET)
     p.add_argument("--device")
+    p.add_argument("--manifest",
+                   help="defaults to <out>/manifest.jsonl. Rebuilding one "
+                        "variant needs a fresh one, or every clip is skipped "
+                        "as already done")
     a = p.parse_args(argv)
     return build(a.limit, a.out, tuple(a.variants.split(",")), a.root,
-                 frames=a.frames, device=a.device)
+                 manifest=a.manifest, frames=a.frames, device=a.device)
 
 
 if __name__ == "__main__":

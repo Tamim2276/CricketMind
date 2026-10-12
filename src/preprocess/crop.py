@@ -40,7 +40,7 @@ from src.preprocess.striker import candidates, pick_striker
 
 __all__ = ["crop_clip", "track_boxes", "track_picks", "segment",
            "frame_mask", "carried_mask", "smooth_boxes", "CropResult",
-           "overlay", "blackout", "SEG_MODE", "ALPHA", "TINT",
+           "overlay", "blackout", "SEG_MODE", "ALPHA", "TINT", "SIDE_FROM",
            "OUTLIER", "PAD", "SIZE", "MIN_FRAMES", "MIN_DETECTED",
            "BAT_REACH"]
 
@@ -52,9 +52,12 @@ PAD = 0.25          # each side, as a fraction of the square's side
 # The segmentation layer. The paper says "a semi-transparent overlay is
 # applied to the batter and bat" and gives neither colour nor weight, so both
 # are parameters and tools/overlay_sweep.py renders them to be looked at.
+SIDE_FROM = "height"   # or "max"; see crop_clip
 SEG_MODE = "overlay"
 ALPHA = 0.4
-TINT = (0, 170, 0)  # BGR, the order cv2 reads and writes
+TINT = (150, 150, 150)  # BGR. Grey, not green: grass is green, and tinting
+                        # the batter towards it cost figure/ground separation
+                        # in tools/overlay_sweep.py
 
 MEDIAN_W = 5        # spike removal
 MEAN_W = 3          # the actual smoothing
@@ -423,7 +426,8 @@ def _best_shot(clip, boxes, cuts):
 def crop_clip(clip: np.ndarray, per_frame, size: int = SIZE, pad: float = PAD,
               min_frames: int = MIN_FRAMES, min_detected: float = MIN_DETECTED,
               cuts=None, segmented: bool = False, seg_mode: str = SEG_MODE,
-              alpha: float = ALPHA, colour=TINT) -> CropResult:
+              alpha: float = ALPHA, colour=TINT,
+              side_from: str = SIDE_FROM) -> CropResult:
     """Crop a clip to the batter. `per_frame` is detect()'s output for it.
 
     `segmented=True` applies the segmentation layer first, which needs
@@ -458,8 +462,18 @@ def crop_clip(clip: np.ndarray, per_frame, size: int = SIZE, pad: float = PAD,
         return CropResult(empty, [], f"shot only {len(span)} frames")
 
     smoothed = smooth_boxes(span)
-    # size on height, not on max(w, h): width is the bat, height is the camera
-    sides = _runmean(smoothed[:, 3] - smoothed[:, 1], SIZE_W) * (1 + 2 * pad)
+    # size on height, not on max(w, h): width is the bat, height is the camera.
+    # `side_from` exists so tools/crop_sweep.py can put that choice on trial
+    # against the authors' own model rather than leaving it a conviction.
+    heights = smoothed[:, 3] - smoothed[:, 1]
+    if side_from == "height":
+        raw = heights
+    elif side_from == "max":
+        widths = smoothed[:, 2] - smoothed[:, 0]
+        raw = np.maximum(heights, widths)
+    else:
+        raise ValueError(f"unknown side_from: {side_from!r}")
+    sides = _runmean(raw, SIZE_W) * (1 + 2 * pad)
 
     out = np.empty((len(span), size, size, 3), np.uint8)
     nomask = 0
