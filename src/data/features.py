@@ -15,6 +15,7 @@ reshape, and **no fallbacks**:
     "flat"   grid/  (T, C, H, W) -> (T, C*H*W)   62720; reproduces the authors
     "grid"   grid/  (T, C, H, W) -> unchanged    for heads that use position
     "avg"    avg/   (T, C)       -> unchanged    1280; Families A and D
+    "video"  video/ (D,)         -> unchanged    512; one vector per clip
 
 A fallback -- "read avg/ if it exists, else reduce grid/" -- is the kind of
 convenience that lets two experiments silently read different numbers, and
@@ -39,8 +40,9 @@ from src.data.dataset import _classes_for
 __all__ = ["FeatureDataset", "FEATURES", "VIEWS", "DIR_FOR_VIEW"]
 
 FEATURES = os.path.join("data", "features", "effnetv2s")
-VIEWS = ("flat", "grid", "avg")
-DIR_FOR_VIEW = {"flat": "grid", "grid": "grid", "avg": "avg"}
+VIEWS = ("flat", "grid", "avg", "video")
+DIR_FOR_VIEW = {"flat": "grid", "grid": "grid", "avg": "avg", "video": "video"}
+DIMS_FOR_VIEW = {"flat": 2, "grid": 4, "avg": 2, "video": 1}
 MIRROR_SUFFIX = "_mirror"
 
 
@@ -75,6 +77,8 @@ class FeatureDataset(Dataset):
             if view == "avg":
                 extra = ("  Run: python -m src.extract --derive avg  (step 8.8),"
                          " or --backbone <name> --pool avg  (8.10)")
+            if view == "video":
+                extra = "  Run: python -m src.extract --backbone r3d_18  (8.10)"
             raise FileNotFoundError(
                 f"no feature cache at {self.root} for view={view!r}.{extra}")
         if mirror and not os.path.isdir(self.mirror_root):
@@ -100,9 +104,17 @@ class FeatureDataset(Dataset):
             raise RuntimeError(f"no usable clips in {split_csv} for '{view}'")
 
         self.item_shape = tuple(self[0][0].shape)
-        self.feature_dim = 1
-        for size in self.item_shape[1:]:
-            self.feature_dim *= size
+        if len(self.item_shape) != DIMS_FOR_VIEW[view]:
+            raise ValueError(
+                f"view {view!r} expects {DIMS_FOR_VIEW[view]}-D clips, but "
+                f"{self.items[0][0]} reads as {self.item_shape}")
+        # numbers per frame, or per clip when there are no frames left
+        if len(self.item_shape) == 1:
+            self.feature_dim = self.item_shape[0]
+        else:
+            self.feature_dim = 1
+            for size in self.item_shape[1:]:
+                self.feature_dim *= size
 
     def _path(self, clip: str, mirrored: bool = False) -> str:
         if mirrored:

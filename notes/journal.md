@@ -2713,3 +2713,50 @@ torch.save header on top of its 23,040 bytes. The 43/45 is not a failure:
 cricket frames are not ImageNet classes, so the top two logits are often
 nearly tied and bf16 noise picks either. Cosine 0.9999 says it is the right
 layer.
+
+### 8.10 part 2: r3d_18, the first model that watches movement
+
+Decision first: **all four extractors get built**, VideoMAE and CLIP
+included. I had suggested holding those two back until r3d_18 showed motion
+mattered; the full comparison is the point.
+
+New file `src/models/video_encoder.py`. The clip goes in whole, channels
+before time, and one 512-vector comes out. Size and colours are read from
+torchvision's weights (112x112, Kinetics mean/std), not from `dataset.py`.
+
+Found by reading, before it could bite: `FeatureDataset.feature_dim` was
+the product of every axis after time. For a `(512,)` tensor that is the
+empty product, **1**. It now reads 512, and each view checks its number of
+axes.
+
+```
+smoke, 8 clips        8/8 bit-exact; logit cosine 1.0000; top-1 8/8
+r3d_18's own guess    'playing cricket' 38/40 clips, mean prob 0.92
+wrong input spec      (ImageNet, 224) top-1 still 38/40, mean prob 0.62
+```
+
+Two things I did not expect. Kinetics has a "playing cricket" class, so
+this backbone already knows the sport. And the wrong input spec does not
+fail: top-1 is unchanged and only the confidence drops, so nothing but
+reading the spec from the weights would catch it.
+
+Tests: 494 pass, file by file. `test_plot.py` failed 4 tests once and passed
+4 runs in a row after; it imports nothing that changed, and free RAM was low
+with llama-server running. Logged, not explained.
+
+**The full r3d_18 run (2026-10-16):**
+
+```
+video/          9,880 clips, 0 failed, 2,601 bytes each, 25.7 MB
+video_mirror/   9,880 clips, 0 failed, 2.7 min, 61 clips/s
+verify          20/20 bit-exact; cosine 1.0000; top-1 20/20;
+                'playing cricket' 19/20
+```
+
+The first half was cut at 1,664 clips (manifest gap 00:29:32 -> 00:54:39,
+most likely load shedding) and the rerun did exactly the remaining 8,216.
+The first real test of resume on a cache, and it held.
+
+60 clips/s against ConvNeXt's 18 -- with an extra resize in the loader. The
+difference is bytes moved per clip (112px is a quarter of 224px), so my
+Day 8 "loader-bound" story was incomplete. Logged, not chased.

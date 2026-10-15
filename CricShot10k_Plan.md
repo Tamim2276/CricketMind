@@ -2951,6 +2951,67 @@ lighter network: the loader is the bottleneck, as on Day 8. The two top-1
 misses are near-tied logits flipping under bf16; the cosine is what tests
 the layer.
 
+**Part 2, r3d_18: built 2026-10-16.** A new `src/models/video_encoder.py`:
+the whole clip goes in at once, `(B, T, 3, H, W) -> (B, 3, T, H, W)`, and
+one 512-vector per clip comes out. What it needed:
+
+1. **Its own input size and colours, read from the weights.**
+   torchvision ships them: 112x112 and the Kinetics mean/std. `_Clips` now
+   takes size and colours from the encoder; the ImageNet 224 path is
+   byte-for-byte unchanged, so the EfficientNet cache still verifies.
+2. **A `video/` view of `(D,)` tensors.** `FeatureDataset` used to compute
+   the width as the product of every axis after time, which is **1** for a
+   `(512,)` tensor (the empty product). It now reads 512, and each view
+   checks the number of axes it expects, so a `(512,)` file read as `avg`
+   raises instead of being misread.
+3. **The pool comes from the backbone.** `--backbone r3d_18` alone means
+   `--pool video`; `--pool avg` on it, or `--pool video` on a frame model,
+   stops before any download.
+
+15 frames is fine: r3d_18 pools time adaptively (15 and 16 both give
+`(1, 512)`). Only VideoMAE needs exactly 16.
+
+**Measured before the run:**
+
+```
+smoke, 8 clips       8/8 bit-exact; logit cosine 1.0000, top-1 8/8 clips
+its own guess        'playing cricket' on 38 of 40 clips across all classes,
+                     mean probability 0.92
+same, wrong input    (ImageNet colours at 224) still 38/40 top-1, but
+                     mean probability 0.62
+```
+
+Kinetics-400 has a "playing cricket" class, so this backbone has seen the
+sport, though not the difference between a drive and a pull. And the
+wrong-input row is why the input spec comes from the weights: it fails
+quietly, with nothing to see except a third of the confidence gone.
+
+```bash
+python -m src.extract --backbone r3d_18 --workers 4
+python -m src.extract --backbone r3d_18 --workers 4 --mirror
+python -m src.extract --verify --backbone r3d_18
+```
+
+**Measured 2026-10-16:**
+
+```
+video/          9,880 clips, 0 failed, ~3.5 min of work, ~60 clips/s
+video_mirror/   9,880 clips, 0 failed, 2.7 min, 61 clips/s
+each file       2,601 bytes, 25.7 MB per half
+verify          20/20 bit-exact; logit cosine 1.0000, top-1 20/20 clips;
+                'playing cricket' on 19 of 20
+```
+
+The first half was cut after 1,664 clips (00:29:32) and restarted at
+00:54:39; the rerun did exactly the other 8,216. Resume works on a real cut.
+
+**Three times faster than the frame models** (60 against 18-19 clips/s),
+although the loader does more work here -- it also resizes. What it moves is
+less: 112x112 is a quarter of the bytes of 224x224 through the worker
+queue, the collate and the copy to the GPU. So Day 8's "the loader is the
+bottleneck" was too simple; moving 9 MB per clip is at least part of it.
+Not worth chasing for a job that runs once.
+
 The probe that ranks the caches needs the Day 9 runner, so it waits until
 then. The extraction does not have to wait.
 

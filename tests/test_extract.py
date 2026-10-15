@@ -534,3 +534,94 @@ def test_the_convnext_cache_is_768_wide_and_complete():
     assert feats.item_shape == (15, 768)
     assert feats.feature_dim == 768
     assert feats.missing == FeatureDataset(SPLIT, view="avg").missing
+
+
+# --- 8.10 part 2: r3d_18, one vector per clip -----------------------------------
+
+def _weights_cached(name):
+    from torchvision.models import get_model_weights
+
+    url = get_model_weights(name).DEFAULT.url
+    return os.path.exists(os.path.join(torch.hub.get_dir(), "checkpoints",
+                                       os.path.basename(url)))
+
+
+needs_r3d_weights = pytest.mark.skipif(
+    not _weights_cached("r3d_18"), reason="r3d_18 weights not downloaded")
+
+
+def test_the_pool_is_picked_from_the_backbone():
+    from src.extract import _pick_pool
+
+    assert _pick_pool("efficientnet_v2_s", None) == "flatten"
+    assert _pick_pool("convnext_tiny", "avg") == "avg"
+    assert _pick_pool("r3d_18", None) == "video"
+    with pytest.raises(ValueError, match="whole clip"):
+        _pick_pool("r3d_18", "avg")
+    with pytest.raises(ValueError, match="frame model"):
+        _pick_pool("convnext_tiny", "video")
+
+
+@needs_clips
+def test_clips_are_resized_and_recoloured_for_a_video_model():
+    from src.models.video_encoder import input_spec
+
+    rel = clip_list(PROCESSED_BOX)[0]
+    size, mean, std = input_spec("r3d_18")
+    small = _Clips(PROCESSED_BOX, [rel], mean=mean, std=std, size=size)[0][0]
+    plain = _Clips(PROCESSED_BOX, [rel])[0][0]
+    assert small.shape == (15, 3, 112, 112)
+    assert plain.shape == (15, 3, 224, 224)
+    # the default path is untouched, or the EfficientNet cache stops matching
+    frames = torch.from_numpy(np.load(os.path.join(PROCESSED_BOX, rel + ".npy")))
+    x = frames.permute(0, 3, 1, 2).float().div_(255)
+    m = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+    s = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+    assert torch.equal(plain, (x - m) / s)
+
+
+@needs_clips
+@needs_r3d_weights
+def test_an_r3d_cache_end_to_end(tmp_path):
+    from src.extract import manifest_path, verify
+
+    out = str(tmp_path / "cache")
+    assert extract(backbone="r3d_18", limit=2, out_dir=out, batch_size=2,
+                   quiet=True) == 0
+    assert os.path.exists(manifest_path(out, "video"))
+    rel = clip_list(PROCESSED_BOX)[0]
+    one = torch.load(out_path(out, "video", rel))
+    assert one.shape == (512,)
+    assert one.dtype == torch.float16
+    _check_size(out_path(out, "video", rel), one)
+    assert verify(backbone="r3d_18", out_dir=out, clips=2, quiet=True) == 0
+
+    feats = FeatureDataset(SPLIT, features=out, view="video")
+    assert feats.item_shape == (512,)
+    assert feats.feature_dim == 512          # not 1, the empty product
+
+    # the same files under the wrong view are refused, not misread
+    os.rename(os.path.join(out, "video"), os.path.join(out, "avg"))
+    with pytest.raises(ValueError, match="expects 2-D"):
+        FeatureDataset(SPLIT, features=out, view="avg")
+
+
+R3D = os.path.join("data", "features", "r3d_18")
+needs_r3d_cache = pytest.mark.skipif(
+    not os.path.isdir(os.path.join(R3D, "video")),
+    reason="no r3d_18 cache; run src.extract --backbone r3d_18")
+
+
+@needs_r3d_cache
+def test_the_r3d_cache_is_512_per_clip_and_complete():
+    from src.extract import manifest_path
+    from src.utils.checkpoint import read_results
+
+    ok = 0
+    for row in read_results(manifest_path(R3D, "video")):
+        if row.get("ok"):
+            ok += 1
+    assert ok == len(clip_list(PROCESSED_BOX))
+    feats = FeatureDataset(SPLIT, features=R3D, view="video")
+    assert feats.item_shape == (512,)
+    assert feats.missing == FeatureDataset(SPLIT, view="avg").missing
