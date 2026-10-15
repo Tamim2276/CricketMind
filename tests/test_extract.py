@@ -374,3 +374,88 @@ def test_the_dataset_really_does_hand_over_a_channels_last_tensor():
     x, _ = video[0]
     assert not x.is_contiguous(), "no longer channels_last; see encode_clip"
     assert x.is_contiguous(memory_format=torch.channels_last)
+
+
+# --- 8.8: the pooled view, derived on the CPU --------------------------------
+
+def test_pool_grid_averages_the_spatial_axes_and_nothing_else():
+    """dim=(1, 2) would give (T, H) and still save without complaint."""
+    from src.extract import pool_grid
+
+    grid = torch.zeros(15, 4, 7, 7, dtype=torch.float16)
+    for c in range(4):
+        grid[:, c] = float(c)                      # channel c is all c
+    out = pool_grid(grid)
+    assert out.shape == (15, 4)
+    assert out.dtype == torch.float16
+    assert out[0].tolist() == [0.0, 1.0, 2.0, 3.0]
+
+
+def test_pool_grid_is_the_float32_mean_stored_as_float16():
+    from src.extract import pool_grid
+
+    torch.manual_seed(0)
+    grid = (torch.rand(15, 1280, 7, 7) * 30).half()
+    want = grid.float().mean(dim=(-1, -2)).half()
+    assert torch.equal(pool_grid(grid), want)
+
+
+def test_pool_grid_refuses_a_tensor_that_is_not_a_grid():
+    from src.extract import pool_grid
+
+    with pytest.raises(ValueError, match="expected"):
+        pool_grid(torch.zeros(15, 1280, dtype=torch.float16))
+
+
+@needs_clips
+def test_derive_makes_both_halves_and_does_not_redo_them(tmp_path):
+    from src.extract import derive, manifest_path
+
+    out = str(tmp_path / "cache")
+    extract(limit=2, out_dir=out, batch_size=2, quiet=True)
+    extract(limit=2, out_dir=out, batch_size=2, mirror=True, quiet=True)
+    assert derive(out_dir=out, quiet=True) == 0
+
+    rel = clip_list(PROCESSED_BOX)[0]
+    plain = torch.load(out_path(out, "avg", rel))
+    mirrored = torch.load(out_path(out, "avg_mirror", rel))
+    grid = torch.load(out_path(out, "grid", rel))
+    assert plain.shape == (15, 1280)
+    assert not torch.equal(plain, mirrored)
+    assert torch.equal(plain, grid.float().mean(dim=(-1, -2)).half())
+    # one manifest per output, or the second half reads as already done
+    assert os.path.exists(manifest_path(out, "avg"))
+    assert os.path.exists(manifest_path(out, "avg_mirror"))
+
+    stamp = os.path.getmtime(out_path(out, "avg", rel))
+    assert derive(out_dir=out, quiet=True) == 0
+    assert os.path.getmtime(out_path(out, "avg", rel)) == stamp
+
+
+needs_avg = pytest.mark.skipif(
+    not os.path.isdir(os.path.join(CACHE, "avg")),
+    reason="no avg view; run src.extract --derive avg")
+
+
+@needs_avg
+def test_the_avg_view_reads_back_1280_wide_and_matches_the_grid():
+    feats = FeatureDataset(SPLIT, view="avg")
+    grid = FeatureDataset(SPLIT, view="grid")
+    a, label_a = feats[0]
+    g, label_g = grid[0]
+    assert a.shape == (15, 1280)
+    assert feats.feature_dim == 1280
+    assert label_a == label_g
+    gap = (a - g.mean(dim=(-1, -2))).abs().max()
+    assert float(gap) < 5e-3                     # fp16 storage, nothing more
+    assert len(feats) == len(grid)
+
+
+@needs_avg
+def test_the_avg_view_can_flip():
+    feats = FeatureDataset(SPLIT, view="avg", mirror=0.5)
+    torch.manual_seed(0)
+    seen = set()
+    for _ in range(12):
+        seen.add(float(feats[0][0].sum()))
+    assert len(seen) == 2

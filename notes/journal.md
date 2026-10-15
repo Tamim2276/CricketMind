@@ -2621,3 +2621,38 @@ records it; the banner prints `name [method]`; and three tests in
 lives only in `src/models/model.py` where it belongs. 474 tests pass.
 
 Adding A13 is now a new file, not an edit to the loop.
+
+### 8.8 The avg view: 1,280 wide, derived on the CPU
+
+```
+grid/ -> avg/                9,880 clips, 0 failed, 5.1 min, 32 clips/s
+grid_mirror/ -> avg_mirror/  9,880 clips, 0 failed, 3.8 min, 43 clips/s
+each file 39,977 bytes       389 MB per half, 0 .tmp, 38 GB free
+vs the float32 mean          max diff 6.3e-04 (fp16 rounding)
+tests                        480 in the suite; 27 pass and 1 skips in test_extract
+```
+
+The one skip is correct, not a gap: `test_the_avg_view_names_the_command_that_
+would_create_it` only means something while `avg/` is missing, so it skips
+once the folder exists. I had told myself "0 skipped" -- wrong prediction,
+right behaviour.
+
+**Estimated 2.2 min, took 8.9.** Two mistakes in the estimate, both mine: I
+timed the first 300 files, which tests and `--verify` had just read, so they
+came from the OS cache; and I timed reading and averaging but not writing.
+Measured properly afterwards, on clips 5000-5100:
+
+```
+read + average       10.6 ms
+atomic_save fsync     2.3 ms
+manifest-row fsync    7.1 ms
+total                20.0 ms   -> ~50 clips/s, against 32-43 in the run
+```
+
+Half of every clip is the two fsyncs. That is what makes a power cut cost one
+clip instead of a corrupt cache, so it stays. A job that runs once per
+extractor can afford nine minutes; it cannot afford a half-written file.
+
+The pay-off is the next experiment: A14 can now run on `view: avg`, where the
+GRU's input layer is 1280 x 384 = 0.49 M parameters instead of 24.1 M and an
+epoch reads 231 MB instead of 11 GB.

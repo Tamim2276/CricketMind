@@ -2182,8 +2182,8 @@ over, and the decision is not close enough to need agonising about.
 
 - **Why the grid and not the pooled view.** The grid is a *superset*. Average
   pooling is a mean over the last two axes, so the 1280-wide view can be
-  derived from the grid on the CPU in about a minute, with **no GPU and no
-  second pass over the video** (step 8.8 proves this, to 3.6e-07). The reverse
+  derived from the grid on the CPU in about nine minutes for both halves,
+  with **no GPU and no second pass over the video** (step 8.8 proves this, to 3.6e-07). The reverse
   is impossible: once you have averaged, the spatial layout is gone forever and
   recovering it costs another 14-minute extraction. Cache the thing you cannot
   recompute cheaply.
@@ -2808,10 +2808,35 @@ du -sh data/features/effnetv2s/avg data/features/effnetv2s/avg_mirror
 **Check.** `(15, 1280)`, a max difference at fp16 resolution (`~1e-3`, the
 storage floor, not the `1e-7` of the arithmetic), and about **350 MB** each.
 
+**Measured 2026-10-15:**
+
+```
+grid/ -> avg/                9,880 clips, 0 failed, 5.1 min, 32 clips/s
+grid_mirror/ -> avg_mirror/  9,880 clips, 0 failed, 3.8 min, 43 clips/s
+each file 39,977 bytes       389 MB per half, 0 .tmp, 38 GB free afterwards
+vs the float32 mean          max diff 6.3e-04 -- fp16 rounding, nothing else
+```
+
+**The time estimate was wrong by 4x, and the reason is worth knowing.** It came
+from timing 300 files that had just been read, so they were in the OS cache,
+and it timed only read-and-average. Per clip, measured afterwards on files not
+recently touched:
+
+```
+read + average       10.6 ms
+atomic_save fsync     2.3 ms
+manifest-row fsync    7.1 ms
+total                20.0 ms   -> ~50 clips/s
+```
+
+Half the time is the two fsyncs -- the price of a power cut costing one clip
+rather than a corrupt cache. Worth paying for a job that runs once per
+extractor, and the reason not to "optimise" them away.
+
 **Takeaway.** A cache in two widths is not duplication, it is a *lossy
 derivative of a lossless archive*. Keep the archive for the thing that needs
 it, keep the derivative for the thing that runs forty times, and be able to
-rebuild the derivative from the archive in a minute with no GPU. That property
+rebuild the derivative from the archive in minutes with no GPU. That property
 is what makes the 17.3 GB defensible.
 
 ---

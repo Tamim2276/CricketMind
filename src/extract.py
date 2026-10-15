@@ -49,7 +49,7 @@ from src.utils.checkpoint import append_result, atomic_save, read_results
 from src.utils.device import describe, get_amp_settings, get_device
 
 __all__ = ["clip_list", "grid_shape", "encode_clip", "extract", "out_path",
-           "verify", "manifest_path", "SILU_FLOOR"]
+           "verify", "manifest_path", "pool_grid", "derive", "SILU_FLOOR"]
 
 FEATURES = os.path.join("data", "features")
 DEFAULT_NAME = "effnetv2s"
@@ -434,6 +434,96 @@ def verify(variant="box", backbone=DEFAULT_BACKBONE, name=None, out_dir=None,
     return bad
 
 
+def pool_grid(grid):
+    """(T, C, H, W) fp16 -> (T, C) fp16: the average over the spatial grid.
+
+    Two details, each of which still produces a valid-looking tensor when
+    wrong. **Sum in float32**: 49 fp16 values added in fp16 pile up rounding
+    error, so up-cast, average, then store as fp16. **Reduce over the last two
+    axes**: dim=(-1, -2) is the 7x7. dim=(1, 2) would give (T, 7) -- it saves
+    without complaint and means nothing.
+    """
+    if grid.dim() != 4:
+        raise ValueError(f"expected (T, C, H, W), got {tuple(grid.shape)}")
+    return grid.float().mean(dim=(-1, -2)).half()
+
+
+def derive(view="avg", name=None, out_dir=None, quiet=False):
+    """The 1280-wide view, made from grid/ on the CPU. Returns failures.
+
+    No encoder and no second pass over the video: 8.5 showed averaging the
+    cached grid equals what pool="avg" computes, to 3.6e-07. Both halves are
+    derived, grid/ -> avg/ and grid_mirror/ -> avg_mirror/, so flip still
+    works on the small view. Each output has its own manifest, and reads its
+    work list from the source's manifest, so only finished files are used.
+    """
+    if view != "avg":
+        raise ValueError(f"only the avg view can be derived, got {view!r}")
+    name = name or DEFAULT_NAME
+    out_dir = out_dir or os.path.join(FEATURES, name)
+    tty = sys.stdout.isatty()
+    failed = 0
+
+    for source in ("grid", "grid_mirror"):
+        if not os.path.isdir(os.path.join(out_dir, source)):
+            if source == "grid":
+                raise SystemExit(f"no grid cache at {out_dir}; run extract first")
+            if not quiet:
+                print(f"{source}/ not there, skipping its half")
+            continue
+        target = source.replace("grid", view)
+
+        rels = []
+        for row in read_results(manifest_path(out_dir, source)):
+            if row.get("ok"):
+                rels.append(row["clip"])
+        manifest = manifest_path(out_dir, target)
+        done = set()
+        for row in read_results(manifest):
+            done.add(row["clip"])
+        todo = []
+        for rel in rels:
+            if rel not in done:
+                todo.append(rel)
+
+        if not quiet:
+            print(f"{source}/ -> {target}/   {len(rels)} clips, "
+                  f"{len(done)} already done, {len(todo)} to go", flush=True)
+
+        started = time.time()
+        for n, rel in enumerate(todo, 1):
+            try:
+                grid = torch.load(out_path(out_dir, source, rel),
+                                  map_location="cpu")
+                pooled = pool_grid(grid)
+                path = out_path(out_dir, target, rel)
+                atomic_save(pooled, path)
+                if n == 1:
+                    _check_size(path, pooled)
+                row = {"clip": rel, "ok": True, "shape": list(pooled.shape)}
+            except (OSError, RuntimeError, ValueError) as err:
+                row = {"clip": rel, "ok": False,
+                       "reason": f"{type(err).__name__}: {err}"}
+                failed += 1
+            append_result(row, manifest)
+
+            if tty:
+                rate = n / max(time.time() - started, 1e-9)
+                left = (len(todo) - n) / max(rate, 1e-9) / 60
+                print(progress.line(n, len(todo),
+                                    f"{rate:5.0f} clips/s  ~{left:4.1f} min left",
+                                    prefix="  ", tty=True), end="", flush=True)
+            elif n % 1000 == 0 or n == len(todo):
+                print(progress.line(n, len(todo), "", prefix="  ", tty=False),
+                      flush=True)
+        if todo and not quiet:
+            print(f"\n  done in {(time.time() - started) / 60:.1f} min\n")
+
+    if not quiet:
+        print(f"{failed} failed")
+    return failed
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--verify", action="store_true",
@@ -453,11 +543,17 @@ def main(argv=None):
                     help="no autocast; will not match a bf16-trained run")
     ap.add_argument("--mirror", action="store_true",
                     help="encode the flipped clips, into grid_mirror/ (8.7)")
+    ap.add_argument("--derive", choices=("avg",),
+                    help="make the pooled view from grid/, no GPU (8.8)")
     a = ap.parse_args(argv)
 
     opts = vars(a)
     do_verify = opts.pop("verify")
     checked = opts.pop("clips")
+    pooled_view = opts.pop("derive")
+    if pooled_view:
+        return derive(view=pooled_view, name=opts["name"],
+                      out_dir=opts["out_dir"])
     if do_verify:
         for unused in ("limit", "batch_size", "workers", "fp32", "mirror"):
             opts.pop(unused)
