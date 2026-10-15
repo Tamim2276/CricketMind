@@ -2473,12 +2473,43 @@ So check the tensors, not the accuracy.
 **Code to understand.** Three checks, each catching something the others
 cannot.
 
-**Check 1 — round-trip against the extraction path.** Call the same
+**Check 1 — round-trip against the extraction path, bit-exact.** Call the same
 `encode_clip()` that extraction called, on 20 clips, and compare to the files.
-Tolerance is fp16 resolution, about `1e-3` relative. The subtlety: this must
-run under the *same* autocast setting as the extraction, or you are measuring
-bf16-versus-fp32 instead of measuring the cache. What can actually break here
-is serialisation and layout, so test that and nothing else.
+Not with a tolerance — `torch.equal`. The forward pass is deterministic, so a
+correct cache reproduces **exactly**, and any gap at all means the cache was
+written by different code or different settings. What can actually break here
+is serialisation and layout, so this tests that and nothing else.
+
+Getting bit-exactness required finding a real bug first, and it is the subtlest
+one of Day 8.
+
+> **The cache depended on `--workers`, a flag that is only supposed to affect
+> speed.** Measured 2026-10-15: identical input tensors, deterministic forward,
+> and yet `--workers 0` and `--workers 4` wrote files differing by **0.39** on
+> values reaching 24 — reproducibly, 50× bf16's spacing at that magnitude.
+>
+> The cause is two steps removed from either flag. `dataset.py` builds its
+> tensor with `.permute(0, 3, 1, 2)`, which makes it **channels_last**, and
+> that memory format propagates through the elementwise normalisation. The
+> DataLoader then silently decides it: at `--workers 0` the collated batch
+> stays channels_last; at `--workers 4` the shared-memory collate rewrites it
+> to NCHW. oneDNN picks a different kernel for each, and bf16 rounding diverges
+> and compounds over forty layers.
+>
+> Neither result is *wrong* — both are valid bf16 computations. But a cache
+> whose contents depend on a performance knob is a cache you cannot verify, and
+> it would have made 8.6's epoch-1-loss comparison meaningless.
+>
+> **`.contiguous()` in `encode_clip` fixes it. `.clone()` does not**, because
+> clone preserves memory format — which is exactly why the first fix attempt
+> failed. Two regression tests pin it: one that the two worker counts now
+> agree, and one that `dataset.py` really does hand over a channels_last
+> tensor, so that if it ever stops, the `.contiguous()` can be reconsidered
+> on evidence rather than removed on a guess.
+>
+> The cache already on disk was built with `--workers 4`, which is the NCHW
+> path, so it needed **no re-extraction** — both worker counts now reproduce
+> it bit-for-bit.
 
 **Check 2 — the reshape order, against an independent route.** If
 `(15, 1280, 7, 7)` is the correct folding, then averaging over the last two
@@ -2507,12 +2538,22 @@ value to a known constant instead of a half-plane. See 8.2.
 **Run.**
 
 ```bash
-pytest tests/test_extract.py -q
+python -m pytest tests/test_extract.py -q
 python -m src.extract --verify --clips 20
 ```
 
-**Check.** Tests green; `--verify` prints a maximum absolute difference at
-`1e-3` or below, and `0 negatives in 20 clips`.
+**Check.** Measured 2026-10-15 — 22 new tests, and:
+
+```
+verifying 20 clips from dataeatures\effnetv2s
+  1 round-trip against encode_clip   PASS   20/20 bit-exact  max abs gap 0.0000  (values reach 27.2)
+  2 reshape order, fp32, vs pool=avg PASS   max abs 4.768e-07  (float32 noise is ~1e-7)
+  3 activation floor                 PASS   min -0.279297  max 27.25  (SiLU floor -0.278465; 0 at a hard 0.0)
+
+all 3 passed
+```
+
+474 tests in the suite, up from 452.
 
 **Takeaway.** Verify a cache by comparing *tensors against an independent route
 to the same tensors*, never by checking that a model trained on it still works.

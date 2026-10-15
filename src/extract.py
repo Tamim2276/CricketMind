@@ -47,11 +47,13 @@ from src.utils import progress
 from src.utils.checkpoint import append_result, atomic_save, read_results
 from src.utils.device import describe, get_amp_settings, get_device
 
-__all__ = ["clip_list", "grid_shape", "encode_clip", "extract", "out_path"]
+__all__ = ["clip_list", "grid_shape", "encode_clip", "extract", "out_path",
+           "verify", "SILU_FLOOR"]
 
 FEATURES = os.path.join("data", "features")
 DEFAULT_NAME = "effnetv2s"
 FP16_MAX = 65504.0          # anything larger becomes inf, silently
+SILU_FLOOR = -0.278464556   # min of x*sigmoid(x); EfficientNet ends in SiLU
 
 
 def clip_list(root):
@@ -120,6 +122,16 @@ def encode_clip(x, encoder, device, amp, grid, fp32=False):
     single = x.dim() == 4
     if single:
         x = x[None]
+
+    # .contiguous() is load-bearing, and not for speed. dataset.py builds its
+    # tensor with .permute(0, 3, 1, 2), which makes it channels_last, and that
+    # format propagates. The DataLoader then silently decides it: at
+    # --workers 0 the batch stays channels_last, at --workers 4 the shared
+    # memory collate rewrites it to NCHW. oneDNN picks a different kernel for
+    # each, so the cache came out different by 0.39 depending on a flag that
+    # is supposed to only affect speed. Pinning the format makes --workers a
+    # pure performance knob again.
+    x = x.contiguous()
 
     with torch.no_grad():
         if fp32 or amp.dtype is None:
@@ -265,8 +277,133 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
     return failed
 
 
+def verify(variant="box", backbone=DEFAULT_BACKBONE, name=None, out_dir=None,
+           processed=PROCESSED, clips=20, seed=0, device=None, quiet=False):
+    """Check an existing cache against the encoder that is supposed to have
+    written it. Returns the number of checks that failed.
+
+    **Not a training run.** A wrong cache still trains to *some* number, so
+    accuracy cannot tell "correct" from "wrong in a way the optimiser routed
+    around". These compare tensors instead.
+    """
+    import random
+
+    name = name or DEFAULT_NAME
+    out_dir = out_dir or os.path.join(FEATURES, name)
+    root = os.path.join(processed, variant)
+
+    rows = []
+    for row in read_results(os.path.join(out_dir, "manifest.jsonl")):
+        if row.get("ok"):
+            rows.append(row["clip"])
+    if not rows:
+        raise SystemExit(f"no cache to verify at {out_dir}")
+    random.Random(seed).shuffle(rows)
+    rows = rows[:clips]
+
+    device = device or get_device()
+    amp = get_amp_settings(device)
+    encoder = FrameEncoder(backbone, pretrained=True, freeze=True,
+                           pool="flatten").to(device).eval()
+    grid = grid_shape(encoder)
+    data = _Clips(root, rows)
+    bad = 0
+
+    # ---- check 1: the files are what encode_clip produces -----------------
+    # Bit-exact, not approximate. The forward pass is deterministic and
+    # encode_clip pins the memory format, so a correct cache reproduces
+    # exactly -- at any --workers and any batch size. Anything else means the
+    # cache was built by different code or different settings.
+    worst_abs = 0.0
+    peak = 0.0
+    exact = 0
+    for start in range(0, len(rows), 4):
+        chunk = []
+        for i in range(start, min(start + 4, len(rows))):
+            chunk.append(data[i][0])
+        feats = encode_clip(torch.stack(chunk), encoder, device, amp, grid)
+        for j in range(feats.shape[0]):
+            rel = rows[start + j]
+            saved = torch.load(out_path(out_dir, "grid", rel),
+                               map_location="cpu")
+            fresh = feats[j]
+            if torch.equal(saved, fresh):
+                exact += 1
+            gap = (saved.float() - fresh.float()).abs()
+            worst_abs = max(worst_abs, float(gap.max()))
+            peak = max(peak, float(fresh.float().abs().max()))
+
+    ok_1 = exact == len(rows)
+    bad += not ok_1
+
+    # ---- check 2: the reshape order, by an independent route --------------
+    # In fp32 and with no autocast, because this tests the (C, H, W) vs
+    # (H, W, C) convention -- a property of the code, not of the cache -- and
+    # bf16 noise would swamp a 1e-7 answer.
+    pooled = FrameEncoder(backbone, pretrained=True, freeze=True,
+                          pool="avg").to(device).eval()
+    worst_fold = 0.0
+    with torch.no_grad():
+        for i in range(min(3, len(rows))):
+            x = data[i][0][None].to(device)
+            flat = encoder(x).float()
+            derived = flat.unflatten(-1, grid).mean(dim=(-1, -2))
+            real = pooled(x).float()
+            worst_fold = max(worst_fold,
+                             float((derived - real).abs().max()))
+
+    ok_2 = worst_fold < 1e-4
+    bad += not ok_2
+
+    # ---- check 3: the activation floor ------------------------------------
+    # EfficientNetV2-S ends in SiLU, whose minimum is -0.278464556. A correct
+    # cache presses against that and never goes under. A hard 0.0 would mean
+    # a ReLU backbone; far below means a pre-activation layer.
+    low = 0.0
+    high = 0.0
+    flat_zero = 0
+    for rel in rows:
+        t = torch.load(out_path(out_dir, "grid", rel), map_location="cpu")
+        low = min(low, float(t.min()))
+        high = max(high, float(t.max()))
+        if float(t.min()) == 0.0:
+            flat_zero += 1
+
+    ok_3 = low >= -0.28 and flat_zero == 0
+    bad += not ok_3
+
+    if not quiet:
+        def mark(ok):
+            if ok:
+                return "PASS"
+            return "FAIL"
+
+        print(f"verifying {len(rows)} clips from {out_dir}")
+        print(f"  1 round-trip against encode_clip   {mark(ok_1)}   "
+              f"{exact}/{len(rows)} bit-exact  max abs gap {worst_abs:.4f}  "
+              f"(values reach {peak:.1f})")
+        if not ok_1 and worst_abs < 0.05 * max(peak, 1e-9):
+            print("      the gap is bf16-sized, so the cache is not wrong -- "
+                  "it was built with different settings (--fp32? older code?)")
+        print(f"  2 reshape order, fp32, vs pool=avg {mark(ok_2)}   "
+              f"max abs {worst_fold:.3e}  (float32 noise is ~1e-7)")
+        print(f"  3 activation floor                 {mark(ok_3)}   "
+              f"min {low:.6f}  max {high:.2f}  "
+              f"(SiLU floor -0.278465; {flat_zero} tensors at a hard 0.0)")
+        print()
+        if bad:
+            print(f"{bad} of 3 FAILED -- do not train on this cache")
+        else:
+            print("all 3 passed")
+    return bad
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--verify", action="store_true",
+                    help="check an existing cache instead of writing one")
+    ap.add_argument("--clips", type=int, default=20,
+                    help="--verify only: how many clips to check")
     ap.add_argument("--variant", default="box", choices=("box", "seg"))
     ap.add_argument("--backbone", default=DEFAULT_BACKBONE)
     ap.add_argument("--name", help="cache directory name, default effnetv2s")
@@ -279,7 +416,15 @@ def main(argv=None):
     ap.add_argument("--fp32", action="store_true",
                     help="no autocast; will not match a bf16-trained run")
     a = ap.parse_args(argv)
-    return extract(**vars(a))
+
+    opts = vars(a)
+    do_verify = opts.pop("verify")
+    checked = opts.pop("clips")
+    if do_verify:
+        for unused in ("limit", "batch_size", "workers", "fp32"):
+            opts.pop(unused)
+        return verify(clips=checked, **opts)
+    return extract(**opts)
 
 
 if __name__ == "__main__":

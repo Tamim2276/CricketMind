@@ -2345,3 +2345,53 @@ no feature cache at data\features\effnetv2s\avg for view='avg'.
 
 A silent fallback is how two experiments end up reading different numbers with
 nothing to tell you which.
+
+### 8.5 The cache depended on --workers
+
+The check I wrote as "within fp16 tolerance" failed at **55x** relative error,
+so I went looking. The chain took four measurements:
+
+```
+1  two fresh encodes, same process      IDENTICAL      -> forward is deterministic
+2  saved file vs fresh encode           0.39 abs gap   -> 50x bf16 spacing. not noise
+3  w0 vs w0, w4 vs w4                   IDENTICAL      -> reproducible per setting
+   w0 vs w4                             0.39           -> the flag is the variable
+4  loader inputs, w0 vs w4              IDENTICAL      -> not the data. the compute
+```
+
+Then the cause, visible only once I printed the tensor flags:
+
+```
+workers 0:  is_shared=False  contiguous=False
+workers 4:  is_shared=True   contiguous=True
+```
+
+`dataset.py` builds its tensor with `.permute(0, 3, 1, 2)`, which makes it
+**channels_last**, and that format propagates through the elementwise
+normalisation. The DataLoader then decides it silently: at `--workers 0` the
+collated batch stays channels_last, at `--workers 4` the shared-memory collate
+rewrites it to NCHW. oneDNN picks a different kernel for each and bf16 rounding
+diverges, compounding over forty layers.
+
+Neither answer is wrong -- both are valid bf16 computations. But a cache whose
+contents depend on a *speed* flag cannot be verified, and it would have made
+8.6's epoch-1-loss comparison worthless.
+
+`.contiguous()` fixes it. **`.clone()` does not** -- clone preserves memory
+format, which is why my first instinct was wrong. After the fix, `w0`, `w4`
+and the cache already on disk are all bit-identical, so **no re-extraction**:
+the real run used `--workers 4`, which was already the NCHW path.
+
+The payoff is that check 1 is now `torch.equal` rather than a tolerance. A
+tolerance would have passed on the broken version and told me nothing.
+
+```
+  1 round-trip against encode_clip   PASS   20/20 bit-exact  max abs gap 0.0000
+  2 reshape order, fp32, vs pool=avg PASS   max abs 4.768e-07
+  3 activation floor                 PASS   min -0.279297  (SiLU floor -0.278465)
+```
+
+474 tests, up from 452. Two of the new ones are regressions for this: that the
+worker counts agree, and that `dataset.py` really is channels_last -- so if it
+ever stops being, the `.contiguous()` gets reconsidered on evidence instead of
+deleted on a guess.
