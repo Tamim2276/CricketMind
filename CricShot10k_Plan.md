@@ -2287,10 +2287,26 @@ t = torch.load('data/features/effnetv2s/grid/Cover Drive/vid100_41.pt')
 print(t.shape, t.dtype, float(t.min()), float(t.max()), t.numel() * 2 / 1024, 'KB')"
 ```
 
-**Check.** `torch.Size([15, 1280, 7, 7]) torch.float16`, a minimum of exactly
-`0.0` (the last thing in EfficientNetV2-S is a ReLU-family activation, so
-nothing can be negative — if you see a negative number you have cached the
-wrong layer), and `1837.5 KB`.
+**Check.** `torch.Size([15, 1280, 7, 7]) torch.float16`, `1837.5 KB`, and a
+minimum of **−0.2793**, not zero.
+
+**That floor is the real check, and it is sharper than "no negatives" would
+be.** EfficientNetV2-S ends in **SiLU**, not ReLU — `features[-1]` is
+`Conv2d → BatchNorm2d → SiLU` — and `SiLU(x) = x · sigmoid(x)` dips below zero,
+bottoming out at **−0.278464556** at `x = −1.2788`. Under bf16 autocast the
+nearest representable value to that is **exactly −0.279296875**, which is what
+a correct cache reports. So the check is:
+
+```
+min  ≥ -0.28   and sitting right at it      -> correct layer, autocast as documented
+min  =  0.0                                   -> wrong: that is a ReLU backbone, not this one
+min ≪ -0.28                                   -> wrong layer, probably a pre-activation conv
+```
+
+An earlier draft of this step asserted `min == 0.0` on the grounds that the
+backbone ends in "a ReLU-family activation". It does not, the smoke test said
+so on 2026-10-15, and the measured value turned out to pin **two** things at
+once: the right layer, and that autocast really is bf16.
 
 **Takeaway.** A cache is a contract with your future self, and the shape is the
 contract. Write it in the module docstring before writing the code, the way
@@ -2299,7 +2315,7 @@ docstring instead of re-deriving it.
 
 ---
 
-### 8.3 Launch the extraction (≈15 min to start, then ≈14 min)
+### 8.3 Launch the extraction (≈15 min to start, then ≈9 min)
 
 *A launch step: no new code, so only Run, Check and Takeaway apply.*
 
@@ -2314,8 +2330,8 @@ epoch over 6,320 clips in 4.4 minutes *with* a backward pass. A forward pass
 costs roughly a third of a forward-plus-backward, so guess, write the guess in
 the journal, and then compare.
 
-**Measured 2026-10-15, before the extractor existed**, by timing
-`FrameEncoder(pool="flatten")` directly on the Arc B580:
+**Predicted 2026-10-15, before the extractor existed**, by timing
+`FrameEncoder(pool="flatten")` in a bare synchronous loop on the Arc B580:
 
 ```
   batch 4: 32 clips in 2.6s = 12.1 clips/s -> 9880 clips in 13.6 min
@@ -2323,12 +2339,23 @@ the journal, and then compare.
   disk:    1.79 MB/clip at 1068 MB/s       -> 17.3 GB in 0.3 min
 ```
 
-**Two things that tells you, and both are useful.** Batch 8 is *not* faster
-than batch 4, so the GPU is not the bottleneck — the `.npy` read and the
-float32 normalisation on the CPU are. That is why `--workers 4` is on the
-command line and why raising the batch size will not help. And the disk write
-is 0.3 minutes of a 14-minute job, so the fp16-versus-fp32 decision in 8.1 was
-about disk *space*, never about time.
+**Measured 2026-10-15, the real run**, `--workers 4`:
+
+```
+  9,880 clips, 0 failed, 8.5 min, 19.4 clips/s
+  17.3 GB written, 0 .tmp left, 57 GB free afterwards
+  largest activation 32.8 -> 2000x fp16 headroom
+```
+
+**19.4 against a predicted 12.1 — 60% faster than the bare loop**, and that
+difference is the whole argument for `--workers`. Batch 8 was *not* faster than
+batch 4 in the synchronous loop, which said the GPU was never the bottleneck:
+the `.npy` read and the float32 normalisation on the CPU were. Four worker
+processes do that work while the GPU is busy, and the job drops from 13.6
+minutes to 8.5. Raising the batch size would still not help.
+
+The disk write is 0.3 minutes of an 8.5-minute job, so the fp16-versus-fp32
+decision in 8.1 was about disk *space*, never about time.
 
 **Check.** Three numbers, all of which must agree:
 
@@ -2469,10 +2496,13 @@ Float32 rounding noise — `1e-7`, not `1e-3`. The reshape is right, and the avg
 view is a genuine derivative of the grid rather than an approximation of it.
 Had the order been `(7, 7, 1280)` this would have come out around `1e-1`.
 
-**Check 3 — no negatives, everywhere.** `min() >= 0` on every cached tensor,
-because the backbone's last operation is an activation that cannot go negative.
-It is one pass over the cache and it catches a wrong layer, a wrong model, and
-a corrupt file all at once.
+**Check 3 — the activation floor, everywhere.** `min() >= -0.28` on every
+cached tensor, and no tensor sitting at a hard `0.0`. The backbone's last
+operation is **SiLU**, whose global minimum is −0.278464556 (−0.279296875 in
+bf16), so a correct cache presses against that floor and never goes under it.
+One pass over the cache, and it catches a wrong layer, a wrong backbone and a
+corrupt file at once — more tightly than `>= 0` would, because it pins the
+value to a known constant instead of a half-plane. See 8.2.
 
 **Run.**
 

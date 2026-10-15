@@ -2183,3 +2183,165 @@ to find it was to read the method section rather than guess from the abstract.
 It is still 43% against their 89%, so something else about their crops differs
 too. But the ruler is now demonstrably calibrated upward, which makes it worth
 more for the next thing we try than it was this morning.
+
+## 2026-10-15 — Day 8 begins: the cache budget
+
+### 8.1 The arithmetic, before any code
+
+The old plan said the feature cache would be `(15, 1280)` and about 600 MB.
+Both wrong, and wrong in a way that would have mattered: 1280 is `pool: avg`,
+and **every result this project has came from `pool: flatten`**. A 600 MB cache
+would have described a model I have never trained.
+
+Where the real number comes from, checked rather than remembered:
+
+```
+m.features(zeros(1, 3, 224, 224))  ->  (1, 1280, 7, 7)      224 / 32 = 7
+7 x 7 x 1280                       =   62,720 per frame
+15 x 62,720 x 2 bytes (float16)    =   1.79 MB per clip
+1.79 MB x 9,880 clips              =   17.31 GB
+```
+
+Off by 46x. Twenty minutes of multiplication against a day of extraction.
+
+### The budget
+
+```
+free on D:                      73.4 GB   (df: 74G avail)
+grid, normal              -17.3  -> 56.1 GB
+grid, mirrored            -17.3  -> 38.8 GB   (8.7 -- flip cannot be faked)
+avg views, derived         -0.7  -> 38.1 GB   (8.8 -- no GPU needed)
+other extractors           -0.4  -> 37.7 GB   (8.10)
+```
+
+If it ever gets tight, `data/processed/seg` is 21 GB and is the weaker variant
+(76.97% against box's 78.14%). It rebuilds from the videos in 4.5 h; the raw
+videos rebuild from nothing. Delete in that order and never the other way.
+
+### Why the grid and not the summary
+
+The grid is a superset: average pooling is a mean over the last two axes, so
+the 1,280-wide view is derivable from it on the CPU with no second pass over
+the video. Measured max difference against `FrameEncoder(pool="avg")`:
+**3.6e-07**, which is float32 rounding, so it is a true derivative rather than
+an approximation. The reverse is impossible -- once averaged, the spatial
+layout is gone and recovering it costs another 14-minute extraction.
+
+Cache the thing you cannot recompute cheaply.
+
+### 8.2 The smoke test refuted my own check
+
+`extract.py` works first time: `(15, 1280, 7, 7) float16`, 1837.5 KB, exactly
+the size 8.1 predicted. But I had written the check as "min must be exactly
+0.0, because EfficientNetV2-S ends in a ReLU-family activation". It reported
+**-0.279296875**.
+
+I was wrong, not the code. `features[-1]` is `Conv2d -> BatchNorm2d -> SiLU`,
+and `SiLU(x) = x * sigmoid(x)` goes negative:
+
+```
+SiLU minimum                  -0.278464556  at x = -1.2788
+nearest bf16 value to it      -0.279296875
+measured min                  -0.279296875   <- exact match
+```
+
+So the number is not a defect, it is a **two-for-one confirmation**: the right
+layer was cached, *and* autocast really ran in bf16, because the value lands on
+a bf16 grid point rather than an fp16 one.
+
+The corrected check is a floor rather than a half-plane, which is strictly
+sharper: `min >= -0.28 and pressed against it`. A hard `0.0` would now mean a
+ReLU backbone (wrong model); far below -0.28 would mean a pre-activation conv
+(wrong layer). Plan 8.2 and 8.5 updated.
+
+Lesson worth keeping: I asserted an architecture detail from memory instead of
+reading `features[-1]`. The smoke test cost ten seconds and caught it; had I
+written the same assumption into a `>= 0` assertion in the test suite, 8.5
+would have failed on a correct cache and I would have gone looking for a bug
+in the extractor.
+
+### 8.3 killed at 2,699 clips: torch.save writes a view's whole storage
+
+Caught by arithmetic, not by an error. 1,129 files should have been 2.0 GB;
+`du` said **8.9 GB**. Per file:
+
+```
+smoke test, batch of 1     1,883,177 bytes   = 1.79 MB   correct
+batched run, batch of 4    7,527,977 bytes   = 7.18 MB   4.00x
+```
+
+Exactly 4x, which is `batch_size`. The cause: `feats[j]` is a **view** into
+the batch tensor, and `torch.save` serialises the view's entire underlying
+storage, not the view. So every file contained all four clips of its batch and
+then read back only its own slice -- correct shape, correct values, four times
+the bytes.
+
+Projected cost had it finished: **69 GB against 73.4 free**. It would have
+squeezed in, reported success, and then made 8.7's mirrored half impossible
+while making every cached epoch read 44 GB instead of 11.
+
+Two fixes, because the first one alone would not have caught it:
+
+1. `feats[j].clone()` -- a fresh storage of exactly the right size.
+2. `_check_size()` on the **first** file of every run: compare
+   `os.path.getsize` against `numel * element_size` and raise above 5%. One
+   `stat` call per run, and this class of bug can never again be silent.
+
+Why the smoke test missed it: `--limit 1` is a batch of one, where the view
+*is* the whole storage. **A batch-size-1 smoke test cannot see a
+batch-size-dependent bug.** Worth remembering for 8.10, which runs four more
+backbones through this same loop.
+
+### 8.3 done: the cache exists
+
+```
+9,880 clips   0 failed   8.5 min   19.4 clips/s
+files 9880    manifest ok 9880    .tmp left 0
+17.3 GB written, 57 GB free      largest activation 32.8 (2000x fp16 headroom)
+```
+
+Every file 1,883,177 bytes, one value with no spread -- which is the positive
+proof the view bug is gone, not just absent from a sample.
+
+**19.4 clips/s against a predicted 12.1.** The prediction came from a bare
+synchronous loop, where batch 8 was no faster than batch 4; that told me the
+GPU was never the bottleneck and the .npy read plus float32 normalisation were.
+`--workers 4` moves that work off the critical path and the job fell from a
+projected 13.6 min to 8.5. The prediction was wrong in the useful direction,
+and it was wrong *because* the diagnosis from it was right.
+
+Plan 8.3 and the `extract.py` docstring now carry the measured number, with
+the prediction kept beside it.
+
+### 8.4 FeatureDataset: the notebook reads back
+
+```
+flat   6320 clips  (15, 62720)        float32  label 0  dim 62720
+grid   6320 clips  (15, 1280, 7, 7)   float32  label 0  dim 62720
+
+CricShotDataset 6320 clips, 146 missing
+FeatureDataset  6320 clips, 146 missing   agree: True
+452 tests still pass
+```
+
+The agreement is the check, not the shapes. Both readers see the same 6,320
+clips, drop the same 146, and order the classes identically -- so a cached run
+and the end-to-end 78.14% are measuring the same thing. That property comes
+from importing `_classes_for` out of `dataset.py` rather than re-deriving the
+class order here; two definitions of "which shot is label 0" would have made
+every cached-versus-baseline comparison meaningless while looking fine.
+
+**146, not 211.** 211 is the project-wide preprocessing failure count across
+all three splits; `splits_author/train.csv` owns 146 of them. Caught while
+writing 8.4's check, which had the wrong number in it.
+
+`view="avg"` deliberately has no fallback to reducing the grid on the fly. It
+raises and names the command that creates it:
+
+```
+no feature cache at data\features\effnetv2s\avg for view='avg'.
+  Run: python -m src.extract --derive avg  (step 8.8)
+```
+
+A silent fallback is how two experiments end up reading different numbers with
+nothing to tell you which.
