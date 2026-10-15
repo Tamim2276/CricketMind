@@ -2585,3 +2585,39 @@ Three consequences, and they are all actionable:
 Also worth noting: the flip run early-stopped at **epoch 43 in 58 min** against
 78 epochs and 93 min. Less overfitting meant less of the long low-lr tail --
 so the `min_lr` waste from 8.6 is partly a symptom of unregularised runs.
+
+### A file per method, asked for 2026-10-15
+
+`train.py` had grown two `if cfg["features"]` branches -- one choosing the
+Dataset, one choosing the model -- and with 46 experiments coming that was
+going to become a chain of them. Split instead:
+
+```
+src/train.py                 the loop. Zero method names in it now (grep: 0).
+src/methods/__init__.py      load(name)
+src/methods/video_gru.py     36 lines  encoder + GRU, end to end
+src/methods/cached_gru.py    40 lines  frozen cache + GRU head
+```
+
+A method answers exactly two questions and nothing else:
+
+```python
+datasets(cfg)                -> (train_set, val_set)
+model(cfg, train_set, n_cls) -> nn.Module
+```
+
+**What I did not do, and why.** Full copies of `train.py` per method would put
+the resume logic, the early-stopping rule, the ledger write and the seed
+handling in 46 places. The `channels_last` bug on 2026-10-15 took one fix
+across everything; with 46 copies that is 46 fixes and no way to know which was
+missed. It would also quietly break rule 2 -- two methods could differ in their
+stopping rule with nobody intending it, and the ledger would read as though
+they differed in the thing under test. So: **separated per method, shared per
+concern.**
+
+Fallout, all fixed: every config gained a `method:` key; the ledger row now
+records it; the banner prints `name [method]`; and three tests in
+`test_train.py` were reaching into `train.py` for `build_model`, which now
+lives only in `src/models/model.py` where it belongs. 474 tests pass.
+
+Adding A13 is now a new file, not an edit to the loop.

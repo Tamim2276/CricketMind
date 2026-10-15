@@ -25,13 +25,9 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Subset
 
-from src.data.augment import build_transform
-from src.data.dataset import CricShotDataset
-from src.data.features import FeatureDataset
+from src import methods
 from src.engine import evaluate, make_scaler, train_epoch
 from src.models.encoder import DEFAULT_BACKBONE
-from src.models.head import GRUHead
-from src.models.model import build_model
 from src.plot import FIGURES, plot_run
 from src.utils.checkpoint import (append_result, atomic_save,
                                   atomic_write_json, load_resume, save_resume)
@@ -43,6 +39,8 @@ __all__ = ["train", "DEFAULTS", "load_config", "run_dir"]
 
 DEFAULTS = {
     "name": "run",
+    "method": "video_gru",    # a file in src/methods/; see that package
+
     "split": os.path.join("data", "splits_grouped"),
     "variant": "box",
     "processed": os.path.join("data", "processed"),
@@ -117,43 +115,13 @@ def _subset_across_classes(dataset, n: int):
     return Subset(dataset, chosen)
 
 
-def _make_datasets(cfg):
-    """Video or cached features, as `features` decides.
+def _make_loaders(cfg, method):
+    """The loader plumbing, which is the same for every method.
 
-    The two Datasets are interchangeable on purpose: same split CSVs, same
-    classes, same dropped clips (see `features.py`), so swapping one for the
-    other changes where the numbers come from and nothing else.
+    The method says *what* the data is; this says how it is batched, shuffled
+    and seeded. Nothing here knows whether it is reading video or tensors.
     """
-    if not cfg["features"]:
-        train_set = CricShotDataset(os.path.join(cfg["split"], "train.csv"),
-                                    variant=cfg["variant"],
-                                    processed=cfg["processed"],
-                                    transform=build_transform(cfg["flip"]))
-        val_set = CricShotDataset(os.path.join(cfg["split"], "val.csv"),
-                                  variant=cfg["variant"],
-                                  processed=cfg["processed"])
-        return train_set, val_set
-
-    # flip becomes a choice of file: grid/ or grid_mirror/. Exact, because
-    # ClipFlip is binary -- see 8.7. FeatureDataset raises with the extract
-    # command if the mirrored half is not there.
-    train_set = FeatureDataset(os.path.join(cfg["split"], "train.csv"),
-                               features=cfg["features"], view=cfg["view"],
-                               mirror=cfg["flip"])
-    val_set = FeatureDataset(os.path.join(cfg["split"], "val.csv"),
-                             features=cfg["features"], view=cfg["view"])
-    return train_set, val_set
-
-
-def _feature_dim(loader):
-    """The cache width, through the Subset that limit_clips may have added."""
-    data = loader.dataset
-    data = getattr(data, "dataset", data)
-    return data.feature_dim
-
-
-def _make_loaders(cfg):
-    train_set, val_set = _make_datasets(cfg)
+    train_set, val_set = method.datasets(cfg)
     classes = train_set.classes
 
     if cfg["limit_clips"]:
@@ -168,7 +136,7 @@ def _make_loaders(cfg):
                               generator=make_generator(cfg["seed"]))
     val_loader = DataLoader(val_set, batch_size=cfg["batch_size"],
                             shuffle=False, num_workers=cfg["workers"])
-    return train_loader, val_loader, classes
+    return train_loader, val_loader, classes, train_set
 
 
 def _trainable(module):
@@ -304,18 +272,9 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
     best_path = os.path.join(out, "best.pt")
     history_path = os.path.join(out, "history.json")
 
-    train_loader, val_loader, classes = _make_loaders(cfg)
-    if cfg["features"]:
-        # Person A already ran, back in extract.py. The head is the model, and
-        # it is sized from the cache rather than from an encoder that is not
-        # here -- feature_dim is 62720 for view="flat", 1280 for "avg".
-        model = GRUHead(_feature_dim(train_loader), len(classes),
-                        cfg["hidden"], cfg["dense"], cfg["dropout"]).to(device)
-    else:
-        model = build_model(num_classes=len(classes), backbone=cfg["backbone"],
-                            pretrained=cfg["pretrained"], freeze=cfg["freeze"],
-                            hidden=cfg["hidden"], dense=cfg["dense"],
-                            dropout=cfg["dropout"], pool=cfg["pool"]).to(device)
+    method = methods.load(cfg["method"])
+    train_loader, val_loader, classes, train_set = _make_loaders(cfg, method)
+    model = method.model(cfg, train_set, len(classes)).to(device)
     optimizer = _make_optimizer(cfg, model)
     scheduler = _make_scheduler(cfg, optimizer)
     scaler = make_scaler(device)
@@ -340,7 +299,8 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
 
     if not quiet:
         print(describe())
-        print(f"{cfg['name']}: {len(train_loader.dataset)} train, "
+        print(f"{cfg['name']} [{cfg['method']}]: "
+              f"{len(train_loader.dataset)} train, "
               f"{len(val_loader.dataset)} val, {len(classes)} classes, "
               f"batch {cfg['batch_size']} x accum {cfg['accum']}")
         if resumed:
@@ -433,7 +393,8 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
 
     atomic_write_json(history, history_path)
 
-    row = {"name": cfg["name"], "split": cfg["split"], "variant": cfg["variant"],
+    row = {"name": cfg["name"], "method": cfg["method"],
+           "split": cfg["split"], "variant": cfg["variant"],
            "features": cfg["features"], "view": cfg["view"],
            "backbone": cfg["backbone"], "frozen": cfg["freeze"],
            "best_val_top1": best_top1, "epochs_run": epoch,
@@ -473,6 +434,7 @@ def main(argv=None):
     ap.add_argument("--clip_grad", type=float)
     ap.add_argument("--limit_clips", type=int)
     ap.add_argument("--pool", choices=("avg", "flatten"))
+    ap.add_argument("--method", help=f"one of {', '.join(methods.KNOWN)}")
     ap.add_argument("--features", help="a cache path; reads tensors not video")
     ap.add_argument("--view", choices=("flat", "grid", "avg"))
     ap.add_argument("--flip", type=float)

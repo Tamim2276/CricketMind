@@ -14,6 +14,7 @@
 # configs/mimic_author.yaml -- read that file for the provenance of each value.
 
 name: author_backbone_lr
+method: video_gru
 split: data/splits_author
 variant: box
 pool: flatten

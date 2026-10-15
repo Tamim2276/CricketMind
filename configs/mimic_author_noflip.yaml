@@ -21,6 +21,7 @@
 # which corroborates both numbers.
 
 name: mimic_author_noflip
+method: video_gru
 split: data/splits_author          # their protocol; splits_grouped is the honest one
 variant: box
 pool: flatten                      # 62720 features, from the GRU kernel shape

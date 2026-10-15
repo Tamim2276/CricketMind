@@ -6,6 +6,7 @@
 # Epochs are much faster with no backbone backward pass.
 
 name: author_frozen
+method: video_gru
 split: data/splits_author
 variant: box
 pool: flatten

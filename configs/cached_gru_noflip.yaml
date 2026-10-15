@@ -19,6 +19,7 @@
 # experiment. Corrected 2026-10-15; see plan 8.6.
 
 name: cached_gru_noflip
+method: cached_gru
 split: data/splits_author
 variant: box
 features: data/features/effnetv2s

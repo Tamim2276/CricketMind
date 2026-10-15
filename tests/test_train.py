@@ -225,7 +225,9 @@ def test_flipping_is_only_applied_to_training_clips(workspace):
     from src.data.augment import ClipFlip
     cfg = dict(T.DEFAULTS)
     cfg.update(base_cfg(workspace, flip=0.5))
-    train_loader, val_loader, _ = T._make_loaders(cfg)
+    from src import methods
+    train_loader, val_loader, _, _ = T._make_loaders(
+        cfg, methods.load(cfg["method"]))
     assert isinstance(train_loader.dataset.transform, ClipFlip)
     assert val_loader.dataset.transform is None
 
@@ -237,7 +239,8 @@ def test_flipping_is_only_applied_to_training_clips(workspace):
 # tanh's rail. These check the knob that is supposed to stop that.
 
 def small_model():
-    return T.build_model(num_classes=3, pretrained=False, pool="avg")
+    from src.models.model import build_model
+    return build_model(num_classes=3, pretrained=False, pool="avg")
 
 
 def test_one_param_group_when_backbone_lr_is_unset():
@@ -294,8 +297,9 @@ def test_a_frozen_backbone_contributes_no_group():
     cfg = dict(T.DEFAULTS)
     cfg["freeze"] = True
     cfg["backbone_lr"] = 1e-5
-    model = T.build_model(num_classes=3, pretrained=False, pool="avg",
-                          freeze=True)
+    from src.models.model import build_model
+    model = build_model(num_classes=3, pretrained=False, pool="avg",
+                        freeze=True)
     opt = T._make_optimizer(cfg, model)
     assert len(opt.param_groups) == 1
     assert opt.param_groups[0]["name"] == "head"
