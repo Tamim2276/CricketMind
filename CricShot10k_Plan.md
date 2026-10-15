@@ -3050,7 +3050,19 @@ python -m src.extract --backbone videomae_base --workers 4 --mirror
 python -m src.extract --verify --backbone videomae_base
 ```
 
-About 3.1 KB per clip (768 fp16 + header), ~31 MB per half.
+**Measured 2026-10-16:**
+
+```
+video/          9,880 clips, 0 failed (6,860 before a cut, 3,020 after)
+video_mirror/   9,880 clips, 0 failed, 6.1 min, 27.1 clips/s
+each file       3,113 bytes, 30.8 MB per half
+verify          20/20 bit-exact; logit cosine 1.0000; top-1 20/20 clips;
+                'playing cricket' 20/20
+```
+
+Faster than the 200-clip timing (27 against 18 clips/s): the short run
+paid model load and worker start-up over too few clips. Second real resume
+of a cache, again exact.
 
 The probe that ranks the caches needs the Day 9 runner, so it waits until
 then. The extraction does not have to wait.

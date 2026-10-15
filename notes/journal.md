@@ -2797,3 +2797,15 @@ recognising the sport is not telling a drive from a pull. The probe decides.
 One test bug caught before commit: a module-level `importorskip` would
 have skipped the r3d_18 tests too on a machine without transformers. Moved
 into the VideoMAE tests. 501 pass, file by file.
+
+**The full VideoMAE run (2026-10-16):**
+
+```
+video/          9,880, 0 failed -- cut at 6,860, resumed with 3,020 to go
+video_mirror/   9,880, 0 failed, 6.1 min, 27.1 clips/s
+each file       3,113 bytes, 30.8 MB per half; 37 GB free
+verify          20/20 bit-exact; cosine 1.0000; 'playing cricket' 20/20
+```
+
+My 200-clip timing said 18 clips/s; the real run did 25-27. Start-up cost
+spread over 200 clips is not small. Three of four caches done.
