@@ -19,7 +19,8 @@ reshape, and **no fallbacks**:
 A fallback -- "read avg/ if it exists, else reduce grid/" -- is the kind of
 convenience that lets two experiments silently read different numbers, and
 nothing downstream could tell you which. `avg/` is written by
-`extract.py --derive avg` (step 8.8); until then that view raises.
+`extract.py --derive avg` (step 8.8), or straight from the encoder with
+`--pool avg` (8.10, ConvNeXt); until then that view raises.
 
 **The class order comes from `classes.json`, via the same `_classes_for` that
 `dataset.py` uses.** Not re-implemented. If this file decided which shot was
@@ -72,7 +73,8 @@ class FeatureDataset(Dataset):
         if not os.path.isdir(self.root):
             extra = ""
             if view == "avg":
-                extra = "  Run: python -m src.extract --derive avg  (step 8.8)"
+                extra = ("  Run: python -m src.extract --derive avg  (step 8.8),"
+                         " or --backbone <name> --pool avg  (8.10)")
             raise FileNotFoundError(
                 f"no feature cache at {self.root} for view={view!r}.{extra}")
         if mirror and not os.path.isdir(self.mirror_root):

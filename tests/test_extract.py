@@ -459,3 +459,78 @@ def test_the_avg_view_can_flip():
     for _ in range(12):
         seen.add(float(feats[0][0].sum()))
     assert len(seen) == 2
+
+
+# --- 8.10: other backbones, and the avg view straight from the encoder -------
+
+def test_each_backbone_gets_its_own_folder_by_default():
+    from src.extract import cache_dir
+
+    assert cache_dir() == os.path.join("data", "features", "effnetv2s")
+    assert cache_dir("convnext_tiny") == os.path.join("data", "features",
+                                                      "convnext_tiny")
+    assert cache_dir("convnext_tiny", name="cnx") == os.path.join(
+        "data", "features", "cnx")
+    assert cache_dir("convnext_tiny", out_dir="x") == "x"
+
+
+def test_a_cache_folder_refuses_a_second_backbone_before_loading_it(tmp_path):
+    """Without this a second backbone finds the manifest full and does nothing."""
+    from src.extract import _hold_source
+
+    out = str(tmp_path / "cache")
+    _hold_source(out, "efficientnet_v2_s", "box")
+    _hold_source(out, "efficientnet_v2_s", "box")            # same: fine
+    with pytest.raises(SystemExit, match="--name"):
+        _hold_source(out, "efficientnet_v2_s", "seg")
+    # extract checks before it builds the model, so this costs no download
+    with pytest.raises(SystemExit, match="convnext_tiny"):
+        extract(backbone="convnext_tiny", pool="avg", out_dir=out, quiet=True)
+
+
+@needs_clips
+def test_pool_avg_writes_the_avg_view_directly_and_verifies(tmp_path):
+    from src.extract import manifest_path, verify
+
+    out = str(tmp_path / "cache")
+    assert extract(limit=2, out_dir=out, pool="avg", batch_size=2,
+                   quiet=True) == 0
+    assert extract(limit=2, out_dir=out, pool="avg", batch_size=2,
+                   mirror=True, quiet=True) == 0
+    assert not os.path.isdir(os.path.join(out, "grid"))
+    assert os.path.exists(manifest_path(out, "avg"))
+    assert os.path.exists(manifest_path(out, "avg_mirror"))
+
+    rel = clip_list(PROCESSED_BOX)[0]
+    plain = torch.load(out_path(out, "avg", rel))
+    assert plain.shape == (15, 1280)
+    assert plain.dtype == torch.float16
+    assert not torch.equal(plain, torch.load(out_path(out, "avg_mirror", rel)))
+    _check_size(out_path(out, "avg", rel), plain)
+
+    assert verify(pool="avg", out_dir=out, clips=2, quiet=True) == 0
+    # and it can fail: a sign-flipped file breaks both checks
+    torch.save(-plain, out_path(out, "avg", rel))
+    assert verify(pool="avg", out_dir=out, clips=2, quiet=True) == 2
+
+
+CONVNEXT = os.path.join("data", "features", "convnext_tiny")
+needs_convnext = pytest.mark.skipif(
+    not os.path.isdir(os.path.join(CONVNEXT, "avg")),
+    reason="no ConvNeXt cache; run src.extract --backbone convnext_tiny")
+
+
+@needs_convnext
+def test_the_convnext_cache_is_768_wide_and_complete():
+    from src.extract import manifest_path
+    from src.utils.checkpoint import read_results
+
+    ok = 0
+    for row in read_results(manifest_path(CONVNEXT, "avg")):
+        if row.get("ok"):
+            ok += 1
+    assert ok == len(clip_list(PROCESSED_BOX))
+    feats = FeatureDataset(SPLIT, features=CONVNEXT, view="avg")
+    assert feats.item_shape == (15, 768)
+    assert feats.feature_dim == 768
+    assert feats.missing == FeatureDataset(SPLIT, view="avg").missing

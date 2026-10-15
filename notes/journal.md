@@ -2656,3 +2656,60 @@ extractor can afford nine minutes; it cannot afford a half-written file.
 The pay-off is the next experiment: A14 can now run on `view: avg`, where the
 GRU's input layer is 1280 x 384 = 0.49 M parameters instead of 24.1 M and an
 epoch reads 231 MB instead of 11 GB.
+
+### 8.10 part 1: ConvNeXt-Tiny, and why it did not just plug in
+
+The plan said `--backbone convnext_tiny` and go. It crashed:
+
+```
+FrameEncoder("convnext_tiny", pool="avg")
+-> ValueError: backbone returned (1, 768, 1, 1), expected (N, D)
+```
+
+ConvNeXt's head is `LayerNorm2d -> Flatten -> Linear`, and `_strip_classifier`
+replaced the whole head with `Identity`. The LayerNorm is the network's last
+real layer, not part of the classifier. So the strip now drops only the Linear
+(and Dropout, which would fire in a trainable run). EfficientNet's head is
+`Dropout -> Linear`, so nothing is kept and it is still `Identity`; the 8.5
+bit-exact checks still hold.
+
+Two more things followed from it:
+
+- **ConvNeXt's avg view cannot come from a grid**: the LayerNorm runs after
+  the pool, and LN(mean) is not mean(LN). `--pool avg` writes `avg/` directly.
+- **The default cache folder was `effnetv2s` for every backbone.** The second
+  backbone would have seen a full manifest and done nothing, silently. It now
+  defaults to the backbone's name, and `source.json` pins backbone + variant.
+
+The new check for a pooled cache is that the pretrained ImageNet Linear on
+the cached vector reproduces the full model's logits. Smoke run, 4 clips:
+
+```
+round trip            4/4 bit-exact
+ImageNet head         logit cosine 0.9999, top-1 45/45 frames
+same, no LayerNorm    logit cosine 0.87,   top-1 11-12/15 frames
+                      (features ~6x smaller: mean |x| 0.09 vs 0.51)
+```
+
+Top-1 mostly survives the bug, so an accuracy check would have missed it.
+The cosine catches it.
+
+Tests: 484 pass, 2 skip (avg already derived; no ConvNeXt cache yet). The
+suite crashed with MemoryError in one process: llama-server and a CricketMind
+eval were using the RAM, with 4.2 of 15.6 GB free. Run file by file, every
+file passes.
+
+**The full ConvNeXt run (2026-10-16):**
+
+```
+avg/           9,880 clips, 0 failed, 9.2 min, 17.9 clips/s
+avg_mirror/    9,880 clips, 0 failed, 10.9 min, 15.0 clips/s
+each file      24,617 bytes, 243 MB per half, 0 .tmp, 38 GB free
+verify         20/20 bit-exact; logit cosine 0.9999, top-1 43/45 frames
+```
+
+I guessed ~225 MB per half; it is 243 because every file carries ~1.6 KB of
+torch.save header on top of its 23,040 bytes. The 43/45 is not a failure:
+cricket frames are not ImageNet classes, so the top two logits are often
+nearly tied and bf16 noise picks either. Cosine 0.9999 says it is the right
+layer.

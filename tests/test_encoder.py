@@ -104,3 +104,34 @@ def test_another_backbone_with_a_different_head_attribute():
 def test_the_imagenet_head_is_gone(enc):
     with torch.no_grad():
         assert enc(clip(1, 1)).shape[-1] != 1000
+
+
+# ---- ConvNeXt: the last layer lives inside the "classifier" --------------
+
+def test_efficientnet_head_still_becomes_identity(enc):
+    """Dropout -> Linear leaves nothing to keep, so the baseline is untouched."""
+    assert isinstance(enc.backbone.classifier, torch.nn.Identity)
+
+
+def test_convnext_keeps_its_final_layernorm():
+    """Its head is LayerNorm -> Flatten -> Linear. Only the Linear goes.
+
+    Dropping the whole head returned (N, 768, 1, 1) with no LayerNorm, about
+    6x too small. Measured 2026-10-15: the ImageNet logits then agree at
+    cosine 0.87 instead of 1.0.
+    """
+    from torchvision.models import get_model
+
+    e = FrameEncoder("convnext_tiny", pretrained=False).eval()
+    full = get_model("convnext_tiny", weights=None).eval()
+    result = e.backbone.load_state_dict(full.state_dict(), strict=False)
+    assert result.missing_keys == []
+    assert sorted(result.unexpected_keys) == ["classifier.2.bias",
+                                              "classifier.2.weight"]
+    assert e.out_dim == 768
+
+    x = clip(1, 2)
+    with torch.no_grad():
+        mine = full.classifier[2](e(x))
+        theirs = full(x.flatten(0, 1)).unflatten(0, (1, 2))
+    assert torch.allclose(mine, theirs, atol=1e-5)

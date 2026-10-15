@@ -31,6 +31,7 @@ the float32 normalisation were. That is why --workers matters and a bigger
 batch does not.
 """
 import argparse
+import json
 import math
 import os
 import sys
@@ -39,22 +40,27 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
+from torchvision.models import get_model
 
 from src.data.augment import ClipFlip
 from src.data.dataset import IMAGENET_MEAN, IMAGENET_STD, PROCESSED
 from src.models.encoder import DEFAULT_BACKBONE, DEFAULT_SIZE, FrameEncoder
 from src.utils import progress
-from src.utils.checkpoint import append_result, atomic_save, read_results
+from src.utils.checkpoint import (append_result, atomic_save,
+                                  atomic_write_json, read_results)
 from src.utils.device import describe, get_amp_settings, get_device
 
 __all__ = ["clip_list", "grid_shape", "encode_clip", "extract", "out_path",
-           "verify", "manifest_path", "pool_grid", "derive", "SILU_FLOOR"]
+           "verify", "manifest_path", "pool_grid", "derive", "cache_dir",
+           "SILU_FLOOR", "POOL_VIEW"]
 
 FEATURES = os.path.join("data", "features")
 DEFAULT_NAME = "effnetv2s"
 FP16_MAX = 65504.0          # anything larger becomes inf, silently
 SILU_FLOOR = -0.278464556   # min of x*sigmoid(x); EfficientNet ends in SiLU
+POOL_VIEW = {"flatten": "grid", "avg": "avg"}
 
 
 def clip_list(root):
@@ -75,6 +81,37 @@ def clip_list(root):
 
 def out_path(out_dir, view, rel):
     return os.path.join(out_dir, view, rel.replace("/", os.sep) + ".pt")
+
+
+def cache_dir(backbone=DEFAULT_BACKBONE, name=None, out_dir=None):
+    """data/features/<name>, where the name defaults to the backbone's.
+
+    It used to default to effnetv2s for every backbone. A second backbone
+    would then find that manifest full and quietly write nothing.
+    """
+    if out_dir:
+        return out_dir
+    if not name:
+        if backbone == DEFAULT_BACKBONE:
+            name = DEFAULT_NAME
+        else:
+            name = backbone
+    return os.path.join(FEATURES, name)
+
+
+def _hold_source(out_dir, backbone, variant):
+    """One folder, one backbone, one variant. Written once, then enforced."""
+    path = os.path.join(out_dir, "source.json")
+    want = {"backbone": backbone, "variant": variant}
+    if not os.path.exists(path):
+        atomic_write_json(want, path)
+        return
+    with open(path, encoding="utf-8") as fh:
+        have = json.load(fh)
+    if have != want:
+        raise SystemExit(
+            f"{out_dir} holds {have['backbone']} on {have['variant']}, "
+            f"not {backbone} on {variant}. Use --name for a new folder.")
 
 
 def grid_shape(encoder, size=DEFAULT_SIZE):
@@ -115,6 +152,8 @@ def grid_shape(encoder, size=DEFAULT_SIZE):
 def encode_clip(x, encoder, device, amp, grid, fp32=False):
     """(T, 3, H, W) or (B, T, 3, H, W) -> (T, C, h, w) or (B, T, C, h, w) fp16.
 
+    With grid=None the encoder is already pooled and this returns (.., T, D).
+
     **The one definition of how a clip becomes a cached tensor.** The verify
     step in 8.5 calls this same function and compares its output to the files,
     so that check tests serialisation and layout rather than re-implementing
@@ -141,7 +180,9 @@ def encode_clip(x, encoder, device, amp, grid, fp32=False):
             with torch.autocast(device_type=amp.device_type, dtype=amp.dtype):
                 feats = encoder(x.to(device))
 
-    feats = feats.float().unflatten(-1, grid)      # (B, T, C*h*w) -> (B,T,C,h,w)
+    feats = feats.float()
+    if grid is not None:
+        feats = feats.unflatten(-1, grid)          # (B, T, C*h*w) -> (B,T,C,h,w)
     feats = feats.to("cpu", torch.float16)
     if single:
         return feats[0]
@@ -206,7 +247,8 @@ class _Clips(Dataset):
 
 def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
             out_dir=None, processed=PROCESSED, limit=None, batch_size=4,
-            workers=0, fp32=False, mirror=False, device=None, quiet=False):
+            workers=0, fp32=False, mirror=False, pool="flatten", device=None,
+            quiet=False):
     """One pass over every clip. Re-running skips what the manifest lists.
 
     `mirror=True` encodes the left-right flipped clip instead, into
@@ -214,15 +256,20 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
     features, and flipping the cached grid instead gives cosine 0.41 against
     the real thing -- measured, not assumed. Because `ClipFlip` is a binary
     choice, caching both halves is **exact** rather than an approximation.
+
+    `pool="avg"` writes `avg/` straight from the encoder, for backbones whose
+    pooled vector is not the mean of their grid. ConvNeXt is one: its last
+    layer is a LayerNorm after the pool, and LN(mean) is not mean(LN).
     """
-    name = name or DEFAULT_NAME
-    out_dir = out_dir or os.path.join(FEATURES, name)
+    if pool not in POOL_VIEW:
+        raise ValueError(f"pool must be one of {tuple(POOL_VIEW)}, got {pool!r}")
+    out_dir = cache_dir(backbone, name, out_dir)
     root = os.path.join(processed, variant)
+    view = POOL_VIEW[pool]
     if mirror:
-        view = "grid_mirror"
-    else:
-        view = "grid"
+        view += "_mirror"
     manifest = manifest_path(out_dir, view)
+    _hold_source(out_dir, backbone, variant)
 
     rels = clip_list(root)
     if limit:
@@ -239,17 +286,18 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
     device = device or get_device()
     amp = get_amp_settings(device)
     encoder = FrameEncoder(backbone, pretrained=True, freeze=True,
-                           pool="flatten").to(device).eval()
-    grid = grid_shape(encoder)
+                           pool=pool).to(device).eval()
+    grid = None
+    if pool == "flatten":
+        grid = grid_shape(encoder)
 
-    os.makedirs(out_dir, exist_ok=True)
     if not quiet:
         print(describe(device))
         print(f"{backbone} {variant}: {len(rels)} clips, {len(done)} already "
               f"done, {len(todo)} to go")
         if mirror:
             print("MIRRORED: left-right flipped clips, for flip augmentation")
-        print(f"grid {grid}  out_dim {encoder.out_dim}  "
+        print(f"pool {pool}  grid {grid}  out_dim {encoder.out_dim}  "
               f"-> {out_path(out_dir, view, '<class>/<clip>')}")
         if fp32:
             print("fp32: autocast off, so these will not match a bf16 run")
@@ -314,7 +362,8 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
 
 
 def verify(variant="box", backbone=DEFAULT_BACKBONE, name=None, out_dir=None,
-           processed=PROCESSED, clips=20, seed=0, device=None, quiet=False):
+           processed=PROCESSED, clips=20, seed=0, pool="flatten", device=None,
+           quiet=False):
     """Check an existing cache against the encoder that is supposed to have
     written it. Returns the number of checks that failed.
 
@@ -324,9 +373,11 @@ def verify(variant="box", backbone=DEFAULT_BACKBONE, name=None, out_dir=None,
     """
     import random
 
-    name = name or DEFAULT_NAME
-    out_dir = out_dir or os.path.join(FEATURES, name)
+    out_dir = cache_dir(backbone, name, out_dir)
     root = os.path.join(processed, variant)
+    if pool == "avg":
+        return _verify_pooled(backbone, out_dir, root, clips, seed, device,
+                              quiet)
 
     rows = []
     for row in read_results(os.path.join(out_dir, "manifest.jsonl")):
@@ -434,6 +485,103 @@ def verify(variant="box", backbone=DEFAULT_BACKBONE, name=None, out_dir=None,
     return bad
 
 
+def _head_agreement(backbone, out_dir, rows, data, device, n=3):
+    """The ImageNet Linear on the cached vectors, against the whole model.
+
+    If the cache holds the vector the pretrained Linear reads, the two give
+    the same logits up to bf16 noise. Leave out ConvNeXt's final LayerNorm, or
+    store the wrong layer, and they do not -- whatever the accuracy says.
+    """
+    full = get_model(backbone, weights="DEFAULT").to(device).eval()
+    linear = None
+    for layer in full.modules():
+        if isinstance(layer, nn.Linear):
+            linear = layer
+    worst = 1.0
+    agree = 0
+    frames = 0
+    with torch.no_grad():
+        for i in range(min(n, len(rows))):
+            x = data[i][0].contiguous().to(device)          # (T, 3, H, W)
+            want = full(x).float()
+            saved = torch.load(out_path(out_dir, "avg", rows[i]),
+                               map_location="cpu")
+            got = linear(saved.float().to(device)).float()
+            cos = F.cosine_similarity(got, want, dim=1)
+            worst = min(worst, float(cos.min()))
+            agree += int((got.argmax(1) == want.argmax(1)).sum())
+            frames += int(x.shape[0])
+    return worst, agree, frames
+
+
+def _verify_pooled(backbone, out_dir, root, clips, seed, device, quiet):
+    """verify() for an avg/ cache written by pool="avg". Two checks.
+
+    Checks 2 and 3 of the grid version do not apply: there is no grid to fold,
+    and the SiLU floor is EfficientNet's, not every backbone's.
+    """
+    import random
+
+    rows = []
+    for row in read_results(manifest_path(out_dir, "avg")):
+        if row.get("ok"):
+            rows.append(row["clip"])
+    if not rows:
+        raise SystemExit(f"no avg cache to verify at {out_dir}")
+    random.Random(seed).shuffle(rows)
+    rows = rows[:clips]
+
+    device = device or get_device()
+    amp = get_amp_settings(device)
+    encoder = FrameEncoder(backbone, pretrained=True, freeze=True,
+                           pool="avg").to(device).eval()
+    data = _Clips(root, rows)
+
+    # check 1: bit-exact round trip, as for the grid
+    exact = 0
+    worst_abs = 0.0
+    for start in range(0, len(rows), 4):
+        chunk = []
+        for i in range(start, min(start + 4, len(rows))):
+            chunk.append(data[i][0])
+        feats = encode_clip(torch.stack(chunk), encoder, device, amp, None)
+        for j in range(feats.shape[0]):
+            saved = torch.load(out_path(out_dir, "avg", rows[start + j]),
+                               map_location="cpu")
+            if torch.equal(saved, feats[j]):
+                exact += 1
+            gap = (saved.float() - feats[j].float()).abs()
+            worst_abs = max(worst_abs, float(gap.max()))
+    ok_1 = exact == len(rows)
+
+    # check 2: it is the vector the pretrained head reads
+    worst_cos, agree, frames = _head_agreement(backbone, out_dir, rows, data,
+                                               device)
+    ok_2 = worst_cos > 0.99
+    bad = int(not ok_1) + int(not ok_2)
+
+    if not quiet:
+        def mark(ok):
+            if ok:
+                return "PASS"
+            return "FAIL"
+
+        print(f"verifying {len(rows)} clips from {out_dir}/avg  ({backbone})")
+        print(f"  1 round-trip against encode_clip   {mark(ok_1)}   "
+              f"{exact}/{len(rows)} bit-exact  max abs gap {worst_abs:.4f}")
+        if not ok_1:
+            print("      if avg/ came from --derive, verify the grid instead")
+        print(f"  2 ImageNet head reads it           {mark(ok_2)}   "
+              f"worst logit cosine {worst_cos:.4f}  "
+              f"top-1 agrees {agree}/{frames} frames")
+        print()
+        if bad:
+            print(f"{bad} of 2 FAILED -- do not train on this cache")
+        else:
+            print("both passed")
+    return bad
+
+
 def pool_grid(grid):
     """(T, C, H, W) fp16 -> (T, C) fp16: the average over the spatial grid.
 
@@ -448,7 +596,8 @@ def pool_grid(grid):
     return grid.float().mean(dim=(-1, -2)).half()
 
 
-def derive(view="avg", name=None, out_dir=None, quiet=False):
+def derive(view="avg", name=None, out_dir=None, backbone=DEFAULT_BACKBONE,
+           quiet=False):
     """The 1280-wide view, made from grid/ on the CPU. Returns failures.
 
     No encoder and no second pass over the video: 8.5 showed averaging the
@@ -459,8 +608,7 @@ def derive(view="avg", name=None, out_dir=None, quiet=False):
     """
     if view != "avg":
         raise ValueError(f"only the avg view can be derived, got {view!r}")
-    name = name or DEFAULT_NAME
-    out_dir = out_dir or os.path.join(FEATURES, name)
+    out_dir = cache_dir(backbone, name, out_dir)
     tty = sys.stdout.isatty()
     failed = 0
 
@@ -532,7 +680,8 @@ def main(argv=None):
                     help="--verify only: how many clips to check")
     ap.add_argument("--variant", default="box", choices=("box", "seg"))
     ap.add_argument("--backbone", default=DEFAULT_BACKBONE)
-    ap.add_argument("--name", help="cache directory name, default effnetv2s")
+    ap.add_argument("--name", help="cache folder name; default effnetv2s for "
+                    "the default backbone, else the backbone's own name")
     ap.add_argument("--out", dest="out_dir", help="default data/features/<name>")
     ap.add_argument("--processed", default=PROCESSED)
     ap.add_argument("--limit", type=int, help="first N clips, for a smoke test")
@@ -543,6 +692,9 @@ def main(argv=None):
                     help="no autocast; will not match a bf16-trained run")
     ap.add_argument("--mirror", action="store_true",
                     help="encode the flipped clips, into grid_mirror/ (8.7)")
+    ap.add_argument("--pool", default="flatten", choices=tuple(POOL_VIEW),
+                    help="avg writes avg/ directly, for ConvNeXt and friends "
+                    "(8.10)")
     ap.add_argument("--derive", choices=("avg",),
                     help="make the pooled view from grid/, no GPU (8.8)")
     a = ap.parse_args(argv)
@@ -553,7 +705,7 @@ def main(argv=None):
     pooled_view = opts.pop("derive")
     if pooled_view:
         return derive(view=pooled_view, name=opts["name"],
-                      out_dir=opts["out_dir"])
+                      out_dir=opts["out_dir"], backbone=opts["backbone"])
     if do_verify:
         for unused in ("limit", "batch_size", "workers", "fp32", "mirror"):
             opts.pop(unused)

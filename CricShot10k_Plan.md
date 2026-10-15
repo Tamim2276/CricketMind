@@ -2895,6 +2895,65 @@ time axis left to model. And CLIP does **not** use ImageNet normalisation; it
 has its own mean and std, so the constants in `extract.py` have to come from
 the extractor rather than from `dataset.py`.
 
+**Built in four parts, one backbone each, because the four need different
+code** (checked 2026-10-15). Only ConvNeXt goes through the existing
+`FrameEncoder`. r3d_18 is in torchvision but takes the whole clip at once and
+needs its own encoder path; VideoMAE and CLIP need `transformers`, which is not
+installed. The video models also expect 16 frames, and the clips have 15.
+
+**Part 1, ConvNeXt-Tiny: built 2026-10-15.** It did not "just work" with
+`--backbone convnext_tiny`. Three fixes:
+
+1. **Its last layer is hidden in its classifier.** ConvNeXt's head is
+   `LayerNorm -> Flatten -> Linear`, and `_strip_classifier` threw the whole
+   head away, so the encoder returned `(N, 768, 1, 1)` with no LayerNorm and
+   crashed. It now drops only the Linear (and any Dropout). EfficientNet's
+   head is `Dropout -> Linear`, so it still becomes `Identity`; the baseline
+   is unchanged.
+2. **Its avg view cannot be derived from a grid.** The LayerNorm runs after
+   the pool, and LN(mean) is not mean(LN). So `--pool avg` writes `avg/`
+   straight from the encoder. That is also the smaller job: 768 numbers per
+   frame, about 225 MB per half.
+3. **The cache folder defaulted to `effnetv2s` for every backbone.** A second
+   backbone would have found that manifest full and quietly written nothing,
+   the same trap as `build_dataset --variants seg` on Day 4. The folder now
+   defaults to the backbone's name, and `source.json` records backbone and
+   variant on the first write. A mismatch stops the run before the model
+   loads.
+
+**Its check is different from the grid's.** There is no grid to fold, and the
+SiLU floor is EfficientNet's. So `--verify --pool avg` runs two checks: the
+bit-exact round trip, and **the ImageNet Linear applied to the cached vectors
+must reproduce the whole model's logits**. That proves the file holds the
+vector the pretrained head reads. A 4-clip smoke run gave logit cosine 0.9999
+and top-1 agreement on 45 of 45 frames. With the LayerNorm left out it gives
+**0.87, and top-1 still agrees on 11-12 of 15 frames**, which is why an
+accuracy-style check would have passed the bug.
+
+```bash
+python -m src.extract --backbone convnext_tiny --pool avg --workers 4
+python -m src.extract --backbone convnext_tiny --pool avg --workers 4 --mirror
+python -m src.extract --verify --backbone convnext_tiny --pool avg
+```
+
+**Measured 2026-10-16:**
+
+```
+avg/           9,880 clips, 0 failed, 9.2 min, 17.9 clips/s
+avg_mirror/    9,880 clips, 0 failed, 10.9 min, 15.0 clips/s
+each file      24,617 bytes (15 x 768 fp16 + header), 243 MB per half
+largest value  10.9 -- fp16 headroom 5,985x
+verify         20/20 bit-exact; logit cosine 0.9999, top-1 43/45 frames
+```
+
+Same speed as EfficientNet's 19.4 clips/s although ConvNeXt-Tiny is the
+lighter network: the loader is the bottleneck, as on Day 8. The two top-1
+misses are near-tied logits flipping under bf16; the cosine is what tests
+the layer.
+
+The probe that ranks the caches needs the Day 9 runner, so it waits until
+then. The extraction does not have to wait.
+
 **Family V needs un-segmented frames, and they already exist.** That is
 `data/processed/box`, built alongside `seg` in one pass on Day 4. No second
 `build_dataset.py` run — point the extractor at `--variant box`.

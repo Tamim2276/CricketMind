@@ -48,14 +48,30 @@ def _find_linear(mod: nn.Module):
 
 
 def _strip_classifier(model: nn.Module) -> None:
-    """Drop the 1000-class ImageNet head."""
+    """Drop the 1000-class Linear, keep the real layers in front of it.
+
+    ConvNeXt's head is LayerNorm -> Flatten -> Linear, and that LayerNorm is
+    the network's last layer, not part of the classifier. Dropout goes: it
+    would fire in a trainable run. EfficientNet's head is Dropout -> Linear,
+    so it still becomes Identity, exactly as before.
+    """
     for attr in ("classifier", "fc", "head"):
         mod = getattr(model, attr, None)
         if mod is None:
             continue
         if _find_linear(mod) is None:
             continue
-        setattr(model, attr, nn.Identity())
+        keep = []
+        if isinstance(mod, nn.Sequential):
+            for layer in mod:
+                if isinstance(layer, nn.Linear):
+                    break
+                if not isinstance(layer, nn.Dropout):
+                    keep.append(layer)
+        if keep:
+            setattr(model, attr, nn.Sequential(*keep))
+        else:
+            setattr(model, attr, nn.Identity())
         return
     raise ValueError(f"no classifier found on {type(model).__name__}")
 
