@@ -2395,3 +2395,119 @@ tolerance would have passed on the broken version and told me nothing.
 worker counts agree, and that `dataset.py` really is channels_last -- so if it
 ever stops being, the `.contiguous()` gets reconsidered on evidence instead of
 deleted on a guess.
+
+### 8.6 A feature cache is a frozen backbone -- my target was wrong
+
+Epoch 1 of `cached_gru_noflip` came out at train loss 2.3726 / top1 23.47% /
+pin 39%, against the 1.9928 / 35.21% / 0% I had set as the target. I had
+written that epoch 1's loss is "nearly a pure function of the inputs", which is
+true -- and then picked a target whose inputs **change during epoch 1**.
+
+`mimic_author_noflip` has `freeze: false`. Its backbone updates on every one of
+1,580 steps, so the features its head sees at step 1,500 are better than the
+ones it saw at step 1. A cache is fixed. **No cached run can ever reproduce a
+trainable-backbone run.**
+
+The right comparison was in the project already:
+
+```
+run                     backbone    ep1 train  ep1 val   pin
+author_frozen (video)   frozen        23.07%    30.37%   41%
+cached_gru_noflip       frozen        23.47%    26.20%   39%
+mimic_author_noflip     TRAINABLE     35.21%    53.98%    0%
+```
+
+0.4 points from the frozen row, with the same 40%-ish pinning. **That is the
+evidence the cache is correct**, and it was sitting in front of me labelled as
+a failure for ten minutes.
+
+`author_frozen` predates the BatchNorm fix, so that table is suggestive rather
+than conclusive; the clean version is two epochs of the frozen config on video
+with today's code, which is 15 minutes and worth doing.
+
+**What it means for Phase 3, and it is not small.** The 56 cached rows of
+Families A, D and V are all frozen-backbone runs, so they are comparable to
+each other and **not** to 78.14%. The plan always said those families freeze --
+section 6 is explicit -- but 8.6's check had the wrong reference pinned to it,
+and that would have read as "the cache is broken" for every one of them.
+Days 28-30 are the answer: take the best heads out of the cheap frozen sweep
+and re-run only those end to end.
+
+Letting the run finish. It is not confirming a known number -- it is producing
+the **frozen baseline**, which `author_frozen` never did because it was
+interrupted at epoch 12.
+
+### Family A gains two rows, because 39% dead units is a lead, not a curiosity
+
+Added A13 and A14, so the plan is now **46 experiments / 92 runs** (30 cached,
+16 end to end). Thirty edits to keep the arithmetic consistent across the
+document.
+
+Both come out of 8.6's `pin 39%`:
+
+```
+A13   LayerNorm on the features, then GRU-128
+A14   GRU-128 on the "avg" view (1,280) instead of "flat" (62,720)
+```
+
+A14 is the one I would not have thought to write a week ago. `flatten` is what
+the authors did and `encoder.py` argues for it: the 7x7 grid holds bat position
+relative to the body, which is much of the signal in a cricket shot. **But
+flatten is also what saturates the GRU** -- 49x more inputs to sum is ~7x
+larger pre-activations under random init, and a tanh gate pins. So the two
+things are in direct tension and nobody has measured which wins. Two minutes
+on the cache answers it.
+
+Also corrected, and it is the kind of error that quietly breaks a schedule:
+Family A was budgeted at **0.06 h a run**. The measured `flat` run is **0.15 h
+at best and really 1.2 h** -- 70 minutes, 2 min an epoch over 34 epochs. On
+`flat` alone Family A costs 16 GPU-hours, not 2.1. The plan's cheap-families
+estimate only holds if most of those heads can run on `avg`, which is exactly
+what A14 tests. So A14 is both an experiment and a dependency check on the
+schedule.
+
+The strategic point worth keeping, because the question came up directly: the
+30 cached rows are **screening**, not the final answer. Their job is to decide
+which 16 experiments get the 120 end-to-end GPU-hours, where 78.14% can
+actually be beaten. Days 28-30 are the bridge -- top 3 from the cheap sweep,
+re-run end to end with 3 seeds.
+
+### 8.6 complete: the frozen baseline is 51.20%
+
+```
+best        epoch 68   val 51.20%   top3 80.62%
+final       epoch 78   train 86.90% / val 51.07%  -> 35.8-point gap
+pin         39% to 53%, mean 45%, never resolved
+wall clock  93.6 min, 78 epochs, clean finish (no resume.pt, figure drawn)
+```
+
+So the three reference points now read:
+
+```
+mimic_author          trainable + flip   79.23% val   78.14% test
+mimic_author_noflip   trainable          75.95% val
+cached_gru_noflip     FROZEN             51.20% val     <- Family A's reference
+```
+
+**Freezing costs 24.75 points**, not the 12 I wrote from Day 7's unfinished
+comparison. Every Family A, D and V row sits in this regime.
+
+Two things in the run that are leads rather than noise:
+
+**A 35.8-point train/val gap.** 86.90% train against 51.07% val. The head is
+memorising, because frozen ImageNet features give it nothing generalisable to
+latch onto. That makes augmentation worth far more here than on the baseline,
+where the gap was 10.3 -- so 8.7's mirrored cache is better motivated now than
+when it was written.
+
+**pin never resolved.** 39% at epoch 1, 45% mean, 46% at epoch 78. Not a
+warm-up transient; a permanent loss of about half the GRU for the whole run.
+A13 goes after exactly this.
+
+**And the lr tail is a waste to fix before Phase 3**: epochs 54-78 ran at
+lr <= 1e-06 for 30 minutes and bought **+0.19 points** -- three val clips out
+of 1,584. `min_lr: 0.0` lets plateau divide by ten forever, down to 1e-08 by
+epoch 73, and each noise-sized "best" resets patience by 10 epochs. At 92 runs
+that is roughly 30 GPU-hours spent resampling validation noise. The experiment
+registry's base config should carry `min_lr: 1.0e-06`; `mimic_author.yaml`
+keeps 0.0 because it reproduces the authors and every baseline used it.

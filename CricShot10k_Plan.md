@@ -1,8 +1,8 @@
 # CricShot10k — The Plan
 
 **Goal.** First reproduce what Dihan et al. achieved (89.09% top-1), from code
-you wrote. Then run 44 different approaches **on two different data splits** and
-record all 88 results. Then combine and tune the best ones.
+you wrote. Then run 46 different approaches **on two different data splits** and
+record all 92 results. Then combine and tune the best ones.
 
 > **Status 2026-10-13.** Phase 1 is complete and tagged at **78.14%** test
 > top-1, not 89.09%. Six candidate causes were eliminated by measurement
@@ -372,7 +372,7 @@ src/
   plot.py            Day 7  one figure per run, drawn automatically
   extract.py         Day 8  clips -> cached feature tensors, resumable
   experiments/
-    registry.py      Day 9  44 experiment IDs as data
+    registry.py      Day 9  46 experiment IDs as data
     run.py           Day 9  one ID -> two splits -> two ledger rows
 configs/
   mimic_author.yaml  Day 6  the authors' exact settings
@@ -690,7 +690,7 @@ first removes that ambiguity permanently.
 Then every experiment runs on both, and the gap between the two numbers is a
 result in its own right.
 
-### Why running all 44 twice is affordable
+### Why running all 46 twice is affordable
 
 **A frozen backbone's features depend only on the clip, not on the split.** One
 feature cache serves both; changing the split is a different list of filenames
@@ -698,22 +698,29 @@ over the same files.
 
 | family | n | h each | 1 split | both splits |
 |---|---|---|---|---|
-| A temporal heads | 12 | 0.06 | 0.7 h | 1.4 h |
+| A temporal heads | 14 | 0.15 | 2.1 h | 4.2 h |
 | D classical ML | 6 | 0.08 | 0.5 h | 1.0 h |
 | V video-pretrained | 10 | 0.05 | 0.5 h | 1.0 h |
 | B CNN backbones | 8 | 3.0 | 24 h | 48 h |
 | C 3D / video | 8 | 4.5 | 36 h | 72 h |
-| **total** | **44** | | **62 h** | **123 h** |
+| **total** | **46** | | **63 h** | **126 h** |
 
-The 28 cached experiments cost **1.7 extra hours** for 28 extra rows. The 16
+The 30 cached experiments cost **3.1 extra hours** for 30 extra rows. The 16
 end-to-end ones cost 60 extra hours, which is the real price of this decision.
+
+**Family A's `h each` is 0.15, not 0.06, and that is now a measurement.** The
+`flat` view took **70 minutes** a run on 2026-10-15 -- 2 min an epoch over 34
+epochs, because a `62720 x 384` GRU kernel is 24.1 M parameters and an epoch
+reads 11.0 GB off disk. The 0.15 h assumes the `avg` view for the heads that do
+not need the grid; on `flat` alone Family A would cost 16 hours, not 2.1.
+**A14 exists partly to find out which heads can use `avg`.**
 
 ### Run the cached families first, and here is why
 
-It is not just about getting easy rows early. The 28 cached experiments
+It is not just about getting easy rows early. The 30 cached experiments
 **measure whether the leak gap depends on the architecture**:
 
-- If the gap is stable across all 28 -- say 6.2% ± 0.8% whatever the head -- it
+- If the gap is stable across all 30 -- say 6.2% ± 0.8% whatever the head -- it
   is a property of the **data**, not the model. That is a clean, defensible
   finding about a new benchmark.
 - If it swings by architecture -- if 3D models exploit match context much harder
@@ -740,7 +747,7 @@ lands.
 
 Two days longer than the original plan, because building from nothing with the
 code explained is slower than editing what was there. The two days come out of
-Phase 3, where Family E joins F and W as stretch work — that still leaves **44
+Phase 3, where Family E joins F and W as stretch work — that still leaves **46
 committed experiments**, well past the 30 you need.
 
 ## Day 1 — Foundations: device, seed, splits
@@ -817,7 +824,7 @@ whole reason the same repo will run on Kaggle in Phase 3 without edits.
 ### 1.3 `seed.py` — make a run repeatable (≈15 min)
 
 **Why.** Two runs of the same experiment must give the same number, or you
-cannot tell a real improvement from luck. With 44 experiments coming, that
+cannot tell a real improvement from luck. With 46 experiments coming, that
 distinction is the entire point.
 
 **Build.** `src/utils/seed.py`: one `set_seed(n)` that seeds Python, NumPy and
@@ -993,7 +1000,7 @@ cannot fail proves nothing.
 
 ### 2.2 Prove the ledger works before you depend on it (≈15 min)
 
-**Why.** 44 experiments are coming. Finding out in week three that rows were
+**Why.** 46 experiments are coming. Finding out in week three that rows were
 being lost is not recoverable.
 
 **Build.** Nothing new — `append_result` and `read_results` already exist.
@@ -1654,7 +1661,7 @@ together -- slightly more than "build nothing", because Day 6 needs it and
 
 > **Phase 3 arithmetic.** At batch 6, 0.353 s a step, 6,341 train clips is
 > ~1,057 steps, about **6 minutes an epoch**: 3 hours for a 30-epoch run and
-> **~11 days of GPU for 88 runs**. Fine-tuning end to end every time is not
+> **~11 days of GPU for 92 runs**. Fine-tuning end to end every time is not
 > affordable. The frozen-encoder rows are how most of that table gets filled.
 
 ---
@@ -2006,7 +2013,7 @@ tested and ruled out by measurement:
 | 1 | padding swept 0→0.5 and both square rules; see `tools/crop_sweep.py` |
 | 2 | present, and worth **+3.28** measured (their own ablation says +2.37) |
 | 3 | early stop fired at epochs 45 and 54, after four lr reductions |
-| 4 | tested — freezing the backbone is **12 points worse**, not better |
+| 4 | tested — freezing the backbone is **28 points worse**, not better (47.98% against 75.95%, both converged; the 12 points first written here compared epoch 11 to epoch 5 and was not a converged comparison) |
 | 5 | ImageNet mean/std, correct for torchvision weights |
 | 6 | RGB beats BGR on the authors' own model, so the order is right |
 
@@ -2081,9 +2088,9 @@ Pull↔Hook.
 
 ---
 
-# PHASE 2 — Make 88 runs affordable (Days 8–9)
+# PHASE 2 — Make 92 runs affordable (Days 8–9)
 
-Forty-four experiments on two splits is **88 runs**. The baseline took
+Forty-six experiments on two splits is **92 runs**. The baseline took
 **199 minutes** (`mimic_author`, 45 epochs, `experiments/results.jsonl`), and
 the segmentation run took **380**. Eighty-eight of those is roughly **300
 hours** — twelve days of uninterrupted GPU on a desktop that loses power most
@@ -2092,7 +2099,7 @@ afternoons. You are not going to get there by being patient.
 You get there by noticing that the backbone runs forty-five times for nothing.
 
 In `mimic_author` the encoder is trainable, so its features change every epoch
-and must be recomputed. But **most of the 44 experiments never touch the
+and must be recomputed. But **most of the 46 experiments never touch the
 encoder.** Family A swaps the temporal head — GRU → LSTM → BiLSTM →
 transformer → TCN → attention pooling. Family D swaps the classifier — SVM,
 XGBoost, logistic regression. For all of those the encoder is *frozen*, which
@@ -2460,7 +2467,7 @@ later.
 ### 8.5 Prove the cache holds the same numbers (≈30 min)
 
 **Why.** This is the most important check in Phase 2, and the reason is in the
-plan's own rules: **a silently wrong cache poisons all 56 rows after it.** The
+plan's own rules: **a silently wrong cache poisons all 60 rows after it.** The
 accuracy check in 8.6 is too blunt to catch a subtle error — a transposed grid
 or a half-written file would still train to *some* number, and you would spend
 Phase 3 comparing experiments to each other and never notice they were all
@@ -2571,10 +2578,61 @@ that `FeatureDataset` + the existing `GRUHead` + the existing loop reach the
 same accuracy as reading video. It is the end-to-end check, and it has a
 precise target.
 
-**Which target, and why not 78.14%.** The un-mirrored cache cannot flip, and
-flip is worth 3.28 points. So the comparison is **`mimic_author_noflip`:
-75.95% val top-1, 34 epochs, 224 minutes** (`experiments/results.jsonl`). The
-79.23% target arrives in 8.7 with the mirror.
+**Which target — and this is the part the first draft of this step got
+wrong.**
+
+> **A feature cache *is* a frozen backbone.** Written on 2026-10-15 after
+> running it. `mimic_author_noflip` has `freeze: false`: its backbone updates
+> during epoch 1, so the features its head sees at step 1,500 are not the
+> features it saw at step 1. A cache is fixed by construction. **No cached run
+> can ever reproduce a trainable-backbone run**, and setting 75.95% as the
+> target made a correct cache look broken.
+>
+> Measured, epoch 1:
+>
+> | run | backbone | train top-1 | val top-1 | pin |
+> |---|---|---|---|---|
+> | `author_frozen` (video) | frozen | 23.07% | 30.37% | 41% |
+> | `cached_gru_noflip` | frozen | **23.47%** | 26.20% | **39%** |
+> | `mimic_author_noflip` | trainable | 35.21% | 53.98% | 0% |
+>
+> The cached run lands on the **frozen** row, 0.4 points from it, with the same
+> 40%-ish pinning. That agreement is the evidence the cache is correct. The
+> 28-point gap to the trainable row is the price of freezing, and it is the
+> thing to understand about all of Phase 3's cheap rows — not a defect in
+> Phase 2.
+>
+> **Converged, measured 2026-10-15:**
+>
+> | run | backbone | train | val | gap | pin |
+> |---|---|---|---|---|---|
+> | `mimic_author` | trainable + flip | 83.51% | **79.23%** | 4.3 | 0% |
+> | `mimic_author_noflip` | trainable | 86.27% | **75.95%** | 10.3 | 0% |
+> | `cached_gru_noflip` | **frozen** | 86.90% | **51.20%** | **35.8** | **45%** |
+
+> Final, 78 epochs, 93.6 min. Freezing costs **24.75 points**.
+>
+> Three things cause it, and they compound. **ImageNet features are not cricket
+> features** — frozen, the encoder describes "a person in white on grass"
+> identically for a Cover Drive and a Square Cut, and fine-tuning is what
+> teaches it bat angle and body rotation. **So the head memorises instead of
+> generalising**: a 22.8-point train/val gap against the baseline's 4.3. And
+> **45% of the GRU is dead throughout**, not transiently — 39% at epoch 1,
+> still 45% at epoch 32.
+>
+> That last one is a threat to the screening premise, not just a lost result.
+> The cheap sweep is meant to rank heads so the expensive 32 runs go to the
+> right ones — but it would be ranking them **inside a pathology that does not
+> exist in the fine-tuned setting**, where pinning is 0%. Hence A13, which is
+> now a validity fix rather than an optimisation, and 9.7, which measures
+> whether the ranking transfers before 28 rows are built on the assumption
+> that it does.
+
+So the comparison is a **frozen video run**, and flip is held at 0 because the
+un-mirrored cache cannot flip (8.7 restores it). This also means the 60 cached
+rows of Families A, D and V are comparable **to each other** and not to
+78.14% — which is what Days 28–30 exist for: take the best heads from the
+cheap frozen sweep and re-run those few end to end.
 
 **Run.**
 
@@ -2587,20 +2645,20 @@ replacing `variant`, `view: flat`, `freeze: true` — and nothing else. One
 variable at a time means the *only* difference from the 224-minute run is where
 the features come from.
 
-**Check.** Two numbers, and check them in this order:
+**Check.** Epoch 1, against a **frozen video run**, and in this order:
 
-1. **Epoch 1 train loss.** It should match `mimic_author_noflip`'s epoch 1 to
-   about three decimals, because at that point nothing has diverged except
-   fp16 rounding. `experiments/mimic_author_noflip/history.json` has it.
-   **This is the sharp instrument.** A wrong cache shows up here, on the first
-   epoch, in 30 seconds.
-2. **Best val top-1 within ~1 point of 75.95%.** The blunt instrument. fp16
-   storage perturbs the optimisation trajectory, so do not expect the number to
-   the decimal.
-
-If epoch 1 matches and the final number is 3 points off, that is training
-noise and a seed sweep would show it. If epoch 1 is off, stop — the cache is
-wrong and 8.5 missed something.
+1. **Train top-1 and `pin`.** Both are nearly pure functions of the inputs at
+   epoch 1, so a wrong cache shows up here in two minutes rather than after
+   thirty epochs. Measured: 23.47% against the frozen video run's 23.07%, and
+   pin 39% against 41%.
+2. **The definitive version**, worth the 15 minutes: run the same frozen
+   config on **video** with today's code, two epochs, and compare epoch 1
+   directly. `author_frozen` predates the BatchNorm fix, so the table above is
+   suggestive rather than conclusive.
+3. **Final val top-1.** Whatever it is, it *is* the frozen baseline — the
+   reference every Family A row gets measured against. `author_frozen` was
+   interrupted at epoch 12 and never produced one, so this run is filling a
+   real hole rather than confirming a known number.
 
 **The number that justifies the whole day.** Also record the wall clock. The
 projection, to be replaced by the measurement: the GRU's input layer is
@@ -2821,14 +2879,14 @@ hours, not after.
 
 ## Day 9 — The experiment harness
 
-The cache makes the runs cheap. The harness makes them *safe*: 88 runs over
+The cache makes the runs cheap. The harness makes them *safe*: 92 runs over
 eighteen days with power cuts is a bookkeeping problem long before it is a
 compute problem, and bookkeeping done by hand is how you lose six results in
 week three and cannot tell which six.
 
-### 9.1 The registry: 88 runs as data, not 88 files (≈1 h)
+### 9.1 The registry: 92 runs as data, not 92 files (≈1 h)
 
-**Why.** There are 44 experiment IDs and two splits. Writing 88 YAML files
+**Why.** There are 46 experiment IDs and two splits. Writing 92 YAML files
 guarantees that experiment A07 and A08 differ in some way you did not intend,
 because you edited a copy of a copy. Rule 2 — one variable at a time — has to
 be enforced by the *structure*, not by remembering.
@@ -2873,7 +2931,7 @@ pytest tests/test_registry.py -q
 python -m src.experiments.run --list
 ```
 
-**Check.** 44 IDs, 88 run names, every family represented, and the test suite
+**Check.** 46 IDs, 92 run names, every family represented, and the test suite
 green on three properties: every delta key is in `DEFAULTS`, every ID is
 unique, every entry has a non-empty `why`.
 
@@ -2881,8 +2939,8 @@ unique, every entry has a non-empty `why`.
 > `tests/test_experiments.py` is already taken on this branch by the
 > `cricketmind` package, and overwriting it would delete a working suite.
 
-**Takeaway.** When a plan has 44 of something, make the 44 *data* and write the
-logic once. The alternative — 44 near-identical files — is a design where every
+**Takeaway.** When a plan has 46 of something, make the 46 *data* and write the
+logic once. The alternative — 46 near-identical files — is a design where every
 mistake is invisible because there is nothing to compare against.
 
 ---
@@ -3001,7 +3059,7 @@ problem into a pause.
 
 ### 9.4 The leaderboard (≈45 min)
 
-**Why.** `results.jsonl` will have 88 rows in it. A ledger you cannot read is a
+**Why.** `results.jsonl` will have 92 rows in it. A ledger you cannot read is a
 ledger you stop updating.
 
 **Build.** `tools/leaderboard.py`, on `read_results`.
@@ -3014,7 +3072,7 @@ questions. One table with an `author` column and a `grouped` column, and the
 *difference between them* as a third — that difference is itself a result,
 because it measures how much the authors' protocol flatters a model.
 
-**It prints what is missing, not only what is done.** `88 − len(rows)` and the
+**It prints what is missing, not only what is done.** `92 − len(rows)` and the
 IDs behind it. The most useful thing this tool can tell you on day nineteen is
 which three experiments never finished.
 
@@ -3114,16 +3172,16 @@ all of it:**
 | four more caches | ConvNeXt-T, r3d_18, VideoMAE-B, CLIP; ~400 MB; linear-probe ranking recorded |
 | `src/extract.py` | resumable, verified to fp16, `--mirror` and `--derive` |
 | `src/data/features.py` | `FeatureDataset`, three views, shares `classes.json` |
-| `src/experiments/` | 44 IDs as data, both splits per ID, idempotent, test-eval automatic |
+| `src/experiments/` | 46 IDs as data, both splits per ID, idempotent, test-eval automatic |
 | `tools/leaderboard.py` | both splits side by side, pending count, figure |
 | the grouped baseline | the number the authors never reported |
 
 **What Phase 2 does not solve, so Phase 3 plans around it.** The cache only
 helps experiments with a **frozen** encoder. Families A, D and V are 28 of the
-44 IDs, so **56 of the 88 runs are now minutes each**. Families B and C are
+46 IDs, so **60 of the 92 runs are now minutes each**. Families B and C are
 end-to-end by definition — 16 IDs, **32 runs at the full ~200 minutes** — and
 that is where every remaining GPU-hour goes. The table in
-[section 6](#why-running-all-44-twice-is-affordable) costs it out: 123 hours in
+[section 6](#why-running-all-46-twice-is-affordable) costs it out: 126 hours in
 total, of which 120 belong to those 32 runs.
 
 Continuous augmentation also stays out of reach. Tier 2's colour jitter, speed
@@ -3133,7 +3191,7 @@ finitely many. Those rows have to be end-to-end or not at all.
 
 ---
 
-# PHASE 3 — The 44 experiments, twice (Days 10–27)
+# PHASE 3 — The 46 experiments, twice (Days 10–27)
 
 Full list with IDs in **Appendix A**. Order is deliberate: cheap and informative
 first.
@@ -3142,7 +3200,7 @@ Every experiment runs on **both splits**, so each ID produces two ledger rows.
 
 | Day | Family | Experiments | Rows | GPU time |
 |---|---|---|---|---|
-| 10 | **A** — temporal heads | A01–A12 (12) | 24 | 1.4 h |
+| 10 | **A** — temporal heads | A01–A14 (14) | 28 | 4.2 h |
 | 11 | **D** — features + classical ML | D01–D06 (6) | 12 | 1.0 h |
 | 12 | **V** — video-pretrained features (frozen) | V01–V10 (10) | 20 | 3.3 h extract + 1.0 h |
 | 13–18 | **B** — CNN backbones | B01–B08 (8) | 16 | 48 h |
@@ -3151,8 +3209,8 @@ Every experiment runs on **both splits**, so each ID produces two ledger rows.
 | stretch | **F** — multi-scale and hybrid | F01–F05 (5) | 10 | 30 h |
 | stretch | **W** — cricket-specific motion | W01–W05 (5) | 10 | 35 h |
 
-**58 listed, 44 committed, 88 rows.** Days 10–12 alone give you **56 rows** for
-about 7 GPU-hours, because they reuse the cached features. Families **E, F and W
+**60 listed, 46 committed, 92 rows.** Days 10–12 alone give you **60 rows** for
+about 10 GPU-hours, because they reuse the cached features. Families **E, F and W
 remain stretch** — another 89 GPU-hours between them, and the weakest expected
 payoff of the eight.
 
@@ -3246,7 +3304,10 @@ This section is what turns a results table into a paper.
 # Appendix A — The experiment list
 
 ## Family A — Temporal heads (backbone frozen, cached features)
-*Fast. 2–5 minutes each. Answers: how much does the temporal model matter?*
+*Answers: how much does the temporal model matter? Minutes each on the `avg`
+view; **70 min each on `flat`**, measured 2026-10-15 — a `62720 x 384` GRU
+kernel is 24.1 M parameters and an epoch reads 11.0 GB. A13 and A14 are there
+to find out which of these heads can drop to `avg` without losing anything.*
 
 | ID | Model | Why |
 |---|---|---|
@@ -3262,6 +3323,8 @@ This section is what turns a results table into a paper.
 | A10 | TCN (dilated 1-D conv) | Cheaper than attention, often as good |
 | A11 | Attention pooling | Which frames matter? Gives a free figure |
 | A12 | NetVLAD | Learned aggregation, strong in video retrieval |
+| A13 | **LayerNorm on the features, then GRU-128** | **39% of the GRU is dead at epoch 1** on frozen `flat` features (measured 8.6; 41% on Day 7's video run). The Day 7 diagnosis was specific: 62,720 non-centred post-SiLU values summed into a tanh gate. Centring the input is the direct fix, and a third of the model's capacity is the prize. |
+| A14 | **GRU-128 on the `avg` view** (1,280, not 62,720) | The other half of the same question. `flatten` keeps the 7x7 grid -- bat position relative to the body, which `encoder.py` argues is much of the signal -- but it is also *what saturates the GRU*: 49x more inputs to sum is ~7x larger pre-activations under random init. **Information preserved against capacity wasted, and nobody has measured which wins.** Also the view Family A's time budget depends on: `flat` measured 70 min a run against the 3.6 min budgeted. |
 
 ## Family B — CNN backbones (GRU-128 head fixed)
 *2–4 hours each. Answers: how much does the spatial encoder matter?*
@@ -3508,8 +3571,8 @@ Measured 2026-10-13 on `splits_author`, test top-1. Three notes:
 | 5 | Data + model | `dataset.py`, `encoder.py`, `head.py` | one batch, loss ≈ ln 15 |
 | 6 | Training loop | `train.py`, `mimic_author.yaml` | overfits 50 clips; resume rehearsed |
 | 7 | Reproduce | `evaluate.py` with hash guard | **78.14% baseline, tagged** (89.09% not reachable; see 7.4) |
-| 8–9 | Feature cache + harness | `extract.py`, `features.py`, `experiments/run.py`, `leaderboard.py` | 35 GB cache serving both splits; 88 runs as data; **first grouped-split baseline** |
-| 10–12 | A, D, V on both splits | — | **56 rows for ~7 GPU-h**; is the gap architecture-dependent? |
+| 8–9 | Feature cache + harness | `extract.py`, `features.py`, `experiments/run.py`, `leaderboard.py` | 35 GB cache serving both splits; 92 runs as data; **first grouped-split baseline** |
+| 10–12 | A, D, V on both splits | — | **60 rows for ~10 GPU-h**; is the gap architecture-dependent? |
 | 13–18 | B — CNN backbones, both splits | — | 16 rows, 48 GPU-h |
 | 19–27 | C — 3D / video models, both splits | — | 16 rows, 72 GPU-h |
 | 28–30 | Choose (3 seeds × top 3) and tune the winner | — | best model + mean ± std, ~39 GPU-h |

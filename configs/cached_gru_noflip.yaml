@@ -1,0 +1,49 @@
+# mimic_author_noflip, reading the feature cache instead of the video.
+#
+# Step 8.6. Three keys differ from `mimic_author_noflip.yaml` and nothing
+# else does, because the variable under test is **where the features come
+# from** -- rule 2, one variable at a time:
+#
+#   features:  the cache path, which switches the Dataset
+#   view:      "flat" is pool="flatten", 62720 per frame
+#   freeze:    the backbone is not in this model at all; it ran in extract.py
+#
+# `batch_size` stays 4 even though memory now allows far more. A different
+# batch size is a different sequence of gradient steps, so epoch 1's loss
+# would not be comparable -- and epoch 1's loss is the whole check.
+#
+# Target: a FROZEN run, not mimic_author_noflip. A cache is a frozen backbone
+# by construction, so it cannot reproduce a run whose backbone updates during
+# the epoch. Measured epoch 1: train 23.47% / pin 39% here, against the frozen
+# video run's 23.07% / 41%. mimic_author_noflip's 35.21% / 0% is a different
+# experiment. Corrected 2026-10-15; see plan 8.6.
+
+name: cached_gru_noflip
+split: data/splits_author
+variant: box
+features: data/features/effnetv2s
+view: flat
+pool: flatten
+backbone: efficientnet_v2_s
+pretrained: true
+freeze: true
+hidden: 128
+dense: 1024
+dropout: 0.0
+
+optimizer: adam
+lr: 1.0e-4
+weight_decay: 0.0
+scheduler: plateau
+lr_factor: 0.1
+lr_patience: 4
+min_lr: 0.0
+
+batch_size: 4
+accum: 1
+epochs: 100
+patience: 10
+flip: 0.0                          # the cache has one orientation until 8.7
+
+workers: 0
+seed: 42
