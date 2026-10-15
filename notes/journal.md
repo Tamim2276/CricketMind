@@ -2809,3 +2809,61 @@ verify          20/20 bit-exact; cosine 1.0000; 'playing cricket' 20/20
 
 My 200-clip timing said 18 clips/s; the real run did 25-27. Start-up cost
 spread over 200 clips is not small. Three of four caches done.
+
+### 8.10 part 4: CLIP ViT-B/16
+
+`openai/clip-vit-base-patch16` has no `model.safetensors` -- only
+`pytorch_model.bin` (599 MB). Downloaded once with offline mode lifted, as
+for VideoMAE; transformers loads `.bin` with `weights_only`.
+
+Decision: **768 per frame, not the plan's 512.** The 512 is one bias-free
+Linear after the 768, and the CLIP paper probes the 768. A linear probe on
+768 contains every probe on 512.
+
+In transformers 5.20, `get_image_features` returns an output object whose
+`pooler_output` is the *projected* embedding, and `CLIPVisionModel` is the
+tower itself (no `.vision_model` inside). Both checked before writing code.
+
+Check 2 needed a new shape: CLIP has no classifier, so the "head" is the
+projection and the class scores are similarity to eight "a photo of a
+person playing <sport>" prompts. Does it discriminate?
+
+```
+right layer          cosine 1.0000
+CLS before final LN  cosine 0.4764
+patch-token mean     cosine 0.4140
+```
+
+Easily. Smoke run: 8/8 bit-exact, embedding cosine 0.9998, zero-shot
+'cricket' on 45/45 frames. 19.8 clips/s on 400 clips.
+
+Refactor on the way: the HF cache lookup and quiet loading moved from
+`video_encoder.py` to `src/models/hf.py`, shared by both HF encoders.
+509 tests pass, file by file.
+
+### Are all the results saved? Mostly -- one gap, closed
+
+Asked 2026-10-16. Checked rather than assumed:
+
+```
+training runs     experiments/results.jsonl (12 rows), history.json per run,
+                  report_val/test.json for mimic_author and _seg     in git
+checkpoints       experiments/<run>/best.pt                          disk only
+feature caches    data/features/<name>/ + manifests + source.json    disk only
+cache summaries   extract / derive / verify output                   TERMINAL ONLY
+```
+
+The last row was the gap. The time, speed, failures and the verify checks
+existed only in the terminal, and survived because I copied them into this
+journal by hand. Now every command-line `extract`, `derive` and `verify`
+appends a row to **`experiments/caches.jsonl`**, which is tracked
+(`.gitignore` only drops `experiments/*/*`). Library calls default to
+`ledger=None`, so tests cannot write to it.
+
+The caches themselves stay out of git on purpose (37 GB, rebuildable from
+`src/extract.py` + `data/processed/`). Checkpoints stay out too; the three
+runs without per-class reports (`mimic_author_noflip`, `cached_gru`,
+`cached_gru_noflip`) still have `best.pt`, so those reports can be made later.
+
+Still to clean: four `smoke_*` rows in `results.jsonl` from my own smoke
+tests (Days 7-8). The Day 9 leaderboard must not rank them.

@@ -557,6 +557,9 @@ def test_the_pool_is_picked_from_the_backbone():
     assert _pick_pool("convnext_tiny", "avg") == "avg"
     assert _pick_pool("r3d_18", None) == "video"
     assert _pick_pool("videomae_base", None) == "video"
+    assert _pick_pool("clip_vit_b16", None) == "avg"
+    with pytest.raises(ValueError, match="only --pool avg"):
+        _pick_pool("clip_vit_b16", "flatten")
     with pytest.raises(ValueError, match="whole clip"):
         _pick_pool("r3d_18", "avg")
     with pytest.raises(ValueError, match="frame model"):
@@ -676,3 +679,93 @@ def test_the_videomae_cache_is_768_per_clip_and_complete():
     assert feats.item_shape == (768,)
     assert feats.missing == FeatureDataset(SPLIT, view="avg").missing
 
+
+# --- 8.10 part 4: CLIP, one 768-vector per frame -----------------------------------
+
+def _clip_cached():
+    try:
+        from huggingface_hub import try_to_load_from_cache
+    except ImportError:
+        return False
+    hit = try_to_load_from_cache("openai/clip-vit-base-patch16",
+                                 "pytorch_model.bin")
+    return isinstance(hit, str)
+
+
+@needs_clips
+@pytest.mark.skipif(not _clip_cached(), reason="CLIP not downloaded")
+def test_a_clip_cache_end_to_end(tmp_path):
+    from src.extract import manifest_path, verify
+
+    out = str(tmp_path / "cache")
+    assert extract(backbone="clip_vit_b16", limit=2, out_dir=out,
+                   batch_size=2, quiet=True) == 0
+    assert os.path.exists(manifest_path(out, "avg"))
+    one = torch.load(out_path(out, "avg", clip_list(PROCESSED_BOX)[0]))
+    assert one.shape == (15, 768)
+    assert one.dtype == torch.float16
+    assert verify(backbone="clip_vit_b16", out_dir=out, clips=2,
+                  quiet=True) == 0
+
+
+CLIP = os.path.join("data", "features", "clip_vit_b16")
+needs_clip_cache = pytest.mark.skipif(
+    not os.path.isdir(os.path.join(CLIP, "avg")),
+    reason="no CLIP cache; run src.extract --backbone clip_vit_b16")
+
+
+@needs_clip_cache
+def test_the_clip_cache_is_768_per_frame_and_complete():
+    from src.extract import manifest_path
+    from src.utils.checkpoint import read_results
+
+    ok = 0
+    for row in read_results(manifest_path(CLIP, "avg")):
+        if row.get("ok"):
+            ok += 1
+    assert ok == len(clip_list(PROCESSED_BOX))
+    feats = FeatureDataset(SPLIT, features=CLIP, view="avg")
+    assert feats.item_shape == (15, 768)
+    assert feats.missing == FeatureDataset(SPLIT, view="avg").missing
+
+
+# --- the cache ledger: every command-line run leaves a row in git ----------------
+
+@needs_clips
+def test_each_run_leaves_one_ledger_row_and_a_skip_leaves_none(tmp_path):
+    from src.extract import verify
+    from src.utils.checkpoint import read_results
+
+    ledger = str(tmp_path / "caches.jsonl")
+    out = str(tmp_path / "cache")
+    cpu = torch.device("cpu")          # stays off the GPU a real run may hold
+    extract(limit=1, out_dir=out, pool="avg", device=cpu, quiet=True,
+            ledger=ledger)
+    extract(limit=1, out_dir=out, pool="avg", device=cpu, quiet=True,
+            ledger=ledger)             # nothing to do: no row
+    verify(pool="avg", out_dir=out, clips=1, device=cpu, quiet=True,
+           ledger=ledger)
+
+    rows = read_results(ledger)
+    kinds = []
+    for row in rows:
+        kinds.append(row["kind"])
+    assert kinds == ["extract", "verify"]
+    assert rows[0]["clips"] == 1
+    assert rows[0]["failed"] == 0
+    assert rows[0]["view"] == "avg"
+    assert rows[1]["failed_checks"] == 0
+    assert rows[1]["bit_exact"] == 1
+
+
+def test_only_the_command_line_writes_the_real_ledger():
+    """Library calls default to no ledger, or every test run would add rows
+    to experiments/caches.jsonl -- the smoke_* rows in results.jsonl are
+    what that looks like."""
+    import inspect
+
+    from src.extract import derive, main, verify
+
+    for fn in (extract, verify, derive):
+        assert inspect.signature(fn).parameters["ledger"].default is None
+    assert "ledger=CACHE_LEDGER" in inspect.getsource(main)

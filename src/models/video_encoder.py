@@ -22,14 +22,13 @@ ImageNet frames runs and quietly costs a third of its confidence
 takes 16 evenly spaced picks, which repeats frame 7 and keeps the timing
 even. Repeating the last frame instead would freeze the follow-through.
 """
-import json
-
 import torch
 import torch.nn as nn
 import torchvision
 from torchvision.models import get_model, get_model_weights, list_models
 
 from src.models.encoder import _strip_classifier
+from src.models.hf import hf_file, hf_input_spec, quiet_loading
 
 __all__ = ["VideoEncoder", "VideoMAEEncoder", "video_encoder", "reference",
            "is_video", "input_spec", "resample_frames", "HF_VIDEO",
@@ -48,33 +47,10 @@ def is_video(name):
     return name in list_models(module=torchvision.models.video)
 
 
-def _hf_file(repo, filename):
-    """A file from the HF cache, with the fix in the error if it is missing.
-
-    HF_HUB_OFFLINE=1 is set in this machine's .bashrc for another project,
-    so a first use cannot download by itself.
-    """
-    from huggingface_hub import hf_hub_download
-
-    try:
-        return hf_hub_download(repo, filename)
-    except Exception as err:
-        raise SystemExit(
-            f"{repo} is not in the local HF cache ({type(err).__name__}). "
-            f"Download it once with:\n  HF_HUB_OFFLINE=0 hf download {repo} "
-            f"config.json preprocessor_config.json model.safetensors") from err
-
-
 def input_spec(name):
     """(size, mean, std) that the pretrained weights were trained with."""
     if name in HF_VIDEO:
-        with open(_hf_file(HF_VIDEO[name], "preprocessor_config.json"),
-                  encoding="utf-8") as fh:
-            cfg = json.load(fh)
-        size = cfg.get("crop_size", cfg["size"])
-        if isinstance(size, dict):
-            size = size.get("height", size.get("shortest_edge"))
-        return int(size), tuple(cfg["image_mean"]), tuple(cfg["image_std"])
+        return hf_input_spec(HF_VIDEO[name])
     t = get_model_weights(name).DEFAULT.transforms()
     return t.crop_size[0], tuple(t.mean), tuple(t.std)
 
@@ -156,8 +132,9 @@ class VideoMAEEncoder(VideoEncoder):
         self.name = name
         repo = HF_VIDEO[name]
         if pretrained:
-            _hf_file(repo, "model.safetensors")
-            model = VideoMAEForVideoClassification.from_pretrained(repo)
+            hf_file(repo, "model.safetensors")
+            with quiet_loading():
+                model = VideoMAEForVideoClassification.from_pretrained(repo)
         else:
             # same shape, random weights, no download: for tests
             model = VideoMAEForVideoClassification(VideoMAEConfig(num_labels=400))
@@ -197,7 +174,9 @@ def reference(name, device):
     if name in HF_VIDEO:
         from transformers import VideoMAEForVideoClassification
 
-        full = VideoMAEForVideoClassification.from_pretrained(HF_VIDEO[name])
+        with quiet_loading():
+            full = VideoMAEForVideoClassification.from_pretrained(
+                HF_VIDEO[name])
         full = full.to(device).eval()
         names = []
         for i in range(full.config.num_labels):

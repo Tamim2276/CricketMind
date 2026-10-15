@@ -2883,7 +2883,7 @@ spent one hour fine-tuning.
 | 1 | **ConvNeXt-Tiny**, per frame | ImageNet | `(15, 768)` | 227 MB |
 | 2 | **r3d_18** | Kinetics-400 | `(512,)` | 10 MB |
 | 3 | **VideoMAE-Base** | Kinetics-400 | `(768,)` | 15 MB |
-| 4 | **CLIP ViT-B/16**, per frame | WIT-400M | `(15, 512)` | 148 MB |
+| 4 | **CLIP ViT-B/16**, per frame | WIT-400M | `(15, 768)` | 243 MB |
 
 About 400 MB in total — these are all pooled views, so the 17.3 GB problem does
 not recur. Roughly 20–40 minutes each on the Arc.
@@ -3063,6 +3063,51 @@ verify          20/20 bit-exact; logit cosine 1.0000; top-1 20/20 clips;
 Faster than the 200-clip timing (27 against 18 clips/s): the short run
 paid model load and worker start-up over too few clips. Second real resume
 of a cache, again exact.
+
+**Part 4, CLIP ViT-B/16: built 2026-10-16.** `src/models/clip_encoder.py`,
+from `openai/clip-vit-base-patch16`. A frame model like ConvNeXt: every
+frame on its own, `(15, 768)` per clip, written to `avg/`.
+
+1. **768, not the table's 512.** 512 is CLIP's shared image-text space, one
+   bias-free Linear after the 768. The CLIP paper's own linear probes read
+   the 768, and a probe on 768 can learn anything a probe on 512 can. The
+   table row is corrected.
+2. **The vector is `pooler_output`**, the CLS token after the final
+   LayerNorm: what the projection reads. A cache holding the wrong layer
+   would read, against the true embedding,
+
+   ```
+   post-LayerNorm CLS (correct)    cosine 1.0000
+   CLS before the final LayerNorm  cosine 0.4764
+   mean of the patch tokens        cosine 0.4140
+   ```
+
+3. **CLIP's own colours**, from its config: mean 0.481/0.458/0.408 against
+   ImageNet's 0.485/0.456/0.406.
+4. **Check 2 has no classifier to use**, so it scores the projected
+   embedding against the text "a photo of a person playing <sport>" for
+   eight sports. Cosine on the embeddings tests the layer; the zero-shot
+   guess is a sanity print, not a result.
+5. **The official repo has no safetensors**, only `pytorch_model.bin`
+   (599 MB), which transformers loads with `weights_only`. The shared HF
+   plumbing (cache lookup with the download command in the error, quiet
+   loading) moved to `src/models/hf.py`, used by both HF encoders. Quiet
+   loading matters here: loading only CLIP's image half otherwise prints a
+   25-line table of the text tower's "UNEXPECTED" keys.
+
+**Measured before the run:**
+
+```
+smoke, 8 clips       8/8 bit-exact; embedding cosine 0.9998; top-1 45/45
+its own guess        'cricket' on 45 of 45 frames, zero-shot
+speed, 400 clips     19.8 clips/s -> ~8 min per half (probably less)
+```
+
+```bash
+python -m src.extract --backbone clip_vit_b16 --workers 4
+python -m src.extract --backbone clip_vit_b16 --workers 4 --mirror
+python -m src.extract --verify --backbone clip_vit_b16
+```
 
 The probe that ranks the caches needs the Day 9 runner, so it waits until
 then. The extraction does not have to wait.

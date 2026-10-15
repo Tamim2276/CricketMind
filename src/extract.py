@@ -46,6 +46,7 @@ from torchvision.models import get_model, get_model_weights
 
 from src.data.augment import ClipFlip
 from src.data.dataset import IMAGENET_MEAN, IMAGENET_STD, PROCESSED
+from src.models import clip_encoder
 from src.models.encoder import DEFAULT_BACKBONE, DEFAULT_SIZE, FrameEncoder
 from src.models.video_encoder import is_video, reference, video_encoder
 from src.utils import progress
@@ -55,13 +56,16 @@ from src.utils.device import describe, get_amp_settings, get_device
 
 __all__ = ["clip_list", "grid_shape", "encode_clip", "extract", "out_path",
            "verify", "manifest_path", "pool_grid", "derive", "cache_dir",
-           "SILU_FLOOR", "POOL_VIEW"]
+           "SILU_FLOOR", "POOL_VIEW", "CACHE_LEDGER"]
 
 FEATURES = os.path.join("data", "features")
 DEFAULT_NAME = "effnetv2s"
 FP16_MAX = 65504.0          # anything larger becomes inf, silently
 SILU_FLOOR = -0.278464556   # min of x*sigmoid(x); EfficientNet ends in SiLU
 POOL_VIEW = {"flatten": "grid", "avg": "avg", "video": "video"}
+# one row per extract, derive and verify run from the command line. In git,
+# unlike the caches: the terminal summary used to be the only record
+CACHE_LEDGER = os.path.join("experiments", "caches.jsonl")
 
 
 def clip_list(root):
@@ -112,6 +116,12 @@ def _pick_pool(backbone, pool):
     if pool == "video":
         raise ValueError(f"{backbone} is a frame model; --pool video is for "
                          f"video models such as r3d_18")
+    if clip_encoder.is_clip(backbone):
+        # a ViT has tokens, not a 7x7 map with an avgpool to remove
+        if pool not in (None, "avg"):
+            raise ValueError(f"{backbone} gives one vector per frame; "
+                             f"only --pool avg applies to it")
+        return "avg"
     if pool is None:
         return "flatten"
     if pool not in POOL_VIEW:
@@ -122,6 +132,9 @@ def _pick_pool(backbone, pool):
 def _encoder(backbone, pool):
     if pool == "video":
         return video_encoder(backbone, pretrained=True, freeze=True)
+    if clip_encoder.is_clip(backbone):
+        return clip_encoder.ClipFrameEncoder(backbone, pretrained=True,
+                                             freeze=True)
     return FrameEncoder(backbone, pretrained=True, freeze=True, pool=pool)
 
 
@@ -292,7 +305,7 @@ def _clips_for(encoder, root, rels, mirror=False):
 def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
             out_dir=None, processed=PROCESSED, limit=None, batch_size=4,
             workers=0, fp32=False, mirror=False, pool=None, device=None,
-            quiet=False):
+            quiet=False, ledger=None):
     """One pass over every clip. Re-running skips what the manifest lists.
 
     `mirror=True` encodes the left-right flipped clip instead, into
@@ -406,12 +419,20 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
               f"{len(todo)}   {seen / max(secs, 1e-9):.1f} clips/s")
         print(f"largest activation {hi:.1f}, fp16 holds {FP16_MAX:.0f} "
               f"({FP16_MAX / max(hi, 1e-9):.0f}x headroom)")
+    if ledger:
+        append_result({"kind": "extract", "cache": out_dir,
+                       "backbone": backbone, "variant": variant, "view": view,
+                       "clips": seen, "already_done": len(done),
+                       "failed": failed, "minutes": round(secs / 60, 2),
+                       "clips_per_s": round(seen / max(secs, 1e-9), 1),
+                       "max_activation": round(hi, 2), "workers": workers,
+                       "batch_size": batch_size, "fp32": fp32}, ledger)
     return failed
 
 
 def verify(variant="box", backbone=DEFAULT_BACKBONE, name=None, out_dir=None,
            processed=PROCESSED, clips=20, seed=0, pool=None, device=None,
-           quiet=False):
+           quiet=False, ledger=None):
     """Check an existing cache against the encoder that is supposed to have
     written it. Returns the number of checks that failed.
 
@@ -426,7 +447,7 @@ def verify(variant="box", backbone=DEFAULT_BACKBONE, name=None, out_dir=None,
     root = os.path.join(processed, variant)
     if pool != "flatten":
         return _verify_pooled(backbone, pool, out_dir, root, clips, seed,
-                              device, quiet)
+                              device, quiet, ledger)
 
     rows = []
     for row in read_results(os.path.join(out_dir, "manifest.jsonl")):
@@ -531,7 +552,35 @@ def verify(variant="box", backbone=DEFAULT_BACKBONE, name=None, out_dir=None,
             print(f"{bad} of 3 FAILED -- do not train on this cache")
         else:
             print("all 3 passed")
+    if ledger:
+        append_result({"kind": "verify", "cache": out_dir,
+                       "backbone": backbone, "view": "grid",
+                       "clips": len(rows), "failed_checks": int(bad),
+                       "bit_exact": exact, "max_abs_gap": worst_abs,
+                       "fold_max_abs": worst_fold, "min": low, "max": high,
+                       "hard_zeros": flat_zero}, ledger)
     return bad
+
+
+def _reference(backbone, view, device):
+    """(run, head, names, to_scores) for check 2.
+
+    `run` is the whole pretrained model, `head` its last Linear, applied to
+    the cache. `to_scores` turns their outputs into class scores; None when
+    they already are logits. CLIP's are embeddings, scored against text.
+    """
+    if view == "video":
+        run, head, names = reference(backbone, device)
+        return run, head, names, None
+    if clip_encoder.is_clip(backbone):
+        return clip_encoder.reference(backbone, device)
+    full = get_model(backbone, weights="DEFAULT").to(device).eval()
+    names = get_model_weights(backbone).DEFAULT.meta["categories"]
+    linear = None
+    for layer in full.modules():
+        if isinstance(layer, nn.Linear):
+            linear = layer
+    return full, linear, names, None
 
 
 def _head_agreement(backbone, view, out_dir, rows, data, device, n):
@@ -543,15 +592,7 @@ def _head_agreement(backbone, view, out_dir, rows, data, device, n):
     Returns the worst cosine, top-1 agreements, rows compared, and the
     cache's most common guess as a class name.
     """
-    if view == "video":
-        full, linear, names = reference(backbone, device)
-    else:
-        full = get_model(backbone, weights="DEFAULT").to(device).eval()
-        names = get_model_weights(backbone).DEFAULT.meta["categories"]
-        linear = None
-        for layer in full.modules():
-            if isinstance(layer, nn.Linear):
-                linear = layer
+    full, linear, names, to_scores = _reference(backbone, view, device)
     worst = 1.0
     agree = 0
     compared = 0
@@ -568,6 +609,9 @@ def _head_agreement(backbone, view, out_dir, rows, data, device, n):
             got = linear(saved).float()
             cos = F.cosine_similarity(got, want, dim=1)
             worst = min(worst, float(cos.min()))
+            if to_scores is not None:
+                want = to_scores(want)
+                got = to_scores(got)
             agree += int((got.argmax(1) == want.argmax(1)).sum())
             compared += int(got.shape[0])
             for k in got.argmax(1).tolist():
@@ -577,7 +621,7 @@ def _head_agreement(backbone, view, out_dir, rows, data, device, n):
 
 
 def _verify_pooled(backbone, pool, out_dir, root, clips, seed, device,
-                   quiet):
+                   quiet, ledger=None):
     """verify() for an avg/ or video/ cache. Two checks.
 
     Checks 2 and 3 of the grid version do not apply: there is no grid to fold,
@@ -652,6 +696,15 @@ def _verify_pooled(backbone, pool, out_dir, root, clips, seed, device,
             print(f"{bad} of 2 FAILED -- do not train on this cache")
         else:
             print("both passed")
+    if ledger:
+        append_result({"kind": "verify", "cache": out_dir,
+                       "backbone": backbone, "view": view,
+                       "clips": len(rows), "failed_checks": int(bad),
+                       "bit_exact": exact, "max_abs_gap": worst_abs,
+                       "worst_cosine": round(worst_cos, 6),
+                       "top1_agree": agree, "compared": compared,
+                       "unit": unit, "most_common_guess": guess,
+                       "guess_count": times}, ledger)
     return bad
 
 
@@ -670,7 +723,7 @@ def pool_grid(grid):
 
 
 def derive(view="avg", name=None, out_dir=None, backbone=DEFAULT_BACKBONE,
-           quiet=False):
+           quiet=False, ledger=None):
     """The 1280-wide view, made from grid/ on the CPU. Returns failures.
 
     No encoder and no second pass over the video: 8.5 showed averaging the
@@ -712,6 +765,7 @@ def derive(view="avg", name=None, out_dir=None, backbone=DEFAULT_BACKBONE,
                   f"{len(done)} already done, {len(todo)} to go", flush=True)
 
         started = time.time()
+        failed_before = failed
         for n, rel in enumerate(todo, 1):
             try:
                 grid = torch.load(out_path(out_dir, source, rel),
@@ -739,6 +793,15 @@ def derive(view="avg", name=None, out_dir=None, backbone=DEFAULT_BACKBONE,
                       flush=True)
         if todo and not quiet:
             print(f"\n  done in {(time.time() - started) / 60:.1f} min\n")
+        if todo and ledger:
+            secs = time.time() - started
+            append_result({"kind": "derive", "cache": out_dir,
+                           "backbone": backbone, "view": target,
+                           "source": source, "clips": len(todo),
+                           "failed": failed - failed_before,
+                           "minutes": round(secs / 60, 2),
+                           "clips_per_s": round(len(todo) / max(secs, 1e-9),
+                                                1)}, ledger)
 
     if not quiet:
         print(f"{failed} failed")
@@ -766,8 +829,8 @@ def main(argv=None):
     ap.add_argument("--mirror", action="store_true",
                     help="encode the flipped clips, into grid_mirror/ (8.7)")
     ap.add_argument("--pool", choices=tuple(POOL_VIEW),
-                    help="default: flatten for a frame model, video for a "
-                    "video model; avg writes avg/ directly (8.10)")
+                    help="default: flatten for a CNN, avg for CLIP, video for "
+                    "a video model; avg writes avg/ directly (8.10)")
     ap.add_argument("--derive", choices=("avg",),
                     help="make the pooled view from grid/, no GPU (8.8)")
     a = ap.parse_args(argv)
@@ -778,12 +841,13 @@ def main(argv=None):
     pooled_view = opts.pop("derive")
     if pooled_view:
         return derive(view=pooled_view, name=opts["name"],
-                      out_dir=opts["out_dir"], backbone=opts["backbone"])
+                      out_dir=opts["out_dir"], backbone=opts["backbone"],
+                      ledger=CACHE_LEDGER)
     if do_verify:
         for unused in ("limit", "batch_size", "workers", "fp32", "mirror"):
             opts.pop(unused)
-        return verify(clips=checked, **opts)
-    return extract(**opts)
+        return verify(clips=checked, ledger=CACHE_LEDGER, **opts)
+    return extract(ledger=CACHE_LEDGER, **opts)
 
 
 if __name__ == "__main__":
