@@ -13,3 +13,4 @@ seaborn
 tqdm
 tensorboard
 pyyaml
+transformers          # VideoMAE and CLIP caches, step 8.10

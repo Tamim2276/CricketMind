@@ -2760,3 +2760,40 @@ The first real test of resume on a cache, and it held.
 60 clips/s against ConvNeXt's 18 -- with an extra resize in the loader. The
 difference is bytes moved per clip (112px is a quarter of 224px), so my
 Day 8 "loader-bound" story was incomplete. Logged, not chased.
+
+### 8.10 part 3: VideoMAE, a video transformer
+
+`pip install transformers` gave 5.20.0; torch stayed 2.13.0+xpu. First
+download failed: `HF_HUB_OFFLINE=1` is exported in `~/.bashrc` for another
+project. Left it alone; lifted it for one command to fetch
+`model.safetensors` (346 MB) into `D:/huggingface_cache`. Everything since
+runs offline. A missing model now raises with the download command in the
+message.
+
+Checkpoint: `MCG-NJU/videomae-base-finetuned-kinetics`. Its vector is the
+mean of all tokens after `fc_norm` -- what the classifier reads -- so only
+the classifier is cut.
+
+15 -> 16 frames by even picks (frame 7 twice). Measured against repeating
+the last frame, 40 clips spread over the classes:
+
+```
+even picks       'playing cricket' 40/40, mean prob 0.625
+repeat last      'playing cricket' 40/40, mean prob 0.629
+```
+
+No difference worth the name. I had argued for even picks on timing
+grounds; the data says it does not matter for this check. Kept anyway.
+
+```
+smoke, 8 clips   8/8 bit-exact; logit cosine 1.0000; 'playing cricket' 8/8
+speed            18.0 clips/s on 200 clips -> ~9 min per half
+```
+
+VideoMAE is surer it is cricket than not (40/40) but spreads its
+probability more than r3d_18 does (0.63 against 0.92). Not a ranking --
+recognising the sport is not telling a drive from a pull. The probe decides.
+
+One test bug caught before commit: a module-level `importorskip` would
+have skipped the r3d_18 tests too on a machine without transformers. Moved
+into the VideoMAE tests. 501 pass, file by file.

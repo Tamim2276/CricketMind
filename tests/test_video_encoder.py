@@ -60,3 +60,76 @@ def test_it_is_the_full_model_without_its_last_linear():
         mine = full.fc(e(x))
         theirs = full(x.transpose(1, 2))
     assert torch.allclose(mine, theirs, atol=1e-5)
+
+
+# ---- VideoMAE: a transformer that needs exactly 16 frames -----------------
+
+def test_15_frames_become_16_by_repeating_the_middle_one():
+    from src.models.video_encoder import resample_frames
+
+    x = torch.arange(15).view(1, 15)
+    picked = resample_frames(x, 16)[0].tolist()
+    assert picked == [0, 1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 11, 12, 13, 14]
+    assert resample_frames(torch.zeros(2, 16, 3), 16).shape == (2, 16, 3)
+
+
+def test_videomae_counts_as_a_video_model():
+    assert is_video("videomae_base")
+
+
+@pytest.fixture(scope="module")
+def mae():
+    pytest.importorskip("transformers")
+    from src.models.video_encoder import VideoMAEEncoder
+
+    return VideoMAEEncoder(pretrained=False).eval()
+
+
+def test_videomae_gives_one_768_vector_from_15_frames(mae):
+    from src.models.video_encoder import VideoMAEEncoder, video_encoder
+
+    assert mae.out_dim == 768
+    assert mae.frames == 16
+    with torch.no_grad():
+        assert mae(torch.randn(1, 15, 3, 224, 224)).shape == (1, 768)
+    assert isinstance(video_encoder("r3d_18", pretrained=False), VideoEncoder)
+    assert not isinstance(video_encoder("r3d_18", pretrained=False),
+                          VideoMAEEncoder)
+
+
+def test_videomae_is_the_full_model_without_its_classifier(mae):
+    """Mean of the tokens, then fc_norm: what the classifier reads."""
+    from transformers import VideoMAEConfig, VideoMAEForVideoClassification
+
+    from src.models.video_encoder import resample_frames
+
+    torch.manual_seed(0)
+    full = VideoMAEForVideoClassification(VideoMAEConfig(num_labels=400)).eval()
+    result = mae.backbone.load_state_dict(full.state_dict(), strict=False)
+    assert result.missing_keys == []
+    assert sorted(result.unexpected_keys) == ["classifier.bias",
+                                              "classifier.weight"]
+    x = torch.randn(1, 15, 3, 224, 224)
+    with torch.no_grad():
+        mine = full.classifier(mae(x))
+        theirs = full(pixel_values=resample_frames(x, 16)).logits
+    assert torch.allclose(mine, theirs, atol=1e-4)
+
+
+def _hf_cached(repo, filename):
+    try:
+        from huggingface_hub import try_to_load_from_cache
+    except ImportError:
+        return False
+    return isinstance(try_to_load_from_cache(repo, filename), str)
+
+
+@pytest.mark.skipif(
+    not _hf_cached("MCG-NJU/videomae-base-finetuned-kinetics",
+                   "preprocessor_config.json"),
+    reason="VideoMAE not downloaded")
+def test_videomae_reads_its_size_and_colours_from_its_own_config():
+    size, mean, std = input_spec("videomae_base")
+    assert size == 224
+    assert mean == pytest.approx((0.485, 0.456, 0.406))
+    assert std == pytest.approx((0.229, 0.224, 0.225))

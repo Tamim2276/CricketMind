@@ -3012,6 +3012,46 @@ queue, the collate and the copy to the GPU. So Day 8's "the loader is the
 bottleneck" was too simple; moving 9 MB per clip is at least part of it.
 Not worth chasing for a job that runs once.
 
+**Part 3, VideoMAE-Base: built 2026-10-16.** `VideoMAEEncoder` in the same
+file, from `MCG-NJU/videomae-base-finetuned-kinetics` (transformers 5.20,
+now in `requirements.txt`). The Kinetics-finetuned checkpoint, not the
+self-supervised one: a frozen probe needs features that already learned
+labels, and the classifier is what verify checks against.
+
+1. **The vector is what its classifier reads**: mean over all 1,568 tokens,
+   then `fc_norm`. Only `classifier` becomes `Identity` -- the ConvNeXt rule
+   again.
+2. **16 frames from 15**: `resample_frames` takes 16 evenly spaced picks,
+   which repeats frame 7. Measured against repeating the last frame on 40
+   clips: 'playing cricket' top-1 40/40 both ways, mean probability 0.625
+   against 0.629. **The choice does not matter here**; even picks stay
+   because they keep the timing even.
+3. **HF_HUB_OFFLINE=1 is set in this machine's `.bashrc`** for another
+   project. The model was downloaded once with the flag lifted for that one
+   command; everything after runs offline from `D:/huggingface_cache`. If
+   the model is missing, the encoder now says so with the download command
+   rather than failing deep inside transformers.
+
+ImageNet colours at 224 -- VideoMAE's own config says so -- so `_Clips` does
+no resizing for it.
+
+**Measured before the run:**
+
+```
+smoke, 8 clips       8/8 bit-exact; logit cosine 1.0000; top-1 8/8 clips
+its own guess        'playing cricket' 8/8 (and 40/40 on the spread sample,
+                     mean probability 0.63 against r3d_18's 0.92)
+speed, 200 clips     18.0 clips/s -> ~9 min per half
+```
+
+```bash
+python -m src.extract --backbone videomae_base --workers 4
+python -m src.extract --backbone videomae_base --workers 4 --mirror
+python -m src.extract --verify --backbone videomae_base
+```
+
+About 3.1 KB per clip (768 fp16 + header), ~31 MB per half.
+
 The probe that ranks the caches needs the Day 9 runner, so it waits until
 then. The extraction does not have to wait.
 

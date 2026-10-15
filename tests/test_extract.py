@@ -556,6 +556,7 @@ def test_the_pool_is_picked_from_the_backbone():
     assert _pick_pool("efficientnet_v2_s", None) == "flatten"
     assert _pick_pool("convnext_tiny", "avg") == "avg"
     assert _pick_pool("r3d_18", None) == "video"
+    assert _pick_pool("videomae_base", None) == "video"
     with pytest.raises(ValueError, match="whole clip"):
         _pick_pool("r3d_18", "avg")
     with pytest.raises(ValueError, match="frame model"):
@@ -625,3 +626,53 @@ def test_the_r3d_cache_is_512_per_clip_and_complete():
     feats = FeatureDataset(SPLIT, features=R3D, view="video")
     assert feats.item_shape == (512,)
     assert feats.missing == FeatureDataset(SPLIT, view="avg").missing
+
+
+# --- 8.10 part 3: VideoMAE, 16 frames from 15 -----------------------------------
+
+def _mae_cached():
+    try:
+        from huggingface_hub import try_to_load_from_cache
+    except ImportError:
+        return False
+    hit = try_to_load_from_cache("MCG-NJU/videomae-base-finetuned-kinetics",
+                                 "model.safetensors")
+    return isinstance(hit, str)
+
+
+@needs_clips
+@pytest.mark.skipif(not _mae_cached(), reason="VideoMAE not downloaded")
+def test_a_videomae_cache_end_to_end(tmp_path):
+    from src.extract import manifest_path, verify
+
+    out = str(tmp_path / "cache")
+    assert extract(backbone="videomae_base", limit=2, out_dir=out,
+                   batch_size=2, quiet=True) == 0
+    assert os.path.exists(manifest_path(out, "video"))
+    one = torch.load(out_path(out, "video", clip_list(PROCESSED_BOX)[0]))
+    assert one.shape == (768,)
+    assert one.dtype == torch.float16
+    assert verify(backbone="videomae_base", out_dir=out, clips=2,
+                  quiet=True) == 0
+
+
+MAE = os.path.join("data", "features", "videomae_base")
+needs_mae_cache = pytest.mark.skipif(
+    not os.path.isdir(os.path.join(MAE, "video")),
+    reason="no VideoMAE cache; run src.extract --backbone videomae_base")
+
+
+@needs_mae_cache
+def test_the_videomae_cache_is_768_per_clip_and_complete():
+    from src.extract import manifest_path
+    from src.utils.checkpoint import read_results
+
+    ok = 0
+    for row in read_results(manifest_path(MAE, "video")):
+        if row.get("ok"):
+            ok += 1
+    assert ok == len(clip_list(PROCESSED_BOX))
+    feats = FeatureDataset(SPLIT, features=MAE, view="video")
+    assert feats.item_shape == (768,)
+    assert feats.missing == FeatureDataset(SPLIT, view="avg").missing
+

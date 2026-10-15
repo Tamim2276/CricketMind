@@ -47,7 +47,7 @@ from torchvision.models import get_model, get_model_weights
 from src.data.augment import ClipFlip
 from src.data.dataset import IMAGENET_MEAN, IMAGENET_STD, PROCESSED
 from src.models.encoder import DEFAULT_BACKBONE, DEFAULT_SIZE, FrameEncoder
-from src.models.video_encoder import VideoEncoder, is_video
+from src.models.video_encoder import is_video, reference, video_encoder
 from src.utils import progress
 from src.utils.checkpoint import (append_result, atomic_save,
                                   atomic_write_json, read_results)
@@ -121,7 +121,7 @@ def _pick_pool(backbone, pool):
 
 def _encoder(backbone, pool):
     if pool == "video":
-        return VideoEncoder(backbone, pretrained=True, freeze=True)
+        return video_encoder(backbone, pretrained=True, freeze=True)
     return FrameEncoder(backbone, pretrained=True, freeze=True, pool=pool)
 
 
@@ -342,8 +342,9 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
         if mirror:
             print("MIRRORED: left-right flipped clips, for flip augmentation")
         if hasattr(encoder, "size"):
-            print(f"frames resized to {encoder.size}x{encoder.size}, "
-                  f"mean {encoder.mean}")
+            print(f"input {encoder.size}x{encoder.size}, mean {encoder.mean}")
+        if hasattr(encoder, "frames"):
+            print(f"{encoder.frames} frames, evenly resampled from the clip's")
         print(f"pool {pool}  grid {grid}  out_dim {encoder.out_dim}  "
               f"-> {out_path(out_dir, view, '<class>/<clip>')}")
         if fp32:
@@ -542,12 +543,15 @@ def _head_agreement(backbone, view, out_dir, rows, data, device, n):
     Returns the worst cosine, top-1 agreements, rows compared, and the
     cache's most common guess as a class name.
     """
-    full = get_model(backbone, weights="DEFAULT").to(device).eval()
-    names = get_model_weights(backbone).DEFAULT.meta["categories"]
-    linear = None
-    for layer in full.modules():
-        if isinstance(layer, nn.Linear):
-            linear = layer
+    if view == "video":
+        full, linear, names = reference(backbone, device)
+    else:
+        full = get_model(backbone, weights="DEFAULT").to(device).eval()
+        names = get_model_weights(backbone).DEFAULT.meta["categories"]
+        linear = None
+        for layer in full.modules():
+            if isinstance(layer, nn.Linear):
+                linear = layer
     worst = 1.0
     agree = 0
     compared = 0
@@ -558,7 +562,7 @@ def _head_agreement(backbone, view, out_dir, rows, data, device, n):
             saved = torch.load(out_path(out_dir, view, rows[i]),
                                map_location="cpu").float().to(device)
             if view == "video":
-                x = x.transpose(0, 1)[None]                 # (1, 3, T, H, W)
+                x = x[None]                                 # (1, T, 3, H, W)
                 saved = saved[None]
             want = full(x).float()
             got = linear(saved).float()
