@@ -2867,3 +2867,30 @@ runs without per-class reports (`mimic_author_noflip`, `cached_gru`,
 
 Still to clean: four `smoke_*` rows in `results.jsonl` from my own smoke
 tests (Days 7-8). The Day 9 leaderboard must not rank them.
+
+### 8.10 done: five caches
+
+```
+clip_vit_b16   avg/ 9,880 + avg_mirror/ 9,880, 0 failed, 7.5 min each,
+               24,617 bytes per file, 243 MB per half; verify passed,
+               embedding cosine 0.9999, zero-shot 'cricket' 45/45 frames
+```
+
+One slip on the way: `--backbone videomae_base --mirror` was run instead of
+`clip_vit_b16`. It printed "9880 already done, 0 to go" and wrote nothing --
+the manifest doing its job -- and with the ledger change it also writes no
+row for a run with nothing to do.
+
+All five caches, verified 2026-10-16 and logged in `experiments/caches.jsonl`:
+
+```
+effnetv2s       grid + avg     all 3 checks
+convnext_tiny   avg (15,768)   bit-exact, cosine 0.9999   guess 'ballplayer'
+r3d_18          video (512,)   bit-exact, cosine 1.0000   'playing cricket'
+videomae_base   video (768,)   bit-exact, cosine 1.0000   'playing cricket'
+clip_vit_b16    avg (15,768)   bit-exact, cosine 0.9999   'cricket'
+```
+
+1.09 GB for the four new ones with both halves, against the plan's 400 MB
+(CLIP is 768 wide, not 512, and every cache has a mirror half). 36 GB free.
+Tests: 512 pass, file by file. Next: Day 9, the runner and the probe.

@@ -2886,7 +2886,9 @@ spent one hour fine-tuning.
 | 4 | **CLIP ViT-B/16**, per frame | WIT-400M | `(15, 768)` | 243 MB |
 
 About 400 MB in total — these are all pooled views, so the 17.3 GB problem does
-not recur. Roughly 20–40 minutes each on the Arc.
+not recur. Roughly 20–40 minutes each on the Arc. *(Measured: 1.09 GB with
+both halves, since CLIP is 768 wide rather than 512; 3–11 minutes per half.
+See the summary at the end of 8.10.)*
 
 **Two things to get right.** The video models (2 and 3) return **one vector per
 clip**, not one per frame, so `FeatureDataset` must accept a `(D,)` tensor and
@@ -3108,6 +3110,35 @@ python -m src.extract --backbone clip_vit_b16 --workers 4
 python -m src.extract --backbone clip_vit_b16 --workers 4 --mirror
 python -m src.extract --verify --backbone clip_vit_b16
 ```
+
+**Measured 2026-10-16 (CLIP):**
+
+```
+avg/           9,880 clips, 0 failed, 7.5 min, 21.9 clips/s
+avg_mirror/    9,880 clips, 0 failed, 7.5 min, 22.1 clips/s
+each file      24,617 bytes, 243 MB per half
+verify         20/20 bit-exact; embedding cosine 0.9999; zero-shot
+               'cricket' 45/45 frames
+```
+
+**8.10 done, 2026-10-16. Five caches, all verified, all logged.**
+
+| cache | what it saw | per clip | both halves | per half | its own guess |
+|---|---|---|---|---|---|
+| `effnetv2s` | ImageNet photos | `(15, 1280, 7, 7)` + avg | 34.6 GB + 778 MB | 8.5 min | — |
+| `convnext_tiny` | ImageNet photos | `(15, 768)` | 486 MB | 9–11 min | 'ballplayer' 21/45 frames |
+| `r3d_18` | Kinetics actions | `(512,)` | 51 MB | ~3 min | 'playing cricket' 19/20 |
+| `videomae_base` | Kinetics actions | `(768,)` | 62 MB | ~6 min | 'playing cricket' 20/20 |
+| `clip_vit_b16` | 400M captioned photos | `(15, 768)` | 486 MB | 7.5 min | 'cricket' 45/45 (zero-shot) |
+
+The last column is a sanity print, not a ranking: every model knows it is
+looking at a bat-and-ball sport, and **none of that says it can tell a
+drive from a pull.** That is the probe's job, on Day 9.
+
+Two power cuts hit these runs (r3d_18 at 1,664 clips, VideoMAE at 6,860).
+Both resumed exactly. From part 4 on, every command-line run writes a row to
+`experiments/caches.jsonl` (in git), so these numbers no longer depend on
+being copied out of a terminal.
 
 The probe that ranks the caches needs the Day 9 runner, so it waits until
 then. The extraction does not have to wait.
