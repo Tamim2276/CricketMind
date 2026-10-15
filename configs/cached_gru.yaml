@@ -1,0 +1,44 @@
+# cached_gru_noflip, with flip restored. Step 8.7.
+#
+# One key differs from `cached_gru_noflip.yaml`: flip 0.0 -> 0.5. On cached
+# features that is not an image transform, it is a **choice of file**: read
+# from grid/ or grid_mirror/ with probability 0.5. Exact rather than
+# approximate, because ClipFlip is a binary choice and both halves are cached.
+#
+# Flipping the cached grid instead would have been free and is wrong: cosine
+# 0.3753 against the real mirrored features, measured 8.7.
+#
+# What to expect. Flip was worth +3.28 on the trainable baseline, whose
+# train/val gap was 10.3 points. This run's gap is **35.8** -- the frozen head
+# memorises because ImageNet features give it nothing generalisable -- so
+# augmentation has far more to bite on here. 51.20% is the number to beat.
+
+name: cached_gru
+split: data/splits_author
+variant: box
+features: data/features/effnetv2s
+view: flat
+pool: flatten
+backbone: efficientnet_v2_s
+pretrained: true
+freeze: true
+hidden: 128
+dense: 1024
+dropout: 0.0
+
+optimizer: adam
+lr: 1.0e-4
+weight_decay: 0.0
+scheduler: plateau
+lr_factor: 0.1
+lr_patience: 4
+min_lr: 0.0                        # kept at the authors' value; see 8.6's note
+
+batch_size: 4
+accum: 1
+epochs: 100
+patience: 10
+flip: 0.5                          # -> grid/ or grid_mirror/, per clip per epoch
+
+workers: 0
+seed: 42

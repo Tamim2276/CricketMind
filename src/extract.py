@@ -41,6 +41,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 
+from src.data.augment import ClipFlip
 from src.data.dataset import IMAGENET_MEAN, IMAGENET_STD, PROCESSED
 from src.models.encoder import DEFAULT_BACKBONE, DEFAULT_SIZE, FrameEncoder
 from src.utils import progress
@@ -48,7 +49,7 @@ from src.utils.checkpoint import append_result, atomic_save, read_results
 from src.utils.device import describe, get_amp_settings, get_device
 
 __all__ = ["clip_list", "grid_shape", "encode_clip", "extract", "out_path",
-           "verify", "SILU_FLOOR"]
+           "verify", "manifest_path", "SILU_FLOOR"]
 
 FEATURES = os.path.join("data", "features")
 DEFAULT_NAME = "effnetv2s"
@@ -162,14 +163,32 @@ def _check_size(path, tensor):
             f"Something saved a view instead of a copy.")
 
 
+def manifest_path(out_dir, view="grid"):
+    """One manifest per output view, or the second run skips everything.
+
+    `build_dataset --variants seg` was a silent no-op for exactly this reason:
+    it shared a manifest with the run that had already finished, so every clip
+    read as done and nothing was written. One ledger per thing being built.
+    """
+    if view == "grid":
+        return os.path.join(out_dir, "manifest.jsonl")
+    return os.path.join(out_dir, "manifest_%s.jsonl" % view)
+
+
 class _Clips(Dataset):
     """Every processed clip, normalised. Not split-aware, by design."""
 
-    def __init__(self, root, rels):
+    def __init__(self, root, rels, mirror=False):
         self.root = root
         self.rels = rels
         self.mean = torch.tensor(IMAGENET_MEAN).view(3, 1, 1)
         self.std = torch.tensor(IMAGENET_STD).view(3, 1, 1)
+        # ClipFlip(1.0) rather than a second torch.flip: one definition of
+        # "mirrored" in the codebase, and it is the one training uses
+        if mirror:
+            self.flip = ClipFlip(1.0)
+        else:
+            self.flip = None
 
     def __len__(self):
         return len(self.rels)
@@ -179,17 +198,31 @@ class _Clips(Dataset):
                             self.rels[i].replace("/", os.sep) + ".npy")
         frames = np.load(path)                      # (T, 224, 224, 3) uint8
         x = torch.from_numpy(frames).permute(0, 3, 1, 2).float().div_(255)
-        return (x - self.mean) / self.std, i
+        x = (x - self.mean) / self.std
+        if self.flip is not None:
+            x = self.flip(x)
+        return x, i
 
 
 def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
             out_dir=None, processed=PROCESSED, limit=None, batch_size=4,
-            workers=0, fp32=False, device=None, quiet=False):
-    """One pass over every clip. Re-running skips what the manifest lists."""
+            workers=0, fp32=False, mirror=False, device=None, quiet=False):
+    """One pass over every clip. Re-running skips what the manifest lists.
+
+    `mirror=True` encodes the left-right flipped clip instead, into
+    `grid_mirror/`. It has to be a second pass: a flipped clip has its own
+    features, and flipping the cached grid instead gives cosine 0.41 against
+    the real thing -- measured, not assumed. Because `ClipFlip` is a binary
+    choice, caching both halves is **exact** rather than an approximation.
+    """
     name = name or DEFAULT_NAME
     out_dir = out_dir or os.path.join(FEATURES, name)
     root = os.path.join(processed, variant)
-    manifest = os.path.join(out_dir, "manifest.jsonl")
+    if mirror:
+        view = "grid_mirror"
+    else:
+        view = "grid"
+    manifest = manifest_path(out_dir, view)
 
     rels = clip_list(root)
     if limit:
@@ -214,8 +247,10 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
         print(describe(device))
         print(f"{backbone} {variant}: {len(rels)} clips, {len(done)} already "
               f"done, {len(todo)} to go")
+        if mirror:
+            print("MIRRORED: left-right flipped clips, for flip augmentation")
         print(f"grid {grid}  out_dim {encoder.out_dim}  "
-              f"-> {out_path(out_dir, 'grid', '<class>/<clip>')}")
+              f"-> {out_path(out_dir, view, '<class>/<clip>')}")
         if fp32:
             print("fp32: autocast off, so these will not match a bf16 run")
         print(flush=True)
@@ -223,8 +258,9 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
     if not todo:
         return 0
 
-    loader = DataLoader(_Clips(root, todo), batch_size=batch_size,
-                        shuffle=False, num_workers=workers)
+    loader = DataLoader(_Clips(root, todo, mirror=mirror),
+                        batch_size=batch_size, shuffle=False,
+                        num_workers=workers)
 
     tty = sys.stdout.isatty()
     started = time.time()
@@ -249,7 +285,7 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
                        "reason": f"non-finite after fp16 cast, max {top:.1f}"}
                 failed += 1
             else:
-                path = out_path(out_dir, "grid", rel)
+                path = out_path(out_dir, view, rel)
                 atomic_save(one, path)
                 if seen == 0:
                     _check_size(path, one)       # once, on the first file
@@ -415,13 +451,15 @@ def main(argv=None):
     ap.add_argument("--workers", type=int, default=0)
     ap.add_argument("--fp32", action="store_true",
                     help="no autocast; will not match a bf16-trained run")
+    ap.add_argument("--mirror", action="store_true",
+                    help="encode the flipped clips, into grid_mirror/ (8.7)")
     a = ap.parse_args(argv)
 
     opts = vars(a)
     do_verify = opts.pop("verify")
     checked = opts.pop("clips")
     if do_verify:
-        for unused in ("limit", "batch_size", "workers", "fp32"):
+        for unused in ("limit", "batch_size", "workers", "fp32", "mirror"):
             opts.pop(unused)
         return verify(clips=checked, **opts)
     return extract(**opts)

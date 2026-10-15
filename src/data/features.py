@@ -40,6 +40,7 @@ __all__ = ["FeatureDataset", "FEATURES", "VIEWS", "DIR_FOR_VIEW"]
 FEATURES = os.path.join("data", "features", "effnetv2s")
 VIEWS = ("flat", "grid", "avg")
 DIR_FOR_VIEW = {"flat": "grid", "grid": "grid", "avg": "avg"}
+MIRROR_SUFFIX = "_mirror"
 
 
 class FeatureDataset(Dataset):
@@ -51,13 +52,18 @@ class FeatureDataset(Dataset):
     """
 
     def __init__(self, split_csv: str, features: str = FEATURES,
-                 view: str = "flat", classes: Optional[Sequence[str]] = None,
+                 view: str = "flat", mirror: float = 0.0,
+                 classes: Optional[Sequence[str]] = None,
                  strict: bool = False):
         if view not in VIEWS:
             raise ValueError(f"view must be one of {VIEWS}, got {view!r}")
+        if not 0.0 <= mirror <= 1.0:
+            raise ValueError(f"mirror must be 0..1, got {mirror}")
         self.view = view
         self.features = features
+        self.mirror = mirror
         self.root = os.path.join(features, DIR_FOR_VIEW[view])
+        self.mirror_root = self.root + MIRROR_SUFFIX
         if classes:
             self.classes = list(classes)
         else:
@@ -69,6 +75,10 @@ class FeatureDataset(Dataset):
                 extra = "  Run: python -m src.extract --derive avg  (step 8.8)"
             raise FileNotFoundError(
                 f"no feature cache at {self.root} for view={view!r}.{extra}")
+        if mirror and not os.path.isdir(self.mirror_root):
+            raise FileNotFoundError(
+                f"mirror={mirror} needs {self.mirror_root}, which is not there. "
+                f"Run: python -m src.extract --mirror  (step 8.7)")
 
         self.items: List[tuple] = []
         self.missing: List[str] = []
@@ -92,14 +102,24 @@ class FeatureDataset(Dataset):
         for size in self.item_shape[1:]:
             self.feature_dim *= size
 
-    def _path(self, clip: str) -> str:
-        return os.path.join(self.root, clip.replace("/", os.sep)[:-4] + ".pt")
+    def _path(self, clip: str, mirrored: bool = False) -> str:
+        if mirrored:
+            root = self.mirror_root
+        else:
+            root = self.root
+        return os.path.join(root, clip.replace("/", os.sep)[:-4] + ".pt")
 
     def __len__(self) -> int:
         return len(self.items)
 
     def __getitem__(self, i: int):
-        path, label, _ = self.items[i]
+        path, label, clip = self.items[i]
+        # flip augmentation, done by choosing a file. ClipFlip is a binary
+        # choice made once per clip, so two cached halves cover it exactly --
+        # this is the same distribution the video run sees, not an
+        # approximation of it.
+        if self.mirror and float(torch.rand(())) < self.mirror:
+            path = self._path(clip, mirrored=True)
         # the cache is fp16 to halve the disk; the model wants fp32 and lets
         # autocast decide the rest. That conversion belongs here, so the
         # training loop never has to know what precision the cache uses.
@@ -121,6 +141,9 @@ class FeatureDataset(Dataset):
         miss = ""
         if self.missing:
             miss = f", {len(self.missing)} missing"
+        mir = ""
+        if self.mirror:
+            mir = f", mirror={self.mirror}"
         return (f"FeatureDataset({len(self.items)} clips, view={self.view!r}, "
                 f"{self.feature_dim} per frame, "
-                f"{len(self.classes)} classes{miss})")
+                f"{len(self.classes)} classes{mir}{miss})")

@@ -2511,3 +2511,77 @@ epoch 73, and each noise-sized "best" resets patience by 10 epochs. At 92 runs
 that is roughly 30 GPU-hours spent resampling validation noise. The experiment
 registry's base config should carry `min_lr: 1.0e-06`; `mimic_author.yaml`
 keeps 0.0 because it reproduces the authors and every baseline used it.
+
+### 8.7 The mirrored half
+
+```
+9,880 clips, 0 failed, 9.5 min, 17.3 clips/s
+grid         9880 files, all 1,883,177 bytes, 0 .tmp
+grid_mirror  9880 files, all 1,883,177 bytes, 0 .tmp
+manifests    9880 ok rows each, in separate files
+disk         39 GB free -- 8.1 budgeted 38.8
+```
+
+Re-measured the shortcut against the *real* mirrored features now that they
+exist: **cosine 0.3753**. So the 0.41 from the earlier three-clip test holds up,
+and the second 14-minute pass was not optional.
+
+Two design points worth keeping.
+
+**One manifest per thing being built.** `manifest_grid_mirror.jsonl`, not the
+shared one. Had they shared, the mirror run would have read all 9,880 clips as
+already done and written nothing while reporting success -- which is exactly
+what `build_dataset --variants seg` did on Day 4.
+
+**Flip is a choice of file, and that makes it exact.** `ClipFlip` is a binary
+decision made once per clip, so two cached halves cover the entire
+distribution; `FeatureDataset(mirror=0.5)` reads from one or the other. Checked
+it: 12 draws of item 0 gave exactly **2** distinct tensors. Not an
+approximation of the video run's augmentation -- the same distribution.
+
+The extractor reuses `ClipFlip(1.0)` rather than its own `torch.flip`, so
+"mirrored" has one definition in the codebase and it is the one training uses.
+
+### 8.7 result: flip is worth LESS when frozen, and that is the interesting part
+
+```
+                   best val   overfit gap at the end      flip worth
+frozen   noflip      51.20%   86.90 / 51.07 = 35.8
+frozen   flip        53.66%   67.85 / 52.71 = 15.1        +2.46
+trainable noflip     75.95%                      10.3
+trainable flip       79.23%                       4.3        +3.28
+```
+
+I predicted flip would be worth **more** here, maybe 8-10 points, on the
+grounds that a 35.8-point train/val gap gives augmentation three times as much
+to bite on. It was worth **less**. The prediction was wrong and the reason is
+the result:
+
+```
+frozen     removed 20.7 points of overfitting, converted 2.46   -> 12%
+trainable  removed  6.0 points of overfitting, converted 3.28   -> 55%
+```
+
+**Flip suppressed the memorising almost completely and the accuracy barely
+moved.** That is the signature of an information ceiling, not a regularisation
+problem: ImageNet features do not contain the discriminative cricket
+information, and stopping the head from memorising does not create it. The
+frozen head was not failing because it overfits; it overfits *because* it is
+failing.
+
+Three consequences, and they are all actionable:
+
+1. **Tier 2's regularisers will underdeliver on cached runs.** Dropout, colour
+   jitter, random resized crop, speed perturbation -- all of them are attacking
+   a symptom that is already 12%-convertible at best in this regime. They may
+   still earn their estimates on the trainable runs, where conversion was 55%.
+2. **A13 and A14 are the only credible frozen levers left.** They go after
+   feature quality and saturation rather than regularisation, which is now
+   measured to be the wrong target here.
+3. **`pin` did not move**: 45% mean without flip, 46% with. Augmentation has no
+   effect on the saturation at all, so that really is a separate problem with a
+   separate fix.
+
+Also worth noting: the flip run early-stopped at **epoch 43 in 58 min** against
+78 epochs and 93 min. Less overfitting meant less of the long low-lr tail --
+so the `min_lr` waste from 8.6 is partly a symptom of unregularised runs.

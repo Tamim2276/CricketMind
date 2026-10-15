@@ -134,16 +134,12 @@ def _make_datasets(cfg):
                                   processed=cfg["processed"])
         return train_set, val_set
 
-    if cfg["flip"]:
-        # flipping a feature vector is not the feature vector of a flipped
-        # clip -- measured cosine 0.41. It needs the mirrored cache (8.7).
-        raise ValueError(
-            f"flip={cfg['flip']} cannot be done on cached features: a flipped "
-            f"clip has its own features. Extract them with "
-            f"`python -m src.extract --mirror` first (step 8.7).")
-
+    # flip becomes a choice of file: grid/ or grid_mirror/. Exact, because
+    # ClipFlip is binary -- see 8.7. FeatureDataset raises with the extract
+    # command if the mirrored half is not there.
     train_set = FeatureDataset(os.path.join(cfg["split"], "train.csv"),
-                               features=cfg["features"], view=cfg["view"])
+                               features=cfg["features"], view=cfg["view"],
+                               mirror=cfg["flip"])
     val_set = FeatureDataset(os.path.join(cfg["split"], "val.csv"),
                              features=cfg["features"], view=cfg["view"])
     return train_set, val_set

@@ -2721,10 +2721,37 @@ python -m src.extract --variant box --mirror --out data/features/effnetv2s --wor
 python -m src.train --config configs/cached_gru.yaml
 ```
 
-**Check.** 9,880 files in `grid_mirror/`, another 17 GB (38.8 GB free left, per
-8.1's budget), and the training run lands within ~1 point of **79.23%** —
-`mimic_author`'s val top-1. That is the full baseline, reproduced from tensors,
-in a fraction of 199 minutes.
+**Check.** 9,880 files in `grid_mirror/`, another 17 GB (**measured: 39 GB
+free, against 8.1's budgeted 38.8**), and the cached flip run beats the
+un-mirrored one.
+
+**Measured 2026-10-15, and it refutes the prediction first written here.** I
+expected flip to be worth *more* frozen than trainable, because the frozen
+run's train/val gap is 35.8 points against the baseline's 10.3. It is worth
+less:
+
+| | best val | overfit gap at the end | flip worth |
+|---|---|---|---|
+| frozen, noflip | 51.20% | 35.8 | |
+| frozen, flip | **53.66%** | 15.1 | **+2.46** |
+| trainable, noflip | 75.95% | 10.3 | |
+| trainable, flip | 79.23% | 4.3 | **+3.28** |
+
+```
+frozen     removed 20.7 points of overfitting, converted 2.46  ->  12%
+trainable  removed  6.0 points of overfitting, converted 3.28  ->  55%
+```
+
+**Flip suppressed the memorising almost entirely and the accuracy barely
+moved.** That is an information ceiling, not a regularisation problem: ImageNet
+features do not hold the discriminative cricket signal, and stopping the head
+from memorising does not create it. The frozen head is not failing because it
+overfits -- it overfits *because* it is failing.
+
+So **Tier 2's regularisers should be expected to underdeliver on every cached
+row** (12% conversion), while still earning their estimates on the trainable
+ones (55%). And `pin` did not move at all -- 45% without flip, 46% with -- so
+the saturation is a separate problem needing a separate fix, which is A13.
 
 Sanity check worth the ten seconds: the mirrored tensor must not equal the
 un-mirrored one for any clip, and must have the same `min() == 0`.
