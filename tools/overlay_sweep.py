@@ -1,15 +1,17 @@
-"""Render the segmentation overlay at several alphas, side by side.
+"""Look at the segmentation overlay before rebuilding 9,880 clips with it.
 
-The paper says "a semi-transparent overlay is applied to the batter and bat"
-and states neither the weight nor the colour. So: look at it before spending
-4.5 hours rebuilding 9,880 clips with a guess.
+The paper specifies it exactly: alpha 0.5, striker blue, bat green, striker
+painted first so the bat stays visible where it overlaps. This renders that,
+plus neighbouring alphas, plus the blackout variant for contrast.
 
-    python -m tools.overlay_sweep                       # 4 clips, default tint
-    python -m tools.overlay_sweep --clips 6 --tint 0,170,0
-    python -m tools.overlay_sweep --alphas 0.2,0.3,0.4,0.5,0.6
+    python -m tools.overlay_sweep                       # 4 clips
+    python -m tools.overlay_sweep --clips 6 --alphas 0.4,0.5,0.6
 
-Writes notes/figures/overlay_sweep.png -- one row per clip, one column per
-alpha, with blackout on the end for comparison.
+Writes notes/figures/overlay_sweep.png -- one row per clip.
+
+The frames are **RGB** (read_clip(rgb=True)) and cv2.imwrite wants BGR, so
+they are converted on the way out. Without that the preview lies about every
+colour in it, which it did until this was noticed.
 """
 import argparse
 import os
@@ -20,15 +22,16 @@ import cv2
 import numpy as np
 
 from src.data.video import read_clip
-from src.preprocess.crop import TINT, blackout, frame_mask, overlay
+from src.preprocess.build_dataset import ROOT
+from src.preprocess.crop import (ALPHA, BAT_TINT, BODY_TINT, blackout,
+                                 part_masks, overlay)
 from src.preprocess.detect import detect, load_detector
 from src.preprocess.striker import pick_striker
 from src.utils.device import get_device
 
 OUT = os.path.join("notes", "figures", "overlay_sweep.png")
-ROOT = os.path.join("data", "CricShoot10kShootDataset")
-PANEL = 260          # each tile, square
-LABEL = 26           # strip above each row of tiles
+PANEL = 260
+LABEL = 26
 
 
 def _clip_paths(root, n, seed):
@@ -45,12 +48,8 @@ def _clip_paths(root, n, seed):
 
 
 def _best_frame(clip, per_frame):
-    """The frame whose striker has the largest mask -- worth looking at.
-
-    The striker is chosen by `pick_striker`, the same centrality rule the
-    real pipeline uses. Taking "whichever Striker detection came last" would
-    tint the non-striker or an umpire and make the sweep a lie.
-    """
+    """The frame whose striker has the largest mask, by the pipeline's own
+    centrality rule -- not whichever Striker detection happens to come last."""
     shape = clip.shape[1:3]
     best = 0
     area = -1
@@ -65,12 +64,21 @@ def _best_frame(clip, per_frame):
     return best
 
 
-def _tile(frame, mask, label, alpha=None, tint=TINT):
+def _tile(frame, masks, label, alpha=None):
     if alpha is None:
-        shown = blackout(frame, None, mask=mask)
+        body_mask, bat_mask = masks
+        merged = body_mask
+        if bat_mask is not None:
+            if merged is None:
+                merged = bat_mask
+            else:
+                merged = merged | bat_mask
+        shown = blackout(frame, None, mask=merged)
     else:
-        shown = overlay(frame, None, mask=mask, alpha=alpha, colour=tint)
+        shown = overlay(frame, masks=masks, alpha=alpha)
+
     small = cv2.resize(shown, (PANEL, PANEL), interpolation=cv2.INTER_AREA)
+    small = cv2.cvtColor(small, cv2.COLOR_RGB2BGR)      # cv2 writes BGR
     strip = np.full((LABEL, PANEL, 3), 252, np.uint8)
     cv2.putText(strip, label, (6, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
                 (11, 11, 11), 1, cv2.LINE_AA)
@@ -80,9 +88,7 @@ def _tile(frame, mask, label, alpha=None, tint=TINT):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--clips", type=int, default=4)
-    ap.add_argument("--alphas", default="0.2,0.3,0.4,0.5,0.6")
-    ap.add_argument("--tint", default=",".join(str(c) for c in TINT),
-                    help="BGR, the order cv2 uses")
+    ap.add_argument("--alphas", default="0.3,0.4,0.5,0.6")
     ap.add_argument("--root", default=ROOT)
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--seed", type=int, default=0)
@@ -91,34 +97,34 @@ def main(argv=None):
     alphas = []
     for piece in args.alphas.split(","):
         alphas.append(float(piece))
-    tint = []
-    for piece in args.tint.split(","):
-        tint.append(int(piece))
-    tint = tuple(tint)
 
     device = get_device()
     model = load_detector()
-    print(f"device={device}  tint(BGR)={tint}  alphas={alphas}", flush=True)
+    print(f"device={device}  striker={BODY_TINT} bat={BAT_TINT} (RGB)  "
+          f"paper alpha={ALPHA}", flush=True)
 
     rows = []
     for path in _clip_paths(args.root, args.clips, args.seed):
         clip = read_clip(path)
-        per_frame = detect(list(clip), model=model, device=device,
-                           masks=True)
+        per_frame = detect(list(clip), model=model, device=device, masks=True)
         i = _best_frame(clip, per_frame)
         striker = pick_striker(per_frame[i], clip.shape[1:3])
-        mask = frame_mask(striker, per_frame[i])
-        if mask is None:
+        masks = part_masks(striker, per_frame[i])
+        if masks[0] is None and masks[1] is None:
             print(f"  no mask: {os.path.basename(path)}", flush=True)
             continue
 
-        tiles = [_tile(clip[i], mask, "original", alpha=0.0)]
+        has_bat = masks[1] is not None
+        tiles = [_tile(clip[i], masks, "original", alpha=0.0)]
         for a in alphas:
-            tiles.append(_tile(clip[i], mask, f"alpha {a:g}", alpha=a,
-                               tint=tint))
-        tiles.append(_tile(clip[i], mask, "blackout (ours, -16.9)"))
+            mark = f"alpha {a:g}"
+            if a == ALPHA:
+                mark += "  <- paper"
+            tiles.append(_tile(clip[i], masks, mark, alpha=a))
+        tiles.append(_tile(clip[i], masks, "blackout (old, -16.9)"))
         rows.append(np.hstack(tiles))
-        print(f"  {os.path.basename(path)}  frame {i}", flush=True)
+        print(f"  {os.path.basename(path)}  frame {i}  "
+              f"bat={'yes' if has_bat else 'NO'}", flush=True)
 
     if not rows:
         raise SystemExit("nothing had a mask; try --clips higher")

@@ -2108,3 +2108,78 @@ working `.venv` untouched.
 Also measured, and it kills a worry: TensorFlow has no GPU on native Windows
 at 2.11+, and the card is an Arc so WSL2+CUDA would not help either -- but CPU
 inference is **13 minutes for all 1,976 test clips**, so it does not matter.
+
+## Day 10 (13 Oct 2026) -- the paper had the spec; I had not read it
+
+The crop sweep closed: `max` scored 37.63%, identical to `height`, and
+padding peaked at 37.63% with pad 0. Geometry is not the gap.
+
+Then, reading the paper properly rather than for its numbers, section III:
+
+> "the predicted masks were overlaid with semi-transparent colors
+> (alpha = 0.5), highlighting the striker in blue and the bat in green.
+> Semi-transparent color is chosen instead of full solid to avoid the loss of
+> full information such as the position of the hands and rest of the body.
+> **The striker is colored first, followed by the bat, ensuring that the bat
+> remains fully visible even when it overlaps the striker.**"
+
+Every parameter I had been guessing at is stated there. `CricShot10k_Plan.md`
+Appendix B Tier 1 records it too -- "striker blue, bat green, alpha=0.5" --
+written before any of this started.
+
+What I built instead: `frame_mask` merged striker and bat into **one** mask and
+painted it **one grey** at alpha 0.4. That discards all three specified
+properties, and the third one is the damaging one: merging the masks is exactly
+what the paper says not to do, because the bat must stay visible over the body.
+The bat is the object that names the shot. That overlay scored 75.51% against
+plain cropping's 78.14%.
+
+I had searched the paper for "89.09" and the ablation table, read the overview
+sentence at line 37 -- "a semi-transparent overlay is applied to the batter and
+bat" -- and built from it, without reading the 150 lines further where the
+method is written out.
+
+**Rebuilt to specification.** `part_masks` returns the two silhouettes apart;
+`overlay` paints the striker blue, then the bat green on top; `carried_mask`
+carries both. ALPHA 0.5, BODY_TINT (0,0,255), BAT_TINT (0,255,0), **RGB**,
+because `read_clip(rgb=True)` is what fills these arrays. Eight new tests,
+including one that asserts the overlap goes green -- the paper's stated reason
+for the ordering.
+
+**A second bug, found while fixing the first.** `tools/overlay_sweep.py` wrote
+RGB arrays with `cv2.imwrite`, which expects BGR, so every preview I judged
+colours from had red and blue swapped. The pipeline data was always correct;
+only the pictures lied. Grey hid it completely. Now converted on write, and
+the TATA CAPITAL board renders blue instead of orange, which is how it was
+caught.
+
+452 tests pass.
+
+**Also noted, and not added to the plan:** flip TTA was already in it twice --
+Day 31 and Appendix B Tier 2 #12. Dropout is genuinely absent and is worth a
+row, given the box run's 8.5-point train/val gap at `dropout: 0.0`.
+
+### The ruler moved: 34.46% -> 43.22%
+
+Rebuilt `seg` to the paper's specification (4.62 h, 211 failed as before), then
+scored the authors' own model on it:
+
+```
+authors' model on our box crops            34.46%
+authors' model on the old grey overlay    ~34.9%   (180-clip sample)
+authors' model on the paper-spec overlay   43.22%   <- +8.76
+permutation agreement on the fit sample    32.88% -> 44.44%
+```
+
+At 1,976 clips the standard error is about 1.1 points, so **+8.76 is over five
+standard errors**. The first positive result in three days, and the first time
+this instrument has read anything other than ~35% -- which also answers the
+worry that it might be stuck there regardless of input. It is not; it responds
+to a correct change.
+
+So the segmentation specification was genuinely part of the gap, and the way
+to find it was to read the method section rather than guess from the abstract.
+
+It is still 43% against their 89%, so something else about their crops differs
+too. But the ruler is now demonstrably calibrated upward, which makes it worth
+more for the next thing we try than it was this morning.

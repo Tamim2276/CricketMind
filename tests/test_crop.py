@@ -3,10 +3,11 @@ smoothing, and the square crop geometry."""
 import numpy as np
 import pytest
 
-from src.preprocess.crop import (ALPHA, SIZE, TINT, _fill, _square,
+from src.preprocess.crop import (ALPHA, BAT_TINT, BODY_TINT, SIZE,
+                                 TINT, _fill, _square,
                                  blackout, carried_mask, crop_clip,
-                                 frame_mask, overlay, segment, smooth_boxes,
-                                 track_boxes)
+                                 frame_mask, overlay, part_masks,
+                                 segment, smooth_boxes, track_boxes)
 from src.preprocess.striker import pick_striker
 from src.preprocess.detect import Detection
 
@@ -251,7 +252,7 @@ def test_a_frame_without_a_mask_borrows_its_neighbour():
 def test_the_carried_mask_moves_with_the_batter():
     """It is shifted onto the new box, not pasted where it used to be."""
     a = _with_mask(det(300, 390), (280, 500, 250, 350))
-    m = carried_mask([a, None], [[a], []], 1, (480, 280, 580, 500))
+    m, _bat = carried_mask([a, None], [[a], []], 1, (480, 280, 580, 500))
     ys, xs = np.nonzero(m)
     assert abs(xs.mean() - 530) < 15, xs.mean()   # followed the box across
     assert abs(ys.mean() - 390) < 15, ys.mean()
@@ -299,7 +300,7 @@ def test_the_batter_is_blended_not_replaced():
     frame = np.full((FH, FW, 3), 200, np.uint8)
     s = _with_mask(det(*BATTER), (280, 500, 380, 480))
 
-    out = overlay(frame, s, alpha=0.5, colour=(0, 0, 0))
+    out = overlay(frame, s, alpha=0.5, body_colour=(0, 0, 0))
 
     assert out[300, 400].tolist() == [100, 100, 100]   # halfway to black
 
@@ -329,7 +330,7 @@ def test_alpha_one_is_a_flat_tint_on_the_batter_only():
     frame = np.full((FH, FW, 3), 200, np.uint8)
     s = _with_mask(det(*BATTER), (280, 500, 380, 480))
 
-    out = overlay(frame, s, alpha=1.0, colour=(1, 2, 3))
+    out = overlay(frame, s, alpha=1.0, body_colour=(1, 2, 3))
 
     assert out[300, 400].tolist() == [1, 2, 3]
     assert out[50, 50].tolist() == [200, 200, 200]
@@ -387,3 +388,97 @@ def test_the_overlay_does_not_write_through_to_the_caller():
     s = _with_mask(det(*BATTER), (280, 500, 380, 480))
     overlay(frame, s)
     assert np.array_equal(frame, keep)
+
+
+# ---- the overlay to the paper's specification ---------------------------
+#
+# "the predicted masks were overlaid with semi-transparent colors
+# (alpha = 0.5), highlighting the striker in blue and the bat in green ...
+# The striker is colored first, followed by the bat, ensuring that the bat
+# remains fully visible even when it overlaps the striker."
+#
+# The first version merged both masks and painted one grey. It scored 75.51%
+# against plain cropping's 78.14%.
+
+def test_the_defaults_are_the_paper_not_a_guess():
+    assert ALPHA == 0.5
+    assert BODY_TINT == (0, 0, 255)      # blue, RGB
+    assert BAT_TINT == (0, 255, 0)       # green, RGB
+
+
+def test_striker_and_bat_are_kept_apart():
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    bat = _with_mask(det(500, 330, w=20, h=90, cls="Bat"), (300, 360, 490, 510))
+    body_mask, bat_mask = part_masks(s, [s, bat])
+
+    assert body_mask is not None and bat_mask is not None
+    assert body_mask[300, 400] and not bat_mask[300, 400]
+    assert bat_mask[330, 500]
+
+
+def test_a_distant_bat_is_not_his():
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    far = _with_mask(det(860, 60, w=20, h=90, cls="Bat"), (20, 100, 850, 875))
+    _body, bat_mask = part_masks(s, [s, far])
+    assert bat_mask is None
+
+
+def test_the_striker_goes_blue_and_the_bat_goes_green():
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    bat = _with_mask(det(500, 330, w=20, h=90, cls="Bat"), (300, 360, 490, 510))
+
+    out = overlay(frame, s, [s, bat])
+
+    body_px = out[300, 400]
+    bat_px = out[330, 500]
+    assert body_px[2] > body_px[0] and body_px[2] > body_px[1], body_px
+    assert bat_px[1] > bat_px[0] and bat_px[1] > bat_px[2], bat_px
+
+
+def test_the_bat_wins_where_it_overlaps_the_striker():
+    """The paper's stated reason for the ordering, and the whole point of
+    keeping the two masks apart."""
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    # a bat whose mask sits inside the striker's
+    bat = _with_mask(det(430, 330, w=20, h=90, cls="Bat"), (300, 360, 400, 440))
+
+    out = overlay(frame, s, [s, bat])
+
+    shared = out[330, 420]
+    assert shared[1] > shared[2], ("overlap should be green, got", shared)
+
+
+def test_half_the_original_pixel_survives_at_alpha_half():
+    """'to avoid the loss of full information such as the position of the
+    hands and rest of the body'."""
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+
+    out = overlay(frame, s, alpha=0.5, body_colour=(0, 0, 0))
+
+    assert out[300, 400].tolist() == [100, 100, 100]
+
+
+def test_the_background_is_untouched():
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    s = _with_mask(det(*BATTER), (280, 500, 380, 480))
+    bat = _with_mask(det(500, 330, w=20, h=90, cls="Bat"), (300, 360, 490, 510))
+
+    out = overlay(frame, s, [s, bat])
+
+    assert out[50, 50].tolist() == [200, 200, 200]
+
+
+def test_a_bat_with_no_striker_still_gets_painted():
+    """part_masks needs a striker, but a carried pair may have only one side."""
+    frame = np.full((FH, FW, 3), 200, np.uint8)
+    bat_mask = np.zeros((FH, FW), bool)
+    bat_mask[300:360, 490:510] = True
+
+    out = overlay(frame, masks=(None, bat_mask))
+
+    px = out[330, 500]
+    assert px[1] > px[0] and px[1] > px[2], px
+    assert out[50, 50].tolist() == [200, 200, 200]

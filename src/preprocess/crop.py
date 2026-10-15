@@ -40,7 +40,8 @@ from src.preprocess.striker import candidates, pick_striker
 
 __all__ = ["crop_clip", "track_boxes", "track_picks", "segment",
            "frame_mask", "carried_mask", "smooth_boxes", "CropResult",
-           "overlay", "blackout", "SEG_MODE", "ALPHA", "TINT", "SIDE_FROM",
+           "overlay", "blackout", "part_masks", "SEG_MODE", "ALPHA",
+           "BODY_TINT", "BAT_TINT", "TINT", "SIDE_FROM",
            "OUTLIER", "PAD", "SIZE", "MIN_FRAMES", "MIN_DETECTED",
            "BAT_REACH"]
 
@@ -49,15 +50,16 @@ TRACK_IOU = 0.2     # overlap with the dominant track to count as the batter
 BAT_REACH = 1.0     # body-heights; further than this is not his bat
 MIN_DETECTED = 0.4  # of a shot must be real detections, or the track is fiction
 PAD = 0.25          # each side, as a fraction of the square's side
-# The segmentation layer. The paper says "a semi-transparent overlay is
-# applied to the batter and bat" and gives neither colour nor weight, so both
-# are parameters and tools/overlay_sweep.py renders them to be looked at.
 SIDE_FROM = "height"   # or "max"; see crop_clip
+
+# The segmentation layer, to the paper's own specification: alpha 0.5, striker
+# blue, bat green, striker painted first so the bat stays visible where it
+# overlaps. Colours are RGB -- read_clip(rgb=True) is what fills these arrays.
 SEG_MODE = "overlay"
-ALPHA = 0.4
-TINT = (150, 150, 150)  # BGR. Grey, not green: grass is green, and tinting
-                        # the batter towards it cost figure/ground separation
-                        # in tools/overlay_sweep.py
+ALPHA = 0.5
+BODY_TINT = (0, 0, 255)   # blue
+BAT_TINT = (0, 255, 0)    # green
+TINT = BODY_TINT          # so older imports still resolve
 
 MEDIAN_W = 5        # spike removal
 MEAN_W = 3          # the actual smoothing
@@ -220,29 +222,47 @@ def track_boxes(per_frame, shape) -> List[Optional[tuple]]:
     return out
 
 
-def frame_mask(striker, dets=()):
-    """The batter and his bat as one mask, or None if he has no silhouette.
+def part_masks(striker, dets=()):
+    """(striker, bat) silhouettes, kept apart. Either may be None.
 
-    The bat is a separate detection, so keeping only the striker's outline
-    would throw away the one object that tells a Sweep from a Pull. Bats more
-    than a body-height away belong to somebody else.
+    They stay separate because the paper colours them differently and paints
+    the bat *second*, "ensuring that the bat remains fully visible even when
+    it overlaps the striker". Merging them first throws that away, and the bat
+    is the one object that tells a Sweep from a Pull.
+
+    Bats more than a body-height away belong to somebody else.
     """
     if striker is None or striker.mask is None:
-        return None
-    mask = striker.mask.astype(bool)
+        return None, None
+    body_mask = striker.mask.astype(bool)
+
     cx, cy = _centre(striker.box)
     body = striker.box[3] - striker.box[1]
     if body == 0:
         body = 1.0
 
+    bat_mask = None
     for det in dets:
         if det.cls != "Bat" or det.mask is None:
             continue
         bx, by = _centre(det.box)
         gap = ((bx - cx) ** 2 + (by - cy) ** 2) ** 0.5 / body
         if gap <= BAT_REACH:
-            mask |= det.mask.astype(bool)
-    return mask
+            if bat_mask is None:
+                bat_mask = det.mask.astype(bool)
+            else:
+                bat_mask = bat_mask | det.mask.astype(bool)
+    return body_mask, bat_mask
+
+
+def frame_mask(striker, dets=()):
+    """The batter and his bat as one mask, for the blackout variant."""
+    body_mask, bat_mask = part_masks(striker, dets)
+    if body_mask is None:
+        return None
+    if bat_mask is None:
+        return body_mask
+    return body_mask | bat_mask
 
 
 def blackout(frame, striker, dets=(), mask=None):
@@ -262,40 +282,72 @@ def blackout(frame, striker, dets=(), mask=None):
     return out
 
 
-def overlay(frame, striker, dets=(), mask=None, alpha=ALPHA, colour=TINT):
-    """Tint the batter and bat, keeping the background. The paper's layer.
+def _blend(out, mask, colour, alpha):
+    if mask is None or not mask.any():
+        return
+    tint = np.array(colour, dtype=np.float32)
+    kept = out[mask].astype(np.float32)
+    out[mask] = np.rint((1.0 - alpha) * kept + alpha * tint).astype(out.dtype)
 
-    "To reduce the effect of jersey color and lighting variations, a
-    semi-transparent overlay is applied to the batter and bat." Section III.
-    Blending towards one fixed colour pulls every jersey towards the same
-    hue, so the model stops keying on kit colour, while the pitch and the
-    fielders -- which say where the ball went -- stay where they are.
 
-    `alpha` is the weight of the tint: 0 leaves the frame alone, 1 is the
-    blackout above with a different colour. The paper does not state it, so
-    it is a parameter to be measured, not a constant to be guessed.
+def overlay(frame, striker=None, dets=(), masks=None, alpha=ALPHA,
+            body_colour=BODY_TINT, bat_colour=BAT_TINT):
+    """The paper's segmentation layer, to its own specification.
+
+    Section III-? states it exactly: "the predicted masks were overlaid with
+    semi-transparent colors (alpha = 0.5), highlighting the striker in blue
+    and the bat in green. Semi-transparent color is chosen instead of full
+    solid to avoid the loss of full information such as the position of the
+    hands and rest of the body. **The striker is colored first, followed by
+    the bat, ensuring that the bat remains fully visible even when it
+    overlaps the striker.**"
+
+    So: two colours, not one; and the order matters. Painting the bat second
+    means the overlap belongs to the bat, which is the object that names the
+    shot. The first version of this merged both masks and painted them one
+    grey, and scored 75.51% against plain cropping's 78.14%.
+
+    Colours are **RGB**, because `read_clip(rgb=True)` is what fills these
+    arrays. A grey tint hid that; blue and green do not.
     """
     if not 0.0 <= alpha <= 1.0:
         raise ValueError(f"alpha must be in [0, 1], got {alpha}")
-    if mask is None:
-        mask = frame_mask(striker, dets)
-    if mask is None or alpha == 0.0:
+    if masks is None:
+        masks = part_masks(striker, dets)
+    body_mask, bat_mask = masks
+    if body_mask is None and bat_mask is None:
+        return frame
+    if alpha == 0.0:
         return frame
 
     out = frame.copy()
-    tint = np.array(colour, dtype=np.float32)
-    kept = out[mask].astype(np.float32)
-    out[mask] = np.rint((1.0 - alpha) * kept + alpha * tint).astype(frame.dtype)
+    _blend(out, body_mask, body_colour, alpha)   # striker first
+    _blend(out, bat_mask, bat_colour, alpha)     # then the bat, on top
     return out
 
 
-def segment(frame, striker, dets=(), mask=None, mode=SEG_MODE, alpha=ALPHA,
-            colour=TINT):
+def _merge(masks):
+    """The two parts as one mask, for the blackout variant."""
+    if masks is None:
+        return None
+    body_mask, bat_mask = masks
+    if body_mask is None:
+        return bat_mask
+    if bat_mask is None:
+        return body_mask
+    return body_mask | bat_mask
+
+
+def segment(frame, striker=None, dets=(), masks=None, mode=SEG_MODE,
+            alpha=ALPHA, body_colour=BODY_TINT, bat_colour=BAT_TINT):
     """The segmentation layer. `mode` picks which one."""
     if mode == "overlay":
-        return overlay(frame, striker, dets, mask, alpha=alpha, colour=colour)
+        return overlay(frame, striker, dets, masks, alpha=alpha,
+                       body_colour=body_colour, bat_colour=bat_colour)
     if mode == "blackout":
-        return blackout(frame, striker, dets, mask)
+        if masks is None:
+            return blackout(frame, striker, dets)
+        return blackout(frame, striker, dets, _merge(masks))
     raise ValueError(f"unknown segmentation mode: {mode!r}")
 
 
@@ -311,7 +363,7 @@ def _shift(mask, dx: int, dy: int):
 
 
 def carried_mask(picks, per_frame, i: int, box):
-    """The nearest real silhouette, moved onto `box`.
+    """The nearest real (striker, bat) silhouettes, moved onto `box`.
 
     An interpolated frame has no mask of its own. Measured on 463 frames that
     do have one, by pretending they do not: carrying the neighbour scores
@@ -324,12 +376,20 @@ def carried_mask(picks, per_frame, i: int, box):
         for j in (i - step, i + step):
             if j < 0 or j >= len(picks):
                 continue
-            mask = frame_mask(picks[j], per_frame[j])
-            if mask is None:
+            body_mask, bat_mask = part_masks(picks[j], per_frame[j])
+            if body_mask is None and bat_mask is None:
                 continue
             qx, qy = _centre(picks[j].box)
-            return _shift(mask, int(round(cx - qx)), int(round(cy - qy)))
-    return None
+            dx = int(round(cx - qx))
+            dy = int(round(cy - qy))
+            moved = []
+            for one in (body_mask, bat_mask):
+                if one is None:
+                    moved.append(None)
+                else:
+                    moved.append(_shift(one, dx, dy))
+            return moved[0], moved[1]
+    return None, None
 
 
 def _fill(boxes, lo: int, hi: int):
@@ -426,8 +486,8 @@ def _best_shot(clip, boxes, cuts):
 def crop_clip(clip: np.ndarray, per_frame, size: int = SIZE, pad: float = PAD,
               min_frames: int = MIN_FRAMES, min_detected: float = MIN_DETECTED,
               cuts=None, segmented: bool = False, seg_mode: str = SEG_MODE,
-              alpha: float = ALPHA, colour=TINT,
-              side_from: str = SIDE_FROM) -> CropResult:
+              alpha: float = ALPHA, body_colour=BODY_TINT,
+              bat_colour=BAT_TINT, side_from: str = SIDE_FROM) -> CropResult:
     """Crop a clip to the batter. `per_frame` is detect()'s output for it.
 
     `segmented=True` applies the segmentation layer first, which needs
@@ -482,15 +542,15 @@ def crop_clip(clip: np.ndarray, per_frame, size: int = SIZE, pad: float = PAD,
         x, y, s = _square(box, float(sides[k]), fw, fh)
         src = clip[lo + k]
         if segmented:
-            mask = frame_mask(picks[lo + k], per_frame[lo + k])
-            if mask is None:
-                mask = carried_mask(picks, per_frame, lo + k, box)
-                if mask is not None:
+            masks = part_masks(picks[lo + k], per_frame[lo + k])
+            if masks[0] is None and masks[1] is None:
+                masks = carried_mask(picks, per_frame, lo + k, box)
+                if masks[0] is not None or masks[1] is not None:
                     carried += 1
-            if mask is None:
+            if masks[0] is None and masks[1] is None:
                 nomask += 1
-            src = segment(src, None, mask=mask, mode=seg_mode,
-                          alpha=alpha, colour=colour)
+            src = segment(src, None, masks=masks, mode=seg_mode, alpha=alpha,
+                          body_colour=body_colour, bat_colour=bat_colour)
         patch = src[y:y + s, x:x + s]
         out[k] = cv2.resize(patch, (size, size), interpolation=cv2.INTER_AREA)
 

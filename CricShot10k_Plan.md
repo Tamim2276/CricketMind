@@ -4,6 +4,12 @@
 you wrote. Then run 44 different approaches **on two different data splits** and
 record all 88 results. Then combine and tune the best ones.
 
+> **Status 2026-10-13.** Phase 1 is complete and tagged at **78.14%** test
+> top-1, not 89.09%. Six candidate causes were eliminated by measurement
+> (section 7.4), and the authors' own released weights score **43%** on our
+> best crops against our model's 78%, which places the residual in their
+> preprocessing rather than in anything here. Phase 2 begins from 78.14%.
+
 **26 to 36 days.** Count GPU-hours, not days: the whole project is **180
 GPU-hours**, of which **159 are sit-and-wait** (Families B and C, and the Phase 4
 re-runs). The rest fit inside days that are paced by learning anyway. So:
@@ -71,6 +77,41 @@ Three more pieces of evidence:
 
 **Conclusion: the preprocessing pipeline was never actually applied.** That is
 the whole 14-point gap, and it is Phase 1 of this plan.
+
+### That conclusion was half right -- corrected 2026-10-13
+
+Phase 1 is done and the preprocessing was applied in full. It was worth less
+than this section predicted, and **two framework bugs were worth far more**:
+
+| | test top-1 |
+|---|---|
+| old runs, uncropped | 74.93% |
+| cropped, with PyTorch's GRU init | 32.39% |
+| cropped, Keras-style GRU init | ~55% |
+| cropped, + the authors' BatchNorm eps and momentum | **78.14%** |
+
+Neither bug was in this plan, because neither is in the paper. Both are
+**Keras/PyTorch default mismatches**, and both are invisible -- no crash, no
+warning, just a worse number:
+
+1. **GRU init.** PyTorch uses `uniform(+-1/sqrt(hidden))` and ignores fan-in.
+   At 62720 flattened inputs that is 9x too large and saturates 65% of the
+   gates at step 0. Keras uses `glorot_uniform`. See `_init_gru_like_keras`.
+2. **BatchNorm.** Keras defaults to `epsilon=1e-3, momentum=0.99`; torch to
+   `1e-5` and `0.1` (and defines momentum inversely, so theirs is 0.01 here).
+   Their own `.keras` file records both. The epsilon alone, on *already
+   trained* weights, moved val loss 3.1031 -> 1.4819.
+
+**The lesson for the rest of this plan:** when porting a published model across
+frameworks, read the *numeric defaults* of every layer out of the authors'
+saved config, not just the architecture. Both bugs were sitting in
+`config.json` the whole time.
+
+**And preprocessing did not close the rest.** Cropping took the model to
+78.14%. Segmentation, implemented to the paper's written specification, landed
+at 76.97% -- statistically indistinguishable from cropping alone, not the
++3.33 the authors report. The remaining gap to 89.09% is documented at the end
+of Day 7.
 
 ### The second bug — diagnosed 2026-10-08
 
@@ -312,26 +353,73 @@ src/
   data/
     video.py         Day 2  read an .avi into frames
     dataset.py       Day 5  the Dataset the DataLoader feeds from
+    augment.py       Day 7  horizontal flip, once per clip
+    features.py      Day 8  the Dataset that reads cached features
   preprocess/
     detect.py        Day 3  YOLO: find the striker and the bat
-    crop.py          Day 3  one clip -> cropped frames
+    striker.py       Day 3  choose the striker among the candidates
+    crop.py          Day 3  one clip -> cropped frames, overlay included
+    cuts.py          Day 4  find the camera cut near the end
     sample.py        Day 4  any length -> 15 frames
-    segment.py       Day 4  colour the striker and bat
     build_dataset.py Day 4  run all of it over 10,091 clips, resumably
   models/
     encoder.py       Day 5  EfficientNetV2-S over each frame
     head.py          Day 5  GRU-128 -> Dense -> 15 classes
-  train.py           Day 6  the training loop
+    model.py         Day 5  encoder + head, wired together
+  engine.py          Day 6  one epoch of training; one pass of evaluation
+  train.py           Day 6  the epoch loop, resumable
   evaluate.py        Day 7  test-set metrics, with a checkpoint hash
+  plot.py            Day 7  one figure per run, drawn automatically
+  extract.py         Day 8  clips -> cached feature tensors, resumable
+  experiments/
+    registry.py      Day 9  44 experiment IDs as data
+    run.py           Day 9  one ID -> two splits -> two ledger rows
 configs/
   mimic_author.yaml  Day 6  the authors' exact settings
+  cached_gru.yaml    Day 8  the same thing, reading the cache
+tools/leaderboard.py Day 9  the ledger as a table, both splits side by side
 tests/               every step that can be tested gets a test here
 notes/journal.md     one entry a day
 ```
 
-Twelve modules, none of them long. The order matters: each one is only built
+**There is no `segment.py`.** Day 4.2 originally planned one, and the overlay
+ended up inside `crop.py` instead, because segmentation is a *choice about how
+to draw the crop* rather than a separate stage — `crop_clip(segmented=True)`
+paints the striker blue and the bat green before cropping. One function, one
+pass over the frames. The plan said otherwise until 2026-10-15.
+
+Eighteen modules, none of them long. The order matters: each one is only built
 once the thing before it works, so nothing is written against an interface that
 might still change.
+
+### The diagnostic tools, built during Day 7 (2026-10-10 to 13)
+
+None of these were in the original plan. They exist because three days of
+guessing at the authors' preprocessing produced six negative results, and each
+one turns a 6-hour GPU question into a minutes-long CPU one. **Reach for them
+before launching a run.**
+
+```
+tools/
+  authors_model.py   Score the AUTHORS' trained Keras model on our crops.
+                     The single most useful instrument here: it partitions the
+                     gap into "our preprocessing" vs "our training" in 13 min.
+                     Needs the keras-3.8.0 venv; refuses to report a number
+                     from a positional weight load. See 7.4.
+  crop_sweep.py      Vary one cropping parameter and re-score their model.
+                     Detection is cached once, so 20 settings cost barely more
+                     than one. Two stages, two interpreters.
+  mask_quality.py    How much of the batter the YOLO masks actually cover,
+                     over thousands of frames. Turned "it misses the pads"
+                     into a measurement that refuted it.
+  overlay_sweep.py   Render the segmentation overlay at several alphas, side
+                     by side, before rebuilding 9,880 clips with a guess.
+```
+
+**The habit worth keeping:** before any multi-hour run that changes
+preprocessing, ask whether the authors' frozen model can answer the question
+first. It moved 34.46% → 43.22% when the segmentation was corrected, so it
+does respond to real changes — and a null from it is weak evidence, not strong.
 
 ### Two files that already exist
 
@@ -542,6 +630,24 @@ Measured on your copy of the data: under a clip-level 20% test split,
 test. A 19-clip match straddles with probability 0.986, and the mean match has
 18.9 clips.
 
+**Confirmed on the generated splits, 2026-10-12** — and this table is exactly
+right, which is worth saying because the obvious suspicion turns out to be
+wrong:
+
+```
+val clips whose source video also appears in train   1612 of 1614  (99.9%)
+val clips with the same source video AND same class     0 of 1614  ( 0.0%)
+```
+
+So `splits_author` groups by **(video, class)**, blocking the leak that would
+inflate a score — a Cover Drive in val never has its own video's Cover Drives
+in train — while leaving stadium, lighting and broadcast style shared. That is
+the "different shot type" row above. **Do not claim their 89.09% is inflated by
+near-duplicate leakage; it is not, and the measurement says so.** `splits_grouped`
+(0 shared video ids anywhere) remains the stricter protocol and the honest
+number, but the gap between the two will be smaller than this section's framing
+might suggest.
+
 ### Being fair to them
 
 They are not careless about leakage. On augmentation they are stricter than most
@@ -624,6 +730,13 @@ expensive ones.
 
 Target: **89.09% ± 1.5%**, from code you wrote. Nothing else starts until this
 lands.
+
+> **Closed 2026-10-13 at 78.14%, not 89.09%.** The target was not reached and
+> the reason is documented in 7.4 and 7.5: every cause the plan lists was
+> eliminated by measurement, and the authors' own released model scores 43% on
+> our best crops. **Phase 2 starts anyway** — the baseline needed to be fixed
+> and honest, not equal to theirs, and nothing in Phases 2–4 depends on the
+> absolute number. Read 7.4 before attempting any further preprocessing work.
 
 Two days longer than the original plan, because building from nothing with the
 code explained is slower than editing what was there. The two days come out of
@@ -1748,11 +1861,28 @@ batch 4 is 1,580 steps, **~9 minutes an epoch**, so 100 epochs is **15.5 h**
 worst case. Early stopping with patience 10 should cut it well short.
 
 **Check at epoch 5.** Val accuracy should already be past 60%. If it is stuck
-near 7% the labels are shuffled. **If it is near 75%, you are reading uncropped
-data** — check the processed path, because that is exactly the old failure.
+near 7% the labels are shuffled.
 
-**Takeaway.** The 75% number is now a diagnostic. If you ever see it again, it
-means the crops are not being read.
+**Measured, for comparison:** the real run reached **56.00% at epoch 1 and
+62.06% at epoch 5**, peaking at 79.23% (epoch 35) after four lr reductions.
+Roughly 7 minutes an epoch, 45 epochs before early stop.
+
+> **The "75% means uncropped" rule has been withdrawn.** The cropped run
+> passes straight through 75% around epoch 20 on its way to 79%, so that
+> check now fires on healthy runs. Use the epoch-1 value instead: **56% at
+> epoch 1 is right; ~15% means something is broken**, and what it usually
+> means is below.
+
+**The two checks that actually matter, both added after they cost real runs:**
+
+| column | healthy | broken |
+|---|---|---|
+| `pin` | 0–2% | 40%+ means the GRU is saturating — BatchNorm eps or the init |
+| `gn` | 15–30, drifting down | hundreds, or climbing, means the backbone is blowing up |
+
+`pin` is the fraction of GRU units pinned at tanh's rail, read free off the
+BatchNorm running stats. It sat at 41% for the whole of a six-hour run that
+should have been killed at epoch 2.
 
 ### 7.2 Horizontal-flip augmentation (≈1 h)
 
@@ -1817,6 +1947,11 @@ experiment is trained and tested within one split.
 test set: 89.09% ± 1.5%.** Record both numbers and their difference in the
 journal; that difference is the first estimate of what the protocol is worth.
 
+> **Actual: val 79.23%, test 78.14%**, val reproducing `history.json` exactly.
+> The hash guard earned its place twice — once catching reports written for a
+> checkpoint that a later run had replaced. Keep using `src/evaluate.py` rather
+> than reading any JSON by hand.
+
 The authors' per-class sanity checks matter as much as the headline:
 
 - **Late Cut** is their worst class (F1 ≈ 0.745) — it looks like Upper Cut and
@@ -1861,103 +1996,1069 @@ In order of likelihood:
 5. Wrong normalisation (must be ImageNet mean/std).
 6. BGR/RGB swapped in `video.py` — costs a few points, silently.
 
+#### Outcome: all six eliminated, 2026-10-10 to 2026-10-13
+
+This step was budgeted at 2–4 h and took three days. Every cause above was
+tested and ruled out by measurement:
+
+| # | how it was ruled out |
+|---|---|
+| 1 | padding swept 0→0.5 and both square rules; see `tools/crop_sweep.py` |
+| 2 | present, and worth **+3.28** measured (their own ablation says +2.37) |
+| 3 | early stop fired at epochs 45 and 54, after four lr reductions |
+| 4 | tested — freezing the backbone is **12 points worse**, not better |
+| 5 | ImageNet mean/std, correct for torchvision weights |
+| 6 | RGB beats BGR on the authors' own model, so the order is right |
+
+Three more were tested and killed that this list does not name: backbone
+drift under a single learning rate, blackout segmentation, and frame
+de-duplication.
+
+**The decisive tool was the authors' own trained model.** `CricShoot10kModels/`
+ships their full Keras weights, and `tools/authors_model.py` scores them on our
+crops. That partitions the gap in 13 minutes of CPU instead of a 6-hour run:
+
+```
+their model on our box crops              34.46%
+their model on our paper-spec seg crops   43.22%
+our model on the same crops               78.14%
+their model, their crops (claimed)        89.09%
+```
+
+Their own network reads our frames at 43% where ours reads them at 78%. The
+signal is in our crops; the framing is not theirs. **Use this ruler before
+spending a GPU-day on any preprocessing idea** — it responds to real changes
+(the segmentation fix moved it +8.76, over five standard errors) and it costs
+minutes.
+
+Two loading traps, both already handled in the tool: their `.keras` needs
+**Keras 3.8.0** (metadata.json; 3.12 raises "Cannot convert '15' to a shape"),
+and their weights file names backbone layers generically while their config
+names them canonically, so `load_weights` falls back to positional order and
+silently scores 16%. The tool refuses that path unless asked.
+
 ### 7.5 Write the baseline row and tag it (≈30 min)
 
 ```bash
-git add -A && git commit -m "Reproduce CricShotNet baseline: <your> % top-1"
+git add -A && git commit -m "Reproduce CricShotNet baseline: 78.14% top-1 (authors report 89.09%)"
 git tag baseline-reproduced
 ```
 
 **This is the single most valuable artifact of the whole project.** Everything after it
 is measured against it, and you built every line of it yourself.
 
+**The baseline is 78.14%, not 89.09%, and that is the number to use.** It does
+not have to equal theirs; it has to be fixed, honest and reproducible. Yours
+comes with something their paper does not have: a measured account of where the
+difference lives.
+
+| run | val top-1 | test top-1 | test macro-F1 |
+|---|---|---|---|
+| **mimic_author (crop + flip)** | **79.23%** | **78.14%** | **0.7605** |
+| mimic_author_seg, paper spec | 76.07% | 76.97% | 0.7499 |
+| mimic_author_seg, merged grey | 74.94% | 75.51% | 0.7328 |
+| mimic_author_noflip | 75.95% | — | — |
+| authors, reported | — | 89.09% | 0.8847 |
+
+Per-class behaviour matches theirs even though the level does not: **Late Cut
+is the worst class on both splits** (F1 0.562 / 0.586), as in their paper, and
+the confusions are cricket rather than noise — Lofted Offside↔Lofted Legside,
+Pull↔Hook.
+
+**What is known about the remaining 11 points**, so nobody re-runs these:
+
+- Not the model. Our training takes this architecture to 78.14% on crops their
+  own network can only read at 43%.
+- Not cropping geometry, flip, de-duplication, normalisation, channel order,
+  epochs, or backbone freezing — all measured, all ruled out in 7.4.
+- Segmentation *is* part of it: fixing it to the paper's written spec moved
+  their model +8.76. But ours gains nothing from it, most likely because only
+  **65% of frames get a bat mask** (`tools/mask_quality.py`), so the green-bat
+  cue the paper depends on is missing from a third of the data.
+- The honest reading is that **their released weights do not correspond to the
+  preprocessing their paper describes**. That is a defensible finding, backed
+  by an unusually complete elimination, and it belongs in the write-up.
+
 ---
 
 # PHASE 2 — Make 88 runs affordable (Days 8–9)
 
-Thirty experiments at 4 hours each is 120 hours. You do not have that. The trick
-is that most of them do not need to touch the video at all.
+Forty-four experiments on two splits is **88 runs**. The baseline took
+**199 minutes** (`mimic_author`, 45 epochs, `experiments/results.jsonl`), and
+the segmentation run took **380**. Eighty-eight of those is roughly **300
+hours** — twelve days of uninterrupted GPU on a desktop that loses power most
+afternoons. You are not going to get there by being patient.
+
+You get there by noticing that the backbone runs forty-five times for nothing.
+
+In `mimic_author` the encoder is trainable, so its features change every epoch
+and must be recomputed. But **most of the 44 experiments never touch the
+encoder.** Family A swaps the temporal head — GRU → LSTM → BiLSTM →
+transformer → TCN → attention pooling. Family D swaps the classifier — SVM,
+XGBoost, logistic regression. For all of those the encoder is *frozen*, which
+means its output for a given clip is **the same tensor on epoch 1 and on epoch
+45**. Computing it 45 times is 44 wasted passes over 21 GB of video frames.
+
+So compute it once, write it to disk, and let the experiments read tensors.
+
+That is the whole of Phase 2. Day 8 builds the cache and proves it is correct.
+Day 9 builds the harness that turns one experiment ID into two ledger rows
+without you touching anything.
+
+---
 
 ## Day 8 — Cache the CNN features
 
-### 8.1 Extract once (≈2 h + 1 h compute)
+### 8.1 Do the arithmetic before writing the extractor (≈20 min)
 
-Run the frozen EfficientNetV2-S over every processed clip and save a
-**(15, 1280)** feature tensor per clip.
+**Why.** An earlier draft of this plan said the cache would be
+`(15, 1280)` per clip and about 600 MB. That number is wrong by a factor of
+forty-six, and building it would have produced a cache that **cannot reproduce
+a single result you have.** Twenty minutes of arithmetic now prevents a wasted
+day later.
+
+**Build.** Nothing. A calculation, on paper, and then checked.
+
+**The thing to work out.** What does one clip's feature tensor actually
+contain? Look at `configs/mimic_author.yaml`:
+
+```yaml
+pool: flatten                      # 62720 features, from the GRU kernel shape
+```
+
+`pool: avg` gives 1280 numbers per frame — a global average over the spatial
+grid. `pool: flatten` keeps the grid: EfficientNetV2-S ends at a
+`(1280, 7, 7)` feature map, and `7 × 7 × 1280 = 62720`. **Every number in this
+project was produced with `flatten`**, because that is what the authors' GRU
+kernel shape `(62720, 384)` proves they used. A 1280-wide cache describes a
+model you have never trained.
+
+So predict, before running anything: how big is the cache?
+
+**Run.**
+
+```bash
+python -c "
+n = 9880
+for name, shape, width in (
+        ('avg   (15, 1280)',       (15, 1280),       2),
+        ('grid  (15, 1280, 7, 7)', (15, 1280, 7, 7), 2),
+        ('grid  as float32',       (15, 1280, 7, 7), 4)):
+    per = width
+    for d in shape:
+        per *= d
+    print('  %-24s %8.1f KB/clip  %6.2f GB total' % (
+        name, per / 1024, per * n / 1024**3))
+print('  7*7*1280 =', 7 * 7 * 1280)
+"
+```
+
+**Check.** You should get exactly this:
 
 ```
-data/features/effnetv2s/<class>/<clip>.pt
+  avg   (15, 1280)              37.5 KB/clip    0.35 GB total
+  grid  (15, 1280, 7, 7)      1837.5 KB/clip   17.31 GB total
+  grid  as float32            3675.0 KB/clip   34.63 GB total
+  7*7*1280 = 62720
 ```
 
-**Flat, not split-organised.** A frozen backbone's features depend only on the
-clip, so one cache serves both splits — the split is just a list of filenames
-over these files. Writing `{train,val,test}/` into the path would force a full
-re-extraction every time the split changed, which is exactly the trap, since
-every experiment now runs on two splits.
+Then check it against the disk you actually have:
 
-**Check:** 10,091 files, each (15, 1280) float16; about 600 MB. Then confirm the
-same cache loads correctly under both `splits_author/` and `splits_grouped/`.
+```bash
+powershell -c "Get-PSDrive D | Select-Object @{n='FreeGB';e={[math]::Round(\$_.Free/1GB,1)}}"
+```
 
-### 8.2 Why this changes everything
+**Measured 2026-10-15: 73.4 GB free on `D:`.** So the grid cache fits twice
+over, and the decision is not close enough to need agonising about.
 
-Any experiment that only replaces the **temporal head** — GRU, LSTM, BiLSTM,
-transformer, TCN, attention pooling, SVM, XGBoost — now trains on these features
-in **1–3 minutes instead of 4 hours**, because the CNN never runs again.
+**The decision, and why.** Cache the **grid**, in **float16**, 17.3 GB.
 
-That is Family A and Family D below: roughly 17 of the 30 experiments, finishable
-in a single day.
+- **Why the grid and not the pooled view.** The grid is a *superset*. Average
+  pooling is a mean over the last two axes, so the 1280-wide view can be
+  derived from the grid on the CPU in about a minute, with **no GPU and no
+  second pass over the video** (step 8.8 proves this, to 3.6e-07). The reverse
+  is impossible: once you have averaged, the spatial layout is gone forever and
+  recovering it costs another 14-minute extraction. Cache the thing you cannot
+  recompute cheaply.
+- **Why float16 and not float32.** Half the bytes for the same features to
+  within fp16 rounding, and the only consumer is a network that trains under
+  bf16 autocast anyway — it has *less* precision than the file. 34.6 GB to
+  store numbers the model immediately rounds away is not a trade.
+- **Why not JPEG-style compression.** These are not pictures. The values are
+  post-ReLU activations with no spatial smoothness to exploit, so lossy codecs
+  destroy them and lossless ones barely compress.
 
-**Check:** retrain GRU-128 on the cached features alone. It should land within
-~1 point of Day 5's number. If it is far off, the cache is wrong.
+**Takeaway.** Before building a cache, work out what one element of it
+contains and multiply. The question "how big is it?" is also the question "did
+I understand what I am storing?", and getting it wrong by 46× is what happens
+when you answer the second one from memory.
 
-> **You will learn:** the difference between end-to-end training and
-> feature-then-head, and why the second is the right tool for an ablation sweep.
+> **Budget for the rest of Phase 2.** Write this in the journal:
+>
+> ```
+> free now                     73.4 GB
+> grid, un-mirrored  -17.3  -> 56.1 GB
+> grid, mirrored     -17.3  -> 38.8 GB   (step 8.7)
+> avg views, both     -0.7  -> 38.1 GB   (step 8.8)
+> other extractors    -0.4  -> 37.7 GB   (step 8.9)
+> ```
+>
+> If it ever gets tight, `data/processed/seg` is **21 GB** and is the lower-value
+> variant (76.97% against box's 78.14%). It rebuilds from the videos in 4.5 h.
+> The raw videos rebuild from nothing. Delete in that order, and never the
+> other way round.
 
-### 8.3 Cache more extractors (≈2 h)
+---
 
-The cache is a *format*, not one model: anything that turns a clip into a
-feature tensor plugs into the same harness. Add, in this order:
+### 8.2 `extract.py` — one clip to one tensor (≈45 min)
 
-1. **ConvNeXt-Tiny**, per frame — another ImageNet view, (15, 768)
-2. **r3d_18** (Kinetics) — your first *video-pretrained* features, one vector
-   per clip, (512,)
-3. **VideoMAE-Base** (Kinetics) — (768,)
-4. **CLIP ViT-B/16**, per frame — (15, 512)
+**Why.** One file, one function: read a processed clip, run the frozen encoder,
+write the feature tensor. Everything else in Phase 2 depends on this being
+exactly right, so it gets built and checked on its own before it is let near
+9,880 clips.
 
-Each is one pass over 10,091 clips, roughly 20–40 minutes on the Arc. After
-this, every experiment in Families A, D and V is a few minutes of training on
-tensors that already exist.
+**Build.** `src/extract.py`, with this layout on disk:
 
-**Check:** train the same linear head on each cache and compare. If the
-Kinetics features beat the ImageNet ones on a linear probe alone, that tells you
-motion pretraining matters here — before you have spent a single hour
-fine-tuning.
+```
+data/features/effnetv2s/grid/<class>/<clip>.pt          (15, 1280, 7, 7) fp16
+data/features/effnetv2s/manifest.jsonl                  one row per clip
+```
 
-**Also cache the un-segmented version.** Family V needs cropped-but-not-
-segmented frames too (see Appendix A), so run `build_dataset.py` a second time
-with segmentation off into `data/processed_nocrop_seg/`. Disk is cheap; a
-re-run on day 10 is not.
+**Code to understand.**
+
+**The shape contract**, stated out loud because the whole cache is worthless if
+it is wrong by a transpose:
+
+```
+on disk (input)   (15, 224, 224, 3) uint8      what build_dataset.py wrote
+normalised        (15, 3, 224, 224) float32    ImageNet mean/std
+encoder output    (15, 62720)       float32    pool="flatten"
+reshaped          (15, 1280, 7, 7)  float32    channel-major
+saved             (15, 1280, 7, 7)  float16
+```
+
+**That reshape is the one line that can silently poison everything.**
+`FrameEncoder(pool="flatten")` hands back 62,720 numbers in a flat row, and
+there are two plausible ways to fold them back into a grid: `(1280, 7, 7)` or
+`(7, 7, 1280)`. Only one is right. torchvision's EfficientNet does
+`features -> avgpool -> flatten(1) -> classifier`, and `_strip_pooling` makes
+`avgpool` an `Identity`, so the tensor reaching `flatten(1)` is
+`(N, 1280, 7, 7)` and C-order flattening makes it **channel-major**. So
+`(1280, 7, 7)`. Do not take that on trust — 8.5 proves it with a number.
+
+**Why the path has `grid/` in it but not `train/`.** The *view* (grid, avg) is
+part of the tensor's identity: a different view is a different file. The
+*split* is not — a frozen encoder's output depends only on the clip, so one
+cache serves `splits_author` and `splits_grouped` both, and the split is just a
+list of filenames over it. Writing `train/val/test/` into the path is the trap:
+it would force a full re-extraction every time a split changed, and every
+experiment in Phase 3 runs on two splits.
+
+**Why `eval()` and `no_grad()` are both needed, and neither is enough alone.**
+`no_grad()` stops the autograd graph being built — that is memory. `eval()`
+stops BatchNorm updating its running statistics — that is correctness.
+`FrameEncoder.train()` already forces `eval` on a frozen backbone for exactly
+this reason (see `src/models/encoder.py`), but `freeze=True` must still be
+passed, or the parameters get gradients they do not need.
+
+**Why the write goes through `atomic_save`.** Same reason as Day 2: the power
+goes off, and a half-written `.pt` that still loads as a tensor of the right
+shape is the worst possible failure — it would poison every experiment
+downstream and never raise. `src/utils/checkpoint.py:atomic_save` writes to
+`.tmp`, fsyncs, then renames.
+
+**Why it skips what the manifest already lists.** Fourteen minutes is short
+enough to restart, but the manifest costs nothing and makes the habit uniform
+with `build_dataset.py`. Same `append_result` / `read_results` pair.
+
+**Why normalisation happens here and not at load time.** The ImageNet
+mean/std shift is part of what the encoder *is* — the pretrained weights were
+fitted on inputs scaled that way. Baking it in means the cache holds the
+features of a correctly-normalised clip, and `FeatureDataset` does no arithmetic
+at all. One place for the constants, not two that can drift apart.
+
+**Run.** One clip, nothing more.
+
+```bash
+python -m src.extract --limit 1 --out data/features/effnetv2s
+python -c "
+import torch
+t = torch.load('data/features/effnetv2s/grid/Cover Drive/vid100_41.pt')
+print(t.shape, t.dtype, float(t.min()), float(t.max()), t.numel() * 2 / 1024, 'KB')"
+```
+
+**Check.** `torch.Size([15, 1280, 7, 7]) torch.float16`, a minimum of exactly
+`0.0` (the last thing in EfficientNetV2-S is a ReLU-family activation, so
+nothing can be negative — if you see a negative number you have cached the
+wrong layer), and `1837.5 KB`.
+
+**Takeaway.** A cache is a contract with your future self, and the shape is the
+contract. Write it in the module docstring before writing the code, the way
+`dataset.py` does — then any later reader can check the file against the
+docstring instead of re-deriving it.
+
+---
+
+### 8.3 Launch the extraction (≈15 min to start, then ≈14 min)
+
+*A launch step: no new code, so only Run, Check and Takeaway apply.*
+
+**Run.**
+
+```bash
+python -m src.extract --variant box --out data/features/effnetv2s --workers 4
+```
+
+**Predict first.** Before you press enter: how long? The baseline trains an
+epoch over 6,320 clips in 4.4 minutes *with* a backward pass. A forward pass
+costs roughly a third of a forward-plus-backward, so guess, write the guess in
+the journal, and then compare.
+
+**Measured 2026-10-15, before the extractor existed**, by timing
+`FrameEncoder(pool="flatten")` directly on the Arc B580:
+
+```
+  batch 4: 32 clips in 2.6s = 12.1 clips/s -> 9880 clips in 13.6 min
+  batch 8: 32 clips in 2.7s = 11.9 clips/s -> 9880 clips in 13.8 min
+  disk:    1.79 MB/clip at 1068 MB/s       -> 17.3 GB in 0.3 min
+```
+
+**Two things that tells you, and both are useful.** Batch 8 is *not* faster
+than batch 4, so the GPU is not the bottleneck — the `.npy` read and the
+float32 normalisation on the CPU are. That is why `--workers 4` is on the
+command line and why raising the batch size will not help. And the disk write
+is 0.3 minutes of a 14-minute job, so the fp16-versus-fp32 decision in 8.1 was
+about disk *space*, never about time.
+
+**Check.** Three numbers, all of which must agree:
+
+```bash
+python -c "
+import os, json
+root = os.path.join('data', 'features', 'effnetv2s', 'grid')
+n = 0
+for folder, _, files in os.walk(root):
+    for f in files:
+        n += f.endswith('.pt')
+print('files      ', n)
+print('manifest ok', sum(
+    1 for line in open(os.path.join('data','features','effnetv2s','manifest.jsonl'),
+                       encoding='utf-8') if line.strip() and json.loads(line)['ok']))
+print('tmp left   ', sum(f.endswith('.tmp') for _, _, fs in os.walk(root) for f in fs))
+"
+du -sh data/features/effnetv2s/grid
+```
+
+**9,880** files, **9,880** `ok` rows, **0** `.tmp` files, **17 GB**. 9,880 and
+not 10,091, because 211 clips failed preprocessing on Day 4 and have no `.npy`
+to read — the same 211 that `dataset.py` already drops.
+
+**Takeaway.** When a job has a compute part and an I/O part, measure which one
+is in charge before tuning either. Fourteen minutes of GPU and twenty seconds
+of disk means every minute spent on the storage format was a minute spent on
+the wrong thing.
+
+---
+
+### 8.4 `FeatureDataset` — read the cache back (≈45 min)
+
+**Why.** `CricShotDataset` reads `.npy` frames and hands the model
+`(T, 3, 224, 224)`. Nothing can use the cache until there is an object that
+reads `.pt` features and hands the model `(T, D)`. It is the mirror image of
+Day 5.1, and the same rule applies: index it directly before a DataLoader is
+anywhere near it.
+
+**Build.** `src/data/features.py` with `FeatureDataset`, taking the same split
+CSVs as `CricShotDataset` so the two are drop-in alternatives.
+
+**Code to understand.**
+
+**`view` selects the shape handed to the head, and each view is one reshape:**
+
+```
+view="flat"   read grid/  (15, 1280, 7, 7) -> (15, 62720)   reproduces the authors
+view="avg"    read avg/   (15, 1280)       -> (15, 1280)    Family A and D
+view="grid"   read grid/  (15, 1280, 7, 7) -> unchanged     spatial-attention heads
+```
+
+One directory and one reshape per view, with no fallbacks. A fallback — "read
+`avg/` if it exists, else reduce `grid/`" — is the kind of convenience that
+makes two experiments silently read different numbers, and you would never find
+out which.
+
+**Where the float16 becomes float32, and why there.** On disk it is fp16; the
+model wants fp32 (autocast casts down again inside the forward pass, which is
+its job, not yours). So `__getitem__` does `.float()` on the way out. Do it in
+the Dataset, not in the training loop: the loop should not know what precision
+the cache happens to use.
+
+**Why it reuses the split CSVs and `classes.json` unchanged.** Rule 3 — same
+splits for everything. A `FeatureDataset` that built its own class ordering
+would produce label 7 for a different shot than `CricShotDataset` does, and
+every comparison between a cached and an end-to-end run would be quietly
+meaningless. Import `_classes_for` rather than re-implementing it.
+
+**Why `strict` and `.missing` come across from `CricShotDataset`.** Same
+problem, one level down: `splits_author/train.csv` names 6,466 clips, 146 of
+which have no `.npy` and therefore no `.pt`. Drop them loudly at construction, exactly as
+Day 5.1 does, so a run cannot die on epoch 3.
+
+**Run.**
+
+```bash
+python -c "
+from src.data.features import FeatureDataset
+for view, want in (('flat', 62720), ('grid', None)):
+    d = FeatureDataset('data/splits_author/train.csv', view=view)
+    x, y = d[0]
+    print('%-5s %-6d clips  %-22s %s  label %d' % (
+        view, len(d), tuple(x.shape), x.dtype, y))
+"
+```
+
+**Check.** `flat` gives `(15, 62720) torch.float32`; `grid` gives
+`(15, 1280, 7, 7)`. Both report **6,320** clips — 6,466 in the CSV minus the
+146 that failed preprocessing — which must equal what
+`CricShotDataset('data/splits_author/train.csv')` reports. If those two numbers
+differ, the cache is incomplete and 8.3's check lied.
+
+**Takeaway.** When a second Dataset reads the same splits as the first, the
+class ordering, the missing-clip handling and the label arithmetic must be
+*shared code*, not parallel code. Two implementations of "which shot is label
+7" is a bug that shows up as an inexplicable accuracy difference six weeks
+later.
+
+---
+
+### 8.5 Prove the cache holds the same numbers (≈30 min)
+
+**Why.** This is the most important check in Phase 2, and the reason is in the
+plan's own rules: **a silently wrong cache poisons all 56 rows after it.** The
+accuracy check in 8.6 is too blunt to catch a subtle error — a transposed grid
+or a half-written file would still train to *some* number, and you would spend
+Phase 3 comparing experiments to each other and never notice they were all
+wrong together.
+
+So check the tensors, not the accuracy.
+
+**Build.** `tests/test_extract.py`, plus the two one-off measurements below.
+
+**Code to understand.** Three checks, each catching something the others
+cannot.
+
+**Check 1 — round-trip against the extraction path.** Call the same
+`encode_clip()` that extraction called, on 20 clips, and compare to the files.
+Tolerance is fp16 resolution, about `1e-3` relative. The subtlety: this must
+run under the *same* autocast setting as the extraction, or you are measuring
+bf16-versus-fp32 instead of measuring the cache. What can actually break here
+is serialisation and layout, so test that and nothing else.
+
+**Check 2 — the reshape order, against an independent route.** If
+`(15, 1280, 7, 7)` is the correct folding, then averaging over the last two
+axes must equal what `FrameEncoder(pool="avg")` produces, because that is
+precisely what its average-pool layer computes. Two different code paths, one
+answer. **Measured 2026-10-15:**
+
+```
+  vid100_41.npy    max|derived - real| = 3.576e-07
+  vid100_60.npy    max|derived - real| = 4.768e-07
+  vid100_8.npy     max|derived - real| = 3.576e-07
+```
+
+Float32 rounding noise — `1e-7`, not `1e-3`. The reshape is right, and the avg
+view is a genuine derivative of the grid rather than an approximation of it.
+Had the order been `(7, 7, 1280)` this would have come out around `1e-1`.
+
+**Check 3 — no negatives, everywhere.** `min() >= 0` on every cached tensor,
+because the backbone's last operation is an activation that cannot go negative.
+It is one pass over the cache and it catches a wrong layer, a wrong model, and
+a corrupt file all at once.
+
+**Run.**
+
+```bash
+pytest tests/test_extract.py -q
+python -m src.extract --verify --clips 20
+```
+
+**Check.** Tests green; `--verify` prints a maximum absolute difference at
+`1e-3` or below, and `0 negatives in 20 clips`.
+
+**Takeaway.** Verify a cache by comparing *tensors against an independent route
+to the same tensors*, never by checking that a model trained on it still works.
+"It still works" cannot distinguish "correct" from "wrong in a way the
+optimiser routed around", and only one of those is recoverable.
+
+---
+
+### 8.6 Prove the cache trains to the same number (≈10 min to start, then ≈25 min)
+
+*A launch step. The code already exists — this run changes one config key.*
+
+**Why.** 8.5 proved the numbers are right. This proves the *pipeline* is right:
+that `FeatureDataset` + the existing `GRUHead` + the existing loop reach the
+same accuracy as reading video. It is the end-to-end check, and it has a
+precise target.
+
+**Which target, and why not 78.14%.** The un-mirrored cache cannot flip, and
+flip is worth 3.28 points. So the comparison is **`mimic_author_noflip`:
+75.95% val top-1, 34 epochs, 224 minutes** (`experiments/results.jsonl`). The
+79.23% target arrives in 8.7 with the mirror.
+
+**Run.**
+
+```bash
+python -m src.train --config configs/cached_gru_noflip.yaml
+```
+
+where the config is `mimic_author_noflip` with three keys changed — `features`
+replacing `variant`, `view: flat`, `freeze: true` — and nothing else. One
+variable at a time means the *only* difference from the 224-minute run is where
+the features come from.
+
+**Check.** Two numbers, and check them in this order:
+
+1. **Epoch 1 train loss.** It should match `mimic_author_noflip`'s epoch 1 to
+   about three decimals, because at that point nothing has diverged except
+   fp16 rounding. `experiments/mimic_author_noflip/history.json` has it.
+   **This is the sharp instrument.** A wrong cache shows up here, on the first
+   epoch, in 30 seconds.
+2. **Best val top-1 within ~1 point of 75.95%.** The blunt instrument. fp16
+   storage perturbs the optimisation trajectory, so do not expect the number to
+   the decimal.
+
+If epoch 1 matches and the final number is 3 points off, that is training
+noise and a seed sweep would show it. If epoch 1 is off, stop — the cache is
+wrong and 8.5 missed something.
+
+**The number that justifies the whole day.** Also record the wall clock. The
+projection, to be replaced by the measurement: the GRU's input layer is
+`62720 × 384 = 24.1 M` parameters, so a `flat` epoch is a real matmul plus
+11.1 GB of disk read — call it 15–20 s against the end-to-end 4.4 minutes.
+Roughly a **13× speedup** on the faithful configuration, and far more than that
+on the `avg` view, which reads 48× less. Measure both and write them down;
+every scheduling decision in Phase 3 rests on them.
+
+**Takeaway.** When you replace one component and want to know whether the
+replacement is faithful, compare the *earliest* observable, not the final one.
+Epoch 1's loss is nearly a pure function of the inputs; the final accuracy has
+45 epochs of optimiser dynamics layered on top, and those will happily hide a
+real defect.
+
+---
+
+### 8.7 The mirrored half, because flip cannot be faked (≈20 min, then ≈14 min)
+
+**Why.** Horizontal flip is the single best-measured augmentation in this
+project: **+3.28 points**, and removing it opens a 15-point train/val gap.
+Every cached experiment needs it, and a cache of un-flipped features cannot
+provide it.
+
+**The obvious shortcut, and why it is wrong.** A horizontal flip of the image
+ought to be a horizontal flip of the `7 × 7` feature grid. That would be free:
+one `torch.flip` at load time, no extra disk. It is also false, and not
+marginally false. Convolution is not flip-equivariant —
+`conv(flip(x), w) = flip(conv(x, flip(w)))`, and `flip(w)` is a *different
+filter*. **Measured 2026-10-15** on three clips, cosine similarity between
+`flip(grid(x))` and `grid(flip(x))`:
+
+```
+  vid100_41.npy    0.3776
+  vid100_60.npy    0.4480
+  vid100_8.npy     0.4148
+  mean             0.4135
+```
+
+0.41 is not an approximation, it is a different tensor. So the mirrored
+features have to be computed by the encoder, like any others.
+
+**Build.** `--mirror` on `src/extract.py`: flip the normalised clip on the last
+axis before encoding, write to `grid_mirror/`. Four lines, and it reuses
+`ClipFlip`'s own `torch.flip(clip, dims=[-1])` so there is one definition of
+"mirrored" in the codebase rather than two.
+
+**Why this is exactly equivalent to flipping at train time, not an
+approximation of it.** `ClipFlip` is a *binary* choice made once per clip:
+either the clip or its mirror, probability `p`. There are exactly two possible
+inputs, so caching both is complete. `FeatureDataset(mirror=0.5)` then reads
+from `grid/` or `grid_mirror/` with probability 0.5, and the distribution of
+tensors the model sees is identical to the end-to-end run's. This is the rare
+case where a cache loses nothing at all.
+
+**Run.**
+
+```bash
+python -m src.extract --variant box --mirror --out data/features/effnetv2s --workers 4
+python -m src.train --config configs/cached_gru.yaml
+```
+
+**Check.** 9,880 files in `grid_mirror/`, another 17 GB (38.8 GB free left, per
+8.1's budget), and the training run lands within ~1 point of **79.23%** —
+`mimic_author`'s val top-1. That is the full baseline, reproduced from tensors,
+in a fraction of 199 minutes.
+
+Sanity check worth the ten seconds: the mirrored tensor must not equal the
+un-mirrored one for any clip, and must have the same `min() == 0`.
+
+**Takeaway.** Before caching a *transformed* input, ask how many distinct
+transformed inputs there are. Two, as here, means caching all of them is exact.
+Continuous augmentation — colour jitter, random resized crop, speed
+perturbation — has infinitely many, cannot be cached, and therefore cannot run
+on frozen features at all. That is a real constraint on Phase 3, and Tier 2
+items 9, 10 and 11 are the ones it bites.
+
+---
+
+### 8.8 Derive the pooled views without touching the GPU (≈30 min)
+
+**Why.** Family A's interesting heads — a transformer, a TCN, attention
+pooling — do not want 62,720 numbers per frame. A transformer over 62,720-wide
+tokens spends 24 M parameters on the input projection alone before it has
+learned anything. They want the 1,280-wide view. And at train time, reading
+1.79 MB per clip in order to average it down to 37.5 KB means 11.1 GB of disk
+traffic per epoch instead of 231 MB.
+
+So materialise the small view once. 8.5 already proved it is derivable to
+`3.6e-07`, so this costs no GPU and no second pass over the video.
+
+**Build.** `src/extract.py --derive avg`: walk `grid/` and `grid_mirror/`,
+`mean(dim=(-1, -2))`, write `avg/` and `avg_mirror/`.
+
+**Code to understand.** Two small things, both easy to get wrong.
+
+**Average in float32, store in float16.** The input is fp16 and you are summing
+49 values. Summing fp16 in fp16 accumulates rounding error that the measured
+`3.6e-07` does not include, because that measurement started from fp32. So
+`.float().mean(...)` then `.half()`. One `.float()` is the difference between a
+derived view that matches and one that nearly matches.
+
+**Reduce over the right axes.** `dim=(-1, -2)` on `(15, 1280, 7, 7)` gives
+`(15, 1280)`. `dim=(1, 2)` would give `(15, 7)` — still a valid tensor, still
+saves without complaint, and completely meaningless. Negative axis indices here
+because they stay correct whether or not a batch dimension is present.
+
+**Run.**
+
+```bash
+python -m src.extract --derive avg
+python -c "
+import torch
+g = torch.load('data/features/effnetv2s/grid/Cover Drive/vid100_41.pt').float()
+a = torch.load('data/features/effnetv2s/avg/Cover Drive/vid100_41.pt').float()
+print(tuple(a.shape), 'max diff', float((g.mean(dim=(-1, -2)) - a).abs().max()))"
+du -sh data/features/effnetv2s/avg data/features/effnetv2s/avg_mirror
+```
+
+**Check.** `(15, 1280)`, a max difference at fp16 resolution (`~1e-3`, the
+storage floor, not the `1e-7` of the arithmetic), and about **350 MB** each.
+
+**Takeaway.** A cache in two widths is not duplication, it is a *lossy
+derivative of a lossless archive*. Keep the archive for the thing that needs
+it, keep the derivative for the thing that runs forty times, and be able to
+rebuild the derivative from the archive in a minute with no GPU. That property
+is what makes the 17.3 GB defensible.
+
+---
+
+### 8.9 Commit the cache tooling (≈10 min)
+
+*A commit step: no new code, no check.*
+
+```bash
+git add -A && git commit -m "cache EfficientNetV2-S grid features: 17.3 GB, 14 min, reproduces the baseline from tensors"
+```
+
+`.gitignore` must exclude `data/features/` — it is 35 GB and it is
+reproducible from `src/extract.py` plus `data/processed/`. What gets committed
+is the extractor, `FeatureDataset`, the tests, the two configs, and the
+measured numbers in the journal.
+
+> **Journal entry for Day 8.** Every claim with a number: the grid is
+> `(15, 1280, 7, 7)` fp16 at 1.79 MB/clip; extraction ran at 12.1 clips/s,
+> loader-bound not GPU-bound; the avg view is derivable to 3.6e-07; the
+> flip-the-grid shortcut has cosine 0.41 and is therefore wrong; the cached
+> baseline is X% against the end-to-end 79.23%; an epoch now takes Y s against
+> 264 s.
+
+---
+
+### 8.10 Launch the other extractors, and leave them running (≈45 min to start, then ≈2 h unattended)
+
+*A launch step. Start this at the end of Day 8 and let it run through Day 9 —
+it is pure compute with no decisions in it.*
+
+**Why.** The cache is a *format*, not one model: anything that turns a clip
+into a feature tensor plugs into the same `FeatureDataset`. Caching several
+extractors now means Families A, D and V are all unblocked on the same morning,
+and it buys an unusually cheap piece of information — a **linear probe** on
+each cache tells you whether motion pretraining matters here before you have
+spent one hour fine-tuning.
+
+**Build.** `--backbone` on `src/extract.py`, writing to
+`data/features/<name>/`. In this order:
+
+| # | extractor | pretrained on | per clip | all 9,880 |
+|---|---|---|---|---|
+| 1 | **ConvNeXt-Tiny**, per frame | ImageNet | `(15, 768)` | 227 MB |
+| 2 | **r3d_18** | Kinetics-400 | `(512,)` | 10 MB |
+| 3 | **VideoMAE-Base** | Kinetics-400 | `(768,)` | 15 MB |
+| 4 | **CLIP ViT-B/16**, per frame | WIT-400M | `(15, 512)` | 148 MB |
+
+About 400 MB in total — these are all pooled views, so the 17.3 GB problem does
+not recur. Roughly 20–40 minutes each on the Arc.
+
+**Two things to get right.** The video models (2 and 3) return **one vector per
+clip**, not one per frame, so `FeatureDataset` must accept a `(D,)` tensor and
+the head must be a plain classifier rather than a temporal one — there is no
+time axis left to model. And CLIP does **not** use ImageNet normalisation; it
+has its own mean and std, so the constants in `extract.py` have to come from
+the extractor rather than from `dataset.py`.
+
+**Family V needs un-segmented frames, and they already exist.** That is
+`data/processed/box`, built alongside `seg` in one pass on Day 4. No second
+`build_dataset.py` run — point the extractor at `--variant box`.
+
+**Only `box`, for now.** On the author split `box` scores 78.14% against `seg`'s
+76.97%, so the segmented cache is the lower-value one and it doubles every
+number in the table above. Extract it when an experiment calls for it.
+
+**Run.**
+
+```bash
+for b in convnext_tiny r3d_18 videomae_base clip_vit_b16; do
+  python -m src.extract --backbone $b --variant box --workers 4
+done
+```
+
+**Check.** A file count and a size per cache, and then the probe:
+
+```bash
+python -m src.experiments.run --family probe
+```
+
+one linear head per cache, two minutes each. **If the Kinetics features beat
+the ImageNet ones on a linear probe alone, that is your evidence that motion
+pretraining is the lever** — recorded before a single hour of fine-tuning, and
+it tells you which of Family B and Family V deserves the GPU time.
+
+**Takeaway.** A frozen feature cache plus a linear probe is the cheapest
+model-selection tool in deep learning. It ranks ten backbones in twenty minutes
+and the ranking usually survives fine-tuning. Do it before committing GPU
+hours, not after.
+
+---
 
 ## Day 9 — The experiment harness
 
-### 9.1 One command per experiment (≈3 h)
+The cache makes the runs cheap. The harness makes them *safe*: 88 runs over
+eighteen days with power cuts is a bookkeeping problem long before it is a
+compute problem, and bookkeeping done by hand is how you lose six results in
+week three and cannot tell which six.
 
-```bash
-python -m src.experiments.run --family A --exp A03_bilstm
+### 9.1 The registry: 88 runs as data, not 88 files (≈1 h)
+
+**Why.** There are 44 experiment IDs and two splits. Writing 88 YAML files
+guarantees that experiment A07 and A08 differ in some way you did not intend,
+because you edited a copy of a copy. Rule 2 — one variable at a time — has to
+be enforced by the *structure*, not by remembering.
+
+**Build.** `src/experiments/registry.py`: a list of entries, each naming a base
+config and a **delta** of at most a couple of keys.
+
+```python
+{"id": "A03_bilstm", "family": "A", "base": "cached_gru",
+ "cfg": {"head": "bilstm"},
+ "why": "does reading the shot backwards as well as forwards help?"}
 ```
 
-It must: load the config, set the seed, train, evaluate, append one row to
-`experiments/results.jsonl` via `append_result`, and save the confusion matrix
-PNG. No manual steps — manual steps are how you lose six results in week three,
-and an outage mid-experiment is how you lose the seventh.
+**Code to understand.**
 
-**Check:** run the same experiment twice. Two identical rows (same seed) means
-the harness is deterministic.
+**The delta is the experiment.** `base` names one of a handful of base configs;
+`cfg` says what changes. "One variable at a time" becomes visible — anyone
+reading the registry can see that A03 differs from the base in exactly one key
+— and it becomes *testable*, which is the point.
 
-### 9.2 A results notebook (≈1 h)
+**A test asserts every delta key exists in `DEFAULTS`.** This is not pedantry,
+it is a defect this project has already had: `build_dataset --variants seg`
+would have been a **silent no-op**, writing nothing and reporting success,
+because nothing validated the argument. `load_config` already raises on unknown
+keys for YAML; the registry needs the same guard, in a test, so a typo in
+`"droupout": 0.2` fails at collection time instead of producing a row that
+looks like a result.
 
-Reads `results.jsonl` with `read_results`, prints the leaderboard sorted by val
-accuracy, and plots accuracy per family. Re-run it at the end of every day.
+**The run name is derived, never written.** `A03_bilstm` plus `splits_author`
+gives `A03_bilstm__author`. Hand-written names drift, and the ledger is keyed
+on them.
+
+**`why` is a required field.** One sentence, written before the run. An
+experiment you cannot state a question for is an experiment whose result you
+cannot interpret, and in eighteen days you will not remember what A07 was for.
+It also becomes the caption in the thesis table.
+
+**Run.**
+
+```bash
+pytest tests/test_registry.py -q
+python -m src.experiments.run --list
+```
+
+**Check.** 44 IDs, 88 run names, every family represented, and the test suite
+green on three properties: every delta key is in `DEFAULTS`, every ID is
+unique, every entry has a non-empty `why`.
+
+> **Name the test file `tests/test_registry.py`.**
+> `tests/test_experiments.py` is already taken on this branch by the
+> `cricketmind` package, and overwriting it would delete a working suite.
+
+**Takeaway.** When a plan has 44 of something, make the 44 *data* and write the
+logic once. The alternative — 44 near-identical files — is a design where every
+mistake is invisible because there is nothing to compare against.
+
+---
+
+### 9.2 `run.py` — one ID, both splits, resumable (≈1.5 h)
+
+**Why.** Rule 1 says every experiment appends one row to the ledger, and rule 5
+says test is touched once at the end. Both are rules about *discipline*, and
+discipline is what you lose at 11 p.m. on day fourteen when the power has just
+come back. So the harness does it, every time, with no manual step.
+
+**Build.** `src/experiments/run.py`.
+
+```bash
+python -m src.experiments.run --exp A03_bilstm          # both splits
+python -m src.experiments.run --family A                # the whole family
+python -m src.experiments.run --family A --dry_run      # what would run
+```
+
+**Code to understand.** Five responsibilities, and the ordering between them is
+the whole design.
+
+**It runs both splits for one ID**, in sequence, producing two rows. This is
+why the registry carries no split — the harness owns that axis, so an
+experiment cannot accidentally be run on one split and compared with something
+run on the other.
+
+**It evaluates test automatically**, by calling `src/evaluate.py` on the best
+checkpoint right after training. Not as a separate command you remember. The
+thing to understand: this does not break rule 5. Rule 5 says never *choose*
+using test, and the choosing happens in Days 28–30 from the ledger. Scoring it
+once, recording it, and not looking at it is what the rule asks for — and
+automating it is what makes "once" true.
+
+**It skips an ID whose ledger row already exists.** This is the load-shedding
+feature and the reason the harness exists at all. After an outage you press
+up-arrow on `--family A` and it continues from the first unfinished experiment.
+Two subtleties: the skip is keyed on `(id, split)` not `id`, because an outage
+lands between the two splits more often than not; and it must **not** skip an
+experiment whose `experiments/<name>/resume.pt` exists — that one gets resumed,
+because `resume.pt` present means exactly "interrupted" (`src/train.py` deletes
+it on a clean finish, which is what makes the signal trustworthy).
+
+**It writes a short `split` field.** Rule 1 asks for `"author"` or
+`"grouped"`; the rows written so far carry the full path
+`data/splits_author`, which is fine for a human and useless for grouping a
+table. Add the short field, keep the path.
+
+**It never catches an exception to keep going.** A crashed experiment must stop
+the family, loudly. A harness that logs the failure and moves on gives you 87
+rows and one silent hole, and you will find the hole in week four.
+
+**Run.**
+
+```bash
+python -m src.experiments.run --exp A01_gru128 --dry_run
+python -m src.experiments.run --exp A01_gru128
+```
+
+**Check.** `--dry_run` prints two run names, two resolved configs and two split
+paths, and writes nothing. The real run produces two ledger rows, two
+`report_val.json`, two `report_test.json`, two figures in
+`notes/figures/runs/`, and no `resume.pt` anywhere.
+
+**Takeaway.** Automate the rules you wrote down, because rules you have to
+remember are rules you break under load shedding. Every one of rule 1, 4 and 5
+is now a line of code rather than a line of good intentions.
+
+---
+
+### 9.3 Prove the harness is idempotent and deterministic (≈30 min)
+
+**Why.** You are about to trust this thing with eighteen days of work. Two
+properties make that safe, and both are one test each.
+
+**Build.** `tests/test_run_experiment.py`, using `limit_clips` and
+`max_train_batches` so the whole suite runs in seconds.
+
+**Code to understand.**
+
+**Idempotence**: run an experiment, then run it again. The second call is a
+**no-op** — no new ledger row, no re-training. That is the property that makes
+`--family A` safe to re-run after every outage, and without a test it is a
+property you merely hope for.
+
+**Determinism**: run the same experiment twice with `--force` and the same
+seed. Two identical rows. If they differ, something in the pipeline is reading
+an unseeded random source, and every comparison in Phase 3 would be measuring
+that noise rather than the experiment. `set_seed`, `make_generator` and
+`seed_worker` already exist from Day 1 — this test proves they are actually
+wired into this path.
+
+**The third test, which is about honesty rather than mechanics**: a row's
+recorded `cfg` must reproduce that row. Load the ledger row, rebuild the config
+from it, and assert it equals what the registry resolves. A ledger whose `cfg`
+does not match what ran is worse than no ledger.
+
+**Run.**
+
+```bash
+pytest tests/test_run_experiment.py -q
+```
+
+**Check.** Green, in under a minute. Then once by hand, because the test uses a
+subset:
+
+```bash
+python -m src.experiments.run --exp A01_gru128          # should say: already done, skipping
+```
+
+**Takeaway.** Idempotence is the property that makes interruption cheap, and it
+is worth a test of its own. "Re-running costs nothing" turns a power cut from a
+problem into a pause.
+
+---
+
+### 9.4 The leaderboard (≈45 min)
+
+**Why.** `results.jsonl` will have 88 rows in it. A ledger you cannot read is a
+ledger you stop updating.
+
+**Build.** `tools/leaderboard.py`, on `read_results`.
+
+**Code to understand.**
+
+**The two splits go side by side and are never averaged.** Section 6 is
+explicit: the numbers are not comparable to each other, they answer different
+questions. One table with an `author` column and a `grouped` column, and the
+*difference between them* as a third — that difference is itself a result,
+because it measures how much the authors' protocol flatters a model.
+
+**It prints what is missing, not only what is done.** `88 − len(rows)` and the
+IDs behind it. The most useful thing this tool can tell you on day nineteen is
+which three experiments never finished.
+
+**The figure follows `src/plot.py`'s rules**, which already exist and are
+already validated: one axis per panel, never a twin axis, the categorical
+palette from the dataviz reference, light and dark both written. Do not invent
+a second chart style — import the palette.
+
+**Run.**
+
+```bash
+python -m tools.leaderboard
+python -m tools.leaderboard --family A
+```
+
+**Check.** Every row currently in the ledger appears, `mimic_author` at 79.23%
+val, and the pending count is right. Re-run it at the end of every day in
+Phase 3 — that is the habit the tool exists to support.
+
+**Takeaway.** A results table that shows the gaps is more useful than one that
+shows the wins, because the gaps are the thing you can still act on.
+
+---
+
+### 9.5 The first real row: the grouped-split baseline (≈10 min to start, then ≈3–4 h)
+
+*A launch step, and the most valuable single run left in the project.*
+
+**Why.** Every number this project has produced — all seven rows in
+`experiments/results.jsonl` — is on `splits_author`. The grouped split was
+built on Day 1, committed, and never trained on. That is the largest missing
+number in the whole plan, and it is missing at the exact point where it would
+change how the results are framed.
+
+**What it is worth, measured 2026-10-15.** Source-video overlap between train
+and test:
+
+```
+splits_author    382 of 384 test source videos also appear in train   (99.5%)
+splits_grouped     0 of 102 test source videos appear in train        (0.0%)
+```
+
+No `(video, class)` pair is in both — their rule does hold, and the label
+itself is not leaked. But 99.5% of the test *footage* was seen during training:
+same ground, same batter, same kit, same camera, same broadcast compression.
+**Their 89.09% is an in-domain measurement.** It answers "can you classify a
+shot from a match you have already studied", not "from a match you have never
+seen". Both are legitimate questions. Only one of them is the question the
+paper claims to answer.
+
+You cannot write that sentence in a thesis without the second number.
+
+**Run.**
+
+```bash
+python -m src.experiments.run --exp B00_baseline --split grouped
+```
+
+End-to-end, not cached — it has to match `mimic_author`'s configuration exactly
+to be comparable, and that configuration has a trainable backbone. The splits
+are nearly the same size (6,341 usable train clips against 6,320), so budget ~200
+minutes, and expect one or two power cuts inside it. `resume.pt` handles them.
+
+**Check.** One ledger row with `split: "grouped"`, and a number **below**
+78.14%. If it comes out *above*, stop and check the split files before
+believing it — rule 7.
+
+**What to do with it.** This is the headline of the write-up, and it is worth
+more than beating 89% on a protocol with 99.5% footage overlap:
+
+> We reproduce 78.14% under the authors' protocol and reach X% with Y. We also
+> report the first grouped-split result on CricShot10k (Z%), and show that
+> 99.5% of test source videos appear in the authors' training set, making their
+> reported figure an in-domain measurement.
+
+**Takeaway.** When a published protocol has a gap, the valuable contribution is
+usually not a bigger number under the same protocol — it is the number nobody
+has measured, next to theirs, with the difference explained.
+
+---
+
+### 9.6 Commit and tag Phase 2 (≈15 min)
+
+*A commit step.*
+
+```bash
+git add -A && git commit -m "Phase 2: feature cache (13x), experiment harness, first grouped-split baseline"
+git tag phase2-complete
+```
+
+**What exists at this point, and it is worth listing because Phase 3 assumes
+all of it:**
+
+| | |
+|---|---|
+| `data/features/effnetv2s/` | 35 GB, four views, reproduces 79.23% from tensors |
+| four more caches | ConvNeXt-T, r3d_18, VideoMAE-B, CLIP; ~400 MB; linear-probe ranking recorded |
+| `src/extract.py` | resumable, verified to fp16, `--mirror` and `--derive` |
+| `src/data/features.py` | `FeatureDataset`, three views, shares `classes.json` |
+| `src/experiments/` | 44 IDs as data, both splits per ID, idempotent, test-eval automatic |
+| `tools/leaderboard.py` | both splits side by side, pending count, figure |
+| the grouped baseline | the number the authors never reported |
+
+**What Phase 2 does not solve, so Phase 3 plans around it.** The cache only
+helps experiments with a **frozen** encoder. Families A, D and V are 28 of the
+44 IDs, so **56 of the 88 runs are now minutes each**. Families B and C are
+end-to-end by definition — 16 IDs, **32 runs at the full ~200 minutes** — and
+that is where every remaining GPU-hour goes. The table in
+[section 6](#why-running-all-44-twice-is-affordable) costs it out: 123 hours in
+total, of which 120 belong to those 32 runs.
+
+Continuous augmentation also stays out of reach. Tier 2's colour jitter, speed
+perturbation and random resized crop cannot run on cached features, for the
+reason in 8.7: infinitely many transformed inputs, and a cache can only hold
+finitely many. Those rows have to be end-to-end or not at all.
 
 ---
 
@@ -2250,12 +3351,25 @@ model — Phase 1 is proof of that.
 
 ## Tier 1 — Do these (they are the 14 points)
 
-| # | What | Why | Gain |
-|---|---|---|---|
-| 1 | **Crop to striker + bat** (YOLOv11) | Removes crowd, boards, grass | **+10%** |
-| 2 | **Segmentation overlay** (striker blue, bat green, α=0.5) | Removes jersey-colour noise across formats | **+3%** |
-| 3 | **Horizontal flip**, training split only, after the split | Simulates left/right-handed batters | **+1.5%** |
-| 4 | **Grouped splits by `vidNNN`** | Same match in train and test is a leak | prevents fake gains |
+| # | What | Why | Predicted | **Measured** |
+|---|---|---|---|---|
+| 1 | **Crop to striker + bat** (YOLOv11) | Removes crowd, boards, grass | +10% | **+3.2%** (74.93 → 78.14) |
+| 2 | **Segmentation overlay** (striker blue, bat green, α=0.5) | Removes jersey-colour noise across formats | +3% | **−1.2%** (76.97) |
+| 3 | **Horizontal flip**, training split only, after the split | Simulates left/right-handed batters | +1.5% | **+3.3%** |
+| 4 | **Grouped splits by `vidNNN`** | Same match in train and test is a leak | — | not yet run |
+
+Measured 2026-10-13 on `splits_author`, test top-1. Three notes:
+
+- **#1 under-delivered** — but it was also entangled with the two framework
+  bugs in section 0. Cropping was applied at the same time as the broken GRU
+  init, which is why the first cropped run scored 32.39%.
+- **#2 did not work for us at all.** The spec is right — it is written out in
+  the paper's method section, and implementing it exactly moved the authors'
+  own model +8.76 — but our masks give only 65% bat coverage, so the cue it
+  depends on is absent from a third of frames. Correct recipe, insufficient
+  masks.
+- **#3 over-delivered**, and matches their own ablation direction (+2.37).
+  Keep it. Removing it costs 3.28 points and opens a 15-point train/val gap.
 
 ## Tier 2 — Likely to help, worth a row each
 
@@ -2269,14 +3383,16 @@ model — Phase 1 is proof of that.
 | 10 | **Speed perturbation** (0.8×–1.2×) | Fast vs slow bowlers change stroke timing |
 | 11 | **Random resized crop** (mild, 0.9–1.0) | Robustness to imperfect YOLO crops |
 | 12 | **Test-time augmentation** | Nearly free 0.5–1% |
+| 13 | **Dropout 0.2–0.3 before the classifier** | The authors use 0.0, and the baseline ends at train 86.88% / val 79.23% — an **8.5-point gap** with no regulariser but flip. The most likely single-run gain on the list. |
+| 14 | **Tighter crops** (`pad` 0 or 0.125 instead of 0.25) | The authors' model reads our crops monotonically better as padding tightens: 37.6% at pad 0 against 33.0% at 0.25. Needs a rebuild, so pair it with another change. |
 
 ## Tier 3 — Try, but expect nothing
 
 | # | What | Caution |
 |---|---|---|
-| 13 | MixUp / CutMix | **You already found this hurts.** Mixing Pull with Hook makes an ambiguous label. Keep the negative result — it is publishable. |
-| 14 | RandAugment | Aggressive policies destroy fine-grained stroke differences |
-| 15 | Heavy rotation / vertical flip | A batter never plays upside down; this is nonsense augmentation |
+| 15 | MixUp / CutMix | **You already found this hurts.** Mixing Pull with Hook makes an ambiguous label. Keep the negative result — it is publishable. |
+| 16 | RandAugment | Aggressive policies destroy fine-grained stroke differences |
+| 17 | Heavy rotation / vertical flip | A batter never plays upside down; this is nonsense augmentation |
 
 ## Tier 4 — Data work that would make a real contribution
 
@@ -2320,8 +3436,8 @@ model — Phase 1 is proof of that.
 | 4 | Pipeline + launch | `sample.py`, `segment.py`, `build_dataset.py` | `data/processed/` |
 | 5 | Data + model | `dataset.py`, `encoder.py`, `head.py` | one batch, loss ≈ ln 15 |
 | 6 | Training loop | `train.py`, `mimic_author.yaml` | overfits 50 clips; resume rehearsed |
-| 7 | Reproduce | `evaluate.py` with hash guard | **89% baseline, tagged** |
-| 8–9 | Feature cache + harness | `extract.py`, `run.py` | one cache, serving both splits |
+| 7 | Reproduce | `evaluate.py` with hash guard | **78.14% baseline, tagged** (89.09% not reachable; see 7.4) |
+| 8–9 | Feature cache + harness | `extract.py`, `features.py`, `experiments/run.py`, `leaderboard.py` | 35 GB cache serving both splits; 88 runs as data; **first grouped-split baseline** |
 | 10–12 | A, D, V on both splits | — | **56 rows for ~7 GPU-h**; is the gap architecture-dependent? |
 | 13–18 | B — CNN backbones, both splits | — | 16 rows, 48 GPU-h |
 | 19–27 | C — 3D / video models, both splits | — | 16 rows, 72 GPU-h |
