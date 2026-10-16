@@ -207,3 +207,25 @@ because it only reads the import lines and never runs them.
 **For the paper:**
 - Decision: D-014 in thesis/decisions.md (the layer rule, enforced by a test)
 - Section it feeds: Implementation
+
+---
+
+## Day 6 — 2026-10-16 — Provenance and Subject
+
+**Learned:** Every number needs two labels: how we know it (Provenance: M, D or P, a fixed
+list, so "guessed" or a typo crashes at once) and who and what it is about (Subject: player,
+shot, phase, bowler type; an empty field means "any"). Keyword-only fields stop player and
+shot being swapped by accident.
+**Built:** `domain/provenance.py` (the Provenance enum) and `domain/subject.py` (a frozen,
+keyword-only Subject with four fields; Day 10 adds the rest). 9 tests in
+`tests/unit/test_provenance.py` and `tests/unit/test_subject.py`. Written by Claude and
+explained. The plan's Phase 1 was also written out day by day.
+**Tests:** 13 passed (9 new); ruff clean; the architecture test still passes. With
+`kw_only=True` removed, `Subject("Pull", "V Kohli")` made a subject with player "Pull" and
+shot "V Kohli" with no error, and `test_fields_must_be_named` failed with "DID NOT RAISE
+TypeError". Put back, all pass.
+**Surprise:** ruff now flags two things the old defaults did not: `getattr` with a fixed
+name, and a line that does nothing (it cannot know the line is meant to crash). Also, Python
+rounds 0.405 to 40% but 0.155 to 16% (exact halves go to the even number), noted for Day 9.
+
+**For the paper:** nothing today.
