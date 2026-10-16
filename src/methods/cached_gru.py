@@ -22,6 +22,9 @@ from src.models.head import GRUHead
 
 NAME = "cached_gru"
 
+# every config key this file acts on, beyond the loop's own
+READS = ("features", "view", "flip", "hidden", "dense", "dropout")
+
 
 def datasets(cfg):
     train_set = FeatureDataset(os.path.join(cfg["split"], "train.csv"),

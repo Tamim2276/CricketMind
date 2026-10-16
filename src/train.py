@@ -35,7 +35,7 @@ from src.utils import progress
 from src.utils.device import describe, get_device
 from src.utils.seed import make_generator, seed_worker, set_seed
 
-__all__ = ["train", "DEFAULTS", "load_config", "run_dir"]
+__all__ = ["train", "DEFAULTS", "LOOP_READS", "load_config", "run_dir"]
 
 DEFAULTS = {
     "name": "run",
@@ -52,6 +52,11 @@ DEFAULTS = {
     "hidden": 128,
     "dense": 1024,
     "dropout": 0.0,
+    "head": "gru",            # the head on cached features; Families A, D, V
+    "bidirectional": False,
+    "layers": 1,
+    "attn_heads": 4,          # transformer heads; only when head is one
+    "feature_norm": "none",   # or "layer", LayerNorm before the head (A13)
     "pool": "avg",            # "flatten" is what the authors did
     "flip": 0.0,              # horizontal flip probability on train clips
     "optimizer": "adam",
@@ -75,6 +80,14 @@ DEFAULTS = {
     "out": "experiments",
     "figures": FIGURES,   # the copy git keeps; null to skip
 }
+
+# Keys the loop itself acts on. Every other key must be read by the method,
+# or changing it changes nothing but the ledger row.
+LOOP_READS = ("name", "method", "split", "seed", "optimizer", "lr",
+              "backbone_lr", "weight_decay", "clip_grad", "scheduler",
+              "lr_factor", "lr_patience", "min_lr", "batch_size", "accum",
+              "epochs", "patience", "workers", "limit_clips",
+              "max_train_batches", "max_val_batches", "out", "figures")
 
 
 def load_config(path: str) -> dict:

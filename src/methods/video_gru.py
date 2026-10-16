@@ -15,6 +15,18 @@ from src.models.model import build_model
 
 NAME = "video_gru"
 
+# every config key this file acts on, beyond the loop's own
+READS = ("variant", "processed", "flip", "backbone", "pretrained", "freeze",
+         "hidden", "dense", "dropout", "pool")
+
+
+def check(cfg):
+    """Why this config cannot start yet, or None."""
+    from torchvision.models import list_models
+    if cfg["backbone"] not in list_models():
+        return f"torchvision has no {cfg['backbone']}"
+    return None
+
 
 def datasets(cfg):
     import os

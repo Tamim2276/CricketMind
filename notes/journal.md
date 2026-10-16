@@ -2894,3 +2894,33 @@ clip_vit_b16    avg (15,768)   bit-exact, cosine 0.9999   'cricket'
 1.09 GB for the four new ones with both halves, against the plan's 400 MB
 (CLIP is 768 wide, not 512, and every cache has a mirror half). 36 GB free.
 Tests: 512 pass, file by file. Next: Day 9, the runner and the probe.
+
+## 2026-10-16 — Day 9 begins: the experiment harness
+
+### 9.1 The registry: 51 experiments as data
+
+`src/experiments/registry.py` holds every experiment as a base plus a delta of
+at most 3 keys. 46 IDs from Appendix A, plus five probe IDs (P01-P05: one
+Linear on each 8.10 cache). 102 run names, derived as `<id>__<split>`, never
+written by hand.
+
+The plan's own examples were wrong against Appendix A: `A03_bilstm` (A03 is
+GRU-128), `A01_gru128` (A01 is mean pooling), `B00_baseline` (no B00; the
+authors' backbone is B01). Fixed in the plan to `A07_bilstm64`,
+`P03_r3d_18` and `B01_effnetv2s`.
+
+What I did not expect: a key being in `DEFAULTS` does not stop a silent
+no-op. `cached_gru` never reads `backbone`, so a delta setting it would train
+on EfficientNet features and still write `resnet50` into the ledger row. Each
+method now lists the keys it acts on (`READS`), `train.py` lists its own
+(`LOOP_READS`), and a test fails on any delta key nobody reads.
+
+`--list` names what blocks each ID. Today: 6 ready (B01, B04-B08); the rest
+wait on `cached_head`, `classical`, `video3d` or a missing cache, and B02/B03
+on backbones torchvision does not have (EfficientNetV2-B3, Xception).
+
+A path slip caught by a test: `os.path.join` gives `data\splits_author` on
+Windows while the yamls and ledger say `data/splits_author`. The registry now
+writes `/`, which both OSes accept.
+
+Tests: `test_registry.py` 20 pass, `test_train.py` 28 pass.

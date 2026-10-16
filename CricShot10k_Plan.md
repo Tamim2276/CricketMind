@@ -3197,16 +3197,16 @@ be enforced by the *structure*, not by remembering.
 config and a **delta** of at most a couple of keys.
 
 ```python
-{"id": "A03_bilstm", "family": "A", "base": "cached_gru",
- "cfg": {"head": "bilstm"},
- "why": "does reading the shot backwards as well as forwards help?"}
+{"id": "A07_bilstm64", "base": "cached_head",
+ "cfg": {"head": "lstm", "hidden": 64, "bidirectional": True},
+ "why": "the authors' second best at 87.65%; does it hold up?"}
 ```
 
 **Code to understand.**
 
 **The delta is the experiment.** `base` names one of a handful of base configs;
 `cfg` says what changes. "One variable at a time" becomes visible — anyone
-reading the registry can see that A03 differs from the base in exactly one key
+reading the registry can see that A05 differs from the base in exactly one key
 — and it becomes *testable*, which is the point.
 
 **A test asserts every delta key exists in `DEFAULTS`.** This is not pedantry,
@@ -3217,8 +3217,8 @@ keys for YAML; the registry needs the same guard, in a test, so a typo in
 `"droupout": 0.2` fails at collection time instead of producing a row that
 looks like a result.
 
-**The run name is derived, never written.** `A03_bilstm` plus `splits_author`
-gives `A03_bilstm__author`. Hand-written names drift, and the ledger is keyed
+**The run name is derived, never written.** `A07_bilstm64` plus `splits_author`
+gives `A07_bilstm64__author`. Hand-written names drift, and the ledger is keyed
 on them.
 
 **`why` is a required field.** One sentence, written before the run. An
@@ -3233,9 +3233,38 @@ pytest tests/test_registry.py -q
 python -m src.experiments.run --list
 ```
 
-**Check.** 46 IDs, 92 run names, every family represented, and the test suite
-green on three properties: every delta key is in `DEFAULTS`, every ID is
-unique, every entry has a non-empty `why`.
+**Check.** 51 IDs (the 46 committed plus the 5-ID probe), 102 run names,
+every family represented, and the test suite green on three properties: every
+delta key is in `DEFAULTS`, every ID is unique, every entry has a non-empty
+`why`.
+
+**Built 2026-10-16.** `src/experiments/registry.py`, `run.py --list`,
+`tests/test_registry.py` (20 tests).
+
+1. **Six families, 51 IDs.** A 14, B 8, C 8, D 6, V 10 from Appendix A, plus
+   **P, the probe**: one `Linear` on each of the five 8.10 caches, so the only
+   variable is the features. P01 is D01's probe fitted by gradient descent
+   instead of sklearn; the two should agree within a point, which makes the
+   overlap a check rather than a duplicate.
+2. **Six bases**, each a YAML plus a few keys: `cached_head` (A),
+   `cached_classical` (D), `frozen_mlp` (V), `frozen_linear` (P),
+   `mimic_author` (B), `video3d` (C). No delta has more than 3 keys.
+3. **Five new `DEFAULTS` keys** for the heads Day 10 builds: `head`,
+   `bidirectional`, `layers`, `attn_heads`, `feature_norm`.
+4. **The silent no-op, one level deeper.** A key being in `DEFAULTS` is not
+   enough: `cached_gru` never reads `backbone`, so a delta setting
+   `backbone: resnet50` on it would train on EfficientNet features and write
+   `resnet50` into the row. Each method now lists the keys it acts on
+   (`READS`), `train.py` lists its own (`LOOP_READS`), and a test fails if a
+   delta key is read by neither.
+5. **`--list` says what blocks each ID**: `needs method cached_head`,
+   `needs cache dinov2_base`, `torchvision has no xception`, or `ready`.
+   On 2026-10-16: 6 ready (B01, B04–B08), 45 waiting on code or caches.
+6. **B01 resolves to `mimic_author.yaml` exactly** (a test checks every key),
+   so its author row can be the 78.14% reproduction instead of a 200-minute
+   re-run. A03 is `cached_gru.yaml` with only the method changed.
+7. **Paths use `/`**, as the YAMLs and ledger rows do, so the same strings
+   work on Windows and Linux.
 
 > **Name the test file `tests/test_registry.py`.**
 > `tests/test_experiments.py` is already taken on this branch by the
@@ -3257,7 +3286,8 @@ come back. So the harness does it, every time, with no manual step.
 **Build.** `src/experiments/run.py`.
 
 ```bash
-python -m src.experiments.run --exp A03_bilstm          # both splits
+python -m src.experiments.run --exp A07_bilstm64        # both splits
+python -m src.experiments.run --exp B01_effnetv2s --split grouped
 python -m src.experiments.run --family A                # the whole family
 python -m src.experiments.run --family A --dry_run      # what would run
 ```
@@ -3298,9 +3328,14 @@ rows and one silent hole, and you will find the hole in week four.
 **Run.**
 
 ```bash
-python -m src.experiments.run --exp A01_gru128 --dry_run
-python -m src.experiments.run --exp A01_gru128
+python -m src.experiments.run --exp P03_r3d_18 --dry_run
+python -m src.experiments.run --exp P03_r3d_18
 ```
+
+**The probe needs a method first.** Every P, A and V entry names
+`cached_head`, which does not exist yet. Build it here with three heads,
+`linear`, `mlp` and `gru`, so P01–P05 run on Day 9 as 8.10 promised; Day 10
+adds the other heads to the same file.
 
 **Check.** `--dry_run` prints two run names, two resolved configs and two split
 paths, and writes nothing. The real run produces two ledger rows, two
@@ -3350,7 +3385,7 @@ pytest tests/test_run_experiment.py -q
 subset:
 
 ```bash
-python -m src.experiments.run --exp A01_gru128          # should say: already done, skipping
+python -m src.experiments.run --exp P03_r3d_18          # should say: already done, skipping
 ```
 
 **Takeaway.** Idempotence is the property that makes interruption cheap, and it
@@ -3518,7 +3553,7 @@ You cannot write that sentence in a thesis without the second number.
 **Run.**
 
 ```bash
-python -m src.experiments.run --exp B00_baseline --split grouped
+python -m src.experiments.run --exp B01_effnetv2s --split grouped
 ```
 
 End-to-end, not cached — it has to match `mimic_author`'s configuration exactly
