@@ -156,3 +156,54 @@ Old day numbers (in entries above this one) map to new ones like this:
 | 93 | 80 (frontend setup) |
 | 90 | 81 (the first components, moved after setup) |
 | 94–177 | 82–165 |
+
+---
+
+## Day 5 — 2026-10-16 — The real skeleton, guarded by a test
+
+**v3 in 10 lines** (written by Claude at my request, after we read the architecture
+document together, section by section):
+
+1. v2's Faith Check only asked "did an engine produce this number?". So a right number
+   about the wrong player passed, typed numbers with no source passed, four agents said
+   things no engine measures, predictions hid their real uncertainty, and all data was fake.
+2. A claim is one fact as a form: kind, metric, engine, subject, value, sample size (and a
+   range for predictions). As data, it can be checked by asking the engine again; a
+   sentence can only be read.
+3. M = measured from the clip (N6); D = descriptive, counted from past matches (N8);
+   P = predictive, simulated (N9).
+4. Subject-keyed: the claim says exactly who and what the number is about (Kohli, Cover
+   Drive, powerplay, pace). If Kohli's 142.0 is written as Rohit's, the engine asked about
+   Rohit gives a different number, so the lie is caught.
+5. C1: does it fit the form, is the claim type on the menu, may this agent use it?
+   C2: same value when the engine is asked again for this subject? C3: at least 30 balls,
+   or does it say "small sample"? C4: do the words fit the chance, and does a comparison
+   whose range includes 0 say "no detectable difference"? C5: no typed digits?
+   C6: do the names in the sentence match the claim's subject?
+6. F6, spurious difference: v2 let "the cover drive is the stronger stroke" through, though
+   the difference range (−16 to +76) includes 0.
+7. N8 counts the past (strike rates, venue, workload, DRS); N9 simulates the future (chance
+   of being out, what-if matchups) with honest ranges.
+8. An invariant is a rule that is always true, everywhere. Example: I3, agents never type
+   numbers; they write {c1} and the renderer fills in the checked value.
+9. It claims nothing about real players: 142 vs 112 and 0.405 come from synthetic data.
+10. Least clear (Claude's guess, change it if something else is): why the honest range for
+    0.405 (0.155 to 0.697) is about 20 times wider than v2's: v2 counted only simulation
+    noise, not how little data 50 balls is.
+
+**Learned:** The five layers are rooms with borrowing rules: `domain/` (the rules of v3)
+may only use plain Python, and `application/` may never reach into the suppliers. A test
+can read code as a tree (`ast`) without running it.
+**Built:** `backend/src/cricketmind_v3/` with `domain/`, `application/`,
+`infrastructure/`, `pipeline/`, `api/`; `tests/__init__.py`, `tests/unit/`;
+`tests/unit/test_architecture.py` with three tests. Written by Claude and explained.
+**Tests:** 4 passed (3 new + test_first); ruff clean; learning still 15 passed. Broken on
+purpose twice: `import fastapi` in `domain/oops.py` failed with
+`['oops.py imports fastapi']`; an `application/` file importing
+`cricketmind_v3.infrastructure` failed too. Both passed again once removed.
+**Surprise:** the test caught `import fastapi` although FastAPI is not even installed,
+because it only reads the import lines and never runs them.
+
+**For the paper:**
+- Decision: D-014 in thesis/decisions.md (the layer rule, enforced by a test)
+- Section it feeds: Implementation

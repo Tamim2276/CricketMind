@@ -164,3 +164,18 @@ Template:
 - Alternatives considered: one SQLite database for everything (simpler; slower aggregations).
 - Status: designed
 - Paper section: Implementation
+
+## D-014 — The layer rule is enforced by a test
+- Date: 2026-10-16
+- Decision: the backend has five layers (`domain`, `application`, `infrastructure`,
+  `pipeline`, `api`). `domain/` imports only the standard library; `application/` never
+  imports `infrastructure`, `pipeline` or `api`; imports are absolute.
+  `tests/unit/test_architecture.py` reads every file's imports with `ast`, without running
+  the code, and fails naming the file and the import.
+- Why: the claim contract, the registry and the Faith Check live in `domain/`. Keeping it
+  free of frameworks keeps those rules fast to test and independent of FastAPI, DuckDB and
+  the language model. A wrong import is caught the same minute, not months later.
+- Alternatives considered: a written convention with no test (breaks silently); a
+  dedicated import-linting tool (one more dependency for two rules).
+- Status: built (both rules seen to fail on a planted import, then pass)
+- Paper section: Implementation
