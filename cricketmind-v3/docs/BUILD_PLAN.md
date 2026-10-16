@@ -1352,8 +1352,8 @@ If all four match, the workshop is ready. Phase 1 builds the first real code, in
 
 ### Phase 1 — Claims (Days 6–12)
 
-**In simple words:** a claim is one fact an agent wants to say, written as **data**, not as a
-sentence. Data can be checked; sentences can only be read.
+**In simple words:** a claim is one fact an agent wants to say, written as **data** (a form
+with fields), not as a sentence. Data can be checked; sentences can only be read.
 
 **Example:**
 
@@ -1362,7 +1362,7 @@ claim = Claim(
     id="c1",
     kind=Provenance.DESCRIPTIVE,
     metric="strike_rate",
-    subject=Subject(player="Kohli", shot="Cover Drive",
+    subject=Subject(player="V Kohli", shot="Cover Drive",
                     phase="powerplay", bowler_type="pace"),
     value=142.0,
     n=50,
@@ -1372,15 +1372,277 @@ template = "Against pace in the powerplay, Kohli's cover drive returns {c1}."
 
 The renderer turns that into *"…returns a strike rate of 142.0 [D, 50 balls]."*
 
+**Where it lives:** all of Phase 1 is in `backend/src/cricketmind_v3/domain/`, plain Python
+only (the Day 5 test checks it). Tests go in `backend/tests/unit/`.
+
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 6 | Enums: a fixed list of choices prevents typos | `domain/provenance.py` (MEASURED, DESCRIPTIVE, PREDICTIVE); `domain/subject.py` | Tests: an unknown provenance is impossible; equal subjects compare equal |
-| 7 | Rules an object must obey | `domain/claims.py`: `Claim`; a predictive claim needs an interval; a measured claim needs a clip id | Test: each broken rule raises an error |
-| 8 | Finding `{c1}` in text with plain string methods | `domain/findings.py`: `Finding` (agent, claims, template); list its references | Tests: references found; a reference to a missing claim is rejected |
-| 9 | Formatting numbers for people | `domain/render.py`: claim → "a strike rate of 142.0 [D, 50 balls]" | One test per metric type, including intervals |
-| 10 | A registry: one place that lists what is allowed | `domain/registry.py`: `ClaimType` (name, provenance, source, required subject keys) and the 9 types of Table 4 in the v3 doc | Tests: lookup works; an unknown type returns nothing |
-| 11 | Failing when the system is built, not while it runs | Registry validation: every claim type an agent declares exists and maps to an engine metric | Test: a hollow claim type ("the pitch is holding pace") fails validation |
-| 12 | Review day | Rename, add docstrings, tidy | All tests green; you can explain Claim, Finding and Registry to a friend |
+| 6 | Enums: a fixed list of choices prevents typos; keyword-only fields | `domain/provenance.py` (MEASURED, DESCRIPTIVE, PREDICTIVE); `domain/subject.py` | Tests: an unknown provenance is impossible; equal subjects compare equal; swapped fields are impossible |
+| 7 | Rules an object must obey | `domain/claims.py`: `Claim` with four rules | Test: each broken rule raises a clear error |
+| 8 | Finding `{c1}` in text with plain string methods; tuples | `domain/findings.py`: `Finding` (agent, claims, template); list its references | Tests: references found; a reference to a missing claim is rejected |
+| 9 | Formatting numbers for people | `domain/render.py`: claim → "a strike rate of 142.0 [D, 50 balls]"; a finding → its finished sentence | One test per provenance, including a range |
+| 10 | A registry: one place that lists what is allowed | `domain/registry.py`: `ClaimType` and the 9 types of Table 4; `Subject` gains the keys they need | Tests: lookup works; an unknown type returns nothing; missing subject keys are listed |
+| 11 | Failing when the system is built, not while it runs | `check_registry()`: every claim type an agent declares exists and has an engine | Test: a hollow claim type ("the pitch is holding pace") fails |
+| 12 | Review day | Tidy; a rough draft of the claim-contract part of the Method; read one paper | All tests green; you can explain Claim, Finding and Registry to a friend |
+
+#### How a Phase 1 day works
+
+The same loop as Day 5: Claude explains the idea with an example, writes one small piece,
+explains every line, runs the tests and breaks the code once on purpose. You read, ask, and
+say "next". The code shapes below are the plan; if a detail changes on the day, the journal
+says why.
+
+#### Day 6 — Provenance and Subject
+
+**Goal:** the "what kind" and the "who and what" of every claim.
+
+**Why it matters:** C2 (Day 16) asks the engine again using the claim's `Subject`. That is
+what catches the Kohli/Rohit swap.
+
+**Learn**
+
+- **Enum:** a fixed list of choices. `Provenance("guessed")` crashes at once, instead of
+  becoming a wrong tag three steps later.
+- **Keyword-only fields:** you must write `Subject(player="V Kohli", shot="Pull")`.
+  `Subject("Pull", "V Kohli")` would silently swap player and shot, the very lie (F2) v3
+  exists to catch, so it is refused.
+
+**Build**
+
+```python
+# domain/provenance.py
+class Provenance(Enum):
+    MEASURED = "measured"        # N6: measured from the clip
+    DESCRIPTIVE = "descriptive"  # N8: counted from past matches
+    PREDICTIVE = "predictive"    # N9: simulated
+
+# domain/subject.py
+@dataclass(frozen=True, kw_only=True)
+class Subject:
+    player: str | None = None
+    shot: str | None = None
+    phase: str | None = None
+    bowler_type: str | None = None
+```
+
+Four fields today; Day 10 adds the rest the registry needs. Values are plain text for now
+(`"powerplay"`, `"pace"`); N3 and C6 check the names later.
+
+**Tests:** exactly three kinds; `"descriptive"` from JSON becomes `Provenance.DESCRIPTIVE`;
+`"guessed"` and a typo both crash. Equal subjects compare equal; Kohli and Rohit are different
+subjects; a missing field is `None`; positional arguments are refused; a subject cannot be
+changed.
+
+**Commit:** `day 6: Provenance and Subject`
+
+#### Day 7 — Claim: one fact as data
+
+**Goal:** a `Claim` that refuses to exist if it breaks a rule.
+
+**Why it matters:** a broken claim stopped here never reaches the Faith Check, the report or
+a user.
+
+**Learn:** `__post_init__` runs right after a dataclass is made. The rules go there; a broken
+one raises `ClaimError` with a message that says which rule and why.
+
+**Build**
+
+```python
+# domain/claims.py
+@dataclass(frozen=True, kw_only=True)
+class Claim:
+    id: str                                       # "c1"
+    kind: Provenance
+    metric: str                                   # "strike_rate"
+    subject: Subject
+    value: float
+    n: int | None = None                          # balls behind a D claim
+    interval: tuple[float, float] | None = None   # 95% range of a P claim
+    clip_id: str | None = None                    # the clip behind an M claim
+```
+
+| Rule | Example that fails |
+|---|---|
+| The id is `c` plus digits (Day 8 looks for `{c1}`) | `id="claim1"` |
+| A **D** claim says how many balls: `n` is at least 1 | a strike rate with no `n` |
+| A **P** claim has a range, and its value sits inside it | 0.405 with no range; 0.9 with [0.155, 0.697] |
+| An **M** claim names its clip (invariant I5) | a weight transfer with no `clip_id` |
+
+There is no `band` field: Day 13 works the band out from the value, so the two can never
+disagree.
+
+**Tests:** the document's two example claims (c1 and c2) are accepted; each rule is broken
+once and raises `ClaimError`; a claim cannot be changed.
+
+**Commit:** `day 7: Claim with its four rules`
+
+#### Day 8 — Finding: claims plus a sentence with slots
+
+**Goal:** a `Finding` = the agent, its claims, and a template such as
+`"Kohli's cover drive returns {c1}."`
+
+**Why it matters:** this is what an agent hands to the Faith Check. Slots instead of typed
+numbers is invariant I3.
+
+**Learn**
+
+- Finding `{c1}` with plain string methods: `text.find("{", start)`, then its `}`, in a loop.
+- A **tuple** cannot change; a list can. A frozen `Finding` keeps its claims in a tuple, so
+  nobody can slip a claim in after the check.
+
+**Build**
+
+```python
+# domain/findings.py
+def references(template: str) -> list[str]:   # "…{c1}…{c2}." gives ["c1", "c2"]
+
+@dataclass(frozen=True, kw_only=True)
+class Finding:
+    agent: str                    # "N11b"
+    claims: tuple[Claim, ...]
+    template: str
+```
+
+Rules (`FindingError`): claim ids are unique; every `{…}` names a claim in this finding; a
+`{` without its `}` is an error.
+
+**Tests:** references found in order; a sentence with no slots has none; `{c3}` with no claim
+c3 is refused; two claims both called c1 are refused; an unclosed `{c1` is refused.
+
+**Commit:** `day 8: Finding and its references`
+
+#### Day 9 — The renderer: from slots to sentences
+
+**Goal:** `{c1}` becomes `a strike rate of 142.0 [D, 50 balls]`.
+
+**Why it matters:** the agent never types a digit; this plain code does, from checked claims
+only, and every number reaches the user with its tag.
+
+**Learn:** formatting numbers for people. `f"{142.0:.1f}"` gives `142.0`. The surprise:
+`f"{0.405:.0%}"` gives `40%` but `f"{0.155:.0%}"` gives `16%`, because Python rounds an exact
+half to the nearest even number. Day 9 decides whether that is acceptable, and a test pins
+the choice.
+
+**Build** (`domain/render.py`)
+
+| Kind | Example output |
+|---|---|
+| D | `a strike rate of 142.0 [D, 50 balls]` |
+| P | `a 40% chance [P, range 16–70%]` |
+| M | `a weight transfer of 0.31 [M, clip vid1_0]` |
+
+- `render_claim(claim)`: the words for each metric live in one small table in `render.py`; an
+  unknown metric is an error.
+- `render(finding)`: the template with every slot filled in.
+
+**Tests:** one per kind (D; P with its range; M with its clip); a finding with two slots
+becomes the finished sentence; an unknown metric raises an error.
+
+**Commit:** `day 9: the renderer`
+
+#### Day 10 — The registry: the menu of allowed claims
+
+**Goal:** one place that lists every kind of claim the system may make, and the engine
+behind it.
+
+**Why it matters:** invariant I2. An agent can only use a kind of claim on this menu, and
+every item on the menu has an engine.
+
+**Learn:** a registry is a dictionary from a name to a description. One list, so there is
+never a second one that drifts.
+
+**Build** (`domain/registry.py`)
+
+```python
+@dataclass(frozen=True)
+class ClaimType:
+    name: str                            # "strike_rate"
+    provenance: Provenance               # DESCRIPTIVE
+    source: str                          # "N8.M1"
+    required_keys: tuple[str, ...]       # Subject fields that must be filled
+    required_any: tuple[str, ...] = ()   # at least one of these must be filled
+```
+
+The 9 types of Table 4 in the v3 document:
+
+| Name | Kind | Source | Needs |
+|---|---|---|---|
+| `strike_rate` | D | N8.M1 | player |
+| `dismissal_rate` | D | N8.M1 | player |
+| `sr_difference` | D | N8.M1 | player, shot, other_shot |
+| `venue_first_innings_avg` | D | N8.M2 | venue, match_format |
+| `workload_ratio_flag` | D | N8.M3 | bowler, date |
+| `review_overturn_rate` | D | N8.M4 | team or dismissal_type |
+| `weight_transfer` | M | N6 | a clip (the Day 7 rule) |
+| `p_dismissal_within_k` | P | N9.T1 | player, shot, phase, bowler_type, k |
+| `matchup_difference` | P | N9.T2 | player, bowler, other_bowler, phase, k |
+
+`Subject` gains the fields these need: `other_shot`, `bowler`, `other_bowler`, `venue`,
+`match_format`, `team`, `dismissal_type`, `date`, `k`. Two functions: `lookup(name)` gives
+the type or `None`; `missing_keys(claim_type, subject)` lists what is still empty (C1 uses
+it on Day 15).
+
+**Tests:** all 9 are there; lookup works; an unknown name gives `None`; missing keys are
+listed; `review_overturn_rate` passes with a team or a dismissal type, but not with neither.
+
+**Commit:** `day 10: the claim-type registry`
+
+#### Day 11 — Fail at start-up, not in front of a user
+
+**Goal:** a check that refuses to start the system if any claim type is hollow.
+
+**Why it matters:** "the pitch is holding pace" with no engine behind it becomes a start-up
+error, not a wrong report (invariant I2; fabrication class F7).
+
+**Learn:** fail fast. A mistake found at start-up costs a minute; the same mistake found by a
+user costs their trust.
+
+**Build** (`domain/registry.py`)
+
+```python
+def check_registry(agent_types: dict[str, list[str]], engine_metrics: set[str]) -> list[str]:
+    # every problem as one sentence; an empty list means all is well
+```
+
+It reports two kinds of problem: an agent declares a claim type that is not in the registry,
+and a registry entry names a source no engine provides. Agents and engines do not exist yet,
+so the tests pass them in by hand; Phase 5 runs it on the real ones every time the graph is
+built (Day 61).
+
+**Tests:** a good setup has no problems; `pitch_holding_pace` is reported; an entry pointing
+at a missing engine is reported; two problems are both reported, not only the first.
+
+**For the paper:** a new row in `thesis/evidence.md`: a hollow claim type fails at build time,
+proved by this test.
+
+**Commit:** `day 11: start-up check for hollow claim types`
+
+#### Day 12 — Review day
+
+1. **Tidy:** read every Phase 1 file once more; better names where needed, a one-line
+   docstring on each class and function.
+2. **Teach-back:** explain Claim, Finding and Registry to Claude in chat, a few lines each.
+   Claude points out anything missing.
+3. **Draft (1 hour):** you write a rough `thesis/drafts/method_claims.md`: the provenance
+   classes, the claim contract and the registry (Section 3 of `outline.md`). Claude helps you
+   plan it and checks it against `numbers.md` and `evidence.md`. Rough is fine.
+4. **Read one paper:** FActScore, which also splits text into small checkable facts; notes in
+   `related_work.md`.
+
+**Done when:** all tests green; the teach-back done; the draft saved.
+
+**Commit:** `day 12: review, Phase 1 done`
+
+#### End of Phase 1 — check before Day 13
+
+From `backend/`:
+
+| Command | You should see |
+|---|---|
+| `uv run pytest` | every test passes, including the architecture test |
+| `uv run ruff check .` | `All checks passed!` |
+
+Phase 2 builds the Faith Check on top of these pieces.
 
 ---
 
