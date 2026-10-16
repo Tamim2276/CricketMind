@@ -229,3 +229,28 @@ name, and a line that does nothing (it cannot know the line is meant to crash). 
 rounds 0.405 to 40% but 0.155 to 16% (exact halves go to the even number), noted for Day 9.
 
 **For the paper:** nothing today.
+
+---
+
+## Day 7 — 2026-10-16 — Claim: one fact as data
+
+**Learned:** A claim is one fact as a form: id, kind, metric, subject, value, plus n for a
+count, a range for a prediction, or a clip for a measurement. `__post_init__` runs right
+after the object is made, so the form can check itself and refuse to exist if a rule is
+broken. `dataclasses.replace` copies a claim with one field changed, which makes it easy to
+break exactly one rule per test.
+**Built:** `domain/claims.py`: `ClaimError` and a frozen, keyword-only `Claim` with four
+rules (id like `c1`; D needs n ≥ 1; P needs a range that contains its value; M needs a
+clip). 10 tests in `tests/unit/test_claims.py`, including the v3 document's c1 and c2.
+Written by Claude and explained.
+**Tests:** 23 passed (10 new); ruff clean; architecture test still passes. Before the rules
+existed, a prediction with no range and the id "claim1" was accepted without complaint.
+With the range check removed on purpose, a 0.9 prediction with range 0.155 to 0.697 was
+accepted and `test_rule_3_the_value_must_sit_inside_its_range` failed; put back, all pass.
+**Surprise:** without the rules, Python happily built a claim that contradicts its own range.
+ruff asked to join nested `if`s with `and`.
+
+**For the paper:**
+- Decision: D-015 in thesis/decisions.md (a claim checks itself; the band is derived, not
+  stored)
+- Section it feeds: Method (claim contract)

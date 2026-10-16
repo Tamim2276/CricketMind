@@ -179,3 +179,19 @@ Template:
   dedicated import-linting tool (one more dependency for two rules).
 - Status: built (both rules seen to fail on a planted import, then pass)
 - Paper section: Implementation
+
+## D-015 — A claim checks itself when it is made; its wording band is derived, not stored
+- Date: 2026-10-16
+- Decision: `Claim` (`domain/claims.py`) is frozen and refuses to exist if it breaks one of
+  four rules: the id is `c` plus digits; a descriptive claim carries its sample size
+  (n ≥ 1); a predictive claim carries a 95% range that contains its value; a measured claim
+  names its clip. The wording band shown in the v3 document's example claim
+  (`"band": "about even"`) is not stored; it is computed from the value when needed (Day 13).
+- Why: a malformed claim is stopped where it is made, before it reaches the Faith Check, the
+  report or a user. A stored band could disagree with the value it describes.
+- Alternatives considered: leaving all validation to the Faith Check (a malformed claim
+  travels further and fails further from its cause); storing the band, as in the document's
+  example (two sources of truth).
+- Status: built (each rule broken once in a test; removing the range check let a 0.9
+  prediction with range 0.155 to 0.697 through, and the test failed)
+- Paper section: Method (claim contract)
