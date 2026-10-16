@@ -11,8 +11,10 @@ own branch, `cricketmind-v3` (Section 3). Not to be confused with
 `cricshot-improve/cricketmind/`, the old v2 prototype.
 
 Every day follows the same loop: **understand → learn → build → test → commit.**
-Nothing is copied from the old notebook or the old `cricketmind/` prototype. You may *look*
-at them to remember an idea, but you type everything yourself. That is how it sticks.
+Nothing is copied from the old notebook or the old `cricketmind/` prototype. Claude writes
+the code one small piece at a time and explains every line in simple words before it runs;
+you read it, ask about anything unclear, and say "next". You learn on the real project, not
+on practice exercises (changed 2026-10-16; see Phase 0 in Section 11).
 
 ---
 
@@ -153,15 +155,16 @@ Every day has the same five steps.
 
 1. **Understand (15 min).** Read the day's row. Write 2–3 lines in the journal in your own
    words: *what am I building today, and why does the system need it?*
-2. **Learn (30–60 min).** Try the day's concept on a tiny example in `learning/`.
-   No project code yet.
-3. **Build (2–3 h).** Write the smallest version that works.
-4. **Test (1 h).** Write tests, run them, make them pass. The "Done when" column is the
-   finish line.
-5. **Log, track and commit (15 min).** Write the day's entry in `notes/journal.md` (the
-   template is at the top of that file). If the day produced a decision, a number, a
-   limitation or a paper you read, add one line to the matching file in `thesis/`
-   (Section 9). Then commit:
+2. **Learn (30–60 min).** Claude explains the day's concept in chat, with a tiny example,
+   using the real code that needs it. No separate practice files.
+3. **Build (2–3 h).** Claude writes the smallest version that works, one small piece at a
+   time, and explains every line. You read, ask, then say "next".
+4. **Test (1 h).** Claude writes the tests, runs them, and breaks the code on purpose once
+   to show that a test catches it. The "Done when" column is the finish line.
+5. **Log, track and commit (15 min).** Claude writes the day's entry in `notes/journal.md`
+   (the template is at the top of that file). If the day produced a decision, a number, a
+   limitation or a paper you read, Claude adds one line to the matching file in `thesis/`
+   (Section 9). You read both, fix anything that is not true, then commit:
 
 ```bash
 git add cricketmind-v3 && git commit -m "day 12: renderer turns claims into sentences"
@@ -175,7 +178,7 @@ cricketmind-v3`, never `git add -A`, on this branch (see the branch rules in Sec
 > **Understand.** "Agents never type numbers. They write `{c1}` and the renderer puts the
 > checked number in. Today I build the renderer."
 >
-> **Learn.** In `learning/day12_format.py`, try `f"{142.0:.1f}"` and `f"{0.405:.0%}"`.
+> **Learn.** Claude shows `f"{142.0:.1f}"` and `f"{0.405:.0%}"` in chat.
 >
 > **Build.** `domain/render.py`: given a claim, return `"a strike rate of 142.0 [D, 50 balls]"`.
 >
@@ -333,7 +336,7 @@ cricketmind-v3/
 ├── frontend/                  # React + Vite + TypeScript
 ├── docs/                      # this plan, the v3 architecture, decision records
 ├── notes/journal.md
-├── learning/                  # daily tiny experiments
+├── learning/                  # toy code from Days 2–4 (practice only)
 ├── data/                      # Cricsheet files, DuckDB file      (git-ignored)
 └── models/                    # exported classifier, pose weights (git-ignored)
 ```
@@ -449,9 +452,9 @@ Rough is fine; it is raw material, not the paper. On the same days, read one pap
 
 ### What Claude does
 
-After every finished step, along with the commit command, Claude gives you the journal entry
-and any new lines for `decisions.md`, `numbers.md`, `evidence.md` or `limitations.md`, for you
-to check and paste.
+After every finished step, Claude writes the journal entry and any new lines for
+`decisions.md`, `numbers.md`, `evidence.md` or `limitations.md` into the files, and gives you
+the commit command. You check them before you commit: they are your record.
 
 ---
 
@@ -488,23 +491,30 @@ day (dataclasses, Pydantic, FastAPI and LangGraph), using a toy app first.
 rate from a small CSV file. It is small enough to finish in a few days, and it teaches every
 layer of clean architecture.
 
+> **Changed 2026-10-16.** Days 1–4 were done with the toy, in `learning/`. Days 5–7 are
+> **not** done as toys: their lessons are taught on the real code instead. FastAPI and
+> `Depends` come on Days 76–77; LangGraph state, nodes and edges on Day 53; branches on
+> Day 54; fan-out on Day 69; the bounded retry loop on Day 70. Day numbers stay the same,
+> so every reference in this plan still works. Phase 0 ends with Day 8.
+
 | Day | Learn | Build | Done when |
 |---|---|---|---|
 | 1 | What a branch, a worktree, a virtual environment and a test are | The v3 worktree and branch; the backend with uv; pytest and ruff; pytest's own settings; a `.gitignore` for v3; the architecture PDF in `docs/`; read `thesis/README.md` | `uv run pytest` shows 1 passed; first commit on the v3 branch |
 | 2 | Type hints and `@dataclass(frozen=True)` | `learning/day02_ball.py`: a `Ball` with runs and is_wicket | Tests: equal balls compare equal; changing a frozen ball raises an error |
 | 3 | Pydantic: automatic input checks | `learning/day03_query.py`: `QueryIn` with text (minimum length) and an optional player | Test: bad input raises a clear error |
 | 4 | Clean architecture: a domain function, a port (`typing.Protocol`), a fake, a use case | Toy `strike_rate()`, `BallRepository` port, `FakeBallRepository`, `GetStrikeRate` use case | Tests use the fake only; no file is read |
-| 5 | FastAPI basics; `Depends` (dependency injection) | Toy `GET /strike-rate/{batter}` calling the use case; a real CSV adapter | `TestClient` test passes with the fake swapped in |
-| 6 | LangGraph 1: state, nodes, edges | A toy 2-node graph: `count_runs` → `compute_strike_rate` | Test: run the graph, check the final state |
-| 7 | LangGraph 2: conditional edges, a bounded loop, fan-out | A toy retry loop that stops after 2 tries; two parallel nodes | Test proves the loop never runs a third time |
+| 5 | FastAPI basics; `Depends` (dependency injection) | **Moved:** taught on the real API, Days 76–77 | — |
+| 6 | LangGraph 1: state, nodes, edges | **Moved:** taught on the real graph, Day 53 | — |
+| 7 | LangGraph 2: conditional edges, a bounded loop, fan-out | **Moved:** taught on the real graph, Days 54, 69 and 70 | — |
 | 8 | Read the v3 architecture once, slowly | The real skeleton: `domain/`, `application/`, `infrastructure/`, `pipeline/`, `api/`; an architecture test that fails if `domain` imports a framework | Architecture test passes, and fails when you break it on purpose; journal: v3 in your own words, 10 lines |
 
 #### How to use this guide
 
 - Every day has the same parts: **Goal**, **Why it matters for v3**, **Learn**, numbered
   **Steps**, **Done when**, and **Finish the day**.
-- **Type the code; don't paste it.** Typing is how it sticks, and when you mistype, the error
-  teaches you something.
+- **Claude writes the code and explains every line** (changed 2026-10-16). Read each piece
+  before saying "next", and ask about anything you could not explain to a friend. The aim is
+  to understand every piece of the real project.
 - After each step, compare what you see with the **You should see** line. If it is different,
   stop and fix it before moving on.
 - **Two folders matter.** Git commands run in the worktree root; `uv`, `pytest` and `ruff`
@@ -515,8 +525,10 @@ layer of clean architecture.
 | worktree root | `/d/Cricket/cricketmind-v3-work` | `git …` |
 | `backend/` | `/d/Cricket/cricketmind-v3-work/cricketmind-v3/backend` | `uv …` |
 
-- All toy code goes in `cricketmind-v3/learning/`. It is practice, not project code. It is
-  committed so you can look back at it, but nothing in `backend/src/` ever imports it.
+- `cricketmind-v3/learning/` holds the toy code of Days 2–4. It is practice, not project
+  code. It is committed so you can look back at it, but nothing in `backend/src/` ever
+  imports it. Later "Learn" items that name a `learning/` file are shown in chat instead,
+  on the real code.
 - **Every day ends the same way** (Section 4): check *Done when*, write the journal entry,
   then commit from the worktree root:
 
@@ -835,7 +847,7 @@ git add cricketmind-v3 && git commit -m "day 2: frozen Ball dataclass"
 **Goal:** a `QueryIn` model that rejects bad input with a clear message.
 
 **Why it matters for v3:** every question from the website arrives as JSON text. Pydantic
-checks its shape before any of your code runs. On Day 5, FastAPI uses it for you
+checks its shape before any of your code runs. On Day 76, FastAPI uses it for you
 automatically. From Day 75, every request and response of the real API is a Pydantic model.
 
 **Learn**
@@ -1149,6 +1161,9 @@ git add cricketmind-v3 && git commit -m "day 4: strike-rate toy with a port, a u
 
 #### Day 5 — FastAPI and `Depends`: the toy goes on the web
 
+> **Moved (2026-10-16):** not done as a toy. This lesson is taught on the real API on
+> Days 76–77. The text below stays as a reference for those days.
+
 **Goal:** `GET /strike-rate/{batter}` answers from a CSV file in the browser, and from the
 fake in tests.
 
@@ -1335,6 +1350,9 @@ git add cricketmind-v3 && git commit -m "day 5: toy endpoint with Depends and a 
 
 #### Day 6 — LangGraph 1: state, nodes, edges
 
+> **Moved (2026-10-16):** not done as a toy. This lesson is taught on the real graph on
+> Day 53. The text below stays as a reference for that day.
+
 **Goal:** the strike-rate calculation as a two-node graph: `count_runs` →
 `compute_strike_rate`.
 
@@ -1496,6 +1514,10 @@ git add cricketmind-v3 && git commit -m "day 6: first langgraph, two nodes"
 ---
 
 #### Day 7 — LangGraph 2: branches, a bounded loop and parallel nodes
+
+> **Moved (2026-10-16):** not done as a toy. These lessons are taught on the real graph:
+> branches on Day 54, parallel nodes on Day 69, the bounded loop on Day 70. The text below
+> stays as a reference for those days.
 
 **Goal:** (a) a retry loop that can never run a third time; (b) two nodes that run side by
 side, and a third node that waits for both.
@@ -1894,9 +1916,9 @@ From `backend/`:
 | Command | You should see |
 |---|---|
 | `uv run pytest` | `4 passed` |
-| `uv run pytest ../learning` | `26 passed` |
+| `uv run pytest ../learning` | `15 passed` (Days 2–4) |
 | `uv run ruff check . ../learning` | `All checks passed!` |
-| `git -C /d/Cricket/cricketmind-v3-work log --oneline -8` | your eight day commits |
+| `git -C /d/Cricket/cricketmind-v3-work log --oneline -8` | your commits for Days 1, 2, 3–4 and 8 |
 
 If all four match, the workshop is ready. Phase 1 builds the first real code, in `domain/`.
 
@@ -2048,8 +2070,8 @@ writes the report → N13 shows it.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 53 | State and reducers | `application/graph/state.py`; the full skeleton with every node as a stub (node name = function name) | Test: the graph compiles and runs end to end |
-| 54 | — | The entry branch (clip or text only); N3 with a simple rule-based parser first | Tests for both paths |
+| 53 | LangGraph basics: state, nodes, edges, reducers (moved from Day 6) | `application/graph/state.py`; the full skeleton with every node as a stub (node name = function name) | Test: the graph compiles and runs end to end |
+| 54 | Conditional edges: a branch in the flowchart (moved from Day 7) | The entry branch (clip or text only); N3 with a simple rule-based parser first | Tests for both paths |
 | 55 | What a local LLM is; JSON-schema output | `LLM` port, `OllamaLLM` adapter, `FakeLLM` | Test with `FakeLLM`; a manual run with qwen2.5:7b |
 | 56 | — | N3 for real: structured parse → Pydantic; an unknown player gets a clear status | Tests with the fake; 5 manual queries |
 | 57 | — | N6 Shot DNA (stub perception); N7a subject-keyed retrieval; N7b context | Tests |
@@ -2064,8 +2086,8 @@ writes the report → N13 shows it.
 | 66 | — | N11e Fan Concierge, N11f Stadium Operations (uses M2), N11g Bowling Performance (new, uses T2) | Tests |
 | 67 | — | N11h Content Production, N11i Match Officials (uses M4), N11j Talent Development | Tests |
 | 68 | — | N11k Injury Management (M3 flag), N11l Player Representation | The registry check passes for all 12 |
-| 69 | Fan-out and collecting results | Dispatch to the chosen agents; collect their findings | Tests |
-| 70 | — | The Faith gate node; regenerate only the failing agents, with reasons; budget of 2 | Tests: lie-once is fixed; lie-always is withheld |
+| 69 | Fan-out and collecting results (moved from Day 7) | Dispatch to the chosen agents; collect their findings | Tests |
+| 70 | A bounded loop (moved from Day 7) | The Faith gate node; regenerate only the failing agents, with reasons; budget of 2 | Tests: lie-once is fixed; lie-always is withheld; the loop never runs a third time |
 | 71 | — | The withhold path; N12 synthesis (claim references only) with a fallback; N13 provenance tags | Tests |
 | 72 | — | End-to-end tests: 6 text-only scenarios with fakes | All pass |
 | 73 | — | 10 runs with the real LLM; fix prompts | Journal: what failed and why |
@@ -2091,8 +2113,8 @@ API      ←  { the full checked report }
 | Day | Learn | Build | Done when |
 |---|---|---|---|
 | 75 | Contract first: decide the shapes before the code | Pydantic request and response schemas | Visible on the `/docs` page |
-| 76 | The app factory; settings from `.env`; logging | `api/main.py`; `GET /api/health` | Test: health returns ok |
-| 77 | The composition root: wire ports to adapters in one place | `infrastructure/container.py` | Test: fakes swapped in for tests |
+| 76 | FastAPI basics (moved from Day 5); the app factory; settings from `.env`; logging | `api/main.py`; `GET /api/health` | Test: health returns ok |
+| 77 | `Depends` (moved from Day 5) and the composition root: wire ports to adapters in one place | `infrastructure/container.py` | Test: fakes swapped in for tests |
 | 78 | — | `POST /api/queries` for text questions, synchronous first | Test with fakes |
 | 79 | Background jobs: why slow work must not block a request | A job store; POST returns a job id; `GET /api/queries/{id}` | Tests |
 | 80 | Server-Sent Events: one-way live updates | `GET /api/queries/{id}/events` streams node progress | Stream test |
