@@ -61,3 +61,18 @@ the architecture PDF in docs/.
 [tool.pytest.ini_options] block, pytest would have climbed up and used CricShot's settings.
 
 **For the paper:** nothing today (setup is process, not method).
+
+---
+
+## Day 2 — 2026-10-16 — Type hints and frozen dataclasses
+
+**Learned:** Type hints are notes, not checks: Python happily made a Ball with runs="four".
+`@dataclass` writes `__init__`, printing and `==` for me, and `frozen=True` makes a ball
+read-only, which is what a checked claim needs (Day 10).
+**Built:** `learning/day02_ball.py` (a frozen Ball with batter, runs, is_wicket);
+`learning/pytest.ini` so learning tests never use CricShot's settings; 4 tests.
+**Tests:** 4 passed; ruff clean. With `frozen=True` removed, the frozen test failed with
+"DID NOT RAISE FrozenInstanceError", so the test really guards the rule.
+**Surprise:** `Ball("V Kohli", "four")` ran without any error.
+
+**For the paper:** nothing today.
