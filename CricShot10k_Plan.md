@@ -3373,6 +3373,29 @@ two report cards (9.5) in `notes/figures/runs/`, and no `resume.pt` anywhere.
 7. **`--family` leaves out what cannot start** and names it first; a crash
    inside a run stops the whole family.
 
+**The probe, measured 2026-10-16.** One `Linear` on each cache, same protocol
+(lr 1e-4, batch 4, plateau, patience 10, flip 0.5), one seed, val top-1:
+
+```
+                 pretrained on        author   grouped   minutes
+P04 VideoMAE-B   Kinetics video       52.21%   56.98%    9.0 / 6.5
+P02 ConvNeXt-T   ImageNet photos      49.49%   51.56%   10.5 / 6.5
+P03 r3d_18       Kinetics video       41.41%   43.59%    7.0 / 6.8
+P01 EffNetV2-S   ImageNet photos      40.66%   44.42%    7.5 / 6.6
+P05 CLIP B/16    captioned photos     39.14%   42.96%    7.5 / 10.3
+```
+
+Same order on both splits, except r3d_18 and EfficientNet, which swap and
+sit within a point of each other: a tie. **Motion pretraining is a lever,
+but only in a strong model**: VideoMAE leads by 2.7 / 5.4 points, while the
+small r3d_18 (112 px input) only ties the authors' backbone. ConvNeXt beats
+EfficientNet by 8.8 / 7.1 under the same head, so the authors' backbone is
+not the best starting point either. CLIP is last: features trained to name
+a scene ('cricket', 45/45 frames in 8.10) do not separate one stroke from
+another. The grouped column is higher for every cache; the val sets are
+different clips, so this says nothing about leakage. That comparison is
+9.6's, on test.
+
 **Takeaway.** Automate the rules you wrote down, because rules you have to
 remember are rules you break under load shedding. Every one of rule 1, 4 and 5
 is now a line of code rather than a line of good intentions.

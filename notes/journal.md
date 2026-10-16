@@ -2951,3 +2951,25 @@ A ledger honesty fix: P03's inherited config still says `efficientnet_v2_s`
 Tests: 38 new/changed pass (`test_run_experiment` 11, `test_cached_head` 7,
 `test_registry` 20); 133 in evaluate/train/head/model/plot/engine still pass.
 17 IDs ready.
+
+### 9.2 run: the probe, and B01 adopted
+
+`--family P`: 10 runs, 6.5-10.5 min each, all finished; P03 (run first as
+the 9.2 check) was skipped on the family run, as it should be. B01's author
+row was adopted from `mimic_author` in under a second.
+
+```
+P04 VideoMAE-B   52.21% / 56.98%   (author / grouped val)
+P02 ConvNeXt-T   49.49% / 51.56%
+P03 r3d_18       41.41% / 43.59%
+P01 EffNetV2-S   40.66% / 44.42%
+P05 CLIP B/16    39.14% / 42.96%
+```
+
+VideoMAE first and ConvNeXt second on both splits. The small video model
+only ties EfficientNet, so "video pretraining" alone is not the lever; a
+strong video model is. CLIP last, despite naming the sport on 45/45 frames.
+One seed each: r3d_18 vs EfficientNet (under a point) is a tie.
+
+Every probe underfits rather than overfits (train top-1 50-67%), so the
+absolute numbers are a floor set by the protocol; the ranking is the result.
