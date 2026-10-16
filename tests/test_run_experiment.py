@@ -212,3 +212,105 @@ def test_an_old_run_with_a_different_config_is_refused(harness, monkeypatch):
     monkeypatch.setitem(R.ADOPT, "X01_linear__author", "old_run")
     with pytest.raises(SystemExit, match="lr differ"):
         _run(harness, "X01_linear")
+
+
+# ---- 9.3: the three properties that make the harness safe ----------------
+
+def _folder(h, name):
+    return os.path.join(h["out"], name)
+
+
+def _history(h, name):
+    with open(os.path.join(_folder(h, name), "history.json"),
+              encoding="utf-8") as fh:
+        rows = json.load(fh)
+    kept = []
+    for row in rows:
+        clean = dict(row)
+        clean.pop("secs", None)          # wall-clock time, never the same
+        kept.append(clean)
+    return kept
+
+
+def _report(h, name, part):
+    path = os.path.join(_folder(h, name), f"report_{part}.json")
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def test_idempotent_a_second_call_touches_nothing(harness, monkeypatch):
+    _run(harness, "X01_linear")
+    folder = _folder(harness, "X01_linear__author")
+    before = {}
+    for leaf in os.listdir(folder):
+        before[leaf] = os.path.getmtime(os.path.join(folder, leaf))
+    rows = _ledger(harness)
+
+    def forbidden(*a, **k):
+        raise AssertionError("a finished run must not train or score")
+    monkeypatch.setattr(runner, "train", forbidden)
+    monkeypatch.setattr(runner, "evaluate_checkpoint", forbidden)
+
+    assert _run(harness, "X01_linear")[0] == "skipped"
+    assert _ledger(harness) == rows
+    after = {}
+    for leaf in os.listdir(folder):
+        after[leaf] = os.path.getmtime(os.path.join(folder, leaf))
+    assert after == before
+
+
+@pytest.mark.parametrize("exp_id", ["X01_linear", "X02_mlp"])
+def test_deterministic_same_seed_same_numbers(harness, exp_id):
+    # flip is 0.5 here, so the mirror coin is part of what must repeat
+    name = exp_id + "__author"
+    _run(harness, exp_id)
+    first = _ledger(harness)[-1]
+    first_history = _history(harness, name)
+    first_val = _report(harness, name, "val")
+
+    _run(harness, exp_id, force=True)
+    second = _ledger(harness)[-1]
+    assert second["recorded_at"] >= first["recorded_at"]
+    for key in ("best_val_top1", "epochs_run", "stopped"):
+        assert second[key] == first[key], key
+    assert _history(harness, name) == first_history
+    second_val = _report(harness, name, "val")
+    assert second_val["confusion"] == first_val["confusion"]
+    assert second_val["loss"] == first_val["loss"]
+
+
+def test_the_row_records_the_config_that_ran(harness):
+    _run(harness, "X02_mlp", "grouped")
+    row = _ledger(harness)[-1]
+    want = R.resolve(R.get("X02_mlp"), "grouped", harness["over"])
+    assert row["cfg"] == want
+    saved = torch.load(os.path.join(_folder(harness, "X02_mlp__grouped"),
+                                    "best.pt"), weights_only=False)
+    assert saved["cfg"] == want
+
+
+def test_every_real_ledger_row_still_means_what_it_meant():
+    # if a registry edit changes what an ID means after it ran, its old
+    # rows would describe a different experiment; this catches that
+    path = os.path.join("experiments", "results.jsonl")
+    checked = 0
+    for row in read_results(path):
+        name = row.get("name", "")
+        if "__" not in name:
+            continue
+        exp_id, split = name.split("__", 1)
+        entry = R.get(exp_id)
+        differ = R.config_differences(row["cfg"], R.resolve(entry, split))
+        assert differ == [], (name, differ)
+        checked += 1
+    assert checked > 0
+
+
+def test_a_different_seed_changes_the_numbers(harness):
+    # so the determinism test above could fail, and its pass means something
+    name = "X02_mlp__author"
+    _run(harness, "X02_mlp")
+    first_history = _history(harness, name)
+    harness["over"]["seed"] = 7
+    _run(harness, "X02_mlp", force=True)
+    assert _history(harness, name) != first_history

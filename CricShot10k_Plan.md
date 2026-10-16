@@ -3442,6 +3442,28 @@ subset:
 python -m src.experiments.run --exp P03_r3d_18          # should say: already done, skipping
 ```
 
+**Built 2026-10-16.** Six tests added to `tests/test_run_experiment.py`
+(17 in the file), all on the Arc in bf16, about 20 s:
+
+1. **Idempotence**, stricter than "no new row": with `train` and
+   `evaluate_checkpoint` both replaced by functions that fail, a second call
+   returns `skipped`, the ledger is unchanged, and no file in the run folder
+   has a new modification time.
+2. **Determinism**, for the `linear` and `mlp` heads with flip 0.5 (so the
+   mirror coin must repeat too): two `--force` runs give the same
+   `best_val_top1`, `epochs_run` and stop reason, the same `history.json`
+   epoch by epoch (wall-clock `secs` aside), and the same val confusion
+   matrix and loss. XPU bf16 turned out bit-repeatable for these heads.
+3. **A different seed changes the numbers.** Without this, the determinism
+   test could pass because nothing random was wired in at all.
+4. **The row records what ran**: `row["cfg"]` and the checkpoint's `cfg` both
+   equal what the registry resolves.
+5. **Every real ledger row still means what it meant.** For each registry row
+   in `experiments/results.jsonl` (11 today), its stored config must match
+   what its ID resolves to now, keys added later allowed only at their
+   defaults. A registry edit that changes the meaning of an ID after it ran
+   fails here, instead of quietly relabelling an old result.
+
 **Takeaway.** Idempotence is the property that makes interruption cheap, and it
 is worth a test of its own. "Re-running costs nothing" turns a power cut from a
 problem into a pause.

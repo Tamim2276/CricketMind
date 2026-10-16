@@ -2973,3 +2973,19 @@ One seed each: r3d_18 vs EfficientNet (under a point) is a tie.
 
 Every probe underfits rather than overfits (train top-1 50-67%), so the
 absolute numbers are a floor set by the protocol; the ranking is the result.
+
+### 9.3 The harness, proven
+
+Six tests: idempotence (a second call trains nothing, scores nothing, and
+touches no file), determinism for two heads with flip on, a different seed
+changing the numbers (so determinism is not vacuous), the row and the
+checkpoint both recording the resolved config, and every real ledger row
+still matching what its ID means today.
+
+What I half-expected and did not get: XPU bf16 nondeterminism. Two forced
+runs gave identical histories, epoch by epoch, and identical confusion
+matrices. That holds for small linear/MLP heads; the big GRU and the
+end-to-end runs are not covered by this test and may not be bit-exact.
+
+Tests: 44 pass across `test_run_experiment` (17), `test_registry` (20),
+`test_cached_head` (7).
