@@ -13,8 +13,12 @@ own branch, `cricketmind-v3` (Section 3). Not to be confused with
 Every day follows the same loop: **understand → learn → build → test → commit.**
 Nothing is copied from the old notebook or the old `cricketmind/` prototype. Claude writes
 the code one small piece at a time and explains every line in simple words before it runs;
-you read it, ask about anything unclear, and say "next". You learn on the real project, not
-on practice exercises (changed 2026-10-16; see Phase 0 in Section 11).
+you read it, ask about anything unclear, and say "next". **You learn on the real project, not
+on practice exercises:** each new idea is taught the first time the real code needs it.
+
+*Rewritten 2026-10-16: the practice-only days were dropped and the days renumbered (177 → 165).
+Journal entries written before that date use the old numbers; the mapping is in
+`notes/journal.md`, under "Plan rewrite".*
 
 ---
 
@@ -30,7 +34,7 @@ on practice exercises (changed 2026-10-16; see Phase 0 in Section 11).
 8. [Rules that never change](#8-rules-that-never-change)
 9. [The thesis paper: track everything](#9-the-thesis-paper-track-everything)
 10. [Milestones](#10-milestones)
-11. [Day-by-day plan](#11-day-by-day-plan) — Phases 0 to 12, Days 1 to 177
+11. [Day-by-day plan](#11-day-by-day-plan) — Phases 0 to 12, Days 1 to 165
 12. [When you get stuck](#12-when-you-get-stuck)
 13. [Glossary](#13-glossary)
 
@@ -84,31 +88,31 @@ review day.
 
 | Phase | What you build | Best case | Worst case |
 |---|---|---|---|
-| 0 | Foundations: setup, Python types, Pydantic, clean architecture, FastAPI, LangGraph | 6 | 8 |
+| 0 | Foundations: setup, Python types, Pydantic, clean architecture, the real skeleton | 5 | 5 |
 | 1 | Claims: the facts agents are allowed to say | 5 | 7 |
 | 2 | Faith Check v3: the editor (checks C1–C6) | 8 | 11 |
-| 3 | Real cricket data: Cricsheet into a database | 7 | 11 |
-| 4 | Engines: N8 (past) and N9 (future, with uncertainty) | 10 | 15 |
+| 3 | Real cricket data: Cricsheet into a database | 6 | 10 |
+| 4 | Engines: N8 (past) and N9 (future, with uncertainty) | 7 | 12 |
 | 5 | The graph: all nodes and 12 agents, working in the terminal | 15 | 22 |
 | 6 | The web API (FastAPI) | 8 | 12 |
-| 7 | The website (React) | 16 | 25 |
+| 7 | The website (React) | 11 | 20 |
 | 8 | Video: classifier and pose | 11 | 16 |
 | 9 | The commentary-to-shot bridge | 9 | 15 |
 | 10 | Evaluation for the thesis | 8 | 12 |
 | 11 | Ship it: Docker, README, demo | 5 | 8 |
 | 12 | Write the paper | 10 | 15 |
-| | **Total** | **118** | **177** |
+| | **Total** | **108** | **165** |
 
 Add **about 10% for load shedding, exams and sick days**: the worst case is
-**about 195 sessions.**
+**about 180 sessions.**
 
 | Sessions per week | Worst-case calendar time |
 |---|---|
-| 5 (CricketMind full time) | about 39 weeks ≈ **9 months** |
-| 3 (shared with CricShot) | about 65 weeks ≈ **15 months** |
+| 5 (CricketMind full time) | about 36 weeks ≈ **8½ months** |
+| 3 (shared with CricShot) | about 60 weeks ≈ **14 months** |
 
 The order is chosen so you have something working early: a referee that works on fake
-data by Day 26, answers in the terminal by Day 74, and a working website by Day 110.
+data by Day 23, answers in the terminal by Day 67, and a working website by Day 98.
 
 ---
 
@@ -123,7 +127,7 @@ CricShot10k (the classifier and its accuracy paper) and CricketMind (this system
 | **Two folders, two names** | `cricketmind/` (no suffix) is the old v2 prototype; CricShot's tests still import it, so never edit it. `cricketmind-v3/` is the new project, and its Python package is `cricketmind_v3`, so an import can never pick up the old one by accident. |
 | **Separate Python environment** | Each project has its own `uv` environment. The new one is `cricketmind-v3/backend/.venv`. Don't activate CricShot's `.venv` while working on v3; `uv run` picks the right one. |
 | **Separate journal** | `cricketmind-v3/notes/journal.md`. CricShot keeps its own. |
-| **One bridge only: a file and a spec** | CricketMind never imports CricShot code. CricShot *exports* the final classifier (a TorchScript file + `classes.json` + a model card that says exactly what input it expects). CricketMind copies those files into its `models/` folder and checks the checksum. Day 112. |
+| **One bridge only: a file and a spec** | CricketMind never imports CricShot code. CricShot *exports* the final classifier (a TorchScript file + `classes.json` + a model card that says exactly what input it expects). CricketMind copies those files into its `models/` folder and checks the checksum. Day 100. |
 | **One GPU at a time** | Never train CricShot while CricketMind uses the GPU (Ollama, the classifier, pose). |
 | **Separate papers** | The classifier's accuracy is reserved for the CricShot paper. The CricketMind website and paper never report it. They may show a single clip's prediction and confidence. |
 | **Old code is reference only** | The old notebook and `cricshot-improve/cricketmind/` are for remembering ideas, not for copying. |
@@ -167,13 +171,13 @@ Every day has the same five steps.
    (Section 9). You read both, fix anything that is not true, then commit:
 
 ```bash
-git add cricketmind-v3 && git commit -m "day 12: renderer turns claims into sentences"
+git add cricketmind-v3 && git commit -m "day 9: renderer turns claims into sentences"
 ```
 
 Run it from the worktree root, `/d/Cricket/cricketmind-v3-work`. Always `git add
 cricketmind-v3`, never `git add -A`, on this branch (see the branch rules in Section 3).
 
-### A worked example: Day 12
+### A worked example: Day 9
 
 > **Understand.** "Agents never type numbers. They write `{c1}` and the renderer puts the
 > checked number in. Today I build the renderer."
@@ -238,7 +242,7 @@ with an API client generated from FastAPI's OpenAPI file.**
 - **HTMX + Jinja templates** is the simpler fallback if React feels too heavy: no JavaScript
   build at all, but less interactivity and less to learn for your career.
 
-Node.js 24 is already installed. Docker Desktop is installed on Day 155.
+Node.js 24 is already installed. Docker Desktop is installed on Day 143.
 
 ---
 
@@ -273,7 +277,7 @@ You can change a supplier without retraining the chef. That is the whole point.
 
 **The one rule:** arrows only point inward. `domain` imports nothing from the other layers
 or any framework. `application` imports `domain` only. Infrastructure *implements* the ports
-that application defines. A test on Day 8 enforces this rule automatically.
+that application defines. A test on Day 5 enforces this rule automatically.
 
 ### A port, a fake and a real adapter
 
@@ -383,7 +387,7 @@ Tests that use the real model are marked `@pytest.mark.llm` and are run by hand.
 3. **Plain, readable Python.** Loops and if/else, not clever one-liners. Short, human comments.
 4. **One GPU user at a time** (Section 3).
 5. **The device rule:** GPU code picks Intel XPU, then CUDA, then CPU, so the same code runs
-   on the Arc B580 and on the RTX 3070. It is written once, on Day 113.
+   on the Arc B580 and on the RTX 3070. It is written once, on Day 101.
 6. **Numbers come only from N6, N8 and N9.** No agent, prompt or language model ever
    produces a number a user sees.
 7. **No classifier accuracy in CricketMind** (Section 3).
@@ -407,7 +411,7 @@ The `thesis/` folder already exists, and `thesis/README.md` explains it. In shor
 
 | Something happened… | Write it in | Example |
 |---|---|---|
-| Any day ends | `notes/journal.md` | "Day 21: C4 rejects 'will probably' at p = 0.405" |
+| Any day ends | `notes/journal.md` | "Day 18: C4 rejects 'will probably' at p = 0.405" |
 | You chose between options | `thesis/decisions.md` | "D-014: hedge required when the interval crosses a band — why, alternatives" |
 | A script printed a number worth keeping | `thesis/numbers.md` | "N-009: Brier score 0.21 on the 2025 season — source file, seed, commit" |
 | A claim became provable, or you plan one | `thesis/evidence.md` | "E-007: N9 is calibrated → `results/calibration_t1.csv`" |
@@ -424,12 +428,12 @@ CricketMind refuses to print a number nobody computed. Your paper follows the sa
 > **No number goes into the paper unless it has a row in `numbers.md`, and no claim unless it
 > has a row in `evidence.md` pointing to the file that proves it.**
 
-On Day 174 you check the finished draft against these two files, line by line. You are the
+On Day 162 you check the finished draft against these two files, line by line. You are the
 paper's Faith Check.
 
 ### The results ledger
 
-From Day 25, every experiment script saves its output to `thesis/results/` and appends one
+From Day 22, every experiment script saves its output to `thesis/results/` and appends one
 row to `thesis/results/ledger.jsonl`: date, commit hash, experiment name, settings, seed, the
 key numbers, and the output files. You never type a result by hand. It is the same idea as
 CricShot's `results.jsonl` and `caches.jsonl`.
@@ -462,15 +466,15 @@ the commit command. You check them before you commit: they are your record.
 
 | | When | What you can show |
 |---|---|---|
-| **M1** | Day 26 | The Faith Check catches all seven kinds of fabrication, on fake data |
-| **M2** | Day 52 | The engines answer from real Cricsheet data, with honest intervals |
-| **M3** | Day 74 | Full answers to text questions in the terminal |
-| **M4** | Day 110 | The website answers text questions, live |
-| **M5** | Day 127 | Questions with a video clip work end to end |
-| **M6** | Day 140 | The commentary bridge result (positive or negative) |
-| **M7** | Day 154 | Thesis results: tables and figures |
-| **M8** | Day 161 | Shipped: one command starts everything, plus a demo video |
-| **M9** | Day 177 | The paper, ready to submit |
+| **M1** | Day 23 | The Faith Check catches all seven kinds of fabrication, on fake data |
+| **M2** | Day 45 | The engines answer from real Cricsheet data, with honest intervals |
+| **M3** | Day 67 | Full answers to text questions in the terminal |
+| **M4** | Day 98 | The website answers text questions, live |
+| **M5** | Day 115 | Questions with a video clip work end to end |
+| **M6** | Day 128 | The commentary bridge result (positive or negative) |
+| **M7** | Day 142 | Thesis results: tables and figures |
+| **M8** | Day 149 | Shipped: one command starts everything, plus a demo video |
+| **M9** | Day 165 | The paper, ready to submit |
 
 ---
 
@@ -482,20 +486,18 @@ already covered and you go straight to building.
 
 ---
 
-### Phase 0 — Foundations (Days 1–8)
+### Phase 0 — Foundations (Days 1–5)
 
-**In simple words:** set up a clean workshop, then learn the four tools you will use every
-day (dataclasses, Pydantic, FastAPI and LangGraph), using a toy app first.
+**In simple words:** set up a clean workshop, learn three basics on a tiny toy (dataclasses,
+Pydantic, clean architecture), then build the real skeleton that every later day fills in.
 
-**The toy app:** a *strike-rate calculator*. Give it a player, and it returns their strike
-rate from a small CSV file. It is small enough to finish in a few days, and it teaches every
-layer of clean architecture.
+**The toy:** a *strike-rate calculator*, in `learning/`. It is small enough to finish in a
+day, and it shows every layer of clean architecture. Days 1–4 are done (2026-10-16); their
+sections below are kept as a record.
 
-> **Changed 2026-10-16.** Days 1–4 were done with the toy, in `learning/`. Days 5–7 are
-> **not** done as toys: their lessons are taught on the real code instead. FastAPI and
-> `Depends` come on Days 76–77; LangGraph state, nodes and edges on Day 53; branches on
-> Day 54; fan-out on Day 69; the bounded retry loop on Day 70. Day numbers stay the same,
-> so every reference in this plan still works. Phase 0 ends with Day 8.
+**Taught later, on the real code:** FastAPI and `Depends` on Days 69–70; LangGraph state,
+nodes and edges on Day 46; branches on Day 47; fan-out on Day 62; the bounded retry loop on
+Day 63.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
@@ -503,20 +505,18 @@ layer of clean architecture.
 | 2 | Type hints and `@dataclass(frozen=True)` | `learning/day02_ball.py`: a `Ball` with runs and is_wicket | Tests: equal balls compare equal; changing a frozen ball raises an error |
 | 3 | Pydantic: automatic input checks | `learning/day03_query.py`: `QueryIn` with text (minimum length) and an optional player | Test: bad input raises a clear error |
 | 4 | Clean architecture: a domain function, a port (`typing.Protocol`), a fake, a use case | Toy `strike_rate()`, `BallRepository` port, `FakeBallRepository`, `GetStrikeRate` use case | Tests use the fake only; no file is read |
-| 5 | FastAPI basics; `Depends` (dependency injection) | **Moved:** taught on the real API, Days 76–77 | — |
-| 6 | LangGraph 1: state, nodes, edges | **Moved:** taught on the real graph, Day 53 | — |
-| 7 | LangGraph 2: conditional edges, a bounded loop, fan-out | **Moved:** taught on the real graph, Days 54, 69 and 70 | — |
-| 8 | Read the v3 architecture once, slowly | The real skeleton: `domain/`, `application/`, `infrastructure/`, `pipeline/`, `api/`; an architecture test that fails if `domain` imports a framework | Architecture test passes, and fails when you break it on purpose; journal: v3 in your own words, 10 lines |
+| 5 | Read the v3 architecture once, slowly, with Claude | The real skeleton: `domain/`, `application/`, `infrastructure/`, `pipeline/`, `api/`; an architecture test that fails if `domain` imports a framework | Architecture test passes, and fails when broken on purpose; journal: v3 in your own words, 10 lines |
 
 #### How to use this guide
 
 - Every day has the same parts: **Goal**, **Why it matters for v3**, **Learn**, numbered
-  **Steps**, **Done when**, and **Finish the day**.
-- **Claude writes the code and explains every line** (changed 2026-10-16). Read each piece
-  before saying "next", and ask about anything you could not explain to a friend. The aim is
-  to understand every piece of the real project.
-- After each step, compare what you see with the **You should see** line. If it is different,
-  stop and fix it before moving on.
+  **Steps**, **Done when**, and **Finish the day**. From Phase 1 on, a day is one row of a
+  table; Claude breaks it into small steps on the day.
+- **Claude writes the code and explains every line.** Read each piece before saying "next",
+  and ask about anything you could not explain to a friend. The aim is to understand every
+  piece of the real project.
+- After each step, Claude runs it and shows you the output. Compare it with the **You should
+  see** line. If it is different, stop and fix it before moving on.
 - **Two folders matter.** Git commands run in the worktree root; `uv`, `pytest` and `ruff`
   run in `backend/`:
 
@@ -527,10 +527,9 @@ layer of clean architecture.
 
 - `cricketmind-v3/learning/` holds the toy code of Days 2–4. It is practice, not project
   code. It is committed so you can look back at it, but nothing in `backend/src/` ever
-  imports it. Later "Learn" items that name a `learning/` file are shown in chat instead,
-  on the real code.
-- **Every day ends the same way** (Section 4): check *Done when*, write the journal entry,
-  then commit from the worktree root:
+  imports it, and nothing new goes there.
+- **Every day ends the same way** (Section 4): check *Done when*, read the journal entry
+  Claude wrote, then commit from the worktree root:
 
 ```bash
 cd /d/Cricket/cricketmind-v3-work
@@ -729,7 +728,7 @@ rm -r docs notes thesis
 **Goal:** a `Ball` object that compares by its values and cannot be changed by accident.
 
 **Why it matters for v3:** a claim is a fact. Once the Faith Check has checked it, nothing may
-change it before it is shown. On Day 10, `Claim` is frozen for exactly this reason.
+change it before it is shown. On Day 7, `Claim` is frozen for exactly this reason.
 
 **Learn**
 
@@ -847,8 +846,8 @@ git add cricketmind-v3 && git commit -m "day 2: frozen Ball dataclass"
 **Goal:** a `QueryIn` model that rejects bad input with a clear message.
 
 **Why it matters for v3:** every question from the website arrives as JSON text. Pydantic
-checks its shape before any of your code runs. On Day 76, FastAPI uses it for you
-automatically. From Day 75, every request and response of the real API is a Pydantic model.
+checks its shape before any of your code runs. On Day 69, FastAPI uses it for you
+automatically. From Day 68, every request and response of the real API is a Pydantic model.
 
 **Learn**
 
@@ -856,7 +855,7 @@ automatically. From Day 75, every request and response of the real API is a Pyda
 |---|---|---|
 | Checks the types? | No, it trusts you | Yes, every time |
 | Use it for | data made inside your code | data that comes from outside: users, JSON, the LLM |
-| Where it goes in v3 | `domain/`, which is pure Python (the Day 8 rule) | the API edge, and the LLM's JSON replies |
+| Where it goes in v3 | `domain/`, which is pure Python (the Day 5 rule) | the API edge, and the LLM's JSON replies |
 
 - `Field(min_length=5)` adds a rule to a field.
 - `str | None = None` means "optional; `None` when it is missing".
@@ -974,7 +973,7 @@ git add cricketmind-v3 && git commit -m "day 3: QueryIn with pydantic checks"
 **Goal:** a strike-rate calculator in four small pieces (a domain function, a port, a use case
 and a fake), tested without reading any file.
 
-**Why it matters for v3:** this is the shape of the whole system. On Day 39 the real engine
+**Why it matters for v3:** this is the shape of the whole system. On Day 34 the real engine
 uses a `DeliveryRepository` port exactly like today's `BallRepository`, with DuckDB behind it
 instead of a list.
 
@@ -1063,7 +1062,7 @@ class GetStrikeRate:
 ```
 
 The use case is handed its repository from outside, in `__init__`; it never creates one.
-That is **dependency injection**, and tomorrow FastAPI does it for you.
+That is **dependency injection**, and on Day 70 FastAPI does it for you.
 
 **Step 5 — Write the fake.** Create `learning/toy/fakes.py`:
 
@@ -1159,593 +1158,18 @@ git add cricketmind-v3 && git commit -m "day 4: strike-rate toy with a port, a u
 
 ---
 
-#### Day 5 — FastAPI and `Depends`: the toy goes on the web
-
-> **Moved (2026-10-16):** not done as a toy. This lesson is taught on the real API on
-> Days 76–77. The text below stays as a reference for those days.
-
-**Goal:** `GET /strike-rate/{batter}` answers from a CSV file in the browser, and from the
-fake in tests.
-
-**Why it matters for v3:** the website talks to v3 through endpoints like this one. `Depends`
-is how the real app gets DuckDB while the tests get a fake: the same use case, two suppliers.
-Day 77 builds this wiring for the real system.
-
-**Learn**
-
-- An **endpoint** is a function plus a URL. `{batter}` in the URL becomes the `batter`
-  argument.
-- **`Depends(get_repo)`** says "before you call me, call `get_repo()` and hand me what it
-  returns".
-- `Annotated[BallRepository, Depends(get_repo)]` reads as "a `BallRepository`, which FastAPI
-  gets from `get_repo`".
-- **`app.dependency_overrides[get_repo] = use_fake`** swaps the supplier for one test.
-- **`TestClient`** is a pretend browser. It calls your app directly, so no server is needed.
-- `HTTPException(status_code=404)` is the polite way to say "not found".
-
-**Step 1 — Install FastAPI.**
-
-```bash
-cd /d/Cricket/cricketmind-v3-work/cricketmind-v3/backend
-uv add "fastapi[standard]"
-```
-
-`[standard]` also brings the web server (uvicorn), `httpx` (which `TestClient` needs) and the
-`fastapi` command.
-
-**Step 2 — Make a tiny data file.** Create `learning/toy/balls.csv`:
-
-```
-batter,runs,is_wide
-V Kohli,4,0
-V Kohli,1,0
-V Kohli,0,1
-V Kohli,6,0
-RG Sharma,0,0
-RG Sharma,2,0
-```
-
-**Step 3 — Write the real adapter.** It keeps the same promise as the fake, with a different
-supplier. Create `learning/toy/csv_repo.py`:
-
-```python
-import csv
-from pathlib import Path
-
-from toy.domain import Ball
-
-
-class CsvBallRepository:
-    def __init__(self, path: Path):
-        self.path = path
-
-    def balls_for(self, batter: str) -> list[Ball]:
-        found = []
-        with open(self.path, newline="", encoding="utf-8") as f:
-            for row in csv.DictReader(f):
-                if row["batter"] != batter:
-                    continue
-                ball = Ball(row["batter"], int(row["runs"]), row["is_wide"] == "1")
-                found.append(ball)
-        return found
-```
-
-Everything in a CSV is text. That is why you convert it yourself with `int(...)` and
-`== "1"`.
-
-**Step 4 — Write the endpoint.** Create `learning/toy/api.py`:
-
-```python
-from pathlib import Path
-from typing import Annotated
-
-from fastapi import Depends, FastAPI, HTTPException
-
-from toy.csv_repo import CsvBallRepository
-from toy.ports import BallRepository
-from toy.use_cases import GetStrikeRate
-
-CSV_PATH = Path(__file__).parent / "balls.csv"
-
-app = FastAPI(title="Toy strike rate")
-
-
-def get_repo() -> BallRepository:
-    return CsvBallRepository(CSV_PATH)
-
-
-@app.get("/strike-rate/{batter}")
-def read_strike_rate(batter: str, repo: Annotated[BallRepository, Depends(get_repo)]):
-    value = GetStrikeRate(repo).run(batter)
-    if value is None:
-        raise HTTPException(status_code=404, detail="No balls found for " + batter)
-    return {"batter": batter, "strike_rate": value}
-```
-
-**Step 5 — Run the server and use it.**
-
-```bash
-uv run fastapi dev ../learning/toy/api.py
-```
-
-Open these in your browser:
-
-- http://127.0.0.1:8000/strike-rate/V%20Kohli shows `{"batter":"V Kohli","strike_rate":366.7}`.
-- http://127.0.0.1:8000/strike-rate/Nobody shows `{"detail":"No balls found for Nobody"}`
-  (status 404).
-- http://127.0.0.1:8000/docs shows the documentation FastAPI wrote for you. Click the
-  endpoint, then **Try it out**, type `RG Sharma`, and click **Execute**. You should get
-  `100.0`.
-
-Stop the server with **Ctrl+C**. It does not reload when you edit the toy files, so restart it
-after every change.
-
-**Step 6 — Write the tests.** Create `learning/test_day05_api.py`:
-
-```python
-from fastapi.testclient import TestClient
-from toy.api import CSV_PATH, app, get_repo
-from toy.csv_repo import CsvBallRepository
-from toy.domain import Ball
-from toy.fakes import FakeBallRepository
-
-
-def test_endpoint_with_the_fake():
-    fake = FakeBallRepository([Ball("V Kohli", 4), Ball("V Kohli", 2)])
-
-    def use_fake():
-        return fake
-
-    app.dependency_overrides[get_repo] = use_fake
-    client = TestClient(app)
-    response = client.get("/strike-rate/V Kohli")
-    app.dependency_overrides.clear()
-
-    assert response.status_code == 200
-    assert response.json() == {"batter": "V Kohli", "strike_rate": 300.0}
-    assert fake.asked == ["V Kohli"]
-
-
-def test_unknown_batter_is_404():
-    def use_empty_fake():
-        return FakeBallRepository([])
-
-    app.dependency_overrides[get_repo] = use_empty_fake
-    client = TestClient(app)
-    response = client.get("/strike-rate/Nobody")
-    app.dependency_overrides.clear()
-
-    assert response.status_code == 404
-
-
-def test_csv_repository_reads_the_file():
-    repo = CsvBallRepository(CSV_PATH)
-    balls = repo.balls_for("RG Sharma")
-    assert balls == [Ball("RG Sharma", 0), Ball("RG Sharma", 2)]
-```
-
-The first two tests never touch the CSV. The third tests the real adapter on its own: a
-small *integration* test (Section 7).
-
-**Step 7 — Run them.**
-
-```bash
-uv run pytest ../learning
-uv run ruff check ../learning
-```
-
-You should see `18 passed`.
-
-**Done when:** the test with the fake swapped in passes, and you have used `/docs` at least
-once.
-
-**Finish the day:** journal entry, then:
-
-```bash
-cd /d/Cricket/cricketmind-v3-work
-git add cricketmind-v3 && git commit -m "day 5: toy endpoint with Depends and a CSV adapter"
-```
-
----
-
-#### Day 6 — LangGraph 1: state, nodes, edges
-
-> **Moved (2026-10-16):** not done as a toy. This lesson is taught on the real graph on
-> Day 53. The text below stays as a reference for that day.
-
-**Goal:** the strike-rate calculation as a two-node graph: `count_runs` →
-`compute_strike_rate`.
-
-**Why it matters for v3:** the whole question-answering pipeline (N3 → N6 → … → N13) is one
-LangGraph graph, built from Day 53. Today you build the smallest graph that still has all
-three parts.
-
-**Learn**
-
-- **State:** the shared notebook. A `TypedDict` lists every key it may hold.
-- **Node:** a plain function. It reads the state and returns **only the keys it changed**, and
-  LangGraph writes those into the notebook.
-- **Edge:** "after this node, run that one". `START` and `END` are the doors in and out.
-- `compile()` turns the drawing into something you can run. `invoke()` runs it and returns
-  the final state. `stream()` gives one update per node, which is how the website will show
-  live progress (Day 80).
-- A node's name is its function's name (`"count_runs"` for `count_runs`), so the drawing and
-  the code always match.
-
-**Step 1 — Install LangGraph.**
-
-```bash
-cd /d/Cricket/cricketmind-v3-work/cricketmind-v3/backend
-uv add langgraph
-```
-
-**Step 2 — Write the graph.** Create `learning/toy/graph.py`:
-
-```python
-from typing import TypedDict
-
-from langgraph.graph import END, START, StateGraph
-
-from toy.domain import Ball
-
-
-class ToyState(TypedDict, total=False):
-    balls: list[Ball]
-    runs: int
-    faced: int
-    strike_rate: float | None
-
-
-def count_runs(state: ToyState) -> dict:
-    runs = 0
-    faced = 0
-    for ball in state["balls"]:
-        if ball.is_wide:
-            continue
-        faced += 1
-        runs += ball.runs
-    return {"runs": runs, "faced": faced}
-
-
-def compute_strike_rate(state: ToyState) -> dict:
-    if state["faced"] == 0:
-        return {"strike_rate": None}
-    return {"strike_rate": round(100.0 * state["runs"] / state["faced"], 1)}
-
-
-def build_graph():
-    graph = StateGraph(ToyState)
-    graph.add_node("count_runs", count_runs)
-    graph.add_node("compute_strike_rate", compute_strike_rate)
-    graph.add_edge(START, "count_runs")
-    graph.add_edge("count_runs", "compute_strike_rate")
-    graph.add_edge("compute_strike_rate", END)
-    return graph.compile()
-```
-
-`total=False` means "the keys may be missing at the start". At the start the notebook has
-only `balls`; the nodes fill in the rest.
-
-**Step 3 — See it run.** Create `learning/day06_draw.py`:
-
-```python
-from toy.domain import Ball
-from toy.graph import build_graph
-
-app = build_graph()
-print(app.get_graph().draw_mermaid())
-
-balls = [Ball("V Kohli", 4), Ball("V Kohli", 0, is_wide=True), Ball("V Kohli", 2)]
-for step in app.stream({"balls": balls}):
-    print(step)
-```
-
-```bash
-uv run python ../learning/day06_draw.py
-```
-
-You should see a drawing written as text (paste it into https://mermaid.live to see boxes and
-arrows), then one line per node:
-
-```
-{'count_runs': {'runs': 6, 'faced': 2}}
-{'compute_strike_rate': {'strike_rate': 300.0}}
-```
-
-Each node returned only what it changed.
-
-**Step 4 — Write the tests.** Create `learning/test_day06_graph.py`:
-
-```python
-from toy.domain import Ball
-from toy.graph import build_graph, count_runs
-
-BALLS = [Ball("V Kohli", 4), Ball("V Kohli", 0, is_wide=True), Ball("V Kohli", 2)]
-
-
-def test_graph_runs_end_to_end():
-    app = build_graph()
-    final = app.invoke({"balls": BALLS})
-    assert final["runs"] == 6
-    assert final["faced"] == 2
-    assert final["strike_rate"] == 300.0
-
-
-def test_a_node_is_just_a_function():
-    assert count_runs({"balls": BALLS}) == {"runs": 6, "faced": 2}
-
-
-def test_stream_shows_each_node_and_what_it_changed():
-    app = build_graph()
-    steps = list(app.stream({"balls": BALLS}))
-    assert steps == [
-        {"count_runs": {"runs": 6, "faced": 2}},
-        {"compute_strike_rate": {"strike_rate": 300.0}},
-    ]
-```
-
-The second test needs no graph at all. A node is just a function, so you can test it on its
-own.
-
-**Step 5 — Run them.**
-
-```bash
-uv run pytest ../learning
-uv run ruff check ../learning
-```
-
-You should see `21 passed`.
-
-**Step 6 — Break it on purpose.** In `count_runs`, change `"runs": runs` to `"runz": runs`
-and run the tests. LangGraph silently drops a key that the state does not list, so the
-mistake only shows up one node later, as `KeyError: 'runs'` in `compute_strike_rate`. The
-lesson: the state is a contract, and tests are what catch a typo in it. Put it back.
-
-**Done when:** the 3 new tests pass, and the journal has one line each for state, node and
-edge.
-
-**Finish the day:** journal entry, then:
-
-```bash
-cd /d/Cricket/cricketmind-v3-work
-git add cricketmind-v3 && git commit -m "day 6: first langgraph, two nodes"
-```
-
----
-
-#### Day 7 — LangGraph 2: branches, a bounded loop and parallel nodes
-
-> **Moved (2026-10-16):** not done as a toy. These lessons are taught on the real graph:
-> branches on Day 54, parallel nodes on Day 69, the bounded loop on Day 70. The text below
-> stays as a reference for those days.
-
-**Goal:** (a) a retry loop that can never run a third time; (b) two nodes that run side by
-side, and a third node that waits for both.
-
-**Why it matters for v3:** the Faith Check sends a failing agent back to rewrite, at most
-twice (Day 70). If that loop had no limit, one stubborn agent would run forever. The agents
-also run in parallel and are then collected (Day 69).
-
-**Learn**
-
-- **Conditional edge:** after a node, a *router* function looks at the state and returns the
-  **name** of the next node.
-- **Bounded loop:** keep a counter (`tries`) in the state. The router checks it before it
-  sends the work round again.
-- LangGraph also has a safety net, `recursion_limit` (25 steps by default), which stops a
-  runaway graph with an error. Never rely on it. Your own limit must stop the loop first, with
-  a proper answer.
-- **Fan-out:** two edges leaving the same place run both nodes in the same step. **Join:**
-  `add_edge(["a", "b"], "c")` makes `c` wait for both.
-- **Reducer:** when two parallel nodes write the same key, LangGraph needs to know how to
-  combine them. `Annotated[list[str], operator.add]` means "join the lists".
-
-**The pretend agent:** the state carries a `script`, the answer the agent gives on try 1,
-try 2 and so on. It is the same trick as the fake LLM in Section 7. `"right"` passes the
-check, and anything else fails it.
-
-**Step 1 — Write the retry loop.** Create `learning/toy/retry_graph.py`:
-
-```python
-from typing import TypedDict
-
-from langgraph.graph import END, START, StateGraph
-
-MAX_TRIES = 2
-
-
-class RetryState(TypedDict, total=False):
-    script: list[str]  # what the pretend agent says on each try
-    tries: int
-    answer: str
-    ok: bool
-    status: str
-
-
-def write_answer(state: RetryState) -> dict:
-    tries = state["tries"] + 1
-    answer = state["script"][tries - 1]
-    return {"tries": tries, "answer": answer}
-
-
-def check_answer(state: RetryState) -> dict:
-    return {"ok": state["answer"] == "right"}
-
-
-def route_after_check(state: RetryState) -> str:
-    if state["ok"]:
-        return "accept"
-    if state["tries"] >= MAX_TRIES:
-        return "withhold"
-    return "write_answer"
-
-
-def accept(state: RetryState) -> dict:
-    return {"status": "accepted"}
-
-
-def withhold(state: RetryState) -> dict:
-    return {"status": "withheld"}
-
-
-def build_retry_graph():
-    graph = StateGraph(RetryState)
-    graph.add_node("write_answer", write_answer)
-    graph.add_node("check_answer", check_answer)
-    graph.add_node("accept", accept)
-    graph.add_node("withhold", withhold)
-    graph.add_edge(START, "write_answer")
-    graph.add_edge("write_answer", "check_answer")
-    graph.add_conditional_edges(
-        "check_answer", route_after_check, ["accept", "withhold", "write_answer"]
-    )
-    graph.add_edge("accept", END)
-    graph.add_edge("withhold", END)
-    return graph.compile()
-```
-
-Read `route_after_check` out loud: "if it's right, accept it; if we have already tried twice,
-withhold it; otherwise, write again."
-
-**Step 2 — Write the fan-out.** Create `learning/toy/fanout_graph.py`:
-
-```python
-import operator
-from typing import Annotated, TypedDict
-
-from langgraph.graph import END, START, StateGraph
-
-from toy.domain import Ball
-
-
-class FanState(TypedDict, total=False):
-    balls: list[Ball]
-    notes: Annotated[list[str], operator.add]  # parallel writes get joined, not overwritten
-    summary: str
-
-
-def count_boundaries(state: FanState) -> dict:
-    count = 0
-    for ball in state["balls"]:
-        if ball.runs == 4 or ball.runs == 6:
-            count += 1
-    return {"notes": ["boundaries: " + str(count)]}
-
-
-def count_dots(state: FanState) -> dict:
-    count = 0
-    for ball in state["balls"]:
-        if ball.runs == 0 and not ball.is_wide:
-            count += 1
-    return {"notes": ["dots: " + str(count)]}
-
-
-def summarise(state: FanState) -> dict:
-    return {"summary": ", ".join(sorted(state["notes"]))}
-
-
-def build_fanout_graph():
-    graph = StateGraph(FanState)
-    graph.add_node("count_boundaries", count_boundaries)
-    graph.add_node("count_dots", count_dots)
-    graph.add_node("summarise", summarise)
-    graph.add_edge(START, "count_boundaries")
-    graph.add_edge(START, "count_dots")
-    graph.add_edge(["count_boundaries", "count_dots"], "summarise")
-    graph.add_edge("summarise", END)
-    return graph.compile()
-```
-
-**Step 3 — Write the tests.** Create `learning/test_day07_loop.py`:
-
-```python
-from toy.domain import Ball
-from toy.fanout_graph import build_fanout_graph
-from toy.retry_graph import build_retry_graph
-
-
-def run_with_script(script):
-    app = build_retry_graph()
-    return app.invoke({"script": script, "tries": 0})
-
-
-def test_right_first_time():
-    final = run_with_script(["right"])
-    assert final["status"] == "accepted"
-    assert final["tries"] == 1
-
-
-def test_wrong_once_is_fixed():
-    final = run_with_script(["wrong", "right"])
-    assert final["status"] == "accepted"
-    assert final["tries"] == 2
-
-
-def test_loop_never_runs_a_third_time():
-    final = run_with_script(["wrong", "wrong", "right"])
-    assert final["status"] == "withheld"
-    assert final["tries"] == 2
-
-
-def test_write_answer_runs_at_most_twice():
-    app = build_retry_graph()
-    writes = 0
-    for step in app.stream({"script": ["wrong", "wrong", "wrong"], "tries": 0}):
-        if "write_answer" in step:
-            writes += 1
-    assert writes == 2
-
-
-def test_fan_out_runs_both_and_joins():
-    balls = [Ball("V Kohli", 4), Ball("V Kohli", 0), Ball("V Kohli", 6), Ball("V Kohli", 0)]
-    final = build_fanout_graph().invoke({"balls": balls})
-    assert len(final["notes"]) == 2
-    assert final["summary"] == "boundaries: 2, dots: 2"
-```
-
-`test_loop_never_runs_a_third_time` is the key test. The script's third answer is `"right"`,
-so the only way to pass is to stop after two tries.
-
-**Step 4 — Run them.**
-
-```bash
-cd /d/Cricket/cricketmind-v3-work/cricketmind-v3/backend
-uv run pytest ../learning
-uv run ruff check ../learning
-```
-
-You should see `26 passed`.
-
-**Step 5 — Break it twice.**
-
-- In `route_after_check`, change `>=` to `>`. Two tests fail, because the loop ran a third
-  time. Put it back.
-- In `fanout_graph.py`, change the `notes` line to `notes: list[str]`. The fan-out test fails
-  with `InvalidUpdateError: At key 'notes': Can receive only one value per step`. Combining
-  those two values is the reducer's job. Put it back.
-
-**Done when:** the 5 new tests pass, and the journal says why the limit belongs in your
-router and not in `recursion_limit`.
-
-**Finish the day:** journal entry, then:
-
-```bash
-cd /d/Cricket/cricketmind-v3-work
-git add cricketmind-v3 && git commit -m "day 7: bounded retry loop and fan-out"
-```
-
----
-
-#### Day 8 — The real skeleton, guarded by a test
+#### Day 5 — The real skeleton, guarded by a test
 
 **Goal:** read the v3 architecture once, then create the five real layers, plus a test that
 fails the moment an import points the wrong way.
 
-**Why it matters for v3:** from Day 9, every file goes into one of these layers. A wrong
+**Why it matters for v3:** from Day 6, every file goes into one of these layers. A wrong
 import is easy to make and hard to undo months later. This test catches it the same minute.
 
-**Learn (about 2 hours): read the v3 architecture, slowly.** Open
-`docs/CricketMind_Architecture_v3.pdf`.
+**Learn (about 2 hours): read the v3 architecture, slowly, with Claude.** Open
+`docs/CricketMind_Architecture_v3.pdf`. Claude walks you through the "Read carefully"
+sections one at a time, in simple words and with the Kohli example; stop it whenever
+something is unclear.
 
 | Read carefully | Skim |
 |---|---|
@@ -1756,7 +1180,8 @@ import is easy to make and hard to undo months later. This test catches it the s
 | Faith Check v3 | Positioning against Related Work |
 | What This Document Does Not Claim | |
 
-Then close the PDF and write **10 lines in the journal, in your own words**:
+Then close the PDF and write **10 lines in the journal, in your own words**. This is the one
+journal entry you write yourself: it is how you check that you understood.
 
 1. What went wrong in v2 that v3 fixes.
 2. What a claim is, and why it is data rather than a sentence.
@@ -1769,12 +1194,16 @@ Then close the PDF and write **10 lines in the journal, in your own words**:
 9. One thing the document says it does **not** claim.
 10. The part you understand least. That is what to ask about.
 
-**Step 1 — Create the five layers.**
+**Step 1 — Create the five layers.** Claude makes five folders, each with an empty
+`__init__.py` so Python treats it as a package:
 
-```bash
-cd /d/Cricket/cricketmind-v3-work/cricketmind-v3/backend/src/cricketmind_v3
-mkdir domain application infrastructure pipeline api
-touch domain/__init__.py application/__init__.py infrastructure/__init__.py pipeline/__init__.py api/__init__.py
+```
+backend/src/cricketmind_v3/
+├── domain/__init__.py
+├── application/__init__.py
+├── infrastructure/__init__.py
+├── pipeline/__init__.py
+└── api/__init__.py
 ```
 
 | Folder | In the restaurant | What it will hold | What it may import |
@@ -1794,19 +1223,16 @@ uv run python -c "import cricketmind_v3.domain; print('ok')"
 
 You should see `ok`.
 
-**Step 3 — Set up the test folders.**
-
-```bash
-mkdir tests/unit
-touch tests/__init__.py tests/unit/__init__.py
-```
+**Step 3 — Set up the test folders.** Claude adds `tests/__init__.py` and
+`tests/unit/__init__.py`, both empty.
 
 The empty `__init__.py` files let two test files share a name in different folders later
 (`unit/test_claims.py` and `graph/test_claims.py`). They also let tests import shared helpers
 as `from tests.fakes import …`. The `integration/`, `graph/` and `api/` folders are made when
-their first test arrives (Days 39, 53 and 76).
+their first test arrives (Days 34, 46 and 69).
 
-**Step 4 — Write the architecture test.** Create `backend/tests/unit/test_architecture.py`:
+**Step 4 — Write the architecture test.** Claude writes
+`backend/tests/unit/test_architecture.py` and explains it line by line:
 
 ```python
 import ast
@@ -1886,30 +1312,30 @@ uv run ruff check .
 You should see `4 passed` (the 3 new tests plus `test_first.py`).
 
 **Step 6 — Prove it works by breaking it twice.** A test you have never seen fail proves
-nothing.
+nothing. Claude does each break, shows you the red failure, then removes it:
 
-- Create `src/cricketmind_v3/domain/oops.py` containing the line `import fastapi`. Run
-  `uv run pytest`. It fails with `['oops.py imports fastapi']`. Delete the file.
-- Create `src/cricketmind_v3/application/oops.py` containing the line
-  `from cricketmind_v3.infrastructure import duckdb_repo`. Run `uv run pytest`. It fails.
-  Delete the file.
-- Run `uv run pytest` once more. You should see `4 passed` again.
+- `src/cricketmind_v3/domain/oops.py` containing the line `import fastapi`. `uv run pytest`
+  fails with `['oops.py imports fastapi']`.
+- `src/cricketmind_v3/application/oops.py` containing the line
+  `from cricketmind_v3.infrastructure import duckdb_repo`. `uv run pytest` fails.
+- With both files gone, `uv run pytest` shows `4 passed` again.
 
 **Done when:** `uv run pytest` shows `4 passed`, both broken versions failed and then passed
-again once you deleted them, and the 10-line journal entry is written.
+again once removed, and your 10-line journal entry is written.
 
 **For the paper:** one decision row in `thesis/decisions.md`. D-014: the layer rule is
 enforced by `tests/unit/test_architecture.py`, and `domain/` is standard-library only.
 Paper section: Implementation.
 
-**Finish the day:** journal entry, then:
+**Finish the day:** Claude writes the rest of the journal entry and the D-014 row; you read
+them, then:
 
 ```bash
 cd /d/Cricket/cricketmind-v3-work
-git add cricketmind-v3 && git commit -m "day 8: five layers and the architecture test"
+git add cricketmind-v3 && git commit -m "day 5: five layers and the architecture test"
 ```
 
-#### End of Phase 0 — check before Day 9
+#### End of Phase 0 — check before Day 6
 
 From `backend/`:
 
@@ -1918,13 +1344,13 @@ From `backend/`:
 | `uv run pytest` | `4 passed` |
 | `uv run pytest ../learning` | `15 passed` (Days 2–4) |
 | `uv run ruff check . ../learning` | `All checks passed!` |
-| `git -C /d/Cricket/cricketmind-v3-work log --oneline -8` | your commits for Days 1, 2, 3–4 and 8 |
+| `git -C /d/Cricket/cricketmind-v3-work log --oneline -8` | your commits for Days 1, 2, 3–4 and 5 |
 
 If all four match, the workshop is ready. Phase 1 builds the first real code, in `domain/`.
 
 ---
 
-### Phase 1 — Claims (Days 9–15)
+### Phase 1 — Claims (Days 6–12)
 
 **In simple words:** a claim is one fact an agent wants to say, written as **data**, not as a
 sentence. Data can be checked; sentences can only be read.
@@ -1948,17 +1374,17 @@ The renderer turns that into *"…returns a strike rate of 142.0 [D, 50 balls]."
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 9 | Enums: a fixed list of choices prevents typos | `domain/provenance.py` (MEASURED, DESCRIPTIVE, PREDICTIVE); `domain/subject.py` | Tests: an unknown provenance is impossible; equal subjects compare equal |
-| 10 | Rules an object must obey | `domain/claims.py`: `Claim`; a predictive claim needs an interval; a measured claim needs a clip id | Test: each broken rule raises an error |
-| 11 | Finding `{c1}` in text with plain string methods | `domain/findings.py`: `Finding` (agent, claims, template); list its references | Tests: references found; a reference to a missing claim is rejected |
-| 12 | Formatting numbers for people | `domain/render.py`: claim → "a strike rate of 142.0 [D, 50 balls]" | One test per metric type, including intervals |
-| 13 | A registry: one place that lists what is allowed | `domain/registry.py`: `ClaimType` (name, provenance, source, required subject keys) and the 9 types of Table 4 in the v3 doc | Tests: lookup works; an unknown type returns nothing |
-| 14 | Failing when the system is built, not while it runs | Registry validation: every claim type an agent declares exists and maps to an engine metric | Test: a hollow claim type ("the pitch is holding pace") fails validation |
-| 15 | Review day | Rename, add docstrings, tidy | All tests green; you can explain Claim, Finding and Registry to a friend |
+| 6 | Enums: a fixed list of choices prevents typos | `domain/provenance.py` (MEASURED, DESCRIPTIVE, PREDICTIVE); `domain/subject.py` | Tests: an unknown provenance is impossible; equal subjects compare equal |
+| 7 | Rules an object must obey | `domain/claims.py`: `Claim`; a predictive claim needs an interval; a measured claim needs a clip id | Test: each broken rule raises an error |
+| 8 | Finding `{c1}` in text with plain string methods | `domain/findings.py`: `Finding` (agent, claims, template); list its references | Tests: references found; a reference to a missing claim is rejected |
+| 9 | Formatting numbers for people | `domain/render.py`: claim → "a strike rate of 142.0 [D, 50 balls]" | One test per metric type, including intervals |
+| 10 | A registry: one place that lists what is allowed | `domain/registry.py`: `ClaimType` (name, provenance, source, required subject keys) and the 9 types of Table 4 in the v3 doc | Tests: lookup works; an unknown type returns nothing |
+| 11 | Failing when the system is built, not while it runs | Registry validation: every claim type an agent declares exists and maps to an engine metric | Test: a hollow claim type ("the pitch is holding pace") fails validation |
+| 12 | Review day | Rename, add docstrings, tidy | All tests green; you can explain Claim, Finding and Registry to a friend |
 
 ---
 
-### Phase 2 — Faith Check v3 (Days 16–26)
+### Phase 2 — Faith Check v3 (Days 13–23)
 
 **In simple words:** the Faith Check is the editor. It runs six checks, and each check asks one
 question:
@@ -1978,21 +1404,21 @@ agent with that reason.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 16 | Words for probability (Kent's scale) | `domain/wording.py`: the five bands, `band_for(p)`, the hedge rule | Tests at the edges: 0.13, 0.40, 0.60, 0.87 |
-| 17 | A pipeline of checks | `domain/faith/gate.py`: `Failure` (agent, claim, check, reason); `run_checks()` runs C1→C6 and collects failures | Test with two dummy checks |
-| 18 | — | C1: schema, registry, agent permission | Tests: unknown type; agent not allowed; no source |
-| 19 | Ports again: ask an engine without knowing which engine | `application/ports.py`: `FactSource`; `FakeFactSource`; C2 re-query with rounding tolerance | Tests: wrong value (F1) and wrong subject (F2) rejected |
-| 20 | Why small samples lie: flip a coin 6 times | C3: evidence floor (30 balls), small-sample qualifier, generalising words ("struggles", "always") | Test: "struggles against spin" on 6 balls rejected; with "on only 6 balls" accepted |
-| 21 | What an interval means, in one picture | C4 part 1: wording must fit the band; a hedge is needed if the interval crosses bands | Test: p = 0.405 with "will probably get him out" rejected |
-| 22 | "No detectable difference" | C4 part 2: a comparison whose interval contains 0 must say so | Test: 142 vs 112 with interval [−16, +76] |
-| 23 | Scanning text for digits | C5: no orphan numbers (allowlist: T20, U-19) | Test: "about 150" in a template rejected |
-| 24 | A gazetteer: a list of known names | C6: names in a sentence must match the claim's subject | Test: the Rohit/Kohli swap rejected |
-| 25 | Testing by breaking things on purpose; the results ledger | Fabrication harness: build the F1–F7 versions of a correct finding; a "v2 mode" gate that checks values only. Results go to `thesis/results/`, with one row per run in `ledger.jsonl` | Table: v2 mode catches F1 only; v3 catches F1–F7 (on fake data); E-004 verified |
-| 26 | Review day — **M1** | Tidy, then a journal teach-back | **M1:** the editor works on fake data |
+| 13 | Words for probability (Kent's scale) | `domain/wording.py`: the five bands, `band_for(p)`, the hedge rule | Tests at the edges: 0.13, 0.40, 0.60, 0.87 |
+| 14 | A pipeline of checks | `domain/faith/gate.py`: `Failure` (agent, claim, check, reason); `run_checks()` runs C1→C6 and collects failures | Test with two dummy checks |
+| 15 | — | C1: schema, registry, agent permission | Tests: unknown type; agent not allowed; no source |
+| 16 | Ports again: ask an engine without knowing which engine | `application/ports.py`: `FactSource`; `FakeFactSource`; C2 re-query with rounding tolerance | Tests: wrong value (F1) and wrong subject (F2) rejected |
+| 17 | Why small samples lie: flip a coin 6 times | C3: evidence floor (30 balls), small-sample qualifier, generalising words ("struggles", "always") | Test: "struggles against spin" on 6 balls rejected; with "on only 6 balls" accepted |
+| 18 | What an interval means, in one picture | C4 part 1: wording must fit the band; a hedge is needed if the interval crosses bands | Test: p = 0.405 with "will probably get him out" rejected |
+| 19 | "No detectable difference" | C4 part 2: a comparison whose interval contains 0 must say so | Test: 142 vs 112 with interval [−16, +76] |
+| 20 | Scanning text for digits | C5: no orphan numbers (allowlist: T20, U-19) | Test: "about 150" in a template rejected |
+| 21 | A gazetteer: a list of known names | C6: names in a sentence must match the claim's subject | Test: the Rohit/Kohli swap rejected |
+| 22 | Testing by breaking things on purpose; the results ledger | Fabrication harness: build the F1–F7 versions of a correct finding; a "v2 mode" gate that checks values only. Results go to `thesis/results/`, with one row per run in `ledger.jsonl` | Table: v2 mode catches F1 only; v3 catches F1–F7 (on fake data); E-004 verified |
+| 23 | Review day — **M1** | Tidy, then a journal teach-back | **M1:** the editor works on fake data |
 
 ---
 
-### Phase 3 — Real cricket data (Days 27–37)
+### Phase 3 — Real cricket data (Days 24–33)
 
 **In simple words:** Cricsheet gives every ball of thousands of matches as free JSON files. You
 turn them into **one table with one row per ball.**
@@ -2010,21 +1436,20 @@ row:   match_id=1426279, innings=1, over=3, ball=2,
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 27 | Reading Cricsheet JSON by hand | Download 5 matches; write notes on `info`, `innings`, `overs`, `deliveries`, `extras`, `wickets`, `review` | Journal: a hand-drawn diagram of one delivery |
-| 28 | SQL basics with DuckDB: create, insert, select, group by | `learning/day28_duckdb.py` exercises | Tests on a 10-row table |
-| 29 | Designing a table (a schema) | `pipeline/schema.py`: the delivery row; the phase rule per format | Test: a hand-made delivery becomes the right row |
-| 30 | Wides and no-balls (why ball numbers get tricky) | `pipeline/parse_match.py`: one match → rows, with plain loops | Tests on 2 fixture matches with a wide, a no-ball and a wicket |
-| 31 | Resumable jobs: a manifest plus atomic writes | `pipeline/ingest.py`: all files → DuckDB, skipping finished files | Test: running twice adds nothing; stopping and restarting works |
-| 32 | Checking data against itself | Checks: innings totals equal the sum of the balls; match counts; empty fields | Report printed; tests on fixtures |
-| 33 | Matching names (aliases) | The player table from the Cricsheet register; name search for N3 | Test: "Kohli" finds "V Kohli" |
-| 34 | Where batting hand and bowling type come from | Route A: export from the `cricketdata` package (needs R, once). Route B: hand-label the players in your evaluation set | Coverage report: the share of balls with a bowler type |
-| 35 | — | Finish the attribute join (a spillover day if Day 34 runs long) | Test: the join keeps every delivery |
-| 36 | Derived tables | The venue table; balls bowled per bowler per date; the reviews table | Tests on fixtures |
-| 37 | Review day | Row counts and file size into the journal | The numbers are written down |
+| 24 | Reading Cricsheet JSON by hand | Download 5 matches; write notes on `info`, `innings`, `overs`, `deliveries`, `extras`, `wickets`, `review` | Journal: a hand-drawn diagram of one delivery |
+| 25 | SQL basics with DuckDB: create, insert, select, group by; designing a table (a schema) | `pipeline/schema.py`: the delivery row; the phase rule per format | Test: a hand-made delivery becomes the right row |
+| 26 | Wides and no-balls (why ball numbers get tricky) | `pipeline/parse_match.py`: one match → rows, with plain loops | Tests on 2 fixture matches with a wide, a no-ball and a wicket |
+| 27 | Resumable jobs: a manifest plus atomic writes | `pipeline/ingest.py`: all files → DuckDB, skipping finished files | Test: running twice adds nothing; stopping and restarting works |
+| 28 | Checking data against itself | Checks: innings totals equal the sum of the balls; match counts; empty fields | Report printed; tests on fixtures |
+| 29 | Matching names (aliases) | The player table from the Cricsheet register; name search for N3 | Test: "Kohli" finds "V Kohli" |
+| 30 | Where batting hand and bowling type come from | Route A: export from the `cricketdata` package (needs R, once). Route B: hand-label the players in your evaluation set | Coverage report: the share of balls with a bowler type |
+| 31 | — | Finish the attribute join (a spillover day if Day 30 runs long) | Test: the join keeps every delivery |
+| 32 | Derived tables | The venue table; balls bowled per bowler per date; the reviews table | Tests on fixtures |
+| 33 | Review day | Row counts and file size into the journal | The numbers are written down |
 
 ---
 
-### Phase 4 — Engines (Days 38–52)
+### Phase 4 — Engines (Days 34–45)
 
 **In simple words:** engines are the only calculators allowed to produce numbers. **N8 counts
 the past. N9 simulates the future and says how unsure it is.**
@@ -2039,25 +1464,22 @@ from 50 balls is wide; one from 5,000 balls is narrow.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 38 | Rates and sample size: simulate coin flips | `learning/day38_coins.py` | Journal: why 2 balls tell you nothing |
-| 39 | The repository pattern with real SQL | `DeliveryRepository` port, DuckDB adapter, fake; M1: strike rate, dismissal rate, n | Tests on the fake and on a tiny DuckDB file |
-| 40 | Bootstrap (resampling) | M1: a difference with a 95% interval, fixed seed | Test reproduces [−16, +76] on the synthetic example |
-| 41 | — | M2: venue profile (first-innings average, chasing wins, pace and spin wicket share) | Tests |
-| 42 | The workload ratio, and why scientists argue about it | M3: balls bowled in 7 and 28 days, the ratio, a flag (never a probability) | Test with a made-up bowler calendar |
-| 43 | — | M4: DRS reviews, counts and overturn rate | Tests |
-| 44 | Connecting the editor to the real engine | The real `FactSource`: registry metric → engine function | C2 test against the tiny DuckDB |
-| 45 | Monte Carlo, and the Beta distribution | `learning/day45_beta.py`: draw rates, plot the curve | Journal: the curve for 4 outs in 50 balls |
-| 46 | — | N9.T1: chance of being out within k balls, with estimation uncertainty | Test: median ≈ 0.405, interval ≈ [0.155, 0.697] (seeded) |
-| 47 | Shrinkage: pulling small samples toward the average | A population prior from the data | Test: 1 out in 2 balls is not a 50% risk |
-| 48 | — | N9.T2 part 1: head-to-head rates with shrinkage; baseline and counterfactual | Tests |
-| 49 | — | N9.T2 part 2: the simulated difference, its interval, "no detectable difference" | Tests |
-| 50 | Calibration (the weather-forecast example); the Brier score | `learning/day50_calibration.py` | Journal: what "70% means 70%" means |
-| 51 | — | Calibration run: fit on older seasons, test on the newest | Reliability plot and Brier score saved |
-| 52 | Review day — **M2** | The engine report | **M2:** engines on real data |
+| 34 | Rates and sample size (why 2 balls tell you nothing); the repository pattern with real SQL | `DeliveryRepository` port, DuckDB adapter, fake; M1: strike rate, dismissal rate, n | Tests on the fake and on a tiny DuckDB file; journal: why 2 balls tell you nothing |
+| 35 | Bootstrap (resampling) | M1: a difference with a 95% interval, fixed seed | Test reproduces [−16, +76] on the synthetic example |
+| 36 | — | M2: venue profile (first-innings average, chasing wins, pace and spin wicket share) | Tests |
+| 37 | The workload ratio, and why scientists argue about it | M3: balls bowled in 7 and 28 days, the ratio, a flag (never a probability) | Test with a made-up bowler calendar |
+| 38 | — | M4: DRS reviews, counts and overturn rate | Tests |
+| 39 | Connecting the editor to the real engine | The real `FactSource`: registry metric → engine function | C2 test against the tiny DuckDB |
+| 40 | Monte Carlo, and the Beta distribution | N9.T1: chance of being out within k balls, with estimation uncertainty | Test: median ≈ 0.405, interval ≈ [0.155, 0.697] (seeded); journal: the curve for 4 outs in 50 balls |
+| 41 | Shrinkage: pulling small samples toward the average | A population prior from the data | Test: 1 out in 2 balls is not a 50% risk |
+| 42 | — | N9.T2 part 1: head-to-head rates with shrinkage; baseline and counterfactual | Tests |
+| 43 | — | N9.T2 part 2: the simulated difference, its interval, "no detectable difference" | Tests |
+| 44 | Calibration (the weather-forecast example); the Brier score | Calibration run: fit on older seasons, test on the newest | Reliability plot and Brier score saved; journal: what "70% means 70%" means |
+| 45 | Review day — **M2** | The engine report | **M2:** engines on real data |
 
 ---
 
-### Phase 5 — The graph (Days 53–74)
+### Phase 5 — The graph (Days 46–67)
 
 **In simple words:** LangGraph is a **flowchart that runs**. The **state** is a shared notebook
 that every node reads and writes. You build the whole flowchart with stubs first, then make
@@ -2070,32 +1492,32 @@ writes the report → N13 shows it.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 53 | LangGraph basics: state, nodes, edges, reducers (moved from Day 6) | `application/graph/state.py`; the full skeleton with every node as a stub (node name = function name) | Test: the graph compiles and runs end to end |
-| 54 | Conditional edges: a branch in the flowchart (moved from Day 7) | The entry branch (clip or text only); N3 with a simple rule-based parser first | Tests for both paths |
-| 55 | What a local LLM is; JSON-schema output | `LLM` port, `OllamaLLM` adapter, `FakeLLM` | Test with `FakeLLM`; a manual run with qwen2.5:7b |
-| 56 | — | N3 for real: structured parse → Pydantic; an unknown player gets a clear status | Tests with the fake; 5 manual queries |
-| 57 | — | N6 Shot DNA (stub perception); N7a subject-keyed retrieval; N7b context | Tests |
-| 58 | — | N8 and N9 as graph nodes; the sanctioned fact surface | Tests |
-| 59 | Capabilities: what can this question support? | Capability filter: posture needs a clip, matchups need two bowlers, venue claims need a venue | Tests |
-| 60 | — | N10 router part 1: keyword rules, capability filter, cap of 4, default pair | Tests |
-| 61 | — | N10 router part 2: the LLM proposes, using an evidence summary; rules as the fallback | Tests with a scripted `FakeLLM` |
-| 62 | Writing good prompts | Agent spec: stakeholder, allowed claim types, voice; one file per agent in `prompts/` | All 12 prompt files written |
-| 63 | — | Agent factory: LLM → `Finding` (claims + template) under a JSON schema | Tests with scripted findings |
-| 64 | — | The first real agent: Tactical Analysis (N11b), with the real LLM | 5 real findings pass C1–C6; journal notes |
-| 65 | — | N11a Club Operations, N11c Personal Performance, N11d Global Scouting | Tests |
-| 66 | — | N11e Fan Concierge, N11f Stadium Operations (uses M2), N11g Bowling Performance (new, uses T2) | Tests |
-| 67 | — | N11h Content Production, N11i Match Officials (uses M4), N11j Talent Development | Tests |
-| 68 | — | N11k Injury Management (M3 flag), N11l Player Representation | The registry check passes for all 12 |
-| 69 | Fan-out and collecting results (moved from Day 7) | Dispatch to the chosen agents; collect their findings | Tests |
-| 70 | A bounded loop (moved from Day 7) | The Faith gate node; regenerate only the failing agents, with reasons; budget of 2 | Tests: lie-once is fixed; lie-always is withheld; the loop never runs a third time |
-| 71 | — | The withhold path; N12 synthesis (claim references only) with a fallback; N13 provenance tags | Tests |
-| 72 | — | End-to-end tests: 6 text-only scenarios with fakes | All pass |
-| 73 | — | 10 runs with the real LLM; fix prompts | Journal: what failed and why |
-| 74 | Counting cost | Count steps and agent calls; write the worst-case bound; test it | **M3:** text answers work in the terminal |
+| 46 | LangGraph basics: state, nodes, edges, reducers | `application/graph/state.py`; the full skeleton with every node as a stub (node name = function name) | Test: the graph compiles and runs end to end |
+| 47 | Conditional edges: a branch in the flowchart | The entry branch (clip or text only); N3 with a simple rule-based parser first | Tests for both paths |
+| 48 | What a local LLM is; JSON-schema output | `LLM` port, `OllamaLLM` adapter, `FakeLLM` | Test with `FakeLLM`; a manual run with qwen2.5:7b |
+| 49 | — | N3 for real: structured parse → Pydantic; an unknown player gets a clear status | Tests with the fake; 5 manual queries |
+| 50 | — | N6 Shot DNA (stub perception); N7a subject-keyed retrieval; N7b context | Tests |
+| 51 | — | N8 and N9 as graph nodes; the sanctioned fact surface | Tests |
+| 52 | Capabilities: what can this question support? | Capability filter: posture needs a clip, matchups need two bowlers, venue claims need a venue | Tests |
+| 53 | — | N10 router part 1: keyword rules, capability filter, cap of 4, default pair | Tests |
+| 54 | — | N10 router part 2: the LLM proposes, using an evidence summary; rules as the fallback | Tests with a scripted `FakeLLM` |
+| 55 | Writing good prompts | Agent spec: stakeholder, allowed claim types, voice; one file per agent in `prompts/` | All 12 prompt files written |
+| 56 | — | Agent factory: LLM → `Finding` (claims + template) under a JSON schema | Tests with scripted findings |
+| 57 | — | The first real agent: Tactical Analysis (N11b), with the real LLM | 5 real findings pass C1–C6; journal notes |
+| 58 | — | N11a Club Operations, N11c Personal Performance, N11d Global Scouting | Tests |
+| 59 | — | N11e Fan Concierge, N11f Stadium Operations (uses M2), N11g Bowling Performance (new, uses T2) | Tests |
+| 60 | — | N11h Content Production, N11i Match Officials (uses M4), N11j Talent Development | Tests |
+| 61 | — | N11k Injury Management (M3 flag), N11l Player Representation | The registry check passes for all 12 |
+| 62 | Fan-out and collecting results | Dispatch to the chosen agents; collect their findings | Tests |
+| 63 | A bounded loop | The Faith gate node; regenerate only the failing agents, with reasons; budget of 2 | Tests: lie-once is fixed; lie-always is withheld; the loop never runs a third time |
+| 64 | — | The withhold path; N12 synthesis (claim references only) with a fallback; N13 provenance tags | Tests |
+| 65 | — | End-to-end tests: 6 text-only scenarios with fakes | All pass |
+| 66 | — | 10 runs with the real LLM; fix prompts | Journal: what failed and why |
+| 67 | Counting cost | Count steps and agent calls; write the worst-case bound; test it | **M3:** text answers work in the terminal |
 
 ---
 
-### Phase 6 — The web API (Days 75–86)
+### Phase 6 — The web API (Days 68–79)
 
 **In simple words:** the API is the **waiter** between the website and the kitchen.
 
@@ -2112,22 +1534,22 @@ API      ←  { the full checked report }
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 75 | Contract first: decide the shapes before the code | Pydantic request and response schemas | Visible on the `/docs` page |
-| 76 | FastAPI basics (moved from Day 5); the app factory; settings from `.env`; logging | `api/main.py`; `GET /api/health` | Test: health returns ok |
-| 77 | `Depends` (moved from Day 5) and the composition root: wire ports to adapters in one place | `infrastructure/container.py` | Test: fakes swapped in for tests |
-| 78 | — | `POST /api/queries` for text questions, synchronous first | Test with fakes |
-| 79 | Background jobs: why slow work must not block a request | A job store; POST returns a job id; `GET /api/queries/{id}` | Tests |
-| 80 | Server-Sent Events: one-way live updates | `GET /api/queries/{id}/events` streams node progress | Stream test |
-| 81 | Saving data with SQLite and SQLModel | A reports table; a history endpoint | Tests |
-| 82 | Uploading files safely | `POST /api/clips` with type and size limits | Tests: too big and wrong type rejected |
-| 83 | — | `GET /api/players?q=koh` for autocomplete | Tests |
-| 84 | Errors people can understand | One error format for 404, 422 and 500 | Tests |
-| 85 | Security basics: CORS, limits, secrets | CORS for the dev site; `.env` never committed | Tests |
-| 86 | Review day | Export `openapi.json`; try every endpoint by hand | Journal |
+| 68 | Contract first: decide the shapes before the code | Pydantic request and response schemas | Visible on the `/docs` page |
+| 69 | FastAPI basics: routes, path parameters, `TestClient`; the app factory; settings from `.env`; logging | `api/main.py`; `GET /api/health` | Test: health returns ok |
+| 70 | `Depends` (dependency injection) and the composition root: wire ports to adapters in one place | `infrastructure/container.py` | Test: fakes swapped in for tests |
+| 71 | — | `POST /api/queries` for text questions, synchronous first | Test with fakes |
+| 72 | Background jobs: why slow work must not block a request | A job store; POST returns a job id; `GET /api/queries/{id}` | Tests |
+| 73 | Server-Sent Events: one-way live updates | `GET /api/queries/{id}/events` streams node progress | Stream test |
+| 74 | Saving data with SQLite and SQLModel | A reports table; a history endpoint | Tests |
+| 75 | Uploading files safely | `POST /api/clips` with type and size limits | Tests: too big and wrong type rejected |
+| 76 | — | `GET /api/players?q=koh` for autocomplete | Tests |
+| 77 | Errors people can understand | One error format for 404, 422 and 500 | Tests |
+| 78 | Security basics: CORS, limits, secrets | CORS for the dev site; `.env` never committed | Tests |
+| 79 | Review day | Export `openapi.json`; try every endpoint by hand | Journal |
 
 ---
 
-### Phase 7 — The website (Days 87–111)
+### Phase 7 — The website (Days 80–99)
 
 **In simple words:** React builds pages from small reusable components, like LEGO bricks.
 TypeScript tells you about mistakes before you run the page.
@@ -2145,35 +1567,30 @@ export function ProvenanceBadge({ kind }: Props) {
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 87 | JavaScript for Python people: let/const, functions, arrays, objects, async/await | Small exercises in `frontend/learning/` | They run with Node |
-| 88 | TypeScript basics: types, unions, optional fields | Typed versions of yesterday's exercises | `tsc` reports no errors |
-| 89 | fetch and promises | A script that calls `/api/health` | It prints ok |
-| 90 | React 1: components and props | `ProvenanceBadge` and `ClaimLine` in a playground | They render |
-| 91 | React 2: state, events, lists | A toy question form | Typing updates the screen |
-| 92 | React 3: effects and loading states; why TanStack Query exists | Fetch health with a spinner | Spinner, then "ok" |
-| 93 | — | Vite + React + TypeScript + Tailwind + shadcn/ui + React Router + linter | The home page renders |
-| 94 | Types generated from the API | `openapi-typescript` + `openapi-fetch` client; TanStack Query provider | The health check uses the typed client |
-| 95 | — | Layout and pages: Ask, Live, Report, History, How it works | Navigation works |
-| 96 | Forms | Ask page part 1: the question and player autocomplete | Validation messages show |
-| 97 | Uploads with progress | Ask page part 2: optional clip upload | The progress bar moves |
-| 98 | — | Submit → job id → the Live page | It navigates with the id |
-| 99 | EventSource (the browser side of SSE) | The Live page: a node timeline showing retries and regenerations | The timeline fills in live |
-| 100 | — | Report page part 1: findings per agent; claims with M/D/P badges, sample size, intervals | A saved report renders |
-| 101 | — | Report page part 2: withheld findings, and which check failed | "Why?" expands |
-| 102 | — | The History page | The list opens a report |
-| 103 | — | The How-it-works page: the v3 diagram, explained simply | It renders |
-| 104 | — | Errors, empty states, skeletons while the LLM is slow | Each state can be seen |
-| 105 | Testing components: Vitest + Testing Library | Tests for the badge, the form and the report | Green |
-| 106 | Mocking | A Live-timeline test with a fake EventSource | Green |
-| 107 | End-to-end tests with Playwright | Ask → report, against the backend in fake mode | Green |
-| 108 | Accessibility and small screens | Labels, keyboard use, contrast, phone layout | Checklist done |
-| 109 | — | Polish; production build | `npm run build` works |
-| 110 | Review day — **M4** | Give yourself a demo | **M4:** the website answers text questions |
-| 111 | — | A spillover day for frontend learning | — |
+| 80 | JavaScript for Python people (let/const, functions, arrays, objects, async/await); TypeScript basics (types, unions, optional fields) | Vite + React + TypeScript + Tailwind + shadcn/ui + React Router + linter | The home page renders |
+| 81 | React components and props | `ProvenanceBadge` and `ClaimLine`, the first real components | They render on the home page |
+| 82 | `fetch` and promises; effects and loading states, and why TanStack Query exists; types generated from the API | `openapi-typescript` + `openapi-fetch` client; TanStack Query provider | The home page shows a spinner, then "ok" from the typed health check |
+| 83 | — | Layout and pages: Ask, Live, Report, History, How it works | Navigation works |
+| 84 | React state, events and lists; forms | Ask page part 1: the question and player autocomplete | Validation messages show |
+| 85 | Uploads with progress | Ask page part 2: optional clip upload | The progress bar moves |
+| 86 | — | Submit → job id → the Live page | It navigates with the id |
+| 87 | EventSource (the browser side of SSE) | The Live page: a node timeline showing retries and regenerations | The timeline fills in live |
+| 88 | — | Report page part 1: findings per agent; claims with M/D/P badges, sample size, intervals | A saved report renders |
+| 89 | — | Report page part 2: withheld findings, and which check failed | "Why?" expands |
+| 90 | — | The History page | The list opens a report |
+| 91 | — | The How-it-works page: the v3 diagram, explained simply | It renders |
+| 92 | — | Errors, empty states, skeletons while the LLM is slow | Each state can be seen |
+| 93 | Testing components: Vitest + Testing Library | Tests for the badge, the form and the report | Green |
+| 94 | Mocking | A Live-timeline test with a fake EventSource | Green |
+| 95 | End-to-end tests with Playwright | Ask → report, against the backend in fake mode | Green |
+| 96 | Accessibility and small screens | Labels, keyboard use, contrast, phone layout | Checklist done |
+| 97 | — | Polish; production build | `npm run build` works |
+| 98 | Review day — **M4** | Give yourself a demo | **M4:** the website answers text questions |
+| 99 | — | A spillover day for frontend learning | — |
 
 ---
 
-### Phase 8 — Video: classifier and pose (Days 112–127)
+### Phase 8 — Video: classifier and pose (Days 100–115)
 
 **In simple words:** the video path turns a clip into *"this is a Pull, 92% sure"* and measures
 the batter's body.
@@ -2186,22 +1603,22 @@ its final model will be ready. Until it is, a stub stands in for it, and nothing
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 112 | A contract between two projects | In the CricShot repo: export the final classifier (TorchScript), `classes.json`, a model card, and the frame numbers it picks for the 20 parity clips. Copy them into CricketMind's `models/` with a checksum | Checksum matches; the model card states the exact input, step by step (see the note below) |
-| 113 | — | The device helper: XPU → CUDA → CPU | Runs on both machines |
-| 114 | Reading video frames | N1: decode the clip and pick frames exactly as the model card says | Test on a tiny clip |
-| 115 | — | The striker crop, following the model card | The crops look right on 5 clips |
-| 116 | Parity tests: same input, same output | Compare your frames and crops with CricShot's processed clips on the 20 parity clips | The same frame numbers are picked, and the pixel difference is under the agreed limit |
-| 117 | — | The classifier adapter: label and confidence | Stub test, plus one real run |
-| 118 | — | The confidence gate; retry up to 2 times; the low-confidence exit | Tests |
-| 119 | — | The video path wired into the graph and the API | End to end with a real clip |
-| 120 | Pose keypoints: 17 dots on the joints | Run pose on one frame and draw it | Picture saved |
-| 121 | — | N2b on all 15 frames; pick the striker; handle missing joints | Tests |
-| 122 | Turning dots into measurements | Weight transfer, stride length, head over front knee | Tests on hand-made keypoints |
-| 123 | — | Posture validation run on the CricShot10k test clips, resumable | All clips done |
-| 124 | ROC-AUC, in simple words | AUC per metric; keep a metric only if AUC ≥ 0.75 | Report written; registry updated |
-| 125 | — | Measured posture into N6; N11c and N11j cite it | Tests |
-| 126 | — | The website shows the clip, the predicted shot, its confidence and the posture | Tests |
-| 127 | Review day — **M5** | Journal | **M5:** the video path works |
+| 100 | A contract between two projects | In the CricShot repo: export the final classifier (TorchScript), `classes.json`, a model card, and the frame numbers it picks for the 20 parity clips. Copy them into CricketMind's `models/` with a checksum | Checksum matches; the model card states the exact input, step by step (see the note below) |
+| 101 | — | The device helper: XPU → CUDA → CPU | Runs on both machines |
+| 102 | Reading video frames | N1: decode the clip and pick frames exactly as the model card says | Test on a tiny clip |
+| 103 | — | The striker crop, following the model card | The crops look right on 5 clips |
+| 104 | Parity tests: same input, same output | Compare your frames and crops with CricShot's processed clips on the 20 parity clips | The same frame numbers are picked, and the pixel difference is under the agreed limit |
+| 105 | — | The classifier adapter: label and confidence | Stub test, plus one real run |
+| 106 | — | The confidence gate; retry up to 2 times; the low-confidence exit | Tests |
+| 107 | — | The video path wired into the graph and the API | End to end with a real clip |
+| 108 | Pose keypoints: 17 dots on the joints | Run pose on one frame and draw it | Picture saved |
+| 109 | — | N2b on all 15 frames; pick the striker; handle missing joints | Tests |
+| 110 | Turning dots into measurements | Weight transfer, stride length, head over front knee | Tests on hand-made keypoints |
+| 111 | — | Posture validation run on the CricShot10k test clips, resumable | All clips done |
+| 112 | ROC-AUC, in simple words | AUC per metric; keep a metric only if AUC ≥ 0.75 | Report written; registry updated |
+| 113 | — | Measured posture into N6; N11c and N11j cite it | Tests |
+| 114 | — | The website shows the clip, the predicted shot, its confidence and the posture | Tests |
+| 115 | Review day — **M5** | Journal | **M5:** the video path works |
 
 **Which frames is part of the contract.** Never assume "15 evenly spaced frames from the raw
 clip". On 2026-10-16, CricShot's pipeline was: read the clip as RGB → drop repeated frames
@@ -2211,14 +1628,14 @@ what is left. The final model may want a different count too (video models often
 Get any step wrong and nothing crashes: the classifier just sees inputs it never trained on,
 and answers worse. CricShot learned this the hard way: the authors' own model, fed crops made a
 different way, lost more than half its accuracy. So N1 follows the model card, never the
-numbers in this plan, and Day 116 checks the frame numbers exactly, because a frame or two off
+numbers in this plan, and Day 104 checks the frame numbers exactly, because a frame or two off
 can hide inside a pixel tolerance.
 
 The website shows a prediction for a clip, but never the classifier's accuracy.
 
 ---
 
-### Phase 9 — The commentary-to-shot bridge (Days 128–142)
+### Phase 9 — The commentary-to-shot bridge (Days 116–130)
 
 **In simple words:** Cricsheet knows what happened on each ball, but not which shot was played.
 Commentary text often says it. You teach the computer to read it.
@@ -2226,69 +1643,69 @@ Commentary text often says it. You teach the computer to read it.
 **Example:** *"Bumrah to Kohli, FOUR, drives through cover"* → **Cover Drive**.
 
 **A go/no-go gate comes first.** If no commentary corpus you are allowed to use exists, or if
-the labels turn out too unreliable, you take the fallback path on Day 138. That is still a
+the labels turn out too unreliable, you take the fallback path on Day 126. That is still a
 result you can report.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 128 | Licences, and go/no-go decisions | Find a commentary corpus you may use, with match/over/ball keys; read the licence; check the columns | GO or NO-GO written in the journal. NO-GO → Day 138 |
-| 129 | — | Keyword and synonym rules for the 15 shots ("cuts" → Square Cut, "reverse-sweeps" → Reverse Sweep) | Tests |
-| 130 | — | The rules labeller on the whole corpus | Coverage numbers in the journal |
-| 131 | — | An LLM labeller for the lines the rules miss: 15 classes or "none", temperature 0; resumable | `FakeLLM` tests |
-| 132 | Sampling fairly | A tiny labelling tool; a stratified sample of 500 lines | The tool works |
-| 133 | — | Hand-label 250 lines | Saved |
-| 134 | — | Hand-label 250 more | 500 saved |
-| 135 | Cohen's kappa: agreement beyond luck | κ and per-class F1 | Decision: is κ ≥ 0.61? |
-| 136 | — | Join labels to deliveries (match, innings, over, ball; careful with wides and no-balls) | Join-rate report; tests |
-| 137 | — | Shot labels, with confidence, into the delivery table; N7a uses them | Tests |
-| 138 | — | The fallback path: a hand-labelled evaluation set only | Tests |
-| 139 | — | Re-run the engines with shot labels; spot-check | Journal |
-| 140 | Review day — **M6** | The bridge report (a positive or negative result) | **M6** |
-| 141–142 | — | Spillover for labelling and join problems | — |
+| 116 | Licences, and go/no-go decisions | Find a commentary corpus you may use, with match/over/ball keys; read the licence; check the columns | GO or NO-GO written in the journal. NO-GO → Day 126 |
+| 117 | — | Keyword and synonym rules for the 15 shots ("cuts" → Square Cut, "reverse-sweeps" → Reverse Sweep) | Tests |
+| 118 | — | The rules labeller on the whole corpus | Coverage numbers in the journal |
+| 119 | — | An LLM labeller for the lines the rules miss: 15 classes or "none", temperature 0; resumable | `FakeLLM` tests |
+| 120 | Sampling fairly | A tiny labelling tool; a stratified sample of 500 lines | The tool works |
+| 121 | — | Hand-label 250 lines | Saved |
+| 122 | — | Hand-label 250 more | 500 saved |
+| 123 | Cohen's kappa: agreement beyond luck | κ and per-class F1 | Decision: is κ ≥ 0.61? |
+| 124 | — | Join labels to deliveries (match, innings, over, ball; careful with wides and no-balls) | Join-rate report; tests |
+| 125 | — | Shot labels, with confidence, into the delivery table; N7a uses them | Tests |
+| 126 | — | The fallback path: a hand-labelled evaluation set only | Tests |
+| 127 | — | Re-run the engines with shot labels; spot-check | Journal |
+| 128 | Review day — **M6** | The bridge report (a positive or negative result) | **M6** |
+| 129–130 | — | Spillover for labelling and join problems | — |
 
 ---
 
-### Phase 10 — Evaluation for the thesis (Days 143–154)
+### Phase 10 — Evaluation for the thesis (Days 131–142)
 
 **In simple words:** an exam for your system. Each experiment asks one question and has a
 pass rule written down *before* you run it.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 143 | Designing experiments | The evaluation plan: question, method, pass rule for each | Written |
-| 144 | — | Fabrication containment F1–F7: v2 mode vs v3 | Catch-rate table |
-| 145 | — | False rejections: how often correct findings are wrongly stopped | Rate and examples |
-| 146 | — | The cost of containment: vary how often agents lie | Plot |
-| 147 | Writing good test questions | Routing set: the first 50 labelled questions | Saved |
-| 148 | — | Routing set: 50 more, then check the labels | 100 questions |
-| 149 | — | Keyword router vs LLM router, 3 runs each | Accuracy and stability |
-| 150 | — | Engine validation: calibration plots and spot checks | Figures |
-| 151 | — | Measured cost vs the formula, across scenarios | Table |
-| 152 | — | All figures and tables in one style | `docs/results/` |
-| 153 | Honest limits | Threats to validity; what not to claim | Written |
-| 154 | Review day — **M7** | Journal | **M7:** thesis results ready |
+| 131 | Designing experiments | The evaluation plan: question, method, pass rule for each | Written |
+| 132 | — | Fabrication containment F1–F7: v2 mode vs v3 | Catch-rate table |
+| 133 | — | False rejections: how often correct findings are wrongly stopped | Rate and examples |
+| 134 | — | The cost of containment: vary how often agents lie | Plot |
+| 135 | Writing good test questions | Routing set: the first 50 labelled questions | Saved |
+| 136 | — | Routing set: 50 more, then check the labels | 100 questions |
+| 137 | — | Keyword router vs LLM router, 3 runs each | Accuracy and stability |
+| 138 | — | Engine validation: calibration plots and spot checks | Figures |
+| 139 | — | Measured cost vs the formula, across scenarios | Table |
+| 140 | — | All figures and tables in one style | `docs/results/` |
+| 141 | Honest limits | Threats to validity; what not to claim | Written |
+| 142 | Review day — **M7** | Journal | **M7:** thesis results ready |
 
 ---
 
-### Phase 11 — Ship it (Days 155–162)
+### Phase 11 — Ship it (Days 143–150)
 
 **In simple words:** a Docker container is a shipping box for software. Everything the app
 needs goes inside, so it runs the same on any computer.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 155 | Containers, simply; install Docker Desktop | Dockerfiles for the backend and the frontend | Both images build |
-| 156 | — | `docker-compose.yml`; Ollama stays on the host | One command starts everything |
-| 157 | — | Production settings; smoke test from a clean start | It works |
-| 158 | Writing for other people | README (a 10-step setup), architecture notes, decision records | A friend can run it |
-| 159 | — | The demo script: a text question, a clip question, and the Faith Check catching a planted lie | Rehearsed |
-| 160 | — | Record the demo video | Saved |
-| 161 | — | Final checklist; tag v1.0 | **M8:** shipped |
-| 162 | — | Buffer | — |
+| 143 | Containers, simply; install Docker Desktop | Dockerfiles for the backend and the frontend | Both images build |
+| 144 | — | `docker-compose.yml`; Ollama stays on the host | One command starts everything |
+| 145 | — | Production settings; smoke test from a clean start | It works |
+| 146 | Writing for other people | README (a 10-step setup), architecture notes, decision records | A friend can run it |
+| 147 | — | The demo script: a text question, a clip question, and the Faith Check catching a planted lie | Rehearsed |
+| 148 | — | Record the demo video | Saved |
+| 149 | — | Final checklist; tag v1.0 | **M8:** shipped |
+| 150 | — | Buffer | — |
 
 ---
 
-### Phase 12 — Write the paper (Days 163–177)
+### Phase 12 — Write the paper (Days 151–165)
 
 **In simple words:** by now the paper's pieces already exist — decisions, numbers, evidence,
 limitations, references and rough drafts. This phase assembles them and polishes. The
@@ -2296,28 +1713,28 @@ introduction and abstract are written last, once you know exactly what you found
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 163 | How papers in your target venue are written | Choose the venue and its template; read 3 recent papers from it; set word budgets in `outline.md` | Venue, template and budgets decided |
-| 164 | — | Final check of figures and tables (all rebuilt by script); `evidence.md` and `numbers.md` complete | Every planned claim is verified or dropped |
-| 165 | Writing a method section | Method part 1: provenance classes, the claim contract, the registry | Draft done |
-| 166 | — | Method part 2: Faith Check C1–C6, the engines and their uncertainty, the evidence pipeline, perception (no accuracy) | Draft done |
-| 167 | — | Implementation: clean architecture, the API, the website | Draft done |
-| 168 | — | Evaluation setup: questions, data, metrics, pass rules | Draft done |
-| 169 | Writing results: say what you measured, not what you hoped | Results part 1: containment, false rejections, cost of containment | Draft done |
-| 170 | — | Results part 2: calibration, posture, bridge, routing, cost bounds; discussion | Draft done |
-| 171 | Positioning against related work | Related work from `related_work.md` | Draft done |
-| 172 | — | Introduction and abstract (written last, on purpose) | Draft done |
-| 173 | — | Limitations (from `limitations.md`), data licences and ethics, conclusion | Full draft done |
-| 174 | Be the paper's Faith Check | Check every number against `numbers.md` and every claim against `evidence.md`; no classifier accuracy anywhere | Zero unsupported numbers or claims |
-| 175 | — | Revise after your supervisor's feedback | Feedback addressed |
-| 176 | — | Polish: language, references, formatting, page limit | Fits the template |
-| 177 | — | Final read-through; a submission-ready PDF; tag the commit | **M9:** the paper is ready |
+| 151 | How papers in your target venue are written | Choose the venue and its template; read 3 recent papers from it; set word budgets in `outline.md` | Venue, template and budgets decided |
+| 152 | — | Final check of figures and tables (all rebuilt by script); `evidence.md` and `numbers.md` complete | Every planned claim is verified or dropped |
+| 153 | Writing a method section | Method part 1: provenance classes, the claim contract, the registry | Draft done |
+| 154 | — | Method part 2: Faith Check C1–C6, the engines and their uncertainty, the evidence pipeline, perception (no accuracy) | Draft done |
+| 155 | — | Implementation: clean architecture, the API, the website | Draft done |
+| 156 | — | Evaluation setup: questions, data, metrics, pass rules | Draft done |
+| 157 | Writing results: say what you measured, not what you hoped | Results part 1: containment, false rejections, cost of containment | Draft done |
+| 158 | — | Results part 2: calibration, posture, bridge, routing, cost bounds; discussion | Draft done |
+| 159 | Positioning against related work | Related work from `related_work.md` | Draft done |
+| 160 | — | Introduction and abstract (written last, on purpose) | Draft done |
+| 161 | — | Limitations (from `limitations.md`), data licences and ethics, conclusion | Full draft done |
+| 162 | Be the paper's Faith Check | Check every number against `numbers.md` and every claim against `evidence.md`; no classifier accuracy anywhere | Zero unsupported numbers or claims |
+| 163 | — | Revise after your supervisor's feedback | Feedback addressed |
+| 164 | — | Polish: language, references, formatting, page limit | Fits the template |
+| 165 | — | Final read-through; a submission-ready PDF; tag the commit | **M9:** the paper is ready |
 
 ---
 
 ## 12. When you get stuck
 
 1. **The 30-minute rule.** Stuck for 30 minutes? Stop and write the problem down.
-2. **Make it small.** Reproduce the error in a 10-line file in `learning/`.
+2. **Make it small.** Reproduce the error in a 10-line scratch file, outside the project.
 3. **Read the error from the bottom up.** The last line says what went wrong; the lines above
    say where.
 4. **Ask with everything attached:** the error, the smallest code that shows it, and what you
@@ -2325,8 +1742,10 @@ introduction and abstract are written last, once you know exactly what you found
 5. **A slow day is still a day.** If a step takes two sessions, that is what the spillover
    and buffer days are for.
 
-Working with Claude: at the start of a day, ask *"explain Day N simply"*. Build it yourself,
-then ask for a review of your code and tests. Commit once the "Done when" check passes.
+Working with Claude: at the start of a day, say *"start Day N"*. Claude explains the idea
+simply, then builds the day one small piece at a time, explaining every line. Read each
+piece, ask until you could explain it to a friend, then say "next". Commit once the "Done
+when" check passes.
 
 ---
 

@@ -83,8 +83,9 @@ read-only, which is what a checked claim needs (Day 10).
 
 Read CricShot's preprocessing (read only). It drops repeated frames, crops, and only then
 samples 15. The v3 plan said "15 evenly spaced frames", which would feed the classifier
-inputs it never trained on, with no error. Days 112, 114 and 116 now follow the model
-card and check frame numbers exactly. D-012 updated.
+inputs it never trained on, with no error. Days 100, 102 and 104 (new numbering; 112, 114
+and 116 in the old plan) now follow the model card and check frame numbers exactly. D-012
+updated.
 
 ---
 
@@ -95,7 +96,7 @@ names three things: which field, which rule broke, and what was sent (text, at l
 characters, 'hi').
 **Built:** `learning/day03_query.py` (QueryIn: text with min_length 5, optional player);
 pydantic 2.14.1 added to the backend; 6 tests in `learning/test_day03_query.py` (written
-by Claude after the plan change below).
+by Claude after the plan rewrite below).
 **Tests:** 6 new pass (15 in `learning/` with Days 2 and 4); ruff clean. With
 `min_length=2`, `test_short_text_is_rejected` failed with "DID NOT RAISE", so it guards
 the rule.
@@ -128,10 +129,30 @@ fakes.py     -> domain.py
 
 ---
 
-## Plan change — 2026-10-16 — learn on the real project
+## Plan rewrite — 2026-10-16 — learn on the real project
 
 From now on Claude writes the code one small piece at a time and explains every line; I
-read it, ask, and say "next". No more practice exercises: Days 5–7 (the FastAPI and
-LangGraph toys) are taught on the real code instead, on Days 53, 54, 69, 70, 76 and 77.
-Day numbers stay the same. Next is Day 8, the real skeleton. CLAUDE.md and the plan are
-updated to match.
+read it, ask, and say "next". No more practice exercises: every practice-only day is
+dropped, and its lesson is taught on the first real day that needs it. The plan went from
+177 to 165 days. CLAUDE.md, the plan and the thesis files (outline, evidence, numbers,
+README) use the new numbers. Next is Day 5, the real skeleton.
+
+Old day numbers (in entries above this one) map to new ones like this:
+
+| Old days | New days |
+|---|---|
+| 1–4 | 1–4 (done) |
+| 5–7 | dropped: FastAPI and LangGraph toys, now taught on Days 46, 47, 62, 63, 69, 70 |
+| 8–27 | 5–24 |
+| 28 | dropped: SQL basics, now on Day 25 |
+| 29–37 | 25–33 |
+| 38 | dropped: rates and sample size, now on Day 34 |
+| 39–44 | 34–39 |
+| 45 | dropped: Monte Carlo and the Beta curve, now on Day 40 |
+| 46–49 | 40–43 |
+| 50 | dropped: calibration, now on Day 44 |
+| 51–86 | 44–79 |
+| 87–89, 91–92 | dropped: JavaScript, TypeScript, fetch, React state, now on Days 80, 82, 84 |
+| 93 | 80 (frontend setup) |
+| 90 | 81 (the first components, moved after setup) |
+| 94–177 | 82–165 |

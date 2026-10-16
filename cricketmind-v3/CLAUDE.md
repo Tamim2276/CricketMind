@@ -16,7 +16,7 @@ a time: understand, learn, build, test, repeat.
   Never `git add -A`. Never switch branches.
 - CricShot (the classifier) lives in `D:\Cricket\cricshot-improve` on `langGraph`, in a
   different chat. Never touch it from here. v3 never imports CricShot code; the
-  only bridge is the exported model file (Day 112).
+  only bridge is the exported model file (Day 100).
 - `cricketmind/` (no suffix) is the old v2 prototype: reference only, never edit.
 
 ## How to work with this user
@@ -25,13 +25,13 @@ a time: understand, learn, build, test, repeat.
 - Claude writes the project code, one small piece at a time, and explains every line
   in simple words before it runs. The user reads, asks, then says "next".
 - No practice exercises: each concept is taught on the real code the first time it is
-  needed (the user's choice, 2026-10-16). `learning/` keeps Days 2-4 as they are.
+  needed (the user's choice, 2026-10-16; the plan was rewritten to 165 days to match).
+  `learning/` keeps Days 2-4 as they are; nothing new goes there.
 - The user runs commits, installs, long runs and downloads; Claude gives the commands.
   Claude may write project files, run tests and do quick read-only checks.
 - After every finished step, hand over a commit command. No `Co-Authored-By` or any
   attribution line in commits.
-- Do every plan step. Never suggest skipping or deferring one to save effort. (Days 5-7
-  are not skipped: the user moved their lessons onto the real code, Days 53-77.)
+- Do every plan step. Never suggest skipping or deferring one to save effort.
 - Power cuts happen (load shedding): anything long must be resumable.
 
 ## Code style

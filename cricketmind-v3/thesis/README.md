@@ -16,7 +16,7 @@ made, which seed made a figure, which commit produced a number.
 | `references.bib` | Every paper you cite (BibTeX) | When you read a paper |
 | `related_work.md` | Notes per paper: what they did, how CricketMind differs | When you read a paper |
 | `outline.md` | The paper skeleton, and what feeds each section | On review days |
-| `results/` | CSV/JSON written **by scripts**, plus `ledger.jsonl` (one row per run) | Automatically, from Day 25 |
+| `results/` | CSV/JSON written **by scripts**, plus `ledger.jsonl` (one row per run) | Automatically, from Day 22 |
 | `figures/` | PNG/PDF made **by scripts** in `scripts/` | When you make a figure |
 | `scripts/` | One script per figure or table | Same |
 | `drafts/` | Rough section drafts, written on review days | Review days |
