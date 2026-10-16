@@ -2156,19 +2156,19 @@ export function ProvenanceBadge({ kind }: Props) {
 **In simple words:** the video path turns a clip into *"this is a Pull, 92% sure"* and measures
 the batter's body.
 
-**Example:** 15 frames → crop around the batter → classifier → "Pull, 0.92". Pose → dots on
-the joints → "weight transfer 0.31, on the back foot".
+**Example:** a clip → drop repeated frames → crop around the batter → 15 frames →
+classifier → "Pull, 0.92". Pose → dots on the joints → "weight transfer 0.31, on the back foot".
 
 **When:** this phase comes late on purpose. The classifier comes from CricShot, and by then
 its final model will be ready. Until it is, a stub stands in for it, and nothing else waits.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 112 | A contract between two projects | In the CricShot repo: export the final classifier (TorchScript), `classes.json` and a model card. Copy them into CricketMind's `models/` with a checksum | Checksum matches; the model card states the exact input |
+| 112 | A contract between two projects | In the CricShot repo: export the final classifier (TorchScript), `classes.json`, a model card, and the frame numbers it picks for the 20 parity clips. Copy them into CricketMind's `models/` with a checksum | Checksum matches; the model card states the exact input, step by step (see the note below) |
 | 113 | — | The device helper: XPU → CUDA → CPU | Runs on both machines |
-| 114 | Reading video frames | N1: decode the clip and take 15 evenly spaced frames | Test on a tiny clip |
+| 114 | Reading video frames | N1: decode the clip and pick frames exactly as the model card says | Test on a tiny clip |
 | 115 | — | The striker crop, following the model card | The crops look right on 5 clips |
-| 116 | Parity tests: same input, same output | Compare your crops with CricShot's processed clips on 20 clips | The difference is under the agreed limit |
+| 116 | Parity tests: same input, same output | Compare your frames and crops with CricShot's processed clips on the 20 parity clips | The same frame numbers are picked, and the pixel difference is under the agreed limit |
 | 117 | — | The classifier adapter: label and confidence | Stub test, plus one real run |
 | 118 | — | The confidence gate; retry up to 2 times; the low-confidence exit | Tests |
 | 119 | — | The video path wired into the graph and the API | End to end with a real clip |
@@ -2180,6 +2180,17 @@ its final model will be ready. Until it is, a stub stands in for it, and nothing
 | 125 | — | Measured posture into N6; N11c and N11j cite it | Tests |
 | 126 | — | The website shows the clip, the predicted shot, its confidence and the posture | Tests |
 | 127 | Review day — **M5** | Journal | **M5:** the video path works |
+
+**Which frames is part of the contract.** Never assume "15 evenly spaced frames from the raw
+clip". On 2026-10-16, CricShot's pipeline was: read the clip as RGB → drop repeated frames
+(some clips have copies inserted by frame-rate conversion) → find the batter → crop, keeping
+only the camera shot with the most detections → only then take 15 evenly spaced frames from
+what is left. The final model may want a different count too (video models often take 16).
+Get any step wrong and nothing crashes: the classifier just sees inputs it never trained on,
+and answers worse. CricShot learned this the hard way: the authors' own model, fed crops made a
+different way, lost more than half its accuracy. So N1 follows the model card, never the
+numbers in this plan, and Day 116 checks the frame numbers exactly, because a frame or two off
+can hide inside a pixel tolerance.
 
 The website shows a prediction for a clip, but never the classifier's accuracy.
 
