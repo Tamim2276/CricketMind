@@ -2989,3 +2989,16 @@ end-to-end runs are not covered by this test and may not be bit-exact.
 
 Tests: 44 pass across `test_run_experiment` (17), `test_registry` (20),
 `test_cached_head` (7).
+
+### 9.4 The leaderboard
+
+`python -m tools.leaderboard`: one table per family, author and grouped side
+by side with the gap, the latest row per run, adopted rows starred, and a
+list of what is still missing. Today: 11 of 102 runs done, 45 IDs not
+started, B01 waiting for its grouped run.
+
+Every probe has a negative gap (grouped val higher by 2-5 points). Not a
+finding about leakage: the two val sets are different clips. The gap that
+matters is B01's, on test, after 9.6.
+
+Tests: 9 pass (`test_leaderboard.py`).

@@ -3508,6 +3508,20 @@ python -m tools.leaderboard --family A
 val, and the pending count is right. Re-run it at the end of every day in
 Phase 3 — that is the habit the tool exists to support.
 
+**Built 2026-10-16.** `tools/leaderboard.py`, `tests/test_leaderboard.py` (9).
+
+1. **One table per family**, val top-1 for author and grouped, and the gap
+   in points. `--family` narrows it; `--sort author|grouped` puts the best
+   first (default is registry order, so an ID is easy to find).
+2. **The latest row of a run wins**, so a `--force` re-run replaces the old
+   number on screen while the ledger keeps both.
+3. **Adopted rows carry a `*`** (B01's author row).
+4. **Nothing is dropped silently.** Pre-registry runs (`mimic_author`,
+   `cached_gru`, ...) get their own section with a run count, names with
+   `__` that are not in the registry are listed, and smoke rows are counted.
+5. On 2026-10-16: done 11 of 102 runs; B01 has its grouped run left; 45 IDs
+   not started.
+
 **Takeaway.** A results table that shows the gaps is more useful than one that
 shows the wins, because the gaps are the thing you can still act on.
 
