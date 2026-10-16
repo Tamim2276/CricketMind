@@ -314,3 +314,14 @@ def test_a_different_seed_changes_the_numbers(harness):
     harness["over"]["seed"] = 7
     _run(harness, "X02_mlp", force=True)
     assert _history(harness, name) != first_history
+
+
+# ---- 9.5: the report card comes with the scores ---------------------------
+
+def test_a_scored_run_gets_its_report_card(harness, figures_go_to_tmp):
+    _run(harness, "X01_linear")
+    folder = _folder(harness, "X01_linear__author")
+    assert os.path.exists(os.path.join(folder, "report_card.png"))
+    assert os.path.exists(os.path.join(folder, "report_card_dark.png"))
+    kept = os.path.join(figures_go_to_tmp, "X01_linear__author_report.png")
+    assert os.path.exists(kept)

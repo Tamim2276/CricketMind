@@ -3002,3 +3002,24 @@ finding about leakage: the two val sets are different clips. The gap that
 matters is B01's, on test, after 9.6.
 
 Tests: 9 pass (`test_leaderboard.py`).
+
+### 9.5 Figures for every experiment
+
+Each scored run now gets a report card (confusion matrix as % of each true
+class, per-class F1), and `python -m tools.figures` rebuilds six comparison
+figures plus `notes/figures/index.md` from the ledger. Validation only.
+
+What looking at the drafts caught (the validator only checks colour):
+- the colour bar sat on top of the heatmap's last column;
+- the two heatmap panels had different row heights, because one split had
+  a run the other did not; now both share the same rows, blanks for gaps;
+- the cost plot's log axis printed "7x10^0", and its best-run label ran
+  into the neighbouring panel.
+
+First read of the mimic_author card: Late Cut is the weakest class (F1
+0.56), confused with Cover Drive (15%), Square Cut (15%) and Defensive
+(12%); Reverse Sweep goes to Scoop 21% of the time. In the probe heatmap,
+Late Cut is the palest column for every cache.
+
+Tests: 83 pass across plot, figures, harness, leaderboard, registry and
+cached_head; train and evaluate 43 pass.

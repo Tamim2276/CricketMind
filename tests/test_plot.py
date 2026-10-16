@@ -6,7 +6,8 @@ import os
 import numpy as np
 import pytest
 
-from src.plot import FIGURES, THEMES, plot_history, plot_run
+from src.plot import (FIGURES, THEMES, plot_history, plot_report,
+                      plot_report_run, plot_run)
 
 
 def history(n=12, cut_at=8):
@@ -194,7 +195,9 @@ def test_a_mirror_copy_is_written_under_the_run_name(tmp_path):
     plot_run(str(run), mirror=str(kept))
 
     assert os.path.exists(str(kept / "mimic_author_seg.png"))
-    assert os.path.exists(str(kept / "mimic_author_seg_dark.png"))
+    # git keeps the light copy only; dark stays beside the checkpoint
+    assert not os.path.exists(str(kept / "mimic_author_seg_dark.png"))
+    assert os.path.exists(str(run / "history_dark.png"))
 
 
 def test_the_mirror_can_be_turned_off(tmp_path):
@@ -220,4 +223,78 @@ def test_a_finished_run_puts_its_figure_somewhere_git_keeps(tiny_run, tmp_path):
     T.train(tiny_run, quiet=True)
 
     assert os.path.exists(os.path.join(kept, "t.png"))
-    assert os.path.exists(os.path.join(kept, "t_dark.png"))
+    assert not os.path.exists(os.path.join(kept, "t_dark.png"))
+
+
+# ---- the report card (9.5) ------------------------------------------------
+
+def report(n=4):
+    classes = ["Cover Drive", "Late Cut", "Pull", "Sweep"][:n]
+    confusion = []
+    for i in range(n):
+        row = []
+        for j in range(n):
+            if i == j:
+                row.append(20 + 5 * i)
+            else:
+                row.append(i + j)
+        confusion.append(row)
+    return {"classes": classes, "confusion": confusion, "top1": 0.71,
+            "macro_f1": 0.69, "clips": 120,
+            "per_class": {"f1": [0.8, 0.4, 0.7, 0.9][:n]}}
+
+
+@pytest.mark.parametrize("theme", sorted(THEMES))
+def test_a_report_card_renders_in_every_theme(tmp_path, theme):
+    path = str(tmp_path / "card.png")
+    assert plot_report(report(), path, name="x", theme=theme) == path
+    assert os.path.getsize(path) > 10_000
+
+
+def test_the_report_card_themes_differ_and_repeat_exactly(tmp_path):
+    a = str(tmp_path / "a.png")
+    b = str(tmp_path / "b.png")
+    c = str(tmp_path / "c.png")
+    plot_report(report(), a, theme="light")
+    plot_report(report(), b, theme="light")
+    plot_report(report(), c, theme="dark")
+    assert open(a, "rb").read() == open(b, "rb").read()
+    assert open(a, "rb").read() != open(c, "rb").read()
+
+
+def test_the_ramp_is_one_hue_and_flips_in_dark():
+    light = THEMES["light"]["ramp"]
+    dark = THEMES["dark"]["ramp"]
+    assert len(light) == len(dark) == 7
+    # light runs pale to deep; dark starts deep, near its own surface
+    assert light[0] == "#cde2fb" and light[-1] == "#0d366b"
+    assert dark[0] == "#0d366b"
+
+
+def test_plot_report_run_reads_val_only_and_keeps_light_in_git(tmp_path):
+    run = tmp_path / "P01_x__author"
+    run.mkdir()
+    (run / "report_val.json").write_text(json.dumps(report()),
+                                         encoding="utf-8")
+    # a test report that cannot be read: proves it is never touched
+    (run / "report_test.json").write_text("not json", encoding="utf-8")
+    kept = tmp_path / "kept"
+
+    plot_report_run(str(run), mirror=str(kept))
+
+    assert os.path.exists(str(run / "report_card.png"))
+    assert os.path.exists(str(run / "report_card_dark.png"))
+    assert os.path.exists(str(kept / "P01_x__author_report.png"))
+    assert len(os.listdir(str(kept))) == 1
+
+
+def test_the_cli_draws_a_report_card(tmp_path):
+    from src.plot import main
+
+    run = tmp_path / "r"
+    run.mkdir()
+    (run / "report_val.json").write_text(json.dumps(report()),
+                                         encoding="utf-8")
+    assert main([str(run), "--report", "--no_mirror", "--light_only"]) == 0
+    assert os.path.exists(str(run / "report_card.png"))
+    assert not os.path.exists(str(run / "report_card_dark.png"))

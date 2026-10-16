@@ -8,7 +8,9 @@
 
 Safe to re-run after a power cut: a finished run is skipped, an interrupted
 one (resume.pt there) is resumed, and a run trained but not yet scored is
-only scored. A crash stops everything, loudly; nothing is caught.
+only scored. A crash stops everything, loudly. The one exception is a figure:
+a broken report card is reported and the run goes on, because
+`python -m tools.figures` can always draw it again.
 """
 import argparse
 import json
@@ -18,7 +20,7 @@ import sys
 
 from src.evaluate import StaleReport, evaluate_checkpoint, load_report
 from src.experiments import registry as R
-from src.plot import plot_run
+from src.plot import plot_report_run, plot_run
 from src.train import DEFAULTS, run_dir, split_name, train
 from src.utils.checkpoint import append_result, atomic_write_json, read_results
 
@@ -199,6 +201,8 @@ def _adopt(step, out):
     append_result(row, _ledger(cfg))
     if os.path.exists(os.path.join(folder, "history.json")):
         plot_run(folder, name=step["name"], mirror=cfg["figures"])
+    if os.path.exists(os.path.join(folder, "report_val.json")):
+        _report_card(cfg, out)
     out.write(f"  adopted {source} (recorded {old.get('recorded_at')}, "
               f"val {old['best_val_top1']:.2%})\n")
     return row
@@ -219,6 +223,15 @@ def _score(cfg, ckpt, parts, out):
         else:
             out.write(f"  {part} top-1 {report['top1']:.2%}  "
                       f"macro-F1 {report['macro_f1']:.3f}\n")
+    if "val" in parts:
+        _report_card(cfg, out)
+
+
+def _report_card(cfg, out):
+    try:
+        plot_report_run(run_dir(cfg), name=cfg["name"], mirror=cfg["figures"])
+    except Exception as err:
+        out.write(f"  (no report card: {err})\n")
 
 
 def run_one(entry, split, force=False, dry_run=False, overrides=None,

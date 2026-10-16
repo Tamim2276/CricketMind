@@ -3606,6 +3606,31 @@ family that has rows, the rest reported as "no rows yet", never an empty chart;
 `index.md` lists every figure; and rerunning `tools.figures` gives byte-equal
 PNGs (the same check as 9.3's determinism, for figures).
 
+**Built 2026-10-16.** `plot_report` / `plot_report_run` in `src/plot.py`,
+`tools/figures.py`; tests in `test_plot.py` (+8), `test_figures.py` (6),
+`test_run_experiment.py` (+1).
+
+1. **Report card per run**, drawn by the harness right after scoring val
+   (and on adoption): row-normalised confusion with `(n=…)` on every row,
+   numbers only on the diagonal and on confusions of 10% or more, a scale
+   bar; per-class F1 worst first, the worst three labelled. Dark mode is its
+   own ramp, flipped so near-zero sits by the surface. A broken card is
+   reported, not fatal: `tools.figures` can draw it again.
+2. **Six comparison figures** in `notes/figures/compare/`, light and dark:
+   `probe`, `family_<F>` (one per family with rows, the base entry as a solid
+   reference line), `split_gap`, `cost_accuracy` (log minutes, both panels on
+   one axis), `per_class_f1` (the same rows in both panels; a missing split
+   is blank). Author is blue and grouped orange everywhere; the pair passes
+   the palette validator in both modes (CVD ΔE 24.7 light / 26.8 dark).
+3. **`notes/figures/index.md`** lists every figure, and every run with its
+   val top-1, its `why` and links to its curves and card.
+4. **Byte-identical reruns**, PNGs and index both, checked by a test.
+   Report cards are drawn only when missing; `--redraw` redraws them all.
+5. **Training curves now mirror light only** into `notes/figures/runs/`;
+   the dark copy stays in `experiments/<name>/`.
+6. Every figure reads `report_val.json`. A test plants an unreadable
+   `report_test.json` beside it; nothing touches it.
+
 **Takeaway.** Make the figure part of the run, not part of the write-up. A
 figure drawn automatically from the ledger cannot drift from the number it
 shows, and on Day 33 you are choosing figures rather than making them.
