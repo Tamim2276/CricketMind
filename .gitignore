@@ -22,3 +22,7 @@ __pycache__/
 CricShoot10kModels/
 *.keras
 *.h5
+
+# CricketMind v3 lives on its own branch (cricketmind-v3); ignored here so
+# CricShot commits never pick it up
+cricketmind-v3/
