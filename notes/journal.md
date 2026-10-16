@@ -2924,3 +2924,30 @@ Windows while the yamls and ledger say `data/splits_author`. The registry now
 writes `/`, which both OSes accept.
 
 Tests: `test_registry.py` 20 pass, `test_train.py` 28 pass.
+
+### 9.2 The runner
+
+`python -m src.experiments.run --exp ... | --family ...` decides one of four
+actions per run (train, resume, adopt, skip), then scores whatever reports
+are missing or stale. Test is scored and stored but never printed.
+
+Two things the plan did not foresee:
+
+- `evaluate.py` could only score the video model. A harness that scores
+  every run needs it to score any method, so each method now has
+  `eval_set()`, and the checkpoint's own config picks the method.
+- Every P, A and V entry needs `cached_head`, which was Day 10 work. Built
+  now with three heads (linear, mlp, gru) so the probe runs today.
+
+B01's author row is the old `mimic_author` run (79.23% val), adopted, not
+re-trained: its stored config differs from B01's only in keys added since,
+all at defaults that reproduce the old code. 200 GPU-minutes saved, and the
+comparison with the grouped row stays like-for-like.
+
+A ledger honesty fix: P03's inherited config still says `efficientnet_v2_s`
+(from `cached_gru.yaml`), so the row's `backbone` now comes from the cache's
+`source.json`.
+
+Tests: 38 new/changed pass (`test_run_experiment` 11, `test_cached_head` 7,
+`test_registry` 20); 133 in evaluate/train/head/model/plot/engine still pass.
+17 IDs ready.

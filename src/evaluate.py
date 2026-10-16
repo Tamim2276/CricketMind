@@ -27,9 +27,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from src.data.dataset import CricShotDataset
+from src import methods
 from src.engine import evaluate as run_eval
-from src.models.model import build_model
 from src.utils.checkpoint import atomic_write_json
 from src.utils.device import get_device
 
@@ -101,28 +100,38 @@ def per_class(matrix: np.ndarray) -> dict:
 def evaluate_checkpoint(ckpt_path: str, split_csv: str, variant=None,
                         processed=None, batch_size: int = 6, device=None,
                         workers: int = 0) -> dict:
-    """Load a checkpoint, score it on one split, return the report."""
+    """Load a checkpoint, score it on one split, return the report.
+
+    Any method: the checkpoint's own config names it, and the method builds
+    both the data and the model, exactly as it did in training.
+    """
+    from src.train import DEFAULTS
+
     device = device or get_device()
     saved = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    cfg = saved.get("cfg") or {}
+    stored = saved.get("cfg") or {}
     classes = saved.get("classes")
 
-    if variant is None:
-        variant = cfg.get("variant", "box")
-    if processed is None:
-        processed = cfg.get("processed", os.path.join("data", "processed"))
+    cfg = dict(DEFAULTS)
+    cfg.update(stored)
+    if "method" not in stored:
+        # checkpoints from before 2026-10-15 name no method
+        if stored.get("features"):
+            cfg["method"] = "cached_gru"
+        else:
+            cfg["method"] = "video_gru"
+    if variant is not None:
+        cfg["variant"] = variant
+    if processed is not None:
+        cfg["processed"] = processed
+    cfg["pretrained"] = False          # the weights come from the checkpoint
 
-    data = CricShotDataset(split_csv, variant=variant, processed=processed,
-                           classes=classes)
+    method = methods.load(cfg["method"])
+    data = method.eval_set(cfg, split_csv, classes)
     loader = DataLoader(data, batch_size=batch_size, shuffle=False,
                         num_workers=workers)
 
-    model = build_model(num_classes=len(data.classes),
-                        backbone=cfg.get("backbone", "efficientnet_v2_s"),
-                        pretrained=False, hidden=cfg.get("hidden", 128),
-                        dense=cfg.get("dense", 1024),
-                        dropout=cfg.get("dropout", 0.0),
-                        pool=cfg.get("pool", "avg")).to(device)
+    model = method.model(cfg, data, len(data.classes)).to(device)
     model.load_state_dict(saved["model_state"])
 
     stats = run_eval(model, loader, device=device, collect=True)
@@ -133,7 +142,10 @@ def evaluate_checkpoint(ckpt_path: str, split_csv: str, variant=None,
         "checkpoint": file_fingerprint(ckpt_path),
         "evaluated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "split_csv": os.path.abspath(split_csv),
-        "variant": variant,
+        "method": cfg["method"],
+        "variant": cfg["variant"],
+        "features": cfg["features"],
+        "view": cfg["view"],
         "clips": stats.clips,
         "dropped": len(data.missing),
         "classes": list(data.classes),

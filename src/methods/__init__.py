@@ -5,6 +5,10 @@ A **method** is an answer to two questions and nothing else:
     datasets(cfg)                 -> (train_set, val_set)
     model(cfg, train_set, n_cls)  -> an nn.Module
 
+plus `eval_set(cfg, csv, classes)` so `evaluate.py` can score any method,
+`READS`, the config keys it acts on, and optionally `check(cfg)`, which says
+why a config cannot start yet.
+
 Everything that is the same for every run -- the epoch loop, resume, the
 ledger row, early stopping, the figure, the seed, the saturation watch -- lives
 once in `train.py`. Adding a method means adding a ~30-line file here and
@@ -24,7 +28,7 @@ import importlib
 
 __all__ = ["load", "KNOWN"]
 
-KNOWN = ("video_gru", "cached_gru")
+KNOWN = ("video_gru", "cached_gru", "cached_head")
 
 
 def load(name):

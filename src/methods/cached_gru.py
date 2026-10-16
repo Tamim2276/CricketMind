@@ -30,9 +30,13 @@ def datasets(cfg):
     train_set = FeatureDataset(os.path.join(cfg["split"], "train.csv"),
                                features=cfg["features"], view=cfg["view"],
                                mirror=cfg["flip"])
-    val_set = FeatureDataset(os.path.join(cfg["split"], "val.csv"),
-                             features=cfg["features"], view=cfg["view"])
+    val_set = eval_set(cfg, os.path.join(cfg["split"], "val.csv"))
     return train_set, val_set
+
+
+def eval_set(cfg, split_csv, classes=None):
+    return FeatureDataset(split_csv, features=cfg["features"],
+                          view=cfg["view"], classes=classes)
 
 
 def model(cfg, train_set, num_classes):

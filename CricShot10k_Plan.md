@@ -3342,6 +3342,37 @@ paths, and writes nothing. The real run produces two ledger rows, two
 `report_val.json`, two `report_test.json`, two training-curve figures and
 two report cards (9.5) in `notes/figures/runs/`, and no `resume.pt` anywhere.
 
+**Built 2026-10-16.** `src/experiments/run.py`, `src/methods/cached_head.py`,
+`tests/test_run_experiment.py` (11) and `tests/test_cached_head.py` (7).
+
+1. **Each run gets one of four actions**, decided before anything happens and
+   shown by `--dry_run`: *train*, *resume* (`resume.pt` there, even if a row
+   exists), *adopt* (below), or *skip*. Scoring is separate: a run is scored
+   whenever its `report_val.json` or `report_test.json` is missing, stale
+   (the checkpoint hash changed) or for the wrong split. A cut between
+   training and scoring costs a re-score, not a re-train.
+2. **Test is scored and never printed.** The run prints val top-1 and
+   macro-F1, then "test scored and stored, not shown". Rule 5 in code.
+3. **`evaluate.py` scores any method.** It used to build the video model
+   only; now the checkpoint's config names its method, which builds the data
+   (`eval_set`, new in every method) and the model. Checkpoints from before
+   2026-10-15 name no method; a `features` key means `cached_gru`.
+4. **`cached_head`, three heads**: `linear` (P), `mlp` (V), `gru` (A03).
+   `check()` refuses what is not built and says when it will be, so `--list`
+   and the runner agree. 17 IDs ready: P01–P05, A03, A04, A14, V01, V07,
+   V09, B01, B04–B08.
+5. **Adoption.** `ADOPT` maps `B01_effnetv2s__author` to `mimic_author`. The
+   harness compares the 79.23% row's config with B01's: the only differences
+   are keys added since (`head`, `layers`, `method`, ...), all at the defaults
+   that reproduce the old code, so it reuses that run. Its reports still
+   match `mimic_author/best.pt` by hash, so they are copied, not redone. Any
+   real difference refuses, naming the keys.
+6. **The row gains `split_name`** (`author` / `grouped`), and a cached run's
+   `backbone` now comes from the cache's `source.json` — P03 records
+   `r3d_18`, not the `efficientnet_v2_s` its inherited config still says.
+7. **`--family` leaves out what cannot start** and names it first; a crash
+   inside a run stops the whole family.
+
 **Takeaway.** Automate the rules you wrote down, because rules you have to
 remember are rules you break under load shedding. Every one of rule 1, 4 and 5
 is now a line of code rather than a line of good intentions.

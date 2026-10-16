@@ -33,7 +33,8 @@ separately loses precision on confident predictions.
 import torch
 import torch.nn as nn
 
-__all__ = ["GRUHead", "NUM_CLASSES", "HIDDEN", "DENSE"]
+__all__ = ["GRUHead", "LinearHead", "MLPHead", "NUM_CLASSES", "HIDDEN",
+           "DENSE"]
 
 
 def _init_gru_like_keras(gru: nn.GRU) -> None:
@@ -135,3 +136,44 @@ class GRUHead(nn.Module):
         out = self.relu(self.fc1(out))
         out = self.drop(out)
         return self.fc2(out)
+
+
+def _one_vector(x: torch.Tensor) -> torch.Tensor:
+    """(B, T, D) averaged over time, or (B, D) as it is."""
+    if x.dim() == 3:
+        return x.mean(dim=1)
+    if x.dim() == 2:
+        return x
+    raise ValueError(f"expected (B, T, D) or (B, D), got {tuple(x.shape)}")
+
+
+class LinearHead(nn.Module):
+    """One Linear on the clip's mean feature: the probe."""
+
+    def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES):
+        super().__init__()
+        self.in_dim = in_dim
+        self.fc = nn.Linear(in_dim, num_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.fc(_one_vector(x))
+
+
+class MLPHead(nn.Module):
+    """Linear -> ReLU -> Linear on the clip's mean feature. No time model."""
+
+    def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES,
+                 dense: int = DENSE, dropout: float = 0.0):
+        super().__init__()
+        self.in_dim = in_dim
+        self.fc1 = nn.Linear(in_dim, dense)
+        self.relu = nn.ReLU()
+        if dropout > 0:
+            self.drop = nn.Dropout(dropout)
+        else:
+            self.drop = nn.Identity()
+        self.fc2 = nn.Linear(dense, num_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = self.relu(self.fc1(_one_vector(x)))
+        return self.fc2(self.drop(out))

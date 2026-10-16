@@ -35,7 +35,8 @@ from src.utils import progress
 from src.utils.device import describe, get_device
 from src.utils.seed import make_generator, seed_worker, set_seed
 
-__all__ = ["train", "DEFAULTS", "LOOP_READS", "load_config", "run_dir"]
+__all__ = ["train", "DEFAULTS", "LOOP_READS", "load_config", "run_dir",
+           "split_name"]
 
 DEFAULTS = {
     "name": "run",
@@ -108,6 +109,24 @@ def load_config(path: str) -> dict:
 
 def run_dir(cfg: dict) -> str:
     return os.path.join(cfg["out"], cfg["name"])
+
+
+def split_name(path: str) -> str:
+    """'data/splits_author' -> 'author'."""
+    leaf = os.path.basename(os.path.normpath(path))
+    if leaf.startswith("splits_"):
+        return leaf[len("splits_"):]
+    return leaf
+
+
+def _row_backbone(cfg: dict) -> str:
+    """What made the features. A cached run's own backbone key is unused."""
+    if cfg["features"]:
+        source = os.path.join(cfg["features"], "source.json")
+        if os.path.exists(source):
+            with open(source, encoding="utf-8") as fh:
+                return json.load(fh).get("backbone", cfg["backbone"])
+    return cfg["backbone"]
 
 
 def _subset_across_classes(dataset, n: int):
@@ -407,9 +426,10 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
     atomic_write_json(history, history_path)
 
     row = {"name": cfg["name"], "method": cfg["method"],
-           "split": cfg["split"], "variant": cfg["variant"],
+           "split": cfg["split"], "split_name": split_name(cfg["split"]),
+           "variant": cfg["variant"],
            "features": cfg["features"], "view": cfg["view"],
-           "backbone": cfg["backbone"], "frozen": cfg["freeze"],
+           "backbone": _row_backbone(cfg), "frozen": cfg["freeze"],
            "best_val_top1": best_top1, "epochs_run": epoch,
            "stopped": stopped, "minutes": (time.time() - started) / 60,
            "device": str(device), "cfg": cfg}

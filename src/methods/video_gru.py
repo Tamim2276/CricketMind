@@ -35,10 +35,13 @@ def datasets(cfg):
                                 variant=cfg["variant"],
                                 processed=cfg["processed"],
                                 transform=build_transform(cfg["flip"]))
-    val_set = CricShotDataset(os.path.join(cfg["split"], "val.csv"),
-                              variant=cfg["variant"],
-                              processed=cfg["processed"])
+    val_set = eval_set(cfg, os.path.join(cfg["split"], "val.csv"))
     return train_set, val_set
+
+
+def eval_set(cfg, split_csv, classes=None):
+    return CricShotDataset(split_csv, variant=cfg["variant"],
+                           processed=cfg["processed"], classes=classes)
 
 
 def model(cfg, train_set, num_classes):

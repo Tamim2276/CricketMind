@@ -12,8 +12,9 @@ import re
 from src import methods
 from src.train import DEFAULTS, LOOP_READS, load_config
 
-__all__ = ["BASES", "ENTRIES", "FAMILIES", "SPLITS", "entries", "get",
-           "family_of", "run_name", "resolve", "unread_keys", "status"]
+__all__ = ["ADOPT", "BASES", "ENTRIES", "FAMILIES", "SPLITS", "entries",
+           "get", "family_of", "run_name", "resolve", "unread_keys",
+           "status", "config_differences"]
 
 # forward slashes, as in the yamls and the ledger; both OSes accept them
 SPLITS = {
@@ -32,6 +33,10 @@ FAMILIES = {
 }
 
 MAX_DELTA = 3
+
+# runs that already happened under an older name, with the same config.
+# The harness checks the configs match before it reuses one.
+ADOPT = {"B01_effnetv2s__author": "mimic_author"}
 
 BASES = {
     # the cache read by cached_gru.yaml, under a head that can be swapped
@@ -266,9 +271,9 @@ def run_name(exp_id, split):
     return f"{exp_id}__{split}"
 
 
-def resolve(entry, split):
+def resolve(entry, split, overrides=None):
     """The full config one run trains with: defaults, base, delta, then
-    the name and split the harness owns."""
+    the name and split the harness owns. `overrides` is for tests."""
     base = BASES[entry["base"]]
     cfg = dict(DEFAULTS)
     cfg.update(load_config(base["config"]))
@@ -276,7 +281,26 @@ def resolve(entry, split):
     cfg.update(entry["cfg"])
     cfg["name"] = run_name(entry["id"], split)
     cfg["split"] = SPLITS[split]
+    if overrides:
+        cfg.update(overrides)
     return cfg
+
+
+def config_differences(old, new):
+    """Keys where an older run's config does not match `new`.
+
+    A key the old run did not have yet must sit at its default, which is
+    the behaviour the old code had."""
+    differ = []
+    for key in sorted(new):
+        if key in ("name", "figures"):
+            continue
+        if key in old:
+            if old[key] != new[key]:
+                differ.append(key)
+        elif new[key] != DEFAULTS.get(key):
+            differ.append(key)
+    return differ
 
 
 def _method(cfg):
@@ -303,9 +327,9 @@ def unread_keys(entry):
     return unread
 
 
-def status(entry):
+def status(entry, overrides=None):
     """'ready', or the first thing standing in the way."""
-    cfg = resolve(entry, "author")
+    cfg = resolve(entry, "author", overrides)
     method = _method(cfg)
     if method is None:
         return f"needs method {cfg['method']}"
