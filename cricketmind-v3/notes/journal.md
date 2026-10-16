@@ -76,3 +76,62 @@ read-only, which is what a checked claim needs (Day 10).
 **Surprise:** `Ball("V Kohli", "four")` ran without any error.
 
 **For the paper:** nothing today.
+
+---
+
+## Plan note — 2026-10-16 — frame picking is part of the model card
+
+Read CricShot's preprocessing (read only). It drops repeated frames, crops, and only then
+samples 15. The v3 plan said "15 evenly spaced frames", which would feed the classifier
+inputs it never trained on, with no error. Days 112, 114 and 116 now follow the model
+card and check frame numbers exactly. D-012 updated.
+
+---
+
+## Day 3 — 2026-10-16 — Pydantic: checking data at the door
+
+**Learned:** A Pydantic model checks data when it arrives; a dataclass does not. Its error
+names three things: which field, which rule broke, and what was sent (text, at least 5
+characters, 'hi').
+**Built:** `learning/day03_query.py` (QueryIn: text with min_length 5, optional player);
+pydantic 2.14.1 added to the backend; 6 tests in `learning/test_day03_query.py` (written
+by Claude after the plan change below).
+**Tests:** 6 new pass (15 in `learning/` with Days 2 and 4); ruff clean. With
+`min_length=2`, `test_short_text_is_rejected` failed with "DID NOT RAISE", so it guards
+the rule.
+**Surprise:** pytest ran only 4 tests at first: the test file was open in VS Code but never
+saved, so it was not on disk. Also, printing a Pydantic model shows only its fields.
+
+**For the paper:** nothing today.
+
+---
+
+## Day 4 — 2026-10-16 — Clean architecture, small: the strike-rate toy
+
+**Learned:** The use case is handed its repository (dependency injection) and only knows
+the port, so a fake, a CSV reader or DuckDB can stand behind it without changing the
+domain.
+**Built:** `learning/toy/` with domain (Ball, strike_rate), port (BallRepository), use case
+(GetStrikeRate) and fake (FakeBallRepository); 5 tests. Written by Claude and explained.
+**Tests:** 5 new pass, 15 in `learning/`; ruff clean; no test reads a file; `domain.py`
+imports only `dataclasses`. Without the wide check the strike rate came out 275.0 instead
+of 366.7 and two tests failed, so the rule is guarded.
+**Surprise:** only 9 tests ran at first, not 15, because Day 3's test file did not exist
+yet.
+
+Arrows (who imports whom); every one ends at domain.py:
+use_cases.py -> ports.py -> domain.py
+use_cases.py -> domain.py
+fakes.py     -> domain.py
+
+**For the paper:** nothing today.
+
+---
+
+## Plan change — 2026-10-16 — learn on the real project
+
+From now on Claude writes the code one small piece at a time and explains every line; I
+read it, ask, and say "next". No more practice exercises: Days 5–7 (the FastAPI and
+LangGraph toys) are taught on the real code instead, on Days 53, 54, 69, 70, 76 and 77.
+Day numbers stay the same. Next is Day 8, the real skeleton. CLAUDE.md and the plan are
+updated to match.

@@ -7,7 +7,9 @@ authors = [
     { name = "Tamim2276", email = "tamim2276007@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pydantic>=2.14.1",
+]
 
 [project.scripts]
 cricketmind-v3 = "cricketmind_v3:main"

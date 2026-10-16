@@ -145,8 +145,10 @@ Template:
 ## D-012 — Perception through an exported model and a model card
 - Date: 2026-10-16
 - Decision: CricShot exports the final classifier as TorchScript, plus `classes.json` and a
-  model card. CricketMind loads the file and never imports CricShot code. A crop parity test
-  checks that inputs match.
+  model card. CricketMind loads the file and never imports CricShot code. The model card
+  states every input step, including which frames are picked (CricShot drops repeated
+  frames and crops before sampling, so "15 evenly spaced frames" would be wrong). A parity
+  test checks the frame numbers exactly and the crops within a tolerance.
 - Why: separation of the two projects; the classifier's accuracy is reported in the CricShot
   paper, not here.
 - Alternatives considered: importing CricShot's model code (couples the projects).
