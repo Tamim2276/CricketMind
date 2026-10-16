@@ -370,6 +370,7 @@ src/
   train.py           Day 6  the epoch loop, resumable
   evaluate.py        Day 7  test-set metrics, with a checkpoint hash
   plot.py            Day 7  one figure per run, drawn automatically
+                     Day 9  + a report card per run (confusion, per-class F1)
   extract.py         Day 8  clips -> cached feature tensors, resumable
   experiments/
     registry.py      Day 9  46 experiment IDs as data
@@ -378,6 +379,7 @@ configs/
   mimic_author.yaml  Day 6  the authors' exact settings
   cached_gru.yaml    Day 8  the same thing, reading the cache
 tools/leaderboard.py Day 9  the ledger as a table, both splits side by side
+tools/figures.py     Day 9  every comparison figure, rebuilt from the ledger
 tests/               every step that can be tested gets a test here
 notes/journal.md     one entry a day
 ```
@@ -3302,8 +3304,8 @@ python -m src.experiments.run --exp A01_gru128
 
 **Check.** `--dry_run` prints two run names, two resolved configs and two split
 paths, and writes nothing. The real run produces two ledger rows, two
-`report_val.json`, two `report_test.json`, two figures in
-`notes/figures/runs/`, and no `resume.pt` anywhere.
+`report_val.json`, two `report_test.json`, two training-curve figures and
+two report cards (9.5) in `notes/figures/runs/`, and no `resume.pt` anywhere.
 
 **Takeaway.** Automate the rules you wrote down, because rules you have to
 remember are rules you break under load shedding. Every one of rule 1, 4 and 5
@@ -3376,10 +3378,13 @@ because it measures how much the authors' protocol flatters a model.
 IDs behind it. The most useful thing this tool can tell you on day nineteen is
 which three experiments never finished.
 
-**The figure follows `src/plot.py`'s rules**, which already exist and are
-already validated: one axis per panel, never a twin axis, the categorical
-palette from the dataviz reference, light and dark both written. Do not invent
-a second chart style — import the palette.
+**It skips the four `smoke_*` rows.** `smoke_frozen`, `smoke_cached`,
+`smoke_cached_gru` and `smoke_mimic_author_noflip` are pipeline checks on a
+handful of clips, not results. Filter on the `smoke_` prefix, and print how many
+were skipped so the filter is never silent.
+
+**It draws no figures.** That is 9.5's job, in one place, so there is one chart
+style rather than two.
 
 **Run.**
 
@@ -3397,7 +3402,92 @@ shows the wins, because the gaps are the thing you can still act on.
 
 ---
 
-### 9.5 The first real row: the grouped-split baseline (≈10 min to start, then ≈3–4 h)
+### 9.5 Figures for every experiment (≈1.5 h)
+
+**Why.** 92 runs is too many to judge from a table, and a figure made by hand
+at the end is a figure made from whatever you remember. So every run draws its
+own figures the moment it finishes, and every comparison figure is rebuilt from
+the ledger by one command. Nothing is drawn by hand, nothing is drawn twice, and
+Day 33's package already exists by then.
+
+**Build.** Two levels.
+
+**Per run, automatically.** `run.py` calls these right after evaluation, for
+each split:
+
+| figure | what it shows | made by |
+|---|---|---|
+| training curves | loss, accuracy, lr, gradient norm per epoch, lr cuts marked | `plot_run` (exists, Day 7) |
+| report card | 15×15 confusion matrix (each row sums to 100%) beside per-class F1, sorted worst to best | `plot_report` (new, in `src/plot.py`) |
+
+**Across all runs, on demand.** `tools/figures.py` reads `results.jsonl` and
+each run's `report_val.json`, and writes to `notes/figures/compare/`:
+
+| figure | the question it answers |
+|---|---|
+| one per family (A, B, C, D, V) | did each change beat its base? One dot per ID, the base as a line, author and grouped as two panels |
+| split gap | how much does the authors' protocol flatter each model? Author vs grouped as a dumbbell per ID |
+| per-class F1 heatmap | which change helped which shot? IDs × the 15 classes |
+| cost vs accuracy | which runs earn their GPU minutes? `minutes` against val top-1 |
+| probe ranking | which of the five caches carries the most shot information? |
+
+Plus `notes/figures/index.md`, written by the same command: every figure with
+its run name and the registry's `why` line as its caption.
+
+**Code to understand.**
+
+**Validation only — rule 5 reaches the figures too.** A test confusion matrix
+on every run is test looked at 92 times. Every figure here is drawn from
+`report_val.json`. Test figures are drawn once, for the chosen models, on
+Days 32–33. `report_test.json` is still written by 9.2; it is just never
+plotted before then.
+
+**Row-normalised, with the counts kept.** Classes differ a lot in size: on the
+author val split Lofted Legside has 178 clips and Reverse Sweep 39. In raw
+counts the big classes' mistakes swamp the picture. Each row is shown as a
+percentage of that true class, and the support goes in the row label,
+`Reverse Sweep (n=39)`, so a small class is never mistaken for a reliable one.
+
+**One style, already validated.** Import `THEMES` and the palette from
+`src/plot.py`: one axis per panel, never a twin axis. The confusion matrix uses
+a single-hue sequential scale (light to dark in one colour), not a rainbow, so
+darker always means more. Two splits are two panels, never averaged.
+
+**Rebuilt, never edited.** `tools/figures.py` overwrites everything it owns on
+every run. If a figure is wrong you fix the code and rerun; you never touch the
+PNG. That makes every figure in the thesis reproducible by one command.
+
+**Git keeps the light version of per-run figures.** 92 runs × 2 figures ×
+2 themes is about 60 MB of PNGs. The dark copy is still drawn into
+`experiments/<name>/`; only the light one is mirrored into git. Comparison
+figures are few, so both themes are kept.
+
+**Backfill.** The runs that already exist get report cards too. Those with a
+`report_val.json` (`mimic_author`, `mimic_author_seg`) are drawn straight away.
+The other three (`mimic_author_noflip`, `cached_gru`, `cached_gru_noflip`) need
+`src/evaluate.py` run on their `best.pt` first — one command each, a minute or
+two.
+
+**Run.**
+
+```bash
+pytest tests/test_plot.py tests/test_figures.py -q
+python -m src.plot --report experiments/mimic_author
+python -m tools.figures
+```
+
+**Check.** A report card for every run with a `report_val.json`; one figure per
+family that has rows, the rest reported as "no rows yet", never an empty chart;
+`index.md` lists every figure; and rerunning `tools.figures` gives byte-equal
+PNGs (the same check as 9.3's determinism, for figures).
+
+**Takeaway.** Make the figure part of the run, not part of the write-up. A
+figure drawn automatically from the ledger cannot drift from the number it
+shows, and on Day 33 you are choosing figures rather than making them.
+
+---
+
+### 9.6 The first real row: the grouped-split baseline (≈10 min to start, then ≈3–4 h)
 
 *A launch step, and the most valuable single run left in the project.*
 
@@ -3454,12 +3544,12 @@ has measured, next to theirs, with the difference explained.
 
 ---
 
-### 9.6 Commit and tag Phase 2 (≈15 min)
+### 9.7 Commit and tag Phase 2 (≈15 min)
 
 *A commit step.*
 
 ```bash
-git add -A && git commit -m "Phase 2: feature cache (13x), experiment harness, first grouped-split baseline"
+git add -A && git commit -m "Phase 2: feature cache (13x), experiment harness, figures for every run, first grouped-split baseline"
 git tag phase2-complete
 ```
 
@@ -3473,7 +3563,8 @@ all of it:**
 | `src/extract.py` | resumable, verified to fp16, `--mirror` and `--derive` |
 | `src/data/features.py` | `FeatureDataset`, three views, shares `classes.json` |
 | `src/experiments/` | 46 IDs as data, both splits per ID, idempotent, test-eval automatic |
-| `tools/leaderboard.py` | both splits side by side, pending count, figure |
+| `tools/leaderboard.py` | both splits side by side, pending count, smoke rows skipped |
+| `tools/figures.py` | per-run report cards, family / gap / heatmap / cost / probe figures, `index.md` |
 | the grouped baseline | the number the authors never reported |
 
 **What Phase 2 does not solve, so Phase 3 plans around it.** The cache only
