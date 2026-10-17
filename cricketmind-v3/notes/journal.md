@@ -254,3 +254,25 @@ ruff asked to join nested `if`s with `and`.
 - Decision: D-015 in thesis/decisions.md (a claim checks itself; the band is derived, not
   stored)
 - Section it feeds: Method (claim contract)
+
+---
+
+## Day 8 — 2026-10-17 — Finding: claims plus a sentence with slots
+
+**Learned:** What an agent hands in is a Finding: who wrote it, its claims, and one sentence
+with slots like `{c1}` instead of numbers. Slots are found with plain string tools in a
+loop (`find` the `{`, `find` its `}`, take the text between). A tuple cannot grow, so a
+checked finding cannot have a claim slipped in later.
+**Built:** `domain/findings.py`: `FindingError`, `references()` (the slots in order; an
+unclosed `{` is refused) and a frozen, keyword-only `Finding` with three rules (claims are a
+tuple; no two claims share an id; every slot names one of its claims). The shared example
+claims moved to `tests/examples.py`, so `test_claims.py` and `test_findings.py` use one copy.
+10 new tests. Written by Claude and explained.
+**Tests:** 33 passed (10 new); ruff clean; learning 15. With rule 3 removed on purpose, a
+sentence using `{c3}` with no claim c3 was accepted, and two tests failed: the missing-claim
+test and the unclosed-slot test (without rule 3 the finding never reads its slots at all).
+Put back, all pass.
+**Surprise:** one removed rule broke two tests, because rule 3 was also the only place the
+finding looked at its sentence.
+
+**For the paper:** nothing new today (Day 8 builds part of D-004, the claim contract).

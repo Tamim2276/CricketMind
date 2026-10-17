@@ -2,53 +2,10 @@ import dataclasses
 
 import pytest
 
-from cricketmind_v3.domain.claims import Claim, ClaimError
-from cricketmind_v3.domain.provenance import Provenance
-from cricketmind_v3.domain.subject import Subject
+from cricketmind_v3.domain.claims import ClaimError
+from tests.examples import c1, c2, c3
 
-KOHLI_COVER_DRIVE = Subject(
-    player="V Kohli", shot="Cover Drive", phase="powerplay", bowler_type="pace"
-)
-KOHLI_PULL = Subject(player="V Kohli", shot="Pull", phase="powerplay", bowler_type="pace")
-
-
-# Three good claims; each test below breaks one rule on a copy.
-
-
-def c1() -> Claim:
-    # the v3 document's c1: counted from history
-    return Claim(
-        id="c1",
-        kind=Provenance.DESCRIPTIVE,
-        metric="strike_rate",
-        subject=KOHLI_COVER_DRIVE,
-        value=142.0,
-        n=50,
-    )
-
-
-def c2() -> Claim:
-    # the v3 document's c2: a prediction with its range
-    return Claim(
-        id="c2",
-        kind=Provenance.PREDICTIVE,
-        metric="p_dismissal_within_k",
-        subject=KOHLI_PULL,
-        value=0.405,
-        interval=(0.155, 0.697),
-    )
-
-
-def c3() -> Claim:
-    # measured from a clip
-    return Claim(
-        id="c3",
-        kind=Provenance.MEASURED,
-        metric="weight_transfer",
-        subject=Subject(player="V Kohli", shot="Cover Drive"),
-        value=0.31,
-        clip_id="vid1_0",
-    )
+# Each test below breaks one rule on a copy of a good claim.
 
 
 def test_the_documents_c1_is_accepted():
