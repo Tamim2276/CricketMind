@@ -3882,6 +3882,11 @@ same tail. The GRU is replaced by a pool; nothing after it changes.
 **Check.** Tests: output is `(batch, 15)`; `max` really takes the largest frame
 value; `--list --family A` shows A01 and A02 as `ready`.
 
+**Built 2026-10-17.** `pool_frames` and `PoolHead` in `src/models/head.py`;
+`mean` and `max` in `cached_head.py`; 7 tests. One thing to remember when
+reading A01: the control is not smaller. Its first Dense reads all 62,720
+pooled numbers, about 64M weights, against the GRU head's 24M.
+
 **Takeaway.** Always include the dumbest model that could work. It tells you
 what the clever ones are actually adding.
 

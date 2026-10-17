@@ -3,7 +3,8 @@ import pytest
 import torch
 
 from src.methods import cached_head as M
-from src.models.head import GRUHead, LinearHead, MLPHead
+from src.models.head import (GRUHead, LinearHead, MLPHead, PoolHead,
+                             pool_frames)
 from src.train import DEFAULTS
 
 
@@ -62,3 +63,62 @@ def test_a_gru_on_one_vector_per_clip_is_refused():
 def test_every_key_it_reads_is_a_config_key():
     for key in M.READS:
         assert key in DEFAULTS
+
+
+# ---- 10.1: the two controls, mean and max --------------------------------
+
+def test_mean_and_max_by_hand():
+    # one clip, 3 frames, 2 numbers each: the example from the explanation
+    x = torch.tensor([[[1.0, 8.0],
+                       [3.0, 2.0],
+                       [5.0, 2.0]]])
+    assert pool_frames(x, "mean").tolist() == [[3.0, 4.0]]
+    assert pool_frames(x, "max").tolist() == [[5.0, 8.0]]
+
+
+def test_pooling_ignores_frame_order():
+    torch.manual_seed(0)
+    x = torch.randn(4, 15, 8)
+    shuffled = x[:, torch.randperm(15), :]
+    for how in ("mean", "max"):
+        head = PoolHead(8, 3, how=how, dense=16).eval()
+        assert torch.allclose(head(x), head(shuffled), atol=1e-6)
+
+
+def test_a_gru_does_notice_frame_order():
+    # the contrast that makes the controls worth having
+    torch.manual_seed(0)
+    x = torch.randn(4, 15, 8)
+    shuffled = x[:, torch.randperm(15), :]
+    head = GRUHead(8, 3, hidden=16, dense=16).eval()
+    assert not torch.allclose(head(x), head(shuffled), atol=1e-4)
+
+
+def test_the_pool_head_keeps_the_gru_heads_tail():
+    pool = PoolHead(8, 3, how="mean", dense=16)
+    gru = GRUHead(8, 3, hidden=16, dense=16)
+    assert pool(torch.randn(2, 15, 8)).shape == (2, 3)
+    assert pool.norm.eps == gru.norm.eps
+    assert pool.norm.momentum == gru.norm.momentum
+    assert pool.fc1.out_features == gru.fc1.out_features
+
+
+def test_pooling_needs_frames():
+    with pytest.raises(ValueError):
+        pool_frames(torch.randn(2, 8), "mean")
+    with pytest.raises(ValueError):
+        PoolHead(8, 3, how="median")
+    assert "frames" in M.check(_cfg(head="mean", view="video"))
+    assert M.check(_cfg(head="max", view="avg")) is None
+
+
+def test_the_config_picks_a_pool_head():
+    head = M.model(_cfg(head="max"), _Data(8), 3)
+    assert isinstance(head, PoolHead)
+    assert head.how == "max"
+
+
+def test_a01_and_a02_are_no_longer_blocked():
+    from src.experiments import registry as R
+    for exp_id in ("A01_mean", "A02_max"):
+        assert M.check(R.resolve(R.get(exp_id), "author")) is None

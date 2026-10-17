@@ -3059,3 +3059,20 @@ three, plus `cached_head`, the method-generic evaluator, the probe ranking
 and the grouped baseline. Flagged for Phase 3: end-to-end epochs ran at 6.7
 min against 4.4 with another program open, so B and C need the machine to
 themselves, and section 6's cost table needs re-checking after B02.
+
+## 2026-10-17 — Day 10 begins: Family A's heads
+
+### 10.1 The controls: mean and max
+
+`PoolHead` is `GRUHead` with the GRU replaced by `pool_frames` (average or
+largest value over the 15 frames); the tail (BatchNorm with the authors'
+eps and momentum, Dense 1024, Dense 15) is the same. A test shuffles the
+frames: the pool heads give the same answer, a GRU does not.
+
+Not obvious until I counted: the "dumb" control has more weights than the
+GRU head (about 64M against 24M), because its first Dense reads 62,720
+numbers where the GRU's reads 128. If A01 ties A03, capacity is one
+possible reason, and the write-up should say so.
+
+Tests: 64 pass (cached_head, registry, head); harness 18 pass. A01 and A02
+`ready`.

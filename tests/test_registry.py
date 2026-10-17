@@ -145,7 +145,7 @@ def test_status_names_what_is_missing():
     assert R.status(R.get("C01_r2plus1d_18")) == "needs method video3d"
     assert R.status(R.get("B01_effnetv2s")) == "ready"
     assert R.status(R.get("B03_xception")) == "torchvision has no xception"
-    assert R.status(R.get("A01_mean")) == "no mean head yet (Day 10)"
+    assert R.status(R.get("A10_tcn")) == "no tcn head yet (Day 10)"
     assert R.status(R.get("A05_bigru128")) == (
         "bidirectional not built yet (Day 10)")
 

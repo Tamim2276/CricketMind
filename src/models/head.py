@@ -33,8 +33,8 @@ separately loses precision on confident predictions.
 import torch
 import torch.nn as nn
 
-__all__ = ["GRUHead", "LinearHead", "MLPHead", "NUM_CLASSES", "HIDDEN",
-           "DENSE"]
+__all__ = ["GRUHead", "LinearHead", "MLPHead", "PoolHead", "pool_frames",
+           "POOLS", "NUM_CLASSES", "HIDDEN", "DENSE"]
 
 
 def _init_gru_like_keras(gru: nn.GRU) -> None:
@@ -177,3 +177,51 @@ class MLPHead(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.relu(self.fc1(_one_vector(x)))
         return self.fc2(self.drop(out))
+
+
+POOLS = ("mean", "max")
+
+
+def pool_frames(x: torch.Tensor, how: str) -> torch.Tensor:
+    """(B, T, D) -> (B, D): the average, or the largest value, over frames."""
+    if x.dim() != 3:
+        raise ValueError(f"expected (B, T, D), got {tuple(x.shape)}")
+    if how == "mean":
+        return x.mean(dim=1)
+    if how == "max":
+        return x.max(dim=1).values     # .max also returns where; drop it
+    raise ValueError(f"unknown pool {how!r}; have {POOLS}")
+
+
+class PoolHead(nn.Module):
+    """GRUHead with the GRU swapped for a pool. Order-blind on purpose."""
+
+    def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES,
+                 how: str = "mean", dense: int = DENSE,
+                 dropout: float = 0.0):
+        super().__init__()
+        if how not in POOLS:
+            raise ValueError(f"unknown pool {how!r}; have {POOLS}")
+        self.in_dim = in_dim
+        self.how = how
+
+        # the same tail as GRUHead, so only the frame-reading part differs
+        self.norm = nn.BatchNorm1d(in_dim, eps=BN_EPS, momentum=BN_MOMENTUM)
+        self.fc1 = nn.Linear(in_dim, dense)
+        self.relu = nn.ReLU()
+        if dropout > 0:
+            self.drop = nn.Dropout(dropout)
+        else:
+            self.drop = nn.Identity()
+        self.fc2 = nn.Linear(dense, num_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        summary = pool_frames(x, self.how)
+        if summary.shape[1] != self.in_dim:
+            raise ValueError(
+                f"head was built for {self.in_dim} features, got "
+                f"{summary.shape[1]}")
+        out = self.norm(summary)
+        out = self.relu(self.fc1(out))
+        out = self.drop(out)
+        return self.fc2(out)
