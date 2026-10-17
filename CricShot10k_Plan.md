@@ -710,6 +710,9 @@ over the same files.
 The 30 cached experiments cost **3.1 extra hours** for 30 extra rows. The 16
 end-to-end ones cost 60 extra hours, which is the real price of this decision.
 
+*This was the budget before Phase 2. The measured re-cost, about 150–250
+GPU-hours with B and C taking most of it, is at the start of Phase 3.*
+
 **Family A's `h each` is 0.15, not 0.06, and that is now a measurement.** The
 `flat` view took **70 minutes** a run on 2026-10-15 -- 2 min an epoch over 34
 epochs, because a `62720 x 384` GRU kernel is 24.1 M parameters and an epoch
@@ -3785,51 +3788,528 @@ finitely many. Those rows have to be end-to-end or not at all.
 
 # PHASE 3 — The 46 experiments, twice (Days 10–27)
 
-Full list with IDs in **Appendix A**. Order is deliberate: cheap and informative
-first.
+Phase 2 built the machine. Phase 3 feeds it: the 46 committed experiments, each
+on both splits. The probe (P01–P05) and B01 are already done, so **90 runs are
+left**. The full list, with the question each one asks, is in **Appendix A**.
 
-Every experiment runs on **both splits**, so each ID produces two ledger rows.
+Almost everything you need already exists:
 
-| Day | Family | Experiments | Rows | GPU time |
-|---|---|---|---|---|
-| 10 | **A** — temporal heads | A01–A14 (14) | 28 | 4.2 h |
-| 11 | **D** — features + classical ML | D01–D06 (6) | 12 | 1.0 h |
-| 12 | **V** — video-pretrained features (frozen) | V01–V10 (10) | 20 | 3.3 h extract + 1.0 h |
-| 13–18 | **B** — CNN backbones | B01–B08 (8) | 16 | 48 h |
-| 19–27 | **C** — 3D / video models (fine-tuned) | C01–C08 (8) | 16 | 72 h |
-| stretch | **E** — pose and graph | E01–E04 (4) | 8 | 24 h |
-| stretch | **F** — multi-scale and hybrid | F01–F05 (5) | 10 | 30 h |
-| stretch | **W** — cricket-specific motion | W01–W05 (5) | 10 | 35 h |
+- the **registry** says what each run is (9.1);
+- the **runner** trains, resumes, scores and draws it (9.2, 9.5);
+- the **leaderboard** and **figures** show where you stand (9.4, 9.5).
 
-**60 listed, 46 committed, 92 rows.** Days 10–12 alone give you **60 rows** for
-about 10 GPU-hours, because they reuse the cached features. Families **E, F and W
-remain stretch** — another 89 GPU-hours between them, and the weakest expected
-payoff of the eight.
+So every day is mostly two things: **build the one missing piece** (a head, a
+method, an extractor), then **launch a queue** and let the runner work. The
+runner itself should not need to change.
 
-The day ranges assume roughly 8 usable GPU-hours a day. Count the GPU-hours
-column, not the days, and re-divide for your own power situation.
+### What it costs, measured
 
-**Do the cached families first**, for the reason in section 6: the 28 cheap
-experiments tell you whether the leak gap depends on the architecture, and that
-answer decides how much the 60 extra hours on B and C are really buying.
+Section 6's budget was written before Phase 2. These numbers come from Phase 2's
+own runs:
 
-### Daily rhythm
+| block | runs | per run (measured or close) | GPU-hours |
+|---|---|---|---|
+| A on the `flat` view (A01–A13) | 26 | 60–95 min (`cached_gru`: 58 and 94) | ~30 |
+| A14 on the `avg` view | 2 | ~8 min (probe runs: 6.5–10.5) | < 0.5 |
+| D, classical models | 12 | minutes, on the CPU | ~1.5 (CPU) |
+| V: extract 7 new caches | 7 | 10–40 min each, both halves | ~3 |
+| V: train the heads | 20 | ~8 min | ~3 |
+| B02–B08, end to end | 14 | 3.5–6 h (B01: 3.3 h alone, 6.3 h shared) | ~50–85 |
+| C01–C08, end to end | 16 | 4–8 h (estimate: heavier models) | ~65–130 |
+| **total** | **90** | | **~150–250** |
 
-Each experiment below is still one step of the loop in section 1 — why, build,
-run, check, explain — broken down on the day it is run.
+**Count GPU-hours, not days.** At about 8 usable GPU-hours a day this is 20–30
+days; if the machine also runs overnight when the power holds, 10–15. The days
+below assume the overnight queue. If the power will not allow it, Phase 3
+stretches, and that is fine: the runner resumes.
 
-1. **Power on, long block:** launch the hours-long runs (B, C, E, F — queue them).
-2. **While they run:** the cheap cached-feature ones, and read about the next family.
-3. **Outage:** error analysis, reading and the journal. None of it needs a GPU.
-4. **End of day:** check the ledger has one row per run, regenerate the
-   leaderboard, and write the journal entry — what broke, and how you fixed it.
+### The order: cheap first
 
-### Rules that keep this honest
+A, D and V (60 runs, about 37 GPU-hours) come before B and C (30 runs, the rest).
+Two reasons:
 
-- Same splits, same seed, same evaluation, every time.
-- A failed experiment is **still a row** — with `notes="diverged at epoch 3"`.
-  Negative results are results, and your supervisor should see them.
-- Do not fix an experiment to make it win. Record what happened.
+1. You get most of the rows in the first week.
+2. The cheap runs answer section 6's question before you spend the expensive
+   hours: **does the author–grouped gap depend on the model?** If it is about
+   the same for every head, it is a property of the data. If it swings, the
+   expensive families really need both splits.
+
+### Rules for Phase 3
+
+1. **One variable at a time.** The registry enforces it. Never edit a base
+   config mid-phase; 9.3's ledger test would fail, and it should.
+2. **A failed run is still a result.** If a run diverges or cannot start, write
+   it in the journal. Never delete a row.
+3. **Do not fix an experiment to make it win.** Record what happened.
+4. **Do not look at test.** The runner hides it. Phase 4 chooses by
+   **grouped val**, because the author val shares 368 of 369 source videos with
+   training (9.6).
+5. **Long runs get the machine to themselves.** Close other programs: 9.6 ran
+   at 6.7 min an epoch instead of 4.4, and hit a `MemoryError`, because another
+   program was open.
+6. **One GPU job at a time**, and that includes Ollama and the CricketMind work.
+
+### The daily rhythm
+
+1. **Power on:** launch the day's queue (`--family X`).
+2. **While it runs:** build the next piece (CPU only), read, write the journal.
+3. **Power cut:** later, run the same command again. It resumes.
+4. **End of day:** `python -m tools.leaderboard`, `python -m tools.figures`,
+   journal, commit.
+
+---
+
+## Day 10 — Family A, part 1: the heads
+
+*Question: how much does the temporal model matter?* Family A keeps the cached
+EfficientNet features fixed and changes only the head that reads the 15 frames.
+Today builds the nine heads; tomorrow runs them.
+
+All of them go in **one file**, `src/methods/cached_head.py`, chosen by one
+config key, `head`. Each new head keeps the GRU head's tail (BatchNorm →
+Dense 1024 → 15 classes), so the only thing that changes is how the 15 frames
+are read.
+
+### 10.1 The two controls: mean and max (≈30 min)
+
+**Why.** Before comparing clever heads, ask whether order matters at all. If
+simply averaging the 15 frames (A01) ties the GRU (A03), the GRU is not using
+time, and that is a finding.
+
+**Build.** Heads `mean` and `max`: pool the 15 frames into one vector, then the
+same tail. The GRU is replaced by a pool; nothing after it changes.
+
+**Check.** Tests: output is `(batch, 15)`; `max` really takes the largest frame
+value; `--list --family A` shows A01 and A02 as `ready`.
+
+**Takeaway.** Always include the dumbest model that could work. It tells you
+what the clever ones are actually adding.
+
+### 10.2 The recurrent family: GRU-64, BiGRU, LSTM, BiLSTM (≈1 h)
+
+**Why.** The authors report three of these: GRU-64 85.52%, LSTM-64 85.42%,
+BiLSTM 87.65%. Does their order hold on frozen features?
+
+**Build.**
+- `bidirectional`: the GRU reads the clip both ways, and the two final states
+  are joined (so the tail gets 2 × hidden).
+- an LSTM head with the same tail, initialised the Keras way like the GRU
+  (Glorot input weights, orthogonal recurrent weights, forget-gate bias 1).
+- `hidden: 64` already works.
+
+**Check.** Tests: bidirectional doubles the summary width; the LSTM's forget
+bias starts at 1; A03–A07 show `ready`.
+
+**Takeaway.** Copy the initialisation along with the architecture. Day 7 showed
+that a Keras GRU and a PyTorch GRU are not the same model until their init is.
+
+### 10.3 The temporal transformer: A08, A09 (≈1 h)
+
+**Why.** A GRU passes frame 1's information through 14 steps to reach frame 15.
+Attention lets frame 1 look at frame 15 directly.
+
+**Build.** `transformer` head: project each frame from 62,720 to 256 numbers, add
+a learned position for each of the 15 frames, run `layers` encoder layers with
+`attn_heads` heads, average over frames, then the tail. A08 is 2 layers × 4
+heads, A09 is 4 × 8.
+
+**Key idea.** The projection is not optional: attention over 62,720-wide tokens
+would not fit in memory. Without the position embedding, the transformer cannot
+tell frame 1 from frame 15 at all.
+
+**Check.** Tests: output shape; shuffling the frames changes the output (the
+positions work).
+
+### 10.4 TCN, attention pooling, NetVLAD: A10–A12 (≈1.5 h)
+
+**Build.**
+- **`tcn`**: the same 256-number projection, then three 1-D convolutions with
+  dilation 1, 2 and 4 (kernel 3, with skip connections). Their reach is exactly
+  15 frames. Average, then the tail.
+- **`attnpool`**: a small scorer gives every frame a weight, softmax makes the
+  weights sum to 1, and the clip is the weighted sum. The head keeps the last
+  weights so A11 can show which frames matter (11.3).
+- **`netvlad`**: 8 learned cluster centres; each frame is described by its
+  distance to them; the result is normalised and goes to the tail.
+
+**Check.** Tests: shapes; attention weights sum to 1 for every clip; each head
+trains for 2 epochs on the fake cache from `test_run_experiment.py` without
+error.
+
+### 10.5 LayerNorm before the head: A13 (≈20 min)
+
+**Why.** 8.6 measured 39% of the GRU's units dead at epoch 1 on `flat`
+features: 62,720 values that are all positive, summed into one gate. Centring
+the input is the direct fix.
+
+**Build.** `feature_norm: layer` puts a LayerNorm on each frame before any head.
+
+**Check.** A test: after the norm, each frame has mean ≈ 0 and spread ≈ 1. The
+real check comes on Day 11: A13's `pin` column should sit lower than A03's.
+
+### 10.6 All of Family A ready (≈20 min)
+
+**Run.**
+
+```bash
+pytest tests/test_cached_head.py tests/test_run_experiment.py -q
+python -m src.experiments.run --list --family A
+python -m src.experiments.run --family A --dry_run
+```
+
+**Check.** 14 IDs `ready`, 28 runs planned, and the 9.3 tests still pass (no
+registry edit was needed).
+
+**Takeaway.** Nine new heads, one config key, and the runner did not change. That
+is what Phase 2 was for.
+
+---
+
+## Day 11 — Family A, part 2: run it
+
+*A launch step: about 30 GPU-hours, unattended.*
+
+### 11.1 First, A03 must equal `cached_gru` exactly (≈1 GPU-hour)
+
+**Why.** A03 is the same model as `cached_gru` (53.66% val), only built by the
+new method. If the two disagree, `cached_head` differs from `cached_gru`
+somewhere, and every Family A number inherits that difference.
+
+**Run.**
+
+```bash
+python -m src.experiments.run --exp A03_gru128 --split author
+```
+
+**Check.** Val top-1 **53.66%**, exactly. 9.3 showed the Arc repeats bit for bit.
+If it does not match exactly, stop and compare the two methods before running
+anything else.
+
+### 11.2 Launch the family (≈30 GPU-hours)
+
+**Run.**
+
+```bash
+python -m src.experiments.run --family A
+```
+
+It skips A03's author run. A14 (`avg`) takes minutes; each `flat` run about an
+hour. After a power cut, run the same command again.
+
+**While it runs:** build Day 12 (Family D) on the CPU. Don't *run* D yet: it
+would fight A for the CPU and the disk.
+
+**Check.** `python -m tools.leaderboard --family A` at the end of each day.
+
+### 11.3 The A11 figure: which frames matter? (≈30 min, once A11 is done)
+
+**Build.** `tools/attention.py`: load A11's checkpoint, run the val clips, and
+average the attention weights per class into one heatmap (classes × 15 frames).
+Validation only, and in the same style as every other figure.
+
+**Check.** Each class's weights sum to 1. Write down what you see: does a Pull
+peak at a different frame from a Defensive shot?
+
+**Takeaway.** An attention head gives you an explanation for free. Use it.
+
+---
+
+## Day 12 — Family D: classical models
+
+*Question: how separable are the features already?* Six classical models on the
+same EfficientNet features: logistic regression, SVM, random forest, XGBoost,
+k-NN and a small MLP. All of these libraries are already installed.
+
+### 12.1 A method without epochs (≈1.5 h)
+
+**Why.** These models do not train in epochs; they fit once. `train.py`'s loop
+does not suit them, but the ledger, the reports and the figures must look
+exactly the same as for every other run.
+
+**Build.** `src/methods/classical.py`:
+- reads the `avg` view and averages the 15 frames into one 1,280-number vector
+  per clip; standardises it using the training clips only;
+- `fit(cfg)` fits the model (with `random_state` = the seed), saves
+  `model.joblib`, and writes a normal ledger row;
+- scores val and test into the same `report_*.json` format, so the
+  leaderboard, report cards and figures need no change;
+- in `run.py`, one `if`: when a method has its own `fit`, the runner calls it
+  instead of `train`.
+
+**Key idea.** Flip stays off (9.1): a single fit has no epochs to flip across.
+Adding mirrored copies as extra training rows would be a *new* experiment, a
+delta, not a quiet change.
+
+**Check.** Tests on a fake cache: a row and two reports appear; the same seed
+gives the same predictions; a second call skips.
+
+### 12.2 Run D (≈1–2 CPU-hours, after A's queue finishes)
+
+**Run.**
+
+```bash
+python -m src.experiments.run --family D
+```
+
+**Check.** 12 rows. **D01 should land within about a point of P01** (40.66% /
+44.42%): the same linear probe, fitted two different ways. If they disagree by
+much more, one of them has a bug.
+
+---
+
+## Day 13 — Read Families A and D
+
+*No GPU. The point of running experiments is reading them.*
+
+### 13.1 What Family A says (≈1 h)
+
+Answer each question in the journal **with a number**:
+
+- **Does order matter?** A01 (mean) against A03 (GRU).
+- **Does one frame carry the class?** A02 (max) against A01.
+- **Did the authors' order hold?** A04, A06 and A07 against A03.
+- **Attention or recurrence?** A08 and A09 against A03; A10 (TCN) as the cheap
+  option.
+- **Did LayerNorm fix the saturation?** A13 against A03: the `pin` column and
+  the accuracy.
+- **Is the grid worth it?** A14 (`avg`, minutes) against A03 (`flat`, an hour).
+  If they tie, many later heads could use `avg` and save hours.
+
+### 13.2 The split gap, first look (≈30 min)
+
+**Run.** `python -m tools.leaderboard` and `python -m tools.figures`; open
+`split_gap.png`.
+
+**Write down** the gap's smallest, largest and average value over Families P, A
+and D. Is it roughly constant, or does it depend on the head? That is half of
+section 6's question answered.
+
+**Commit.** Everything in `experiments/` and `notes/` that the run produced.
+
+---
+
+## Day 14 — Family V, part 1: seven new extractors
+
+*Question: which pretraining gives the best frozen features?* Same MLP head for
+all ten, so the only difference is the features. Three caches already exist
+(r3d_18, VideoMAE, CLIP); seven are new.
+
+### 14.1 One recipe, seven models (≈2 h)
+
+**Build.** Add the seven to the extractor, exactly the 8.10 way:
+
+| ID | model | from | per clip |
+|---|---|---|---|
+| V02 | mc3_18 | torchvision | one vector |
+| V03 | r2plus1d_18 | torchvision | one vector |
+| V04 | s3d | torchvision | one vector |
+| V05 | swin3d_t | torchvision | one vector |
+| V06 | mvit_v2_s | torchvision | one vector |
+| V08 | TimeSformer-Base (Kinetics) | transformers | one vector |
+| V10 | DINOv2-Base | transformers | one vector per frame |
+
+**Key ideas, all from 8.10 (don't relearn them):**
+- keep the vector that the model's own final Linear reads;
+- take frame count, size, mean and std from each model's weights, never from
+  ImageNet; `resample_frames` turns 15 frames into whatever the model wants;
+- downloads need `HF_HUB_OFFLINE=0` on that one command only.
+
+**Check.** A test per model: right shape, and `--verify` on 4 clips passes
+(cached vector = full model, logits match).
+
+### 14.2 Extract (launch, ≈3 GPU-hours)
+
+**Run**, for each of the seven:
+
+```bash
+python -m src.extract --backbone mc3_18 --workers 4
+python -m src.extract --backbone mc3_18 --workers 4 --mirror
+python -m src.extract --verify --backbone mc3_18
+```
+
+**Check.** 9,880 files per half, verify passes, and each run adds a row to
+`experiments/caches.jsonl`.
+
+---
+
+## Day 15 — Family V, part 2: run and read it
+
+### 15.1 Run (≈3 GPU-hours)
+
+```bash
+python -m src.experiments.run --family V
+```
+
+**Check.** 20 rows. **V01 should not lose to P03** (the same r3d_18 features; an
+MLP can do anything a Linear can). The probe suggests V07 (VideoMAE) leads.
+
+### 15.2 Read Family V (≈30 min)
+
+- Which pretraining wins: Kinetics video, ImageNet photos, captions (CLIP) or
+  no labels at all (DINOv2)?
+- Does the MLP ranking agree with the probe's? If yes, the probe was a good
+  cheap guide, which is worth saying in the write-up.
+
+---
+
+## Day 16 — The cheap half, reviewed
+
+*No GPU. About 2 hours.*
+
+**Run.** `python -m tools.leaderboard`, `python -m tools.figures`.
+
+**Write down:**
+1. The best result so far in each family, by grouped val.
+2. **Section 6's question, answered.** The gap's spread across all P, A, D and V
+   IDs, and one sentence: is it a property of the data or of the model?
+3. Re-check the cost table at the top of this phase against what A, D and V
+   really took.
+
+**Commit**, and tag the halfway point if you like:
+`git tag -a phase3-cheap-half -m "A, D, V done"`.
+
+**Takeaway.** Stop and read before the expensive half. The next 30 runs cost
+four times more than the last 60 together.
+
+---
+
+## Day 17 — Family B, part 1: seven backbones
+
+*Question: how much does the spatial encoder matter?* Same GRU-128 head, same
+training as B01, only the backbone changes. End to end, so hours per run.
+
+### 17.1 Backbones from timm as well (≈1.5 h)
+
+**Why.** B02 (EfficientNetV2-B3) and B03 (Xception) are not in torchvision. timm
+has them (already installed).
+
+**Build.** The frame encoder learns to load timm models. Fix B02's and B03's
+backbone names in the registry to timm's exact names (check them with
+`timm.list_models`). Editing IDs that have never run is fine; 9.3's test only
+guards IDs with rows. Swin-T (B08) returns its grid in a different layout, so
+the pooling must handle that.
+
+**Check.** `--list --family B` shows all 8 `ready`.
+
+### 17.2 Will it fit? A memory probe (≈1 h)
+
+**Why.** RegNetY-16GF has 83M parameters, and a batch is 60 frames. It may not
+fit in 12 GB.
+
+**Build.** `tools/memprobe.py --exp B07_regnety_16gf`: build the model from the
+resolved config, train 3 batches, print the peak GPU memory.
+
+**Check.** Each backbone fits at batch 4. If one does not: batch 2 with
+accumulation 2 (the same effective batch), added as that ID's delta and written
+in the journal as a protocol change. Never change it silently.
+
+### 17.3 Re-cost on B02, alone (≈4 GPU-hours)
+
+**Run.** B02's author run with nothing else open:
+
+```bash
+python -m src.experiments.run --exp B02_effnetv2b3 --split author
+```
+
+**Check.** Note the minutes per epoch and update the cost table. This number
+decides how many days Family B really needs.
+
+---
+
+## Days 18–22 — Family B, part 2: the queue
+
+*A launch step: about 50–85 GPU-hours.*
+
+**Run.**
+
+```bash
+python -m src.experiments.run --family B
+```
+
+B01 is skipped (both splits done). Roughly one run every 4–6 hours.
+
+**While it runs:** build Day 23 (Family C), CPU only.
+
+**Check daily.** The leaderboard. Watch **B04 (ConvNeXt-T)**: the probe showed
+ConvNeXt's frozen features beating EfficientNet's by 8–9 points. Does that
+survive fine-tuning?
+
+**At the end, write down:** the best backbone by grouped val, and whether size
+helped (B05 at 5.4M against B07 at 83M).
+
+---
+
+## Day 23 — Family C, part 1: video models, fine-tuned
+
+*Question: does joint space-time beat "2-D per frame, then time"?*
+
+### 23.1 A `video3d` method (≈2 h)
+
+**Build.** `src/methods/video3d.py`:
+- reads the processed clips, resamples to the model's frame count, normalises
+  with the model's own statistics, and reorders to (batch, channels, time,
+  height, width);
+- loads the backbone (torchvision: r2plus1d_18, r3d_18, mvit_v2_s, swin3d_t;
+  pytorchvideo: i3d, slowfast_r50, x3d_m; transformers: VideoMAE), and swaps its
+  final layer for 15 classes;
+- trains end to end with B01's protocol (Adam 1e-4, plateau, batch 4, flip 0.5).
+
+SlowFast needs two inputs, a slow and a fast copy of the clip; the method makes
+both from one clip.
+
+**Check.** Tests on a tiny clip for each backbone: output `(batch, 15)`, one
+training step runs.
+
+### 23.2 pytorchvideo (≈30 min; it may fail)
+
+**Run.** `pip install pytorchvideo`
+
+**Why it may fail.** Its last release is from 2022 and may not install with
+torch 2.13. If so, C03–C05 are recorded in the journal as "could not run, and
+why" (rule 2), and their `check()` says so in `--list`. They are not quietly
+dropped.
+
+### 23.3 Memory probes (≈1 h)
+
+As 17.2. MViT, Swin3D and VideoMAE fine-tuned are the heavy ones; the same batch
+2 × accumulation 2 fallback, recorded the same way.
+
+**Check.** `--list --family C` shows which are `ready`, and why the rest are not.
+
+---
+
+## Days 24–27 — Family C, part 2: the queue
+
+*A launch step: about 65–130 GPU-hours. The longest wait in the project.*
+
+**Run.**
+
+```bash
+python -m src.experiments.run --family C
+```
+
+**Check daily.** The leaderboard. Two comparisons matter most:
+- **C02 against V01:** the same r3d_18, fine-tuned against frozen. That is the
+  price of fine-tuning on 10k clips, a useful number for the paper.
+- **C08 (VideoMAE):** the strongest candidate to pass 89%, and the probe's
+  favourite.
+
+### End of Phase 3
+
+**Run.** `python -m tools.leaderboard`, `python -m tools.figures`.
+
+**Check.** Every one of the 102 runs has a row, or a journal line saying why it
+could not run.
+
+**Commit and tag:**
+
+```bash
+git tag -a phase3-complete -m "Phase 3: all families on both splits"
+```
+
+**Takeaway.** Phase 3 is mostly waiting, and that is the sign Phase 2 worked.
+Your job here is not typing commands; it is reading each result and writing
+down what it means while you still remember why you ran it.
 
 ---
 
@@ -4164,9 +4644,10 @@ Measured 2026-10-13 on `splits_author`, test top-1. Three notes:
 | 6 | Training loop | `train.py`, `mimic_author.yaml` | overfits 50 clips; resume rehearsed |
 | 7 | Reproduce | `evaluate.py` with hash guard | **78.14% baseline, tagged** (89.09% not reachable; see 7.4) |
 | 8–9 | Feature cache + harness | `extract.py`, `features.py`, `experiments/run.py`, `leaderboard.py` | 35 GB cache serving both splits; 92 runs as data; **first grouped-split baseline** |
-| 10–12 | A, D, V on both splits | — | **60 rows for ~10 GPU-h**; is the gap architecture-dependent? |
-| 13–18 | B — CNN backbones, both splits | — | 16 rows, 48 GPU-h |
-| 19–27 | C — 3D / video models, both splits | — | 16 rows, 72 GPU-h |
+| 10–13 | A and D on both splits | nine heads in `cached_head.py`, `classical.py` | 40 rows, ~30 GPU-h; A03 equals `cached_gru` exactly |
+| 14–16 | V on both splits, then the review | seven new extractors | 20 rows; is the gap a property of the data or the model? |
+| 17–22 | B — CNN backbones, both splits | timm backbones, `memprobe.py` | 14 rows, ~50–85 GPU-h |
+| 23–27 | C — 3D / video models, both splits | `video3d.py` | 16 rows, ~65–130 GPU-h |
 | 28–30 | Choose (3 seeds × top 3) and tune the winner | — | best model + mean ± std, ~39 GPU-h |
 | 31 | Ensembles + TTA | — | reuses existing checkpoints, ~2 GPU-h |
 | 32 | Error analysis | — | per-class failures, the leak gap explained |
