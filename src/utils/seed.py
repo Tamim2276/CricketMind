@@ -19,9 +19,10 @@ DEFAULT_SEED = 42
 def set_seed(seed: int = DEFAULT_SEED, deterministic: bool = False) -> int:
     """Seed python, numpy and torch. Returns the seed, to log it.
 
-    `deterministic=True` also forces deterministic kernels. That's slower and
-    raises on ops with no deterministic version, so it's off by default -- use
-    it when chasing a reproducibility bug, not for normal runs.
+    `deterministic=True` also forces deterministic kernels; an op with no
+    deterministic version warns instead of failing. Every training run uses
+    it since 10.6: without it the flat GRU gave three different losses from
+    one seed on the Arc, and it measured no slower.
     """
     random.seed(seed)
     np.random.seed(seed)
@@ -32,6 +33,8 @@ def set_seed(seed: int = DEFAULT_SEED, deterministic: bool = False) -> int:
         torch.backends.cudnn.benchmark = False    # benchmark picks kernels by timing
 
     if deterministic:
+        # cuBLAS needs this to be deterministic on the RTX; harmless elsewhere
+        os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
         torch.use_deterministic_algorithms(True, warn_only=True)
 
     return seed

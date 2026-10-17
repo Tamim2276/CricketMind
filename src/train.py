@@ -296,7 +296,8 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
     if config:
         cfg.update(config)
 
-    set_seed(cfg["seed"])
+    # deterministic kernels: the same seed gives the same run, bit for bit
+    set_seed(cfg["seed"], deterministic=True)
     device = get_device()
     out = run_dir(cfg)
     os.makedirs(out, exist_ok=True)
@@ -438,6 +439,7 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
            "best_val_top1": best_top1, "epochs_run": epoch,
            "stopped": stopped, "minutes": epoch_secs / 60,
            "resumed": resumed,
+           "deterministic": torch.are_deterministic_algorithms_enabled(),
            "device": str(device), "cfg": cfg}
     append_result(row, os.path.join(cfg["out"], "results.jsonl"))
 

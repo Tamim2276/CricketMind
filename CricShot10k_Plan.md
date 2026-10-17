@@ -3457,6 +3457,8 @@ python -m src.experiments.run --exp P03_r3d_18          # should say: already do
    `best_val_top1`, `epochs_run` and stop reason, the same `history.json`
    epoch by epoch (wall-clock `secs` aside), and the same val confusion
    matrix and loss. XPU bf16 turned out bit-repeatable for these heads.
+   **Not for the flat GRU** (found on Day 11, 11.1): three identical runs
+   gave three different losses. Every run now uses deterministic kernels.
 3. **A different seed changes the numbers.** Without this, the determinism
    test could pass because nothing random was wired in at all.
 4. **The row records what ran**: `row["cfg"]` and the checkpoint's `cfg` both
@@ -4008,6 +4010,35 @@ python -m src.experiments.run --exp A03_gru128 --split author
 **Check.** Val top-1 **53.66%**, exactly. 9.3 showed the Arc repeats bit for bit.
 If it does not match exactly, stop and compare the two methods before running
 anything else.
+
+**Measured 2026-10-17: 52.59%, not 53.66%.** Different from epoch 1 (train
+loss 2.3704 against 2.3546). What was checked, in order:
+
+1. **The code is identical.** Rebuilt both methods the way `train.py` does:
+   the same starting weights (every tensor), the same first three batches,
+   the same random state afterwards. So the new method builds exactly the
+   old model.
+2. **The Arc is not repeatable for this model.** The same config, three times,
+   250 batches each: train loss 2.5613, 2.5574, 2.5523. 9.3's repeatability
+   held for small heads only; the GRU's 62,720-wide input is not.
+3. **Deterministic kernels fix it at no cost.** With
+   `torch.use_deterministic_algorithms(True)` two runs were bit-identical,
+   with no warnings, and an epoch took the same ~13 s either way.
+
+So the check passes on what it was for (the method is the same model), and
+the exact number was never reachable: `cached_gru` ran without deterministic
+kernels. **Two lessons for every result from here:**
+
+- `train.py` now always runs deterministic and records `deterministic` in the
+  row. The same seed now means the same run.
+- **One run is not precise to the decimal.** The same code and seed gave
+  53.66% and 52.59%: about a point of noise from the GPU alone, before seed
+  noise. In Family A, treat gaps under ~1.5 points as ties until Phase 4's
+  three seeds.
+
+A03's author row stays as recorded. Re-run it deterministic at the end of
+11.2 (`--exp A03_gru128 --split author --force`), so the whole family runs
+in one mode and the force run gives a third number for the same model.
 
 ### 11.2 Launch the family (≈30 GPU-hours)
 

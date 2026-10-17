@@ -56,6 +56,12 @@ def base_cfg(workspace, **over):
 
 # ---- it runs ------------------------------------------------------------
 
+def test_every_run_uses_deterministic_kernels_and_says_so(workspace):
+    row = T.train(base_cfg(workspace), quiet=True)
+    assert row["deterministic"] is True
+    assert torch.are_deterministic_algorithms_enabled()
+
+
 def test_a_run_produces_a_ledger_row_and_a_history(workspace):
     row = T.train(base_cfg(workspace), quiet=True)
     out = T.run_dir(base_cfg(workspace))

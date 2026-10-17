@@ -3099,3 +3099,24 @@ Same torch (2.13.0+xpu), so earlier results stand; tests now run with
 `.venv/Scripts/python.exe`.
 
 Tests: 172 + 27 pass across the affected suites. All 14 Family A IDs ready.
+
+## 2026-10-17 — Day 11: A03 did not equal cached_gru, and why
+
+A03 (the cached_gru model, built by cached_head) scored 52.59%, not 53.66%,
+and differed from epoch 1. Not a code bug: rebuilt both the way train.py
+does and got identical starting weights, identical first batches and an
+identical random state. The cause is the GPU: the same config three times
+for 250 batches gave train loss 2.5613, 2.5574, 2.5523. The flat GRU's
+62,720-wide matmuls are not bit-repeatable on the Arc; 9.3 only covered
+small heads, and I had written that it might not hold for the GRU.
+
+`torch.use_deterministic_algorithms(True)` made two runs bit-identical with
+no warnings and no measurable slowdown (~13 s per 250-batch epoch both
+ways). train.py now always uses it and the row records `deterministic`.
+conftest resets it between tests.
+
+The number worth keeping: identical code and seed, 53.66% vs 52.59%. A
+single flat-GRU run is good to about a point, from the GPU alone. Gaps
+under ~1.5 points in Family A are ties until Phase 4.
+
+Tests: 199 pass with the project's .venv.
