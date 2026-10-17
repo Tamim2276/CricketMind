@@ -3688,6 +3688,40 @@ more than beating 89% on a protocol with 99.5% footage overlap:
 > 99.5% of test source videos appear in the authors' training set, making their
 > reported figure an in-domain measurement.
 
+**Measured 2026-10-17.** `B01_effnetv2s__grouped`, 56 epochs, best at
+epoch 46, 375.5 min of epochs. One RAM `MemoryError` at epoch 4 (another
+program's eval was holding memory); the same command resumed from epoch 4.
+
+```
+                      author split    grouped split    gap
+test top-1            78.14%          75.23%           -2.91
+test macro-F1         0.761           0.731            -0.030
+val top-1             79.23%          77.69%           -1.54
+source videos seen    382/384 test    0/102 test
+in training           368/369 val     0/83 val
+```
+
+**Below 78.14%, as it should be (rule 7 passes), and by less than feared.**
+Having seen the test footage is worth about 3 points to this model, so the
+overlap is real but explains only a small part of the gap to 89.09%. The
+largest per-class drops are Hook (-0.117 F1), Straight Drive (-0.106) and
+Lofted Offside (-0.097); Upper Cut rises (+0.066, 53 clips). One seed per
+split: Days 28-30 decide whether 2.9 points survives three.
+
+> We reproduce 78.14% under the authors' protocol. On a grouped split with
+> no shared source videos the same model reaches 75.23%. 99.5% of the
+> authors' test source videos appear in their training set.
+
+**The authors' val is as leaky as their test** (368 of 369 val videos are
+in train), so choosing models on author val rewards memorised footage.
+Grouped val is the one to choose by.
+
+**A ledger fix the power cut exposed.** The row said 355.0 min; the epochs
+took 375.5. `minutes` was wall clock since the process started, so a resume
+dropped everything before the cut. It is now the sum of every epoch's own
+`secs`, and the row records `resumed`. This row stays as recorded (the
+ledger is append-only); its true figure is the 375.5 above.
+
 **Takeaway.** When a published protocol has a gap, the valuable contribution is
 usually not a bigger number under the same protocol — it is the number nobody
 has measured, next to theirs, with the difference explained.

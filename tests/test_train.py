@@ -121,6 +121,13 @@ def test_an_interrupted_run_leaves_one_and_resumes_from_it(workspace):
     history = json.load(open(os.path.join(out, "history.json")))
     assert [h["epoch"] for h in history] == [1, 2, 3, 4]
 
+    # minutes cover all four epochs, including the one before the cut
+    total = 0.0
+    for h in history:
+        total += h["secs"]
+    assert abs(row["minutes"] - total / 60) < 1e-9
+    assert row["resumed"] is True
+
 
 def test_fresh_throws_the_resume_away(workspace):
     cfg = base_cfg(workspace, epochs=1)

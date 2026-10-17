@@ -340,7 +340,6 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
                   f"{start_epoch} with best {best_top1:.2%}")
         print()
 
-    started = time.time()
     stopped = "completed"
     epoch = start_epoch - 1
 
@@ -425,13 +424,20 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
 
     atomic_write_json(history, history_path)
 
+    # every epoch's own time, so a resumed run still counts the part before
+    # the cut; wall clock since this process started would lose it
+    epoch_secs = 0.0
+    for past in history:
+        epoch_secs += past.get("secs", 0.0)
+
     row = {"name": cfg["name"], "method": cfg["method"],
            "split": cfg["split"], "split_name": split_name(cfg["split"]),
            "variant": cfg["variant"],
            "features": cfg["features"], "view": cfg["view"],
            "backbone": _row_backbone(cfg), "frozen": cfg["freeze"],
            "best_val_top1": best_top1, "epochs_run": epoch,
-           "stopped": stopped, "minutes": (time.time() - started) / 60,
+           "stopped": stopped, "minutes": epoch_secs / 60,
+           "resumed": resumed,
            "device": str(device), "cfg": cfg}
     append_result(row, os.path.join(cfg["out"], "results.jsonl"))
 

@@ -26,3 +26,8 @@ CricShoot10kModels/
 # CricketMind v3 lives on its own branch (cricketmind-v3); ignored here so
 # CricShot commits never pick it up
 cricketmind-v3/
+
+# LaTeX build files; the .tex and .pdf are what we keep
+paper/*.aux
+paper/*.log
+paper/*.out

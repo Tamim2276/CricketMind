@@ -3023,3 +3023,30 @@ Late Cut is the palest column for every cache.
 
 Tests: 83 pass across plot, figures, harness, leaderboard, registry and
 cached_head; train and evaluate 43 pass.
+
+## 2026-10-17 — 9.6, the grouped-split baseline
+
+`B01_effnetv2s__grouped`: the authors' exact configuration on the split
+with no shared source videos. 56 epochs, early stop, best at epoch 46.
+
+```
+test top-1   78.14% author   75.23% grouped   -2.91
+macro-F1     0.761           0.731            -0.030
+val top-1    79.23%          77.69%           -1.54
+```
+
+Lower, so no sign of a leak in the grouped split, and lower by less than I
+expected: about 3 points of the authors' number comes from having seen the
+test footage. The rest of the gap to 89.09% is something else. Hook,
+Straight Drive and Lofted Offside lose the most (about 0.1 F1 each).
+
+Also found: the authors' val split overlaps train on 368 of 369 videos, so
+it is as in-domain as their test. Model choice from now on should lean on
+grouped val.
+
+What broke: a `MemoryError` at epoch 4. RAM, not VRAM: 4.7 GB free with
+another project's eval running. Re-ran the same command; resumed at epoch 4
+with best 58.13%, exactly as designed. Then the row's `minutes` read 355.0
+against 375.5 of epoch time, because it measured wall clock since the
+resume. Fixed in `train.py` (sum of epoch secs, plus a `resumed` flag) with
+a test. Also added the LaTeX build files to `.gitignore`.
