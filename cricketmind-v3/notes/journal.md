@@ -300,3 +300,35 @@ arithmetic, not just a different rounding rule.
 **For the paper:**
 - Decision: D-016 in thesis/decisions.md (halves round up, in decimal; the claim tags)
 - Section it feeds: Implementation (rendering)
+
+---
+
+## Plan extension — 2026-10-17 — every question gets an honest answer; tone words checked
+
+Asked: can the tone gap (L-013) be closed, and can the agent answer any cricket question,
+however it is worded? Two changes, eight new days (165 → 173):
+
+- **C7 (D-017):** a tone word ("strong", "struggles") is a hidden comparison, so it needs a
+  checked comparison claim pointing the same way. New lie type F8. L-013 narrowed.
+- **Honest answers (D-018):** N3 sorts each question into stats, prediction, video, rules or
+  can't-check, and every answer starts "I read this as: …". Stats questions become one engine
+  query with any filters and one measure, so unlisted questions still get checked numbers.
+  The Explainer answers rules in words only, labelled "not checked". The rest get "I can't
+  check that". Phase 10 tests 230 questions, including 5 wordings of the same question.
+  New limitations L-014 (explanations unchecked) and L-015 (N3 can misread a question).
+
+Day numbers in entries above use the 165-day plan for days after 21. They map like this:
+
+| 165-day plan | Now |
+|---|---|
+| 1–21 | 1–21 |
+| — | 22 (new: C7, tone words) |
+| 22–38 | 23–39 |
+| — | 40–42 (new: any stats question) |
+| 39–49 | 43–53 |
+| — | 54 (new: sorting questions by kind) |
+| 50–61 | 55–66 |
+| — | 67 (new: the Explainer) |
+| 62–137 | 68–143 |
+| — | 144–145 (new: coverage) |
+| 138–165 | 146–173 |

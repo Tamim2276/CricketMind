@@ -210,3 +210,42 @@ Template:
   `round()` (the same half-to-even rule).
 - Status: built (switching to half-even made three tests fail; 0.405 showed as 40%)
 - Paper section: Implementation (rendering)
+
+## D-017 — Check C7: a tone word needs a checked comparison
+- Date: 2026-10-17
+- Decision: a new Faith Check, C7, beyond the architecture document's C1–C6. Tone words
+  carry a direction ("strong", "dominates" up; "struggles", "weak" down). A tone word about a
+  player needs a comparison claim in the same sentence (`sr_vs_average`, the player against
+  the average batter with the same filters, or `sr_difference`) whose whole 95% range is on
+  that side of zero. A new fabrication class, F8 (a tone word the numbers do not support),
+  joins the harness.
+- Why: C1–C6 check every number and its subject, not the words around it: "Kohli struggles
+  with the cover drive: {c1}" passes with a strong 142.0 (L-013). A tone word is a hidden
+  comparison, and v3 already checks comparisons (C4, "no detectable difference"), so the
+  same deterministic idea extends to it.
+- Alternatives considered: a second language model judging tone (not auditable, so not a
+  gate, as in D-004; it may still help measure); fixed sentence templates only (removes the
+  agents' voice); leaving tone unchecked.
+- Status: designed (built on Day 22; F8 in the harness on Day 23)
+- Paper section: Method (Faith Check); Results (F8)
+
+## D-018 — Every question gets an honest answer, however it is worded
+- Date: 2026-10-17
+- Decision: N3 sorts each question into one of five kinds (stats, prediction, video, rules,
+  can't-check), and every answer starts "I read this as: …". A stats question is one engine
+  query: any combination of filters (player, bowler, opposition, venue, season, format,
+  innings, phase, bowler type, batting hand) with one measure, so questions nobody listed are
+  still answered with checked numbers. Rules questions go to an Explainer (N11m): words only,
+  no digits, no named players, labelled "general explanation, not checked against data".
+  Questions no data can answer get "I can't check that" and what can be asked instead.
+  Phase 10 measures coverage on 230 questions (40 written 5 ways each, plus 30 outside the
+  plan's lists), including whether every wording gets the same checked facts.
+- Why: people word the same question in many ways and ask things no list foresaw. Answering
+  everything confidently is the failure v3 exists to prevent; answering honestly, and
+  measuring how much could be proved, is a claim the paper can defend.
+- Alternatives considered: the language model writing SQL over the delivery table (most
+  LLM-generated cricket SQL runs, but under 29% is semantically correct, N-007, and nothing
+  would check it); keeping only the nine claim types (most questions unanswered); answering
+  rules questions from the model's memory with numbers (unchecked numbers, against I1).
+- Status: designed (Days 40–42, 54, 67, 144–145)
+- Paper section: Method (question handling); Evaluation (coverage)
