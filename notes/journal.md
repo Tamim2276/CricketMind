@@ -3050,3 +3050,12 @@ with best 58.13%, exactly as designed. Then the row's `minutes` read 355.0
 against 375.5 of epoch time, because it measured wall clock since the
 resume. Fixed in `train.py` (sum of epoch secs, plus a `resumed` flag) with
 a test. Also added the LaTeX build files to `.gitignore`.
+
+### 9.7 Phase 2 closed
+
+Tagged `phase2-complete`. Rewrote the plan's Phase 2 inventory to match what
+was built: 51 IDs not 46, 1.09 GB of extra caches not 400 MB, four views not
+three, plus `cached_head`, the method-generic evaluator, the probe ranking
+and the grouped baseline. Flagged for Phase 3: end-to-end epochs ran at 6.7
+min against 4.4 with another program open, so B and C need the machine to
+themselves, and section 6's cost table needs re-checking after B02.

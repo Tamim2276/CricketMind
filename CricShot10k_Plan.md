@@ -3584,8 +3584,12 @@ PNG. That makes every figure in the thesis reproducible by one command.
 
 **Git keeps the light version of per-run figures.** 92 runs × 2 figures ×
 2 themes is about 60 MB of PNGs. The dark copy is still drawn into
-`experiments/<name>/`; only the light one is mirrored into git. Comparison
-figures are few, so both themes are kept.
+`experiments/<name>/`; only the light one is mirrored into git. The
+comparison figures and `index.md` stay out of git (`notes/figures/*` is
+ignored, `runs/` excepted): they are rebuilt by one command from files git
+does keep (`results.jsonl` and every `report_val.json`), and tracking them
+would add ~2 MB of changed PNGs to the history on every new run. On a fresh
+clone, run `python -m tools.figures` first.
 
 **Backfill.** The runs that already exist get report cards too. Those with a
 `report_val.json` (`mimic_author`, `mimic_author_seg`) are drawn straight away.
@@ -3732,32 +3736,45 @@ has measured, next to theirs, with the difference explained.
 
 *A commit step.*
 
+Every part of Day 9 was committed as it finished, so by now the tree is
+clean and `git add -A && git commit` would stop at "nothing to commit"
+before reaching the tag. The step is the tag alone, annotated so it says
+what it marks:
+
 ```bash
-git add -A && git commit -m "Phase 2: feature cache (13x), experiment harness, figures for every run, first grouped-split baseline"
-git tag phase2-complete
+git tag -a phase2-complete -m "Phase 2: five caches, harness (51 IDs), leaderboard, figures; probe: VideoMAE first; grouped baseline 75.23% vs 78.14%"
 ```
 
 **What exists at this point, and it is worth listing because Phase 3 assumes
-all of it:**
+all of it** (updated 2026-10-17 to what was actually built):
 
 | | |
 |---|---|
-| `data/features/effnetv2s/` | 35 GB, four views, reproduces 79.23% from tensors |
-| four more caches | ConvNeXt-T, r3d_18, VideoMAE-B, CLIP; ~400 MB; linear-probe ranking recorded |
+| `data/features/effnetv2s/` | 35 GB: grid and avg views, each with its mirror half |
+| four more caches | ConvNeXt-T, r3d_18, VideoMAE-B, CLIP; 1.09 GB with both halves; all verified, every run logged in `experiments/caches.jsonl` |
 | `src/extract.py` | resumable, verified to fp16, `--mirror` and `--derive` |
-| `src/data/features.py` | `FeatureDataset`, three views, shares `classes.json` |
-| `src/experiments/` | 46 IDs as data, both splits per ID, idempotent, test-eval automatic |
-| `tools/leaderboard.py` | both splits side by side, pending count, smoke rows skipped |
-| `tools/figures.py` | per-run report cards, family / gap / heatmap / cost / probe figures, `index.md` |
-| the grouped baseline | the number the authors never reported |
+| `src/data/features.py` | `FeatureDataset`, four views (`flat`, `grid`, `avg`, `video`), shares `classes.json` |
+| `src/experiments/` | 51 IDs as data (46 + the 5-ID probe), 102 runs; train / resume / adopt / skip; test scored, never printed; proven idempotent and deterministic |
+| `src/methods/cached_head.py` | `linear`, `mlp`, `gru` heads; Day 10 adds the rest |
+| `src/evaluate.py` | scores any method, from the checkpoint's own config |
+| `tools/leaderboard.py` | both splits side by side, gap, pending runs, smoke rows skipped |
+| `tools/figures.py` | report card per run, six comparison figures, `index.md`, byte-identical reruns |
+| the probe | VideoMAE 52.21 / 56.98, ConvNeXt 49.49 / 51.56, then r3d_18, EfficientNet, CLIP |
+| the grouped baseline | **75.23% test against 78.14%**: the number the authors never reported |
 
 **What Phase 2 does not solve, so Phase 3 plans around it.** The cache only
-helps experiments with a **frozen** encoder. Families A, D and V are 28 of the
-46 IDs, so **60 of the 92 runs are now minutes each**. Families B and C are
-end-to-end by definition — 16 IDs, **32 runs at the full ~200 minutes** — and
-that is where every remaining GPU-hour goes. The table in
-[section 6](#why-running-all-46-twice-is-affordable) costs it out: 126 hours in
-total, of which 120 belong to those 32 runs.
+helps experiments with a **frozen** encoder. Families A, D and V are 30 of the
+51 IDs, so **60 of the remaining runs read tensors**: minutes each, except
+Family A on the `flat` view, measured at 70 min a run. Families B and C are
+end-to-end by definition: 16 IDs, 32 runs, of which B01's two are done.
+
+**The end-to-end cost is higher than budgeted.** `mimic_author` took 4.4 min
+an epoch; B01 grouped took 6.7, with another program's eval sharing the CPU
+and RAM (it also caused that run's `MemoryError`). At 6.7 min an epoch a
+56-epoch run is about 6 hours, not ~200 minutes. Run B and C with nothing
+else open, and re-cost the table in
+[section 6](#why-running-all-46-twice-is-affordable) after B02 with the
+machine to itself.
 
 Continuous augmentation also stays out of reach. Tier 2's colour jitter, speed
 perturbation and random resized crop cannot run on cached features, for the
