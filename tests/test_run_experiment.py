@@ -52,7 +52,7 @@ def harness(tmp_path, monkeypatch):
     entries = [
         {"id": "X01_linear", "base": "fake", "cfg": {}, "why": "a"},
         {"id": "X02_mlp", "base": "fake", "cfg": {"head": "mlp"}, "why": "b"},
-        {"id": "X03_tcn", "base": "fake", "cfg": {"head": "tcn"}, "why": "c"},
+        {"id": "X03_rnn", "base": "fake", "cfg": {"head": "rnn"}, "why": "c"},
     ]
     monkeypatch.setattr(R, "ENTRIES", entries)
     monkeypatch.setattr(R, "ADOPT", {})
@@ -156,11 +156,11 @@ def test_force_trains_again_and_rescores(harness):
 
 def test_run_many_does_both_splits_and_leaves_out_what_cannot_start(harness):
     buf = io.StringIO()
-    done = runner.run_many(["X01_linear", "X03_tcn"], ["author", "grouped"],
+    done = runner.run_many(["X01_linear", "X03_rnn"], ["author", "grouped"],
                            overrides=harness["over"], quiet=True, out=buf)
     assert done == {"trained": 2}
-    assert "X03_tcn" in buf.getvalue()
-    assert "no tcn head yet" in buf.getvalue()
+    assert "X03_rnn" in buf.getvalue()
+    assert "unknown head" in buf.getvalue()
     names = set()
     for row in _ledger(harness):
         names.add(row["name"])
@@ -325,3 +325,29 @@ def test_a_scored_run_gets_its_report_card(harness, figures_go_to_tmp):
     assert os.path.exists(os.path.join(folder, "report_card_dark.png"))
     kept = os.path.join(figures_go_to_tmp, "X01_linear__author_report.png")
     assert os.path.exists(kept)
+
+
+# ---- Day 10: every Family A head trains end to end, on the real device ----
+
+@pytest.mark.parametrize("delta", [
+    {"head": "mean"},
+    {"head": "max"},
+    {"head": "gru", "bidirectional": True},
+    {"head": "lstm", "hidden": 64, "bidirectional": True},
+    {"head": "transformer", "layers": 2, "attn_heads": 4},
+    {"head": "tcn"},
+    {"head": "attnpool"},
+    {"head": "netvlad"},
+    {"head": "gru", "feature_norm": "layer"},
+])
+def test_every_family_a_head_trains_through_the_harness(harness, monkeypatch,
+                                                         delta):
+    entry = {"id": "X09_head", "base": "fake", "cfg": delta, "why": "x"}
+    monkeypatch.setattr(R, "ENTRIES", R.ENTRIES + [entry])
+    what, _ = _run(harness, "X09_head")
+    assert what == "trained"
+    row = _ledger(harness)[-1]
+    assert row["cfg"]["head"] == delta["head"]
+    assert 0.0 <= row["best_val_top1"] <= 1.0
+    folder = _folder(harness, "X09_head__author")
+    assert os.path.exists(os.path.join(folder, "report_card.png"))

@@ -3968,6 +3968,25 @@ registry edit was needed).
 **Takeaway.** Nine new heads, one config key, and the runner did not change. That
 is what Phase 2 was for.
 
+**Built 2026-10-17.** In `src/models/head.py`: `_Tail` (the shared ending),
+`LSTMHead`, `TransformerHead`, `TCNHead`, `AttnPoolHead`, `NetVLADHead`,
+`FrameNorm`, and `bidirectional` on `GRUHead`; `cached_head.py` routes all ten
+heads. Tests: 41 in `test_cached_head.py`, plus 9 in `test_run_experiment.py`
+that train every new head through the real runner on the Arc in bf16.
+
+1. **That last test caught a real bug.** In eval mode, torch's transformer
+   takes a fused fast path that does not see XPU autocast, feeds bf16 into
+   fp32 weights, and crashes. CPU unit tests passed. The fast path is now
+   switched off for the transformer's own call only.
+2. **`check()` now refuses settings a head would ignore**: `bidirectional`
+   on a pool, `hidden` on a TCN, `layers` on a GRU, `attn_heads` on anything
+   but the transformer. Each would have been written into the ledger as if
+   it had mattered.
+3. **A03 can still equal `cached_gru`.** The new `GRUHead`, one-directional,
+   draws exactly the same starting weights as the committed version: all 13
+   tensors identical at 62,720 inputs under the same seed.
+4. All 14 Family A IDs `ready`.
+
 ---
 
 ## Day 11 — Family A, part 2: run it

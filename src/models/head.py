@@ -33,8 +33,10 @@ separately loses precision on confident predictions.
 import torch
 import torch.nn as nn
 
-__all__ = ["GRUHead", "LinearHead", "MLPHead", "PoolHead", "pool_frames",
-           "POOLS", "NUM_CLASSES", "HIDDEN", "DENSE"]
+__all__ = ["GRUHead", "LSTMHead", "LinearHead", "MLPHead", "PoolHead",
+           "TransformerHead", "TCNHead", "AttnPoolHead", "NetVLADHead",
+           "FrameNorm", "pool_frames", "POOLS", "WIDTH", "FRAMES", "CLUSTERS",
+           "NUM_CLASSES", "HIDDEN", "DENSE"]
 
 
 def _init_gru_like_keras(gru: nn.GRU) -> None:
@@ -62,6 +64,22 @@ def _init_gru_like_keras(gru: nn.GRU) -> None:
         elif name.startswith("bias"):
             nn.init.zeros_(param)
 
+
+def _init_lstm_like_keras(lstm: nn.LSTM) -> None:
+    """The GRU's init, plus Keras's forget-gate bias of 1.
+
+    Torch's LSTM gates are stacked (input, forget, cell, output), so the
+    forget gate is the second block of `hidden` rows. Keras starts it at 1
+    so the cell remembers by default; torch has two biases, so one gets
+    the 1 and the other stays 0.
+    """
+    _init_gru_like_keras(lstm)          # works for any gate count
+    hidden = lstm.hidden_size
+    for name, param in lstm.named_parameters():
+        if name.startswith("bias_ih"):
+            with torch.no_grad():
+                param[hidden:2 * hidden] = 1.0
+
 NUM_CLASSES = 15
 HIDDEN = 128
 DENSE = 1024
@@ -80,17 +98,26 @@ class GRUHead(nn.Module):
     def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES,
                  hidden: int = HIDDEN, dense: int = DENSE,
                  dropout: float = 0.0, keras_init: bool = True,
-                 bn_eps: float = BN_EPS, bn_momentum: float = BN_MOMENTUM):
+                 bn_eps: float = BN_EPS, bn_momentum: float = BN_MOMENTUM,
+                 bidirectional: bool = False):
         super().__init__()
         self.in_dim = in_dim
         self.num_classes = num_classes
         self.hidden = hidden
+        if bidirectional:
+            self.directions = 2
+        else:
+            self.directions = 1
 
-        self.gru = nn.GRU(in_dim, hidden, batch_first=True)
+        # one direction builds exactly what it always did, in the same
+        # order, so A03 still draws the same random weights as cached_gru
+        self.gru = nn.GRU(in_dim, hidden, batch_first=True,
+                          bidirectional=bidirectional)
         if keras_init:
             _init_gru_like_keras(self.gru)
-        self.norm = nn.BatchNorm1d(hidden, eps=bn_eps, momentum=bn_momentum)
-        self.fc1 = nn.Linear(hidden, dense)
+        width = hidden * self.directions
+        self.norm = nn.BatchNorm1d(width, eps=bn_eps, momentum=bn_momentum)
+        self.fc1 = nn.Linear(width, dense)
         self.relu = nn.ReLU()
         if dropout > 0:
             self.drop = nn.Dropout(dropout)
@@ -128,9 +155,12 @@ class GRUHead(nn.Module):
             raise ValueError(
                 f"head was built for {self.in_dim} features, got {x.shape[2]}")
 
-        # h is (layers, B, hidden); one layer, so take it and drop that axis
+        # h is (directions, B, hidden): forwards first, then backwards
         _, h = self.gru(x)
-        summary = h[-1]
+        if self.directions == 1:
+            summary = h[-1]
+        else:
+            summary = torch.cat([h[-2], h[-1]], dim=1)
 
         out = self.norm(summary)
         out = self.relu(self.fc1(out))
@@ -181,6 +211,10 @@ class MLPHead(nn.Module):
 
 POOLS = ("mean", "max")
 
+WIDTH = 256         # every new head shrinks a frame to this first
+FRAMES = 15         # the most frames a clip has
+CLUSTERS = 8        # NetVLAD's learned centres
+
 
 def pool_frames(x: torch.Tensor, how: str) -> torch.Tensor:
     """(B, T, D) -> (B, D): the average, or the largest value, over frames."""
@@ -193,7 +227,39 @@ def pool_frames(x: torch.Tensor, how: str) -> torch.Tensor:
     raise ValueError(f"unknown pool {how!r}; have {POOLS}")
 
 
-class PoolHead(nn.Module):
+def _check_frames(x: torch.Tensor, in_dim: int) -> None:
+    if x.dim() != 3:
+        raise ValueError(f"expected (B, T, D), got {tuple(x.shape)}")
+    if x.shape[2] != in_dim:
+        raise ValueError(
+            f"head was built for {in_dim} features, got {x.shape[2]}")
+
+
+class _Tail(nn.Module):
+    """GRUHead's ending, shared: BatchNorm -> Dense -> ReLU -> Dense.
+
+    Every Family A head inherits it, so the only thing that differs between
+    them is how the frames become one summary vector.
+    """
+
+    def _build_tail(self, width, num_classes, dense, dropout):
+        self.norm = nn.BatchNorm1d(width, eps=BN_EPS, momentum=BN_MOMENTUM)
+        self.fc1 = nn.Linear(width, dense)
+        self.relu = nn.ReLU()
+        if dropout > 0:
+            self.drop = nn.Dropout(dropout)
+        else:
+            self.drop = nn.Identity()
+        self.fc2 = nn.Linear(dense, num_classes)
+
+    def _tail(self, summary: torch.Tensor) -> torch.Tensor:
+        out = self.norm(summary)
+        out = self.relu(self.fc1(out))
+        out = self.drop(out)
+        return self.fc2(out)
+
+
+class PoolHead(_Tail):
     """GRUHead with the GRU swapped for a pool. Order-blind on purpose."""
 
     def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES,
@@ -204,24 +270,191 @@ class PoolHead(nn.Module):
             raise ValueError(f"unknown pool {how!r}; have {POOLS}")
         self.in_dim = in_dim
         self.how = how
+        self._build_tail(in_dim, num_classes, dense, dropout)
 
-        # the same tail as GRUHead, so only the frame-reading part differs
-        self.norm = nn.BatchNorm1d(in_dim, eps=BN_EPS, momentum=BN_MOMENTUM)
-        self.fc1 = nn.Linear(in_dim, dense)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        _check_frames(x, self.in_dim)
+        return self._tail(pool_frames(x, self.how))
+
+
+class LSTMHead(_Tail):
+    """GRUHead with an LSTM, initialised the Keras way too."""
+
+    def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES,
+                 hidden: int = HIDDEN, dense: int = DENSE,
+                 dropout: float = 0.0, bidirectional: bool = False):
+        super().__init__()
+        self.in_dim = in_dim
+        self.hidden = hidden
+        if bidirectional:
+            self.directions = 2
+        else:
+            self.directions = 1
+        self.lstm = nn.LSTM(in_dim, hidden, batch_first=True,
+                            bidirectional=bidirectional)
+        _init_lstm_like_keras(self.lstm)
+        self._build_tail(hidden * self.directions, num_classes, dense, dropout)
+
+    # the LSTM's output is o * tanh(c), so it pins at +-1 like the GRU's
+    pinned_fraction = GRUHead.pinned_fraction
+    dead_fraction = GRUHead.dead_fraction
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        _check_frames(x, self.in_dim)
+        _, (h, _) = self.lstm(x)        # the cell state c is not needed
+        if self.directions == 1:
+            summary = h[-1]
+        else:
+            summary = torch.cat([h[-2], h[-1]], dim=1)
+        return self._tail(summary)
+
+
+class TransformerHead(_Tail):
+    """Shrink each frame, add its position, let every frame attend to every
+    other, then average."""
+
+    def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES,
+                 layers: int = 2, attn_heads: int = 4, dense: int = DENSE,
+                 dropout: float = 0.0):
+        super().__init__()
+        if WIDTH % attn_heads:
+            raise ValueError(f"attn_heads must divide {WIDTH}, got {attn_heads}")
+        self.in_dim = in_dim
+        self.proj = nn.Linear(in_dim, WIDTH)
+        # one learned vector per frame slot, or frame 1 and 15 look the same
+        self.pos = nn.Parameter(torch.zeros(1, FRAMES, WIDTH))
+        nn.init.normal_(self.pos, std=0.02)
+        layer = nn.TransformerEncoderLayer(
+            d_model=WIDTH, nhead=attn_heads, dim_feedforward=2 * WIDTH,
+            dropout=dropout, batch_first=True, norm_first=True)
+        self.encoder = nn.TransformerEncoder(layer, num_layers=layers,
+                                             enable_nested_tensor=False)
+        self._build_tail(WIDTH, num_classes, dense, dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        _check_frames(x, self.in_dim)
+        frames = x.shape[1]
+        if frames > FRAMES:
+            raise ValueError(f"at most {FRAMES} frames, got {frames}")
+        h = self.proj(x) + self.pos[:, :frames]
+        # torch's fused eval path misses XPU autocast and mixes bf16 with
+        # fp32, so it is off for this call only
+        was = torch.backends.mha.get_fastpath_enabled()
+        torch.backends.mha.set_fastpath_enabled(False)
+        try:
+            h = self.encoder(h)
+        finally:
+            torch.backends.mha.set_fastpath_enabled(was)
+        return self._tail(h.mean(dim=1))
+
+
+class _TCNBlock(nn.Module):
+    """One dilated convolution over time, added back onto its input."""
+
+    def __init__(self, dilation: int, dropout: float):
+        super().__init__()
+        # padding = dilation keeps the number of frames the same
+        self.conv = nn.Conv1d(WIDTH, WIDTH, kernel_size=3, dilation=dilation,
+                              padding=dilation)
         self.relu = nn.ReLU()
         if dropout > 0:
             self.drop = nn.Dropout(dropout)
         else:
             self.drop = nn.Identity()
-        self.fc2 = nn.Linear(dense, num_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        summary = pool_frames(x, self.how)
-        if summary.shape[1] != self.in_dim:
-            raise ValueError(
-                f"head was built for {self.in_dim} features, got "
-                f"{summary.shape[1]}")
-        out = self.norm(summary)
-        out = self.relu(self.fc1(out))
-        out = self.drop(out)
-        return self.fc2(out)
+        return x + self.drop(self.relu(self.conv(x)))
+
+
+class TCNHead(_Tail):
+    """Three dilated convolutions (1, 2, 4): together they see 15 frames."""
+
+    def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES,
+                 dense: int = DENSE, dropout: float = 0.0):
+        super().__init__()
+        self.in_dim = in_dim
+        self.proj = nn.Linear(in_dim, WIDTH)
+        self.blocks = nn.Sequential(_TCNBlock(1, dropout), _TCNBlock(2, dropout),
+                                    _TCNBlock(4, dropout))
+        self._build_tail(WIDTH, num_classes, dense, dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        _check_frames(x, self.in_dim)
+        h = self.proj(x)                 # (B, T, W)
+        h = h.transpose(1, 2)            # Conv1d wants (B, W, T)
+        h = self.blocks(h)
+        return self._tail(h.mean(dim=2))
+
+
+class AttnPoolHead(_Tail):
+    """A learned weight per frame; the clip is the weighted average.
+
+    The last batch's weights are kept in `last_weights`, (B, T), so a figure
+    can show which frames each class leans on.
+    """
+
+    def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES,
+                 dense: int = DENSE, dropout: float = 0.0):
+        super().__init__()
+        self.in_dim = in_dim
+        self.proj = nn.Linear(in_dim, WIDTH)
+        self.score = nn.Sequential(nn.Linear(WIDTH, WIDTH // 2), nn.Tanh(),
+                                   nn.Linear(WIDTH // 2, 1))
+        self.last_weights = None
+        self._build_tail(WIDTH, num_classes, dense, dropout)
+
+    def weights(self, h: torch.Tensor) -> torch.Tensor:
+        """(B, T, W) -> (B, T), each row summing to 1."""
+        return torch.softmax(self.score(h).squeeze(2), dim=1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        _check_frames(x, self.in_dim)
+        h = self.proj(x)
+        w = self.weights(h)
+        self.last_weights = w.detach()
+        pooled = (w.unsqueeze(2) * h).sum(dim=1)
+        return self._tail(pooled)
+
+
+class NetVLADHead(_Tail):
+    """Describe a clip by how its frames sit around 8 learned centres."""
+
+    def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES,
+                 dense: int = DENSE, dropout: float = 0.0):
+        super().__init__()
+        self.in_dim = in_dim
+        self.proj = nn.Linear(in_dim, WIDTH)
+        self.assign = nn.Linear(WIDTH, CLUSTERS)
+        self.centres = nn.Parameter(0.1 * torch.randn(CLUSTERS, WIDTH))
+        self._build_tail(CLUSTERS * WIDTH, num_classes, dense, dropout)
+
+    def encode(self, x: torch.Tensor) -> torch.Tensor:
+        """(B, T, D) -> (B, CLUSTERS * WIDTH), length 1."""
+        h = self.proj(x)                                  # (B, T, W)
+        a = torch.softmax(self.assign(h), dim=2)          # (B, T, K)
+        # sum over frames of a * (h - c) = sum(a * h) - sum(a) * c
+        weighted = torch.bmm(a.transpose(1, 2), h)        # (B, K, W)
+        mass = a.sum(dim=1).unsqueeze(2)                  # (B, K, 1)
+        vlad = weighted - mass * self.centres.unsqueeze(0)
+        vlad = nn.functional.normalize(vlad, dim=2)       # each centre
+        return nn.functional.normalize(vlad.flatten(1), dim=1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        _check_frames(x, self.in_dim)
+        return self._tail(self.encode(x))
+
+
+class FrameNorm(nn.Module):
+    """A LayerNorm on every frame, then any head (A13).
+
+    The inner head is kept as `.head` so the saturation watch in train.py
+    still finds the GRU's numbers through it.
+    """
+
+    def __init__(self, in_dim: int, head: nn.Module):
+        super().__init__()
+        self.frame_norm = nn.LayerNorm(in_dim)
+        self.head = head
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.head(self.frame_norm(x))

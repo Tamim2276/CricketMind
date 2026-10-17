@@ -3076,3 +3076,26 @@ possible reason, and the write-up should say so.
 
 Tests: 64 pass (cached_head, registry, head); harness 18 pass. A01 and A02
 `ready`.
+
+### 10.2-10.6 The other heads, built in one go
+
+Asked for all of Day 10's code at once, with the walkthrough while Family A
+runs. Built: bidirectional GRU, LSTM (Keras init, forget bias 1), a temporal
+transformer (project to 256, learned positions), a TCN (dilations 1-2-4,
+reach 15 frames), attention pooling (weights kept for the A11 figure),
+NetVLAD (8 centres), and a per-frame LayerNorm wrapper for A13. All share
+GRUHead's tail through one small base class.
+
+The bug the runner test found: the transformer passed every CPU test, then
+crashed on the Arc at the first validation, "expected scalar type BFloat16
+but found Float". In eval mode torch's transformer uses a fused fast path
+that does not notice XPU autocast. Turned off for that one call.
+
+Checked against the committed code, not just itself: the new GRUHead draws
+identical starting weights, so A03 should land on 53.66% exactly.
+
+Also noticed: my shell's `python` is the system Python 3.10, not `.venv`.
+Same torch (2.13.0+xpu), so earlier results stand; tests now run with
+`.venv/Scripts/python.exe`.
+
+Tests: 172 + 27 pass across the affected suites. All 14 Family A IDs ready.
