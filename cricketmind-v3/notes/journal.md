@@ -276,3 +276,27 @@ Put back, all pass.
 finding looked at its sentence.
 
 **For the paper:** nothing new today (Day 8 builds part of D-004, the claim contract).
+
+---
+
+## Day 9 — 2026-10-17 — The renderer: from slots to sentences
+
+**Learned:** The agent writes the words; plain code puts the numbers in, copied from the
+checked claim, so the language model never gets the chance to make one up. Python rounds an
+exact half to the even number (0.405 → 40%), and a computer stores 0.145 as slightly less,
+so 0.145 × 100 = 14.4999…; the `decimal` module does the sum the way it is done on paper.
+**Built:** `domain/render.py`: `fixed()` and `percent()` (halves always round up, in
+decimal), a small table of words per metric, `render_claim()` (words plus the tag
+`[D, 50 balls]`, `[P, range 16% to 70%]` or `[M, clip vid1_0]`) and `render()` (a finding's
+sentence with every slot filled). 10 tests in `tests/unit/test_render.py`. The plan's Day 9
+section now records the rounding decision. Written by Claude and explained.
+**Tests:** 43 passed (10 new); ruff clean (after two automatic tidy-ups). Switched to
+half-even on purpose: three tests failed and the user would have seen "a 40% chance";
+switched back, all pass. The document's finding now renders as: "…returns a strike rate of
+142.0 [D, 50 balls]. Six short balls carry a 41% chance [P, range 16% to 70%] of a dismissal."
+**Surprise:** 0.145 × 100 is 14.499999999999998 in a computer, so the fix had to be decimal
+arithmetic, not just a different rounding rule.
+
+**For the paper:**
+- Decision: D-016 in thesis/decisions.md (halves round up, in decimal; the claim tags)
+- Section it feeds: Implementation (rendering)

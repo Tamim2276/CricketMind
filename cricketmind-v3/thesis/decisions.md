@@ -195,3 +195,18 @@ Template:
 - Status: built (each rule broken once in a test; removing the range check let a 0.9
   prediction with range 0.155 to 0.697 through, and the test failed)
 - Paper section: Method (claim contract)
+
+## D-016 — Numbers shown to people round halves up, in decimal arithmetic
+- Date: 2026-10-17
+- Decision: the renderer (`domain/render.py`) rounds every displayed number with exact
+  halves going up, using Python's `decimal` module on the number's shortest written form:
+  0.405 → 41%, 0.155 → 16%, 0.145 → 15%, 0.125 → 0.13. Each claim is shown with its tag:
+  `[D, 50 balls]`, `[P, range 16% to 70%]`, `[M, clip vid1_0]`.
+- Why: people expect halves to round up. Python's default rounds an exact half to the even
+  number (0.405 → 40%), and float arithmetic can push a half just below (0.145 × 100 =
+  14.4999…, shown as 14%). A reader comparing the report with the engine's value would see
+  an unexplained one-point difference.
+- Alternatives considered: Python's default formatting (half to even, plus float error);
+  `round()` (the same half-to-even rule).
+- Status: built (switching to half-even made three tests fail; 0.405 showed as 40%)
+- Paper section: Implementation (rendering)

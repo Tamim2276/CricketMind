@@ -1520,23 +1520,24 @@ only, and every number reaches the user with its tag.
 
 **Learn:** formatting numbers for people. `f"{142.0:.1f}"` gives `142.0`. The surprise:
 `f"{0.405:.0%}"` gives `40%` but `f"{0.155:.0%}"` gives `16%`, because Python rounds an exact
-half to the nearest even number. Day 9 decides whether that is acceptable, and a test pins
-the choice.
+half to the nearest even number, and `0.145 * 100` is `14.4999…` in a computer, so even
+"round half up" on a float gives `14%`. **Decided 2026-10-17: halves always round up**, done
+with Python's `decimal` module so 0.405 → 41%, 0.155 → 16%, 0.145 → 15% (D-016).
 
 **Build** (`domain/render.py`)
 
 | Kind | Example output |
 |---|---|
 | D | `a strike rate of 142.0 [D, 50 balls]` |
-| P | `a 40% chance [P, range 16–70%]` |
+| P | `a 41% chance [P, range 16% to 70%]` |
 | M | `a weight transfer of 0.31 [M, clip vid1_0]` |
 
 - `render_claim(claim)`: the words for each metric live in one small table in `render.py`; an
   unknown metric is an error.
 - `render(finding)`: the template with every slot filled in.
 
-**Tests:** one per kind (D; P with its range; M with its clip); a finding with two slots
-becomes the finished sentence; an unknown metric raises an error.
+**Tests:** one per kind (D; P with its range; M with its clip); halves round up; a finding
+with two slots becomes the finished sentence; an unknown metric raises an error.
 
 **Commit:** `day 9: the renderer`
 
