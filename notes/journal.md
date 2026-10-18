@@ -3245,3 +3245,22 @@ manifest row to "done", failed ones included, so the 9 would have stayed
 missing forever (the completeness test would have caught it, with no way to
 fix it short of editing the manifest by hand). Now only written clips count
 as done, in extract and derive both, with a test.
+
+Later the same morning: the mirrored half lost 10 more clips, all different
+ones. So not a one-off. I recomputed all 9,880 written clips the way
+extract does and compared bit for bit: no NaN this time, but 86 clips (0.9%)
+didn't match their own files, by up to 0.05, about one bf16 rounding step.
+Verify had passed 20/20 because 20 clips is too few to see a 1% effect.
+
+Then one batch, 1,000 times in a row, no DataLoader: SDPA attention in bf16
+gave 5 odd answers, each in one frame; eager attention gave 0, and so did
+SDPA in fp32. Deterministic mode didn't reach it. CLIP and VideoMAE use the
+same kernel and drift too, but much less (2/500, 1/300, gaps 0.012 and
+0.004) and never went NaN in their runs.
+
+Decision: DINOv2 switches to eager attention. It is half as fast on the GPU
+(23 vs 43 clips/s), but loading is 20 clips/s, so the run takes as long as
+before. Its cache is redone from scratch. CLIP and VideoMAE stay as they
+are: complete, NaN-free, the drift is below anything training would notice,
+and finished Phase 2 runs used them. Lesson: "bit-exact on 20 clips" says
+the code is right; it doesn't say the GPU repeats itself.

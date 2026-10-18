@@ -14,15 +14,21 @@ frozen DINOv2-Base that head was trained on.
 
 Trained at 518px, used at 224: 224 is what its own preprocessor crops to,
 and the model interpolates its position embeddings for the 16 x 16 patches.
+
+**Plain attention, not SDPA.** On the Arc in bf16 the SDPA kernel is not
+repeatable: one batch run 1,000 times gave 5 different answers, and a full
+extraction gave NaN for about 1 clip in 1,000. Eager attention gave 0 of
+1,000 and is still faster than loading (measured 2026-10-19).
 """
 import torch
 import torch.nn as nn
 
 from src.models.hf import WEIGHTS, hf_file, hf_input_spec, quiet_loading
 
-__all__ = ["DinoFrameEncoder", "is_dino", "reference", "HF_DINO"]
+__all__ = ["DinoFrameEncoder", "is_dino", "reference", "HF_DINO", "ATTENTION"]
 
 HF_DINO = {"dinov2_base": "facebook/dinov2-base-imagenet1k-1-layer"}
+ATTENTION = "eager"     # see the docstring
 
 
 def is_dino(name):
@@ -43,11 +49,13 @@ class DinoFrameEncoder(nn.Module):
         if pretrained:
             hf_file(repo, WEIGHTS[repo])
             with quiet_loading():
-                model = Dinov2ForImageClassification.from_pretrained(repo)
+                model = Dinov2ForImageClassification.from_pretrained(
+                    repo, attn_implementation=ATTENTION)
             self.size, self.mean, self.std = hf_input_spec(repo)
         else:
             # same shape, random weights, no download: for tests
             model = Dinov2ForImageClassification(Dinov2Config(num_labels=1000))
+            model.set_attn_implementation(ATTENTION)
             self.size = 224
             self.mean = (0.485, 0.456, 0.406)
             self.std = (0.229, 0.224, 0.225)
@@ -92,7 +100,8 @@ def reference(name, device):
     from transformers import Dinov2ForImageClassification
 
     with quiet_loading():
-        full = Dinov2ForImageClassification.from_pretrained(HF_DINO[name])
+        full = Dinov2ForImageClassification.from_pretrained(
+            HF_DINO[name], attn_implementation=ATTENTION)
     full = full.to(device).eval()
     names = []
     for i in range(full.config.num_labels):

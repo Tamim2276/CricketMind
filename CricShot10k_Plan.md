@@ -4254,10 +4254,30 @@ Kinetics model's most common guess for our clips is "playing cricket".
 **DINOv2: 9 of 9,880 clips came out NaN** (one per batch, spread over
 classes), and the loop stopped as designed. Re-run alone and in their exact
 original batches of 4, three times each, all 9 gave finite, identical
-vectors in bf16 and fp32. A one-off GPU glitch, not the clips. **It found a
-real bug:** the resume counted failed clips as done, so re-running could
-never fill them in. `finished()` now counts only written clips, in both
-`extract` and `derive`; a regression test pins it. Re-running fills the 9.
+vectors in bf16 and fp32. **That found a real bug first:** the resume
+counted failed clips as done, so re-running could never fill them in.
+`finished()` now counts only written clips, in both `extract` and `derive`;
+a regression test pins it.
+
+**Then the mirrored half lost 10 more, different clips.** Not a one-off, so:
+
+1. Recomputing all 9,880 written clips exactly as extract does: no NaN this
+   time, but **86 (0.9%) differed from their files**, by at most 0.05 —
+   about one bf16 rounding step. Verify's 20 clips could not see that.
+2. One batch run 1,000 times, no DataLoader: SDPA attention in bf16 gave 5
+   different answers, each in a single frame; eager attention 0, SDPA in
+   fp32 0. Deterministic mode did not help.
+3. **The SDPA kernel in bf16 on the Arc is not repeatable.** CLIP (2 in
+   500, worst gap 0.012) and VideoMAE (1 in 300, 0.004) have it too, much
+   milder, and never gave NaN in their full runs.
+
+**Fix: DINOv2 uses eager attention** (`dino_encoder.ATTENTION`). 23 clips/s
+on the GPU, still faster than loading, so no slower in practice. Same answer
+alone or in a batch of 4 (16/16), so verify can check 1,000 clips. The old
+DINOv2 cache was made with SDPA and is redone. **CLIP and VideoMAE caches
+are kept:** complete, never NaN, the drift is one rounding step in rare
+frames, and Phase 2 runs were trained on them. If their verify ever reports
+one clip not bit-exact, this is why.
 
 ---
 

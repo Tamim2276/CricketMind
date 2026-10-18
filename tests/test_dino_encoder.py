@@ -57,6 +57,24 @@ def _cached(filename):
     return isinstance(hit, str)
 
 
+def test_it_uses_plain_attention(enc):
+    """SDPA in bf16 on the Arc gave 5 different answers in 1,000 runs of one
+    batch, and NaN in a real extraction; eager gave 0 (2026-10-19)."""
+    assert enc.backbone.config._attn_implementation == "eager"
+
+
+@pytest.mark.skipif(not _cached("pytorch_model.bin"),
+                    reason="DINOv2 not downloaded")
+def test_the_real_encoder_and_its_reference_use_plain_attention():
+    from src.models.dino_encoder import DinoFrameEncoder, reference
+
+    real = DinoFrameEncoder()
+    assert real.backbone.config._attn_implementation == "eager"
+    _, head, names, _ = reference("dinov2_base", torch.device("cpu"))
+    assert len(names) == 1000
+    assert head.in_features == 1536
+
+
 @pytest.mark.skipif(not _cached("preprocessor_config.json"),
                     reason="DINOv2 not downloaded")
 def test_size_and_colours_come_from_its_config():
