@@ -398,3 +398,22 @@ Day numbers in entries above use the 183-day plan for days after 46. They map li
 | 142–152 | 155–165 |
 | — | 166–171 (new: three models, tricky questions, CricBench) |
 | 153–183 | 172–202 |
+
+---
+
+## Architecture v4 — 2026-10-19 — the design document, updated
+
+Wrote `docs/CricketMind_Architecture_v4.pdf` (17 pages; LaTeX source in
+`docs/architecture/`, built with pdflatex like v3). It records every design change since v3:
+C7 and F8; the five kinds of question, the read-back, filters x measures, the Explainer and
+the honest decline; false premises and trick attempts; receipts; the sport-neutral Subject
+and the football case study; perception through an exported model whose card fixes frame
+selection; self-checking claims and halves-up rounding (built); the journal-grade evaluation
+(locked exams, baselines, ablation, AI checkers, three models, CricBench, human study); and
+positioning against the 2026 work (EG-VAR, VeriFin, tool receipts). Nine invariants now
+(I7 no unsupported judgment, I8 every number re-checkable, I9 an honest answer to every
+question). No CricShot accuracy anywhere; every number labelled as a design parameter,
+cited, or synthetic.
+
+To confirm before citing: the ICCIT paper's final title, authors and year; EG-VAR's
+authors; VeriFin's exact title (all marked in the .tex source).

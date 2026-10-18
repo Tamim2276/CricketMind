@@ -1,6 +1,7 @@
 # CricketMind v3 — Build Plan (from scratch, beginner-friendly)
 
-This plan builds **CricketMind v3** (the design in `CricketMind_Architecture_v3.pdf`) as a
+This plan builds **CricketMind v3** (the design in `CricketMind_Architecture_v4.pdf`, which
+updates `CricketMind_Architecture_v3.pdf`; its LaTeX source is in `docs/architecture/`) as a
 real website, from an empty folder, one small piece at a time.
 
 **It is part of the thesis.** A paper is written at the end (Phase 12), and everything it
