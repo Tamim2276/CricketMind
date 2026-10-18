@@ -3227,3 +3227,21 @@ random weights; all seven run on the Arc in bf16. The r3d_18 and VideoMAE
 caches re-verify bit-exact after the refactor.
 
 Tests: 89 pass, 12 skip until the downloads and caches exist.
+
+## 2026-10-19 — Day 14 run: six caches clean, DINOv2 short by 9
+
+The overnight loop: mc3_18, r2plus1d_18, s3d, swin3d_t, mvit_v2_s and
+TimeSformer each wrote 9,880 + 9,880 with 0 failures and verified bit-exact,
+the pretrained head agreeing on 20/20. Every Kinetics model's favourite
+guess for our clips is "playing cricket", which is a nice sanity check.
+
+DINOv2 wrote 9,871: 9 clips came out NaN, one per batch, across classes.
+I ran those 9 again on their own and in their exact original batches of 4,
+three times each: finite, identical, in bf16 and fp32. So nothing about the
+clips; a rare one-off on the GPU (9 in 2,470 batches).
+
+The useful part: re-running would have done nothing. The resume added every
+manifest row to "done", failed ones included, so the 9 would have stayed
+missing forever (the completeness test would have caught it, with no way to
+fix it short of editing the manifest by hand). Now only written clips count
+as done, in extract and derive both, with a test.

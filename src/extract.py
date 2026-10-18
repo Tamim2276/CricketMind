@@ -258,6 +258,16 @@ def manifest_path(out_dir, view="grid"):
     return os.path.join(out_dir, "manifest_%s.jsonl" % view)
 
 
+def finished(manifest):
+    """The clips a manifest says were written. A failed clip is not one of
+    them, so the next run tries it again instead of skipping it forever."""
+    done = set()
+    for row in read_results(manifest):
+        if row.get("ok"):
+            done.add(row["clip"])
+    return done
+
+
 class _Clips(Dataset):
     """Every processed clip, normalised. Not split-aware, by design.
 
@@ -309,7 +319,8 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
             out_dir=None, processed=PROCESSED, limit=None, batch_size=4,
             workers=0, fp32=False, mirror=False, pool=None, device=None,
             quiet=False, ledger=None):
-    """One pass over every clip. Re-running skips what the manifest lists.
+    """One pass over every clip. Re-running skips the clips already written
+    and tries the failed ones again.
 
     `mirror=True` encodes the left-right flipped clip instead, into
     `grid_mirror/`. It has to be a second pass: a flipped clip has its own
@@ -336,9 +347,7 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
     if limit:
         rels = rels[:limit]
 
-    done = set()
-    for row in read_results(manifest):
-        done.add(row["clip"])
+    done = finished(manifest)
     todo = []
     for rel in rels:
         if rel not in done:
@@ -757,9 +766,7 @@ def derive(view="avg", name=None, out_dir=None, backbone=DEFAULT_BACKBONE,
             if row.get("ok"):
                 rels.append(row["clip"])
         manifest = manifest_path(out_dir, target)
-        done = set()
-        for row in read_results(manifest):
-            done.add(row["clip"])
+        done = finished(manifest)
         todo = []
         for rel in rels:
             if rel not in done:

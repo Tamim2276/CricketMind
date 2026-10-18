@@ -335,6 +335,27 @@ def test_a_second_run_over_the_same_clips_does_nothing(tmp_path):
 
 
 @needs_clips
+def test_a_failed_clip_is_tried_again_not_skipped(tmp_path):
+    """Found 2026-10-19: 9 DINOv2 clips came out NaN once (a GPU glitch; the
+    same clips ran clean afterwards), and the resume counted them as done,
+    so re-running could never fill them in."""
+    from src.extract import finished, manifest_path
+    from src.utils.checkpoint import append_result
+
+    out = str(tmp_path / "cache")
+    rel = clip_list(PROCESSED_BOX)[0]
+    manifest = manifest_path(out, "avg")
+    append_result({"clip": rel, "ok": False, "reason": "non-finite"}, manifest)
+    assert finished(manifest) == set()
+
+    cpu = torch.device("cpu")
+    assert extract(limit=1, out_dir=out, pool="avg", device=cpu,
+                   quiet=True) == 0
+    assert os.path.exists(out_path(out, "avg", rel))
+    assert finished(manifest) == {rel}
+
+
+@needs_clips
 def test_the_cache_does_not_depend_on_the_worker_count(tmp_path):
     """A regression for the subtlest bug of Day 8, found 2026-10-15.
 

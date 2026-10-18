@@ -4237,6 +4237,28 @@ python -m src.extract --verify --backbone mc3_18
 **Check.** 9,880 files per half, verify passes, and each run adds a row to
 `experiments/caches.jsonl`.
 
+**Ran 2026-10-19 (overnight).** Six of seven done: 9,880 + 9,880, 0 failed,
+verify bit-exact 20/20 and the pretrained head agrees 20/20 for each; every
+Kinetics model's most common guess for our clips is "playing cricket".
+
+| model | clips/s | min per half | width |
+| --- | --- | --- | --- |
+| mc3_18 | 56 | 3 | 512 |
+| r2plus1d_18 | 48 | 3.4 | 512 |
+| s3d | 33 | 5 | 1,024 |
+| swin3d_t | 21 | 8 | 768 |
+| mvit_v2_s | 19 | 8.5 | 768 |
+| timesformer_base | 21 | 7.7 | 768 |
+| dinov2_base | 20 | 8.1 | 1,536 per frame |
+
+**DINOv2: 9 of 9,880 clips came out NaN** (one per batch, spread over
+classes), and the loop stopped as designed. Re-run alone and in their exact
+original batches of 4, three times each, all 9 gave finite, identical
+vectors in bf16 and fp32. A one-off GPU glitch, not the clips. **It found a
+real bug:** the resume counted failed clips as done, so re-running could
+never fill them in. `finished()` now counts only written clips, in both
+`extract` and `derive`; a regression test pins it. Re-running fills the 9.
+
 ---
 
 ## Day 15 — Family V, part 2: run and read it
