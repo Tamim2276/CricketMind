@@ -13,15 +13,21 @@ Status: **verified** (the evidence exists) · **planned** (a plan day will produ
 | E-002 | Four v2 agents assert claims no engine computes (Stadium, Compliance, Injury, Sponsorship) | v2 templates in `cricshot-improve/cricketmind/agents.py` (N11f, N11i, N11k, N11g), read 2026-10-16 | verified | — |
 | E-003 | v2's N9 interval reflects Monte Carlo error only | v2 `nodes/analytics.py`: `se = sqrt(p(1-p)/trials)` | verified | — |
 | E-004 | The v3 gate catches all eight fabrication classes F1–F8 on synthetic findings; v2 mode catches F1 only | `results/fabrication_synthetic.csv` | planned | 26 |
-| E-005 | The v3 gate catches F1–F8 on real-data findings, and its false-rejection rate is X | `results/fabrication_real.csv`, `results/false_rejections.csv` | planned | 141–142 |
-| E-006 | The cost of containment: invocations and completeness as the fabrication rate rises | `results/containment_cost.csv` | planned | 143 |
-| E-007 | N9 T1/T2 are calibrated on a held-out season (Brier score, reliability) | `results/calibration_*.csv`, `figures/reliability_*.pdf` | planned | 51, 156 |
-| E-008 | The posture metrics separate front-foot from back-foot shots (AUC) | `results/posture_auc.csv` | planned | 121 |
-| E-009 | The commentary bridge reaches κ = X against hand labels (or fails, and the fallback is used) | `results/bridge_agreement.csv` | planned | 132 |
-| E-010 | The LLM router beats the keyword router on 100 labelled questions; stable over 3 runs | `results/routing.csv` | planned | 146 |
-| E-011 | Measured cost matches the closed-form bound in every scenario | `results/cost_bounds.csv` | planned | 76, 157 |
+| E-005 | The v3 gate catches F1–F8 on real-data findings, and its false-rejection rate is X | `results/fabrication_real.csv`, `results/false_rejections.csv` | planned | 151, 155 |
+| E-006 | The cost of containment: invocations and completeness as the fabrication rate rises | `results/containment_cost.csv` | planned | 156 |
+| E-007 | N9 T1/T2 are calibrated on a held-out season (Brier score, reliability) | `results/calibration_*.csv`, `figures/reliability_*.pdf` | planned | 53, 175 |
+| E-008 | The posture metrics separate front-foot from back-foot shots (AUC) | `results/posture_auc.csv` | planned | 124 |
+| E-009 | The commentary bridge reaches κ = X against hand labels (or fails, and the fallback is used) | `results/bridge_agreement.csv` | planned | 135 |
+| E-010 | The LLM router beats the keyword router on 100 labelled questions; stable over 3 runs | `results/routing.csv` | planned | 159 |
+| E-011 | Measured cost matches the closed-form bound in every scenario | `results/cost_bounds.csv` | planned | 79, 176 |
 | E-012 | Under v3, the v2 running example becomes "no detectable difference" | N-001, N-002; Day 39 test | planned (synthetic) | 39 |
-| E-013 | On the locked 100-question final exam (written on Day 15; its SHA-256 goes here), CricketMind answers X% with checked facts, explains Y%, honestly declines Z%, gives W wrong answers, and gives the same checked facts for every wording of a question in V% of cases | `thesis/exam/final_exam.csv`; `results/coverage_final.csv` | planned | 15, 149 |
-| E-014 | On the locked exam, a plain AI states wrong numbers in X% of answers and an AI given the engine's facts but no checks in Y%; CricketMind states no number its engines did not produce | `results/baselines.csv` | planned | 150–152 |
-| E-015 | Human raters score the three systems' answers for trust and usefulness; the paper reports whether CricketMind is rated higher, and by how much (or that it is not) | `results/human_study.csv` | planned | 153–155 |
-| E-016 | Each check C1–C7 is needed: turning any one off lets at least one fabrication class through | `results/ablation.csv` | planned | 141 |
+| E-013 | On the locked 100-question final exam (written on Day 15; its SHA-256 goes here), CricketMind answers X% with checked facts, explains Y%, honestly declines Z%, gives W wrong answers, and gives the same checked facts for every wording of a question in V% of cases | `thesis/exam/final_exam.csv`; `results/coverage_final.csv` | planned | 15, 162 |
+| E-014 | On the locked exam, a plain AI states wrong numbers in X% of answers and an AI given the engine's facts but no checks in Y%; CricketMind states no number its engines did not produce | `results/baselines.csv` | planned | 163–165 |
+| E-015 | Human raters score the three systems' answers for trust and usefulness; the paper reports whether CricketMind is rated higher, and by how much (or that it is not) | `results/human_study.csv` | planned | 172–174 |
+| E-016 | Each check C1–C7 is needed: turning any one off lets at least one fabrication class through | `results/ablation.csv` | planned | 151 |
+| E-017 | On the 8-lie test, the Faith Check catches more lies than an AI judge and Chain-of-Verification, with fewer correct findings wrongly stopped (or the paper reports where it does not) | `results/ai_checkers.csv` | planned | 152–154 |
+| E-018 | Whatever the language model (two local, one online), every number CricketMind shows was produced by its engines; models differ only in how often they are sent back or withheld | `results/three_models.csv` | planned | 166–167 |
+| E-019 | Of the 20 tricky questions in the locked exam, X false premises are corrected with checked facts and Y trick attempts change nothing | `results/tricky.csv` | planned | 168 |
+| E-020 | On CricBench's English questions, CricketMind's answers match the correct answers in X% of cases, beside the published text-to-SQL results (if the data is released) | `results/cricbench.csv` | planned | 169–171 |
+| E-021 | The method works for football with zero changed lines in the checks: the 8-lie test and a locked 40-question football exam | `results/football.csv` | planned | 143–148 |
+| E-022 | Every number in the final exam is re-checked from its receipt and matches | the receipt checker's log | planned | 47–48, 162 |

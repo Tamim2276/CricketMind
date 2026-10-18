@@ -270,3 +270,60 @@ Template:
   field study (beyond a thesis).
 - Status: designed
 - Paper section: Evaluation; Results
+
+## D-020 — A sport-neutral Subject, and a football case study
+- Date: 2026-10-19
+- Decision: `Subject` becomes a small shared base with no fields; `CricketSubject` holds the
+  cricket filters, and `FootballSubject` (Day 145) the football ones. The checks, the claims,
+  the findings and the renderer only ever see a `Subject`. Phase 9b runs the method on open
+  football event data with about 10 measures, three agents, the 8-lie test and a locked
+  40-question football exam; video is not ported.
+- Why: a method shown in two sports with zero changed lines in its checks is evidence that it
+  is general, not a cricket trick; Q1 reviewers ask for this. Making `Subject` neutral on Day
+  10 costs little; doing it later would mean rewriting checks that already work.
+- Alternatives considered: cricket only (weaker generality claim); a generic `Subject` as a
+  dictionary of filters (loses the keyword-only, typo-crashes-at-once safety of Day 6); a full
+  second product (beyond a thesis).
+- Status: designed
+- Paper section: Method; Results (generality)
+
+## D-021 — A receipt for every number
+- Date: 2026-10-19
+- Decision: every claim from an engine carries a receipt: the data snapshot's checksum, the
+  exact engine query and the engine's version. A receipt checker re-runs any receipt and
+  confirms the number; Phase 10 re-checks every number in the final exam this way.
+- Why: anyone, including a reviewer, can re-check any number in any answer, and receipts
+  make the comparison with tool-receipt work (NabaOS) and Proof-Carrying Numbers concrete:
+  ours carry the statistical query, not only the fact that a tool was called.
+- Alternatives considered: logging only (cannot be re-run); signing receipts cryptographically
+  (adds little when the engine and data are local and pinned).
+- Status: designed (Days 47–48)
+- Paper section: Method; Implementation
+
+## D-022 — False premises and trick attempts
+- Date: 2026-10-19
+- Decision: N3 marks a judgment hidden in a question ("Why is Kohli bad against spin?"); the
+  answer checks it like a tone word (C7) and says plainly when the premise is wrong. Text
+  inside a question is only ever treated as a question, never as an instruction. The locked
+  exam includes 20 such questions.
+- Why: a system that answers "why is he bad?" by explaining a weakness that does not exist
+  repeats the user's error with apparent authority; answering only checked facts is not
+  enough if the question itself is false.
+- Alternatives considered: answering the question as asked (repeats false premises);
+  refusing every question that contains a judgment (unhelpful).
+- Status: designed (Day 76; evaluated on Day 168)
+- Paper section: Method; Results
+
+## D-023 — Stronger comparisons: AI checkers, three models, an outside test set
+- Date: 2026-10-19
+- Decision: the Faith Check is compared with two AI-based checkers (an AI judge and
+  Chain-of-Verification) on the 8-lie test; the main experiments are repeated with three
+  language models (two local, one online, version and date recorded); and, if released,
+  CricBench's English questions are used as a test set written by other researchers.
+- Why: the obvious reviewer questions are "why not let another AI check?", "does this depend
+  on one model?" and "would it hold on questions you did not write?". New 2026 work on
+  checking AI numbers (EG-VAR, VeriFin, tool receipts) makes these comparisons necessary.
+- Alternatives considered: one local model only (results could be model-specific); only
+  self-written questions (author bias, L-009).
+- Status: designed (Days 152–154, 166–171)
+- Paper section: Evaluation; Results

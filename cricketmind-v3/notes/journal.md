@@ -359,3 +359,42 @@ Day numbers in entries above use the 173-day plan for days after 12. They map li
 | 13–145 | 16–148 |
 | — | 149–155 (new: final exam run, baselines, human study) |
 | 146–173 | 156–183 |
+
+---
+
+## Plan extension (Q1) — 2026-10-19 — aiming for a Q1 journal
+
+Searched for more datasets and the newest related work. Two findings changed the plan:
+
+- **The idea alone is no longer new.** In 2026, EG-VAR, VeriFin and tool receipts (NabaOS)
+  check AI numbers against tool outputs. The paper's new parts must be: who a number is about
+  (C2 + C6), honest uncertainty in words (C4), tone words (C7), the start-up menu check, and
+  honest, measured coverage. Day 13 checks this against the new papers (added to
+  `related_work.md`).
+- **CricBench** (633 English cricket questions, built on Cricsheet) would be a strong outside
+  test set, but its data is only promised "upon acceptance". Ask the authors on Day 14.
+
+Nineteen days added (183 → 202), decisions D-020 to D-023:
+- Receipts for every number, and a receipt checker (Days 47–48).
+- False premises and trick attempts (Day 76; 20 such questions join the Day 15 exam).
+- A football case study (Phase 9b, Days 143–149); `Subject` becomes sport-neutral on Day 10.
+- AI checkers vs the Faith Check (Days 152–154); three models (Days 166–167); the tricky
+  questions (Day 168); CricBench (Days 169–171).
+- At no extra cost: all of Cricsheet, SportQA rules questions in the practice set, confidence
+  ranges and significance tests for every result, the six rules as propositions in the paper.
+
+Day numbers in entries above use the 183-day plan for days after 46. They map like this:
+
+| 183-day plan | Now |
+|---|---|
+| 1–46 | 1–46 |
+| — | 47–48 (new: receipts) |
+| 47–73 | 49–75 |
+| — | 76 (new: false premises and trick attempts) |
+| 74–139 | 77–142 |
+| — | 143–149 (new: Phase 9b, football) |
+| 140–141 | 150–151 |
+| — | 152–154 (new: AI checkers) |
+| 142–152 | 155–165 |
+| — | 166–171 (new: three models, tricky questions, CricBench) |
+| 153–183 | 172–202 |
