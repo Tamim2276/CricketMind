@@ -3172,3 +3172,35 @@ Found: XGBoost was in the system Python, not in `.venv`. My library check
 on Day 14-planning ran the wrong interpreter. Added to requirements.txt.
 
 Tests: 107 pass, 2 skipped (XGBoost, until installed).
+
+## 2026-10-19 — Family D finished
+
+Classical models on the avg view averaged to 1,280 numbers per clip,
+default settings, val top-1 author / grouped:
+
+```
+D01 linear (logistic)   42.49 / 45.70   0.1 min
+D06 mlp                 39.39 / 44.17   0.1 min
+D04 xgb                 36.17 / 41.56   5.9 min
+D02 svm (rbf)           34.79 / 40.47   0.5 min
+D03 random forest       27.21 / 29.32   0.2 min
+D05 knn (k=10)          18.50 / 23.07   0.0 min   (chance is 6.7%)
+```
+
+- The plainest model wins. D01 agrees with P01 (40.66 / 44.42), the same
+  linear probe fitted by gradient descent: the 9.1 cross-check passes.
+- k-NN at 18.5% says clips of the same shot are mostly not neighbours in
+  frozen ImageNet space: what sits close together is more likely the same
+  ground or batter than the same stroke.
+- Every D model is far below Family A's 70%. D sees one averaged vector:
+  the 7x7 grid and the time order are both gone. A's heads keep both.
+- Untuned on purpose; the SVM and the forest might do better with tuning.
+  The claim is "how separable are these features with default models", no
+  more.
+
+A bug, caught by reading the output: for RF and k-NN the val score at fit
+time and in the report differed (27.21% vs 27.27%, 18.50% vs 18.62%). Ties:
+k-NN votes and forest probabilities tie often, sklearn's predict gives a tie
+to the first class, and my scoring used a sort that could give it to either.
+Now a stable sort; rescoring the real D03 and D05 models matches the fit to
+the last digit. Their reports need redoing (scores only, no refit).

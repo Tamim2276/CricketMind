@@ -195,7 +195,9 @@ def score(ckpt_path, split_csv):
                          label=f"  scoring {part:<6}")
 
     scores = _scores(model, x)
-    order = np.argsort(-scores, axis=1)
+    # stable, so a tie goes to the first class, as sklearn's predict does;
+    # k-NN votes and forest probabilities tie often
+    order = np.argsort(-scores, axis=1, kind="stable")
     preds = order[:, 0]
     hits = [0, 0, 0]
     for k in range(3):

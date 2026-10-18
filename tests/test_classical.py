@@ -177,3 +177,17 @@ def test_quiet_fits_print_nothing(monkeypatch, capsys):
     monkeypatch.setattr(C.progress, "is_tty", lambda: True)
     C._fit_with_clock(Quick(), None, None, "rf", quiet=True)
     assert capsys.readouterr().out == ""
+
+
+def test_scoring_agrees_with_the_fit_even_on_ties(world):
+    # 10 neighbours over 3 classes tie often; the report must match predict
+    _run(world, "X05_knn")
+    row = read_results(os.path.join(world["out"], "results.jsonl"))[-1]
+    assert _report(world, "X05_knn")["top1"] == row["best_val_top1"]
+
+
+def test_a_tie_goes_to_the_first_class():
+    import numpy as np
+    scores = np.array([[0.4, 0.4, 0.2], [0.1, 0.45, 0.45]])
+    order = np.argsort(-scores, axis=1, kind="stable")
+    assert order[:, 0].tolist() == [0, 1]
