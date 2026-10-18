@@ -4072,13 +4072,23 @@ peak at a different frame from a Defensive shot?
 
 **Takeaway.** An attention head gives you an explanation for free. Use it.
 
+**Built 2026-10-19.** `tools/attention.py`, `tests/test_attention.py` (3). It
+saves the per-class weights as `report_attention.json` beside each run, which
+git keeps, so the figure can be redrawn without the checkpoint. Preview on the
+real A11 checkpoints: **attention climbs from frame 1 to frame 15.** Frames
+1–6 get about 0.02 each (an even share is 0.067); frames 12–15 up to 0.16.
+Hook and Upper Cut peak earlier (frames 10–12), Reverse Sweep and Scoop
+spread theirs wider, and both splits agree. The stance and backlift carry
+little; contact and follow-through carry the class.
+
 ---
 
 ## Day 12 — Family D: classical models
 
 *Question: how separable are the features already?* Six classical models on the
 same EfficientNet features: logistic regression, SVM, random forest, XGBoost,
-k-NN and a small MLP. All of these libraries are already installed.
+k-NN and a small MLP. scikit-learn is in the project's `.venv`; XGBoost is not
+(it was only in the system Python): `pip install xgboost` first.
 
 ### 12.1 A method without epochs (≈1.5 h)
 
@@ -4102,6 +4112,15 @@ delta, not a quiet change.
 
 **Check.** Tests on a fake cache: a row and two reports appear; the same seed
 gives the same predictions; a second call skips.
+
+**Built 2026-10-19.** `src/methods/classical.py` (`check`, `vectors`,
+`estimator`, `fit`, `score`); `run.py` calls a method's own `fit` and `score`
+when it has them, and finds its checkpoint by the method's `CHECKPOINT`
+(`model.joblib`). `tests/test_classical.py`: all six heads through the real
+runner, evaluate.py's report fields, skip on a second call, the same seed
+giving the same model for RF, XGBoost and the MLP. Settings are fixed
+defaults for all six (see the module docstring). XGBoost was missing from
+`.venv`; it is now in `requirements.txt`.
 
 ### 12.2 Run D (≈1–2 CPU-hours, after A's queue finishes)
 

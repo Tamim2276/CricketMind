@@ -3152,3 +3152,23 @@ What Family A says (grouped val first, author second):
 Open question, not in the registry: a GRU after the same learned 256-wide
 projection. It would separate "shrink" from "attention" cleanly. A Phase 4
 candidate.
+
+## 2026-10-19 — 11.3 and Day 12 built
+
+`tools/attention.py`: A11's weights averaged per true class over the val
+clips. Attention climbs across the clip: frames 1-6 about 0.02 each (even is
+0.067), frames 12-15 up to 0.16. Hook and Upper Cut peak at frames 10-12,
+earlier than the rest; Reverse Sweep and Scoop spread theirs. Both splits
+agree. So the backlift carries little and contact carries the class, which
+also suggests the 15 frames are spent unevenly: a question for Phase 4's
+"frames: 15, 20, 25".
+
+`src/methods/classical.py`: Family D, fitted once on the avg view averaged
+to 1,280 numbers, standardised on train only, scored into evaluate.py's
+report format. The runner now calls a method's own `fit`/`score` when it
+has them.
+
+Found: XGBoost was in the system Python, not in `.venv`. My library check
+on Day 14-planning ran the wrong interpreter. Added to requirements.txt.
+
+Tests: 107 pass, 2 skipped (XGBoost, until installed).

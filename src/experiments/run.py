@@ -18,6 +18,7 @@ import os
 import shutil
 import sys
 
+from src import methods
 from src.evaluate import StaleReport, evaluate_checkpoint, load_report
 from src.experiments import registry as R
 from src.plot import plot_report_run, plot_run
@@ -62,12 +63,18 @@ def _rows_named(cfg, name):
     return found
 
 
+def _method(cfg):
+    return methods.load(cfg["method"])
+
+
 def _checkpoint(cfg, rows):
-    """The best.pt this run's numbers come from. An adopted run's lives
-    in the folder of the run it adopted."""
+    """The file this run's numbers come from: best.pt, or the method's own
+    (model.joblib for classical). An adopted run's lives in the folder of
+    the run it adopted."""
     if rows and rows[-1].get("checkpoint"):
         return rows[-1]["checkpoint"]
-    return os.path.join(run_dir(cfg), "best.pt")
+    leaf = getattr(_method(cfg), "CHECKPOINT", "best.pt")
+    return os.path.join(run_dir(cfg), leaf)
 
 
 def _same_file(a, b):
@@ -211,11 +218,15 @@ def _adopt(step, out):
 def _score(cfg, ckpt, parts, out):
     folder = run_dir(cfg)
     os.makedirs(folder, exist_ok=True)
+    own_score = getattr(_method(cfg), "score", None)
     for part in parts:
         csv_path = os.path.join(cfg["split"], f"{part}.csv")
-        report = evaluate_checkpoint(ckpt, csv_path,
-                                     batch_size=cfg["batch_size"],
-                                     workers=cfg["workers"])
+        if own_score is not None:
+            report = own_score(ckpt, csv_path)
+        else:
+            report = evaluate_checkpoint(ckpt, csv_path,
+                                         batch_size=cfg["batch_size"],
+                                         workers=cfg["workers"])
         atomic_write_json(report, os.path.join(folder, f"report_{part}.json"))
         if part == "test":
             # rule 5: scored and stored once, not read until Days 28-30
@@ -257,7 +268,11 @@ def run_one(entry, split, force=False, dry_run=False, overrides=None,
         reason = R.status(entry, overrides)
         if reason != "ready":
             raise SystemExit(f"{step['name']} cannot start: {reason}")
-        train(cfg, fresh=force, quiet=quiet)
+        own_fit = getattr(_method(cfg), "fit", None)
+        if own_fit is not None:
+            own_fit(cfg, quiet=quiet)       # no epochs: classical models
+        else:
+            train(cfg, fresh=force, quiet=quiet)
     elif action == "adopt":
         _adopt(step, out)
 

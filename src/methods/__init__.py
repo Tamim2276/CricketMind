@@ -28,7 +28,7 @@ import importlib
 
 __all__ = ["load", "KNOWN"]
 
-KNOWN = ("video_gru", "cached_gru", "cached_head")
+KNOWN = ("video_gru", "cached_gru", "cached_head", "classical")
 
 
 def load(name):
