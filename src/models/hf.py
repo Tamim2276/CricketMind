@@ -10,11 +10,14 @@ from contextlib import contextmanager
 
 __all__ = ["hf_file", "hf_input_spec", "quiet_loading", "WEIGHTS"]
 
-# the weights file each repo actually has. CLIP's official repo ships no
-# safetensors; transformers loads its .bin with weights_only, which is safe
+# the weights file each repo actually has. CLIP's, TimeSformer's and DINOv2's
+# official repos ship no safetensors; transformers loads their .bin with
+# weights_only, which is safe
 WEIGHTS = {
     "MCG-NJU/videomae-base-finetuned-kinetics": "model.safetensors",
     "openai/clip-vit-base-patch16": "pytorch_model.bin",
+    "facebook/timesformer-base-finetuned-k400": "pytorch_model.bin",
+    "facebook/dinov2-base-imagenet1k-1-layer": "pytorch_model.bin",
 }
 
 

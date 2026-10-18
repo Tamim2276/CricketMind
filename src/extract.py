@@ -46,7 +46,7 @@ from torchvision.models import get_model, get_model_weights
 
 from src.data.augment import ClipFlip
 from src.data.dataset import IMAGENET_MEAN, IMAGENET_STD, PROCESSED
-from src.models import clip_encoder
+from src.models import clip_encoder, dino_encoder
 from src.models.encoder import DEFAULT_BACKBONE, DEFAULT_SIZE, FrameEncoder
 from src.models.video_encoder import is_video, reference, video_encoder
 from src.utils import progress
@@ -116,7 +116,7 @@ def _pick_pool(backbone, pool):
     if pool == "video":
         raise ValueError(f"{backbone} is a frame model; --pool video is for "
                          f"video models such as r3d_18")
-    if clip_encoder.is_clip(backbone):
+    if clip_encoder.is_clip(backbone) or dino_encoder.is_dino(backbone):
         # a ViT has tokens, not a 7x7 map with an avgpool to remove
         if pool not in (None, "avg"):
             raise ValueError(f"{backbone} gives one vector per frame; "
@@ -134,6 +134,9 @@ def _encoder(backbone, pool):
         return video_encoder(backbone, pretrained=True, freeze=True)
     if clip_encoder.is_clip(backbone):
         return clip_encoder.ClipFrameEncoder(backbone, pretrained=True,
+                                             freeze=True)
+    if dino_encoder.is_dino(backbone):
+        return dino_encoder.DinoFrameEncoder(backbone, pretrained=True,
                                              freeze=True)
     return FrameEncoder(backbone, pretrained=True, freeze=True, pool=pool)
 
@@ -356,7 +359,7 @@ def extract(variant="box", backbone=DEFAULT_BACKBONE, name=None,
             print("MIRRORED: left-right flipped clips, for flip augmentation")
         if hasattr(encoder, "size"):
             print(f"input {encoder.size}x{encoder.size}, mean {encoder.mean}")
-        if hasattr(encoder, "frames"):
+        if getattr(encoder, "frames", None):
             print(f"{encoder.frames} frames, evenly resampled from the clip's")
         print(f"pool {pool}  grid {grid}  out_dim {encoder.out_dim}  "
               f"-> {out_path(out_dir, view, '<class>/<clip>')}")
@@ -574,6 +577,8 @@ def _reference(backbone, view, device):
         return run, head, names, None
     if clip_encoder.is_clip(backbone):
         return clip_encoder.reference(backbone, device)
+    if dino_encoder.is_dino(backbone):
+        return dino_encoder.reference(backbone, device)
     full = get_model(backbone, weights="DEFAULT").to(device).eval()
     names = get_model_weights(backbone).DEFAULT.meta["categories"]
     linear = None

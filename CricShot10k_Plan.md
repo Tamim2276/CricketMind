@@ -4196,6 +4196,34 @@ all ten, so the only difference is the features. Three caches already exist
 **Check.** A test per model: right shape, and `--verify` on 4 clips passes
 (cached vector = full model, logits match).
 
+**Built 2026-10-19.** `src/models/video_encoder.py` (generalised),
+`src/models/dino_encoder.py` (new), three dispatch lines in `extract.py`.
+
+1. **mc3_18, r2plus1d_18 and swin3d_t needed no new code**: their last
+   layer is a Linear the existing rule removes, and they take 15 frames.
+2. **MViT wants exactly 16 frames** (its weights say so); `needed_frames`
+   reads that and the encoder resamples, as for VideoMAE.
+3. **S3D has no Linear to remove.** Its classifier is a 1x1x1 Conv3d and
+   its forward averages after it; a linear map commutes with an average, so
+   dropping the classifier leaves exactly the 1,024-vector the conv reads.
+   `conv_as_linear` rebuilds the conv as a Linear for verify.
+4. **TimeSformer** (`facebook/timesformer-base-finetuned-k400`): 8 frames,
+   so 15 become every other frame; the vector is the first token after the
+   final LayerNorm. `VideoMAEEncoder` became `HFVideoEncoder`, loading
+   either through `AutoModelForVideoClassification`.
+5. **DINOv2 is 1,536 wide, not 768.** Its own linear evaluation, and the
+   ImageNet head in `facebook/dinov2-base-imagenet1k-1-layer`, read the
+   first token joined to the mean of the patch tokens. That checkpoint's
+   head is what verify checks the cache against.
+6. **Tested with random weights**: for every new model the encoder followed
+   by the model's own last layer equals the whole model. Then a smoke test
+   on the Arc in bf16, all seven: finite outputs, 33–290 clips/s on the GPU
+   alone, so loading (~20 clips/s) sets the pace, ~8–10 min per half.
+7. **The old caches still verify bit-exact** with the new code (r3d_18 and
+   VideoMAE, 4/4, cosine 1.0000): the refactor changed nothing for them.
+8. Both Hugging Face repos ship only `pytorch_model.bin`, so `hf.WEIGHTS`
+   names it.
+
 ### 14.2 Extract (launch, ≈3 GPU-hours)
 
 **Run**, for each of the seven:

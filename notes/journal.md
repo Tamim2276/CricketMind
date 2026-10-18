@@ -3204,3 +3204,26 @@ k-NN votes and forest probabilities tie often, sklearn's predict gives a tie
 to the first class, and my scoring used a sort that could give it to either.
 Now a stable sort; rescoring the real D03 and D05 models matches the fit to
 the last digit. Their reports need redoing (scores only, no refit).
+
+## 2026-10-19 — Day 14 built: seven new extractors
+
+Read each model's own classifier before deciding what to cache:
+- mc3_18, r2plus1d_18: like r3d_18 (fc, 112px, Kinetics colours).
+- swin3d_t: `head` Linear after its pool; takes 15 frames.
+- mvit_v2_s: `head` = Dropout + Linear on the class token; its weights say
+  min_temporal_size 16, so it gets 16 resampled frames.
+- s3d: the surprise. No Linear at all: the classifier is a 1x1x1 Conv3d,
+  and forward() averages *after* it. Since a linear map commutes with an
+  average, removing the classifier leaves exactly the 1,024-vector the conv
+  reads; for verify the conv is rebuilt as a Linear.
+- TimeSformer: classifier reads the first token after the final LayerNorm;
+  8 frames, so every other one of the 15.
+- DINOv2: its ImageNet head reads cat(first token, mean of patches) = 1,536,
+  which is also DINOv2's own linear-evaluation feature. Cached that, from the
+  checkpoint that ships the head, so verify has something to check against.
+
+Every new encoder + its model's own last layer equals the whole model on
+random weights; all seven run on the Arc in bf16. The r3d_18 and VideoMAE
+caches re-verify bit-exact after the refactor.
+
+Tests: 89 pass, 12 skip until the downloads and caches exist.

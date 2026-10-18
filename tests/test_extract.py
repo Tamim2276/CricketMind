@@ -769,3 +769,86 @@ def test_only_the_command_line_writes_the_real_ledger():
     for fn in (extract, verify, derive):
         assert inspect.signature(fn).parameters["ledger"].default is None
     assert "ledger=CACHE_LEDGER" in inspect.getsource(main)
+
+
+# --- Day 14: Family V's seven new caches ------------------------------------------
+
+def test_the_new_backbones_get_the_right_pool():
+    from src.extract import _pick_pool
+
+    for name in ("mc3_18", "r2plus1d_18", "s3d", "swin3d_t", "mvit_v2_s",
+                 "timesformer_base"):
+        assert _pick_pool(name, None) == "video", name
+    assert _pick_pool("dinov2_base", None) == "avg"
+    with pytest.raises(ValueError, match="only --pool avg"):
+        _pick_pool("dinov2_base", "flatten")
+
+
+# backbone -> (view, shape of one clip's tensor)
+NEW_CACHES = {
+    "mc3_18": ("video", (512,)),
+    "r2plus1d_18": ("video", (512,)),
+    "s3d": ("video", (1024,)),
+    "swin3d_t": ("video", (768,)),
+    "mvit_v2_s": ("video", (768,)),
+    "timesformer_base": ("video", (768,)),
+    "dinov2_base": ("avg", (15, 1536)),
+}
+
+
+@pytest.mark.parametrize("backbone", sorted(NEW_CACHES))
+def test_each_new_cache_is_complete_and_the_right_shape(backbone):
+    from src.extract import manifest_path
+    from src.utils.checkpoint import read_results
+
+    view, shape = NEW_CACHES[backbone]
+    folder = os.path.join("data", "features", backbone)
+    if not os.path.isdir(os.path.join(folder, view)):
+        pytest.skip(f"no {backbone} cache yet; run src.extract --backbone "
+                    f"{backbone}")
+    for half in (view, view + "_mirror"):
+        ok = 0
+        for row in read_results(manifest_path(folder, half)):
+            if row.get("ok"):
+                ok += 1
+        assert ok == len(clip_list(PROCESSED_BOX)), half
+    feats = FeatureDataset(SPLIT, features=folder, view=view)
+    assert feats.item_shape == shape
+    assert feats.missing == FeatureDataset(SPLIT, view="avg").missing
+
+
+@needs_clips
+@pytest.mark.skipif(not _weights_cached("s3d"), reason="s3d not downloaded")
+def test_an_s3d_cache_end_to_end(tmp_path):
+    from src.extract import verify
+
+    out = str(tmp_path / "cache")
+    assert extract(backbone="s3d", limit=2, out_dir=out, batch_size=2,
+                   quiet=True) == 0
+    one = torch.load(out_path(out, "video", clip_list(PROCESSED_BOX)[0]))
+    assert one.shape == (1024,)
+    assert verify(backbone="s3d", out_dir=out, clips=2, quiet=True) == 0
+
+
+def _dino_cached():
+    try:
+        from huggingface_hub import try_to_load_from_cache
+    except ImportError:
+        return False
+    hit = try_to_load_from_cache("facebook/dinov2-base-imagenet1k-1-layer",
+                                 "pytorch_model.bin")
+    return isinstance(hit, str)
+
+
+@needs_clips
+@pytest.mark.skipif(not _dino_cached(), reason="DINOv2 not downloaded")
+def test_a_dino_cache_end_to_end(tmp_path):
+    from src.extract import verify
+
+    out = str(tmp_path / "cache")
+    assert extract(backbone="dinov2_base", limit=2, out_dir=out, batch_size=2,
+                   quiet=True) == 0
+    one = torch.load(out_path(out, "avg", clip_list(PROCESSED_BOX)[0]))
+    assert one.shape == (15, 1536)
+    assert verify(backbone="dinov2_base", out_dir=out, clips=2,
+                  quiet=True) == 0
