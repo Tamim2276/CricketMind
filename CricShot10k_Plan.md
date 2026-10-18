@@ -4237,9 +4237,10 @@ python -m src.extract --verify --backbone mc3_18
 **Check.** 9,880 files per half, verify passes, and each run adds a row to
 `experiments/caches.jsonl`.
 
-**Ran 2026-10-19 (overnight).** Six of seven done: 9,880 + 9,880, 0 failed,
-verify bit-exact 20/20 and the pretrained head agrees 20/20 for each; every
-Kinetics model's most common guess for our clips is "playing cricket".
+**Ran 2026-10-19.** All seven done: 9,880 + 9,880 each, 0 failed, verify
+bit-exact and the pretrained head agreeing; every Kinetics model's most
+common guess for our clips is "playing cricket". DINOv2 took a second try,
+below.
 
 | model | clips/s | min per half | width |
 | --- | --- | --- | --- |
@@ -4249,7 +4250,7 @@ Kinetics model's most common guess for our clips is "playing cricket".
 | swin3d_t | 21 | 8 | 768 |
 | mvit_v2_s | 19 | 8.5 | 768 |
 | timesformer_base | 21 | 7.7 | 768 |
-| dinov2_base | 20 | 8.1 | 1,536 per frame |
+| dinov2_base (eager) | 14 | 11.6 | 1,536 per frame |
 
 **DINOv2: 9 of 9,880 clips came out NaN** (one per batch, spread over
 classes), and the loop stopped as designed. Re-run alone and in their exact
@@ -4271,10 +4272,13 @@ a regression test pins it.
    500, worst gap 0.012) and VideoMAE (1 in 300, 0.004) have it too, much
    milder, and never gave NaN in their full runs.
 
-**Fix: DINOv2 uses eager attention** (`dino_encoder.ATTENTION`). 23 clips/s
-on the GPU, still faster than loading, so no slower in practice. Same answer
+**Fix: DINOv2 uses eager attention** (`dino_encoder.ATTENTION`). Same answer
 alone or in a batch of 4 (16/16), so verify can check 1,000 clips. The old
-DINOv2 cache was made with SDPA and is redone. **CLIP and VideoMAE caches
+DINOv2 cache was made with SDPA and was redone: **0 failed on both halves,
+verify 1,000/1,000 bit-exact**, the ImageNet head agrees 45/45 frames (its
+favourite guess, "ballplayer", is the nearest ImageNet has to cricket).
+Slower than predicted: 14 clips/s, 11.6 min per half, not ~8.5. The GPU,
+not loading, set the pace once eager attention ran under full load. **CLIP and VideoMAE caches
 are kept:** complete, never NaN, the drift is one rounding step in rare
 frames, and Phase 2 runs were trained on them. If their verify ever reports
 one clip not bit-exact, this is why.

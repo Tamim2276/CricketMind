@@ -3264,3 +3264,9 @@ before. Its cache is redone from scratch. CLIP and VideoMAE stay as they
 are: complete, NaN-free, the drift is below anything training would notice,
 and finished Phase 2 runs used them. Lesson: "bit-exact on 20 clips" says
 the code is right; it doesn't say the GPU repeats itself.
+
+DINOv2 redone with eager attention: 0 failed on both halves, verify
+1,000/1,000 bit-exact. I was wrong about the speed, though: 14 clips/s,
+11.6 min a half, not the ~8.5 I predicted from a 23 clips/s GPU-only number.
+Under full load the GPU became the bottleneck. 6 extra minutes for a cache
+that repeats itself is a fair trade.
