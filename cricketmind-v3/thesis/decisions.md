@@ -249,3 +249,24 @@ Template:
   rules questions from the model's memory with numbers (unchecked numbers, against I1).
 - Status: designed (Days 40–42, 54, 67, 144–145)
 - Paper section: Method (question handling); Evaluation (coverage)
+
+## D-019 — An evaluation built for a journal
+- Date: 2026-10-19
+- Decision: the evaluation answers the five questions journal reviewers ask. Is it new? A
+  systematic literature search on Day 13, and the journal chosen with the supervisor on Day
+  14 (not at the end). Is it better than other approaches? Two baselines on the same
+  questions: a plain AI with no data or checks, and an AI given the engine's facts but no
+  Faith Check (Days 150–152). Does each part matter? An ablation that turns each check off in
+  turn (Day 141). Was it tested fairly? A locked 100-question final exam, written on Day 15
+  before the system can answer anything, fingerprinted with SHA-256 and run once on Day 149;
+  improvements are made only on a separate practice set. Do people find it useful? A small
+  blind human study, about 10 raters (Days 153–155), with ethics approval asked for on Day 14.
+- Why: a strong idea alone does not get a journal paper accepted; reviewers ask what it is
+  compared with, whether each part is needed, whether the test was fair, and whether anyone
+  finds it useful. The previous plan compared only with v2 and had no locked test set and no
+  human study.
+- Alternatives considered: comparing only with v2 (weak: v2 is our own earlier system);
+  reporting results on the same questions used to improve the system (overfitting); a large
+  field study (beyond a thesis).
+- Status: designed
+- Paper section: Evaluation; Results

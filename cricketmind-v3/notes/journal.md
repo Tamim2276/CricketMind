@@ -332,3 +332,30 @@ Day numbers in entries above use the 165-day plan for days after 21. They map li
 | 62–137 | 68–143 |
 | — | 144–145 (new: coverage) |
 | 138–165 | 146–173 |
+
+---
+
+## Plan extension (journal) — 2026-10-19 — an evaluation built for a journal
+
+The goal is a journal paper, so the evaluation must answer what reviewers ask (D-019). Ten
+days added (173 → 183):
+
+- **Days 13–15:** a systematic literature search; the journal chosen with my supervisor (and
+  ethics approval asked for, if the human study needs it); the locked final exam: 100
+  questions I write (ideally with friends) before the system can answer anything,
+  fingerprinted with SHA-256, run once on Day 149. Claude never reads it before then.
+- **Phase 10:** the ablation (each check off in turn) on the fabrication day; a practice set
+  to improve the system, never reported; the final exam run once; two baselines (a plain AI,
+  and an AI with the engine's facts but no checks); a small blind human study.
+- New evidence rows E-014 (baselines), E-015 (human study), E-016 (ablation); E-013 now points
+  at the locked exam; L-012 narrowed.
+
+Day numbers in entries above use the 173-day plan for days after 12. They map like this:
+
+| 173-day plan | Now |
+|---|---|
+| 1–12 | 1–12 |
+| — | 13–15 (new: literature search, journal choice, locked final exam) |
+| 13–145 | 16–148 |
+| — | 149–155 (new: final exam run, baselines, human study) |
+| 146–173 | 156–183 |

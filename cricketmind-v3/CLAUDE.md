@@ -16,7 +16,7 @@ a time: understand, learn, build, test, repeat.
   Never `git add -A`. Never switch branches.
 - CricShot (the classifier) lives in `D:\Cricket\cricshot-improve` on `langGraph`, in a
   different chat. Never touch it from here. v3 never imports CricShot code; the
-  only bridge is the exported model file (Day 106).
+  only bridge is the exported model file (Day 109).
 - `cricketmind/` (no suffix) is the old v2 prototype: reference only, never edit.
 
 ## How to work with this user
@@ -26,7 +26,8 @@ a time: understand, learn, build, test, repeat.
   in simple words before it runs. The user reads, asks, then says "next".
 - No practice exercises: each concept is taught on the real code the first time it is
   needed (the user's choice, 2026-10-16; the plan was rewritten to 165 days to match, then
-  extended to 173 on 2026-10-17 so every question gets an honest answer).
+  extended to 173 on 2026-10-17 so every question gets an honest answer, and to 183 on
+  2026-10-19 for a journal-grade evaluation).
   `learning/` keeps Days 2-4 as they are; nothing new goes there.
 - The user runs commits, installs, long runs and downloads; Claude gives the commands.
   Claude may write project files, run tests and do quick read-only checks.
@@ -51,3 +52,5 @@ a time: understand, learn, build, test, repeat.
 - The CricShot classifier's accuracy never appears in the v3 paper, website or slides.
   It belongs to the separate CricShot paper.
 - The paper must cite the ICCIT (v2) paper and clearly extend it.
+- The locked final exam (`thesis/exam/final_exam.csv`, written by the user on Day 15) is
+  never read, opened or summarised by Claude before Day 149. Final numbers come only from it.

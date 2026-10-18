@@ -24,6 +24,11 @@ Journal entries written before that date use the old numbers; the mapping is in
 honest answer, however it is worded, and so that tone words are checked (D-017, D-018). The
 mapping is in `notes/journal.md`, under "Plan extension".*
 
+*Extended again 2026-10-19: ten days added (173 → 183) for a journal-grade evaluation: a
+literature search, an early choice of journal, a locked final exam, baselines, an ablation
+and a human study (D-019). The mapping is in `notes/journal.md`, under "Plan extension
+(journal)".*
+
 ---
 
 ## Contents
@@ -38,7 +43,7 @@ mapping is in `notes/journal.md`, under "Plan extension".*
 8. [Rules that never change](#8-rules-that-never-change)
 9. [The thesis paper: track everything](#9-the-thesis-paper-track-everything)
 10. [Milestones](#10-milestones)
-11. [Day-by-day plan](#11-day-by-day-plan) — Phases 0 to 12, Days 1 to 173
+11. [Day-by-day plan](#11-day-by-day-plan) — Phases 0 to 12, Days 1 to 183
 12. [When you get stuck](#12-when-you-get-stuck)
 13. [Glossary](#13-glossary)
 
@@ -104,7 +109,7 @@ review day.
 | Phase | What you build | Best case | Worst case |
 |---|---|---|---|
 | 0 | Foundations: setup, Python types, Pydantic, clean architecture, the real skeleton | 5 | 5 |
-| 1 | Claims: the facts agents are allowed to say | 5 | 7 |
+| 1 | Claims, plus the literature search, the journal choice and the locked final exam | 8 | 10 |
 | 2 | Faith Check v3: the editor (checks C1–C7) | 9 | 12 |
 | 3 | Real cricket data: Cricsheet into a database | 6 | 10 |
 | 4 | Engines: N8 (past, any filters) and N9 (future, with uncertainty) | 10 | 15 |
@@ -113,21 +118,21 @@ review day.
 | 7 | The website (React) | 11 | 20 |
 | 8 | Video: classifier and pose | 11 | 16 |
 | 9 | The commentary-to-shot bridge | 9 | 15 |
-| 10 | Evaluation for the thesis, including coverage | 10 | 14 |
+| 10 | Evaluation: coverage, baselines, ablation, human study | 17 | 21 |
 | 11 | Ship it: Docker, README, demo | 5 | 8 |
 | 12 | Write the paper | 10 | 15 |
-| | **Total** | **116** | **173** |
+| | **Total** | **126** | **183** |
 
 Add **about 10% for load shedding, exams and sick days**: the worst case is
-**about 190 sessions.**
+**about 200 sessions.**
 
 | Sessions per week | Worst-case calendar time |
 |---|---|
-| 5 (CricketMind full time) | about 38 weeks ≈ **9 months** |
-| 3 (shared with CricShot) | about 63 weeks ≈ **14½ months** |
+| 5 (CricketMind full time) | about 40 weeks ≈ **9½ months** |
+| 3 (shared with CricShot) | about 67 weeks ≈ **15½ months** |
 
 The order is chosen so you have something working early: a referee that works on fake
-data by Day 24, answers in the terminal by Day 73, and a working website by Day 104.
+data by Day 27, answers in the terminal by Day 76, and a working website by Day 107.
 
 ---
 
@@ -142,7 +147,7 @@ CricShot10k (the classifier and its accuracy paper) and CricketMind (this system
 | **Two folders, two names** | `cricketmind/` (no suffix) is the old v2 prototype; CricShot's tests still import it, so never edit it. `cricketmind-v3/` is the new project, and its Python package is `cricketmind_v3`, so an import can never pick up the old one by accident. |
 | **Separate Python environment** | Each project has its own `uv` environment. The new one is `cricketmind-v3/backend/.venv`. Don't activate CricShot's `.venv` while working on v3; `uv run` picks the right one. |
 | **Separate journal** | `cricketmind-v3/notes/journal.md`. CricShot keeps its own. |
-| **One bridge only: a file and a spec** | CricketMind never imports CricShot code. CricShot *exports* the final classifier (a TorchScript file + `classes.json` + a model card that says exactly what input it expects). CricketMind copies those files into its `models/` folder and checks the checksum. Day 106. |
+| **One bridge only: a file and a spec** | CricketMind never imports CricShot code. CricShot *exports* the final classifier (a TorchScript file + `classes.json` + a model card that says exactly what input it expects). CricketMind copies those files into its `models/` folder and checks the checksum. Day 109. |
 | **One GPU at a time** | Never train CricShot while CricketMind uses the GPU (Ollama, the classifier, pose). |
 | **Separate papers** | The classifier's accuracy is reserved for the CricShot paper. The CricketMind website and paper never report it. They may show a single clip's prediction and confidence. |
 | **Old code is reference only** | The old notebook and `cricshot-improve/cricketmind/` are for remembering ideas, not for copying. |
@@ -257,7 +262,7 @@ with an API client generated from FastAPI's OpenAPI file.**
 - **HTMX + Jinja templates** is the simpler fallback if React feels too heavy: no JavaScript
   build at all, but less interactivity and less to learn for your career.
 
-Node.js 24 is already installed. Docker Desktop is installed on Day 151.
+Node.js 24 is already installed. Docker Desktop is installed on Day 161.
 
 ---
 
@@ -402,7 +407,7 @@ Tests that use the real model are marked `@pytest.mark.llm` and are run by hand.
 3. **Plain, readable Python.** Loops and if/else, not clever one-liners. Short, human comments.
 4. **One GPU user at a time** (Section 3).
 5. **The device rule:** GPU code picks Intel XPU, then CUDA, then CPU, so the same code runs
-   on the Arc B580 and on the RTX 3070. It is written once, on Day 107.
+   on the Arc B580 and on the RTX 3070. It is written once, on Day 110.
 6. **Numbers come only from N6, N8 and N9.** No agent, prompt or language model ever
    produces a number a user sees.
 7. **No classifier accuracy in CricketMind** (Section 3).
@@ -426,7 +431,7 @@ The `thesis/` folder already exists, and `thesis/README.md` explains it. In shor
 
 | Something happened… | Write it in | Example |
 |---|---|---|
-| Any day ends | `notes/journal.md` | "Day 18: C4 rejects 'will probably' at p = 0.405" |
+| Any day ends | `notes/journal.md` | "Day 21: C4 rejects 'will probably' at p = 0.405" |
 | You chose between options | `thesis/decisions.md` | "D-014: hedge required when the interval crosses a band — why, alternatives" |
 | A script printed a number worth keeping | `thesis/numbers.md` | "N-009: Brier score 0.21 on the 2025 season — source file, seed, commit" |
 | A claim became provable, or you plan one | `thesis/evidence.md` | "E-007: N9 is calibrated → `results/calibration_t1.csv`" |
@@ -443,12 +448,12 @@ CricketMind refuses to print a number nobody computed. Your paper follows the sa
 > **No number goes into the paper unless it has a row in `numbers.md`, and no claim unless it
 > has a row in `evidence.md` pointing to the file that proves it.**
 
-On Day 170 you check the finished draft against these two files, line by line. You are the
+On Day 180 you check the finished draft against these two files, line by line. You are the
 paper's Faith Check.
 
 ### The results ledger
 
-From Day 23, every experiment script saves its output to `thesis/results/` and appends one
+From Day 26, every experiment script saves its output to `thesis/results/` and appends one
 row to `thesis/results/ledger.jsonl`: date, commit hash, experiment name, settings, seed, the
 key numbers, and the output files. You never type a result by hand. It is the same idea as
 CricShot's `results.jsonl` and `caches.jsonl`.
@@ -468,6 +473,8 @@ Rough is fine; it is raw material, not the paper. On the same days, read one pap
   Saying so keeps the paper clear of duplicate publication.
 - **Synthetic results are labelled synthetic.**
 - **Every figure and table is rebuilt by one script** in `thesis/scripts/`.
+- **Final numbers come from the locked exam**, written on Day 15 and run once on Day 149.
+  The practice set is for improving the system, never for the reported results.
 
 ### What Claude does
 
@@ -481,15 +488,15 @@ the commit command. You check them before you commit: they are your record.
 
 | | When | What you can show |
 |---|---|---|
-| **M1** | Day 24 | The Faith Check catches all eight kinds of fabrication, on fake data |
-| **M2** | Day 49 | The engines answer from real Cricsheet data, with honest intervals |
-| **M3** | Day 73 | Full answers to text questions in the terminal |
-| **M4** | Day 104 | The website answers text questions, live |
-| **M5** | Day 121 | Questions with a video clip work end to end |
-| **M6** | Day 134 | The commentary bridge result (positive or negative) |
-| **M7** | Day 150 | Thesis results: tables and figures |
-| **M8** | Day 157 | Shipped: one command starts everything, plus a demo video |
-| **M9** | Day 173 | The paper, ready to submit |
+| **M1** | Day 27 | The Faith Check catches all eight kinds of fabrication, on fake data |
+| **M2** | Day 52 | The engines answer from real Cricsheet data, with honest intervals |
+| **M3** | Day 76 | Full answers to text questions in the terminal |
+| **M4** | Day 107 | The website answers text questions, live |
+| **M5** | Day 124 | Questions with a video clip work end to end |
+| **M6** | Day 137 | The commentary bridge result (positive or negative) |
+| **M7** | Day 160 | Thesis results: tables and figures |
+| **M8** | Day 167 | Shipped: one command starts everything, plus a demo video |
+| **M9** | Day 183 | The paper, ready to submit |
 
 ---
 
@@ -510,9 +517,9 @@ Pydantic, clean architecture), then build the real skeleton that every later day
 day, and it shows every layer of clean architecture. Days 1–4 are done (2026-10-16); their
 sections below are kept as a record.
 
-**Taught later, on the real code:** FastAPI and `Depends` on Days 75–76; LangGraph state,
-nodes and edges on Day 50; branches on Day 51; fan-out on Day 68; the bounded retry loop on
-Day 69.
+**Taught later, on the real code:** FastAPI and `Depends` on Days 78–79; LangGraph state,
+nodes and edges on Day 53; branches on Day 54; fan-out on Day 71; the bounded retry loop on
+Day 72.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
@@ -861,8 +868,8 @@ git add cricketmind-v3 && git commit -m "day 2: frozen Ball dataclass"
 **Goal:** a `QueryIn` model that rejects bad input with a clear message.
 
 **Why it matters for v3:** every question from the website arrives as JSON text. Pydantic
-checks its shape before any of your code runs. On Day 75, FastAPI uses it for you
-automatically. From Day 74, every request and response of the real API is a Pydantic model.
+checks its shape before any of your code runs. On Day 78, FastAPI uses it for you
+automatically. From Day 77, every request and response of the real API is a Pydantic model.
 
 **Learn**
 
@@ -988,7 +995,7 @@ git add cricketmind-v3 && git commit -m "day 3: QueryIn with pydantic checks"
 **Goal:** a strike-rate calculator in four small pieces (a domain function, a port, a use case
 and a fake), tested without reading any file.
 
-**Why it matters for v3:** this is the shape of the whole system. On Day 35 the real engine
+**Why it matters for v3:** this is the shape of the whole system. On Day 38 the real engine
 uses a `DeliveryRepository` port exactly like today's `BallRepository`, with DuckDB behind it
 instead of a list.
 
@@ -1077,7 +1084,7 @@ class GetStrikeRate:
 ```
 
 The use case is handed its repository from outside, in `__init__`; it never creates one.
-That is **dependency injection**, and on Day 76 FastAPI does it for you.
+That is **dependency injection**, and on Day 79 FastAPI does it for you.
 
 **Step 5 — Write the fake.** Create `learning/toy/fakes.py`:
 
@@ -1244,7 +1251,7 @@ You should see `ok`.
 The empty `__init__.py` files let two test files share a name in different folders later
 (`unit/test_claims.py` and `graph/test_claims.py`). They also let tests import shared helpers
 as `from tests.fakes import …`. The `integration/`, `graph/` and `api/` folders are made when
-their first test arrives (Days 35, 50 and 75).
+their first test arrives (Days 38, 53 and 78).
 
 **Step 4 — Write the architecture test.** Claude writes
 `backend/tests/unit/test_architecture.py` and explains it line by line:
@@ -1365,7 +1372,7 @@ If all four match, the workshop is ready. Phase 1 builds the first real code, in
 
 ---
 
-### Phase 1 — Claims (Days 6–12)
+### Phase 1 — Claims (Days 6–15)
 
 **In simple words:** a claim is one fact an agent wants to say, written as **data** (a form
 with fields), not as a sentence. Data can be checked; sentences can only be read.
@@ -1387,8 +1394,9 @@ template = "Against pace in the powerplay, Kohli's cover drive returns {c1}."
 
 The renderer turns that into *"…returns a strike rate of 142.0 [D, 50 balls]."*
 
-**Where it lives:** all of Phase 1 is in `backend/src/cricketmind_v3/domain/`, plain Python
-only (the Day 5 test checks it). Tests go in `backend/tests/unit/`.
+**Where it lives:** Days 6–12 build code in `backend/src/cricketmind_v3/domain/`, plain
+Python only (the Day 5 test checks it); tests go in `backend/tests/unit/`. Days 13–15 are
+research days for the paper, with no code.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
@@ -1399,6 +1407,9 @@ only (the Day 5 test checks it). Tests go in `backend/tests/unit/`.
 | 10 | A registry: one place that lists what is allowed | `domain/registry.py`: `ClaimType`, the 9 types of Table 4 and `sr_vs_average`; `Subject` gains the keys they need | Tests: lookup works; an unknown type returns nothing; missing subject keys are listed |
 | 11 | Failing when the system is built, not while it runs | `check_registry()`: every claim type an agent declares exists and has an engine | Test: a hollow claim type ("the pitch is holding pace") fails |
 | 12 | Review day | Tidy; a rough draft of the claim-contract part of the Method; read one paper | All tests green; you can explain Claim, Finding and Registry to a friend |
+| 13 | Searching the literature properly | Search Google Scholar, Semantic Scholar, the ACL Anthology and arXiv with fixed keywords; log every search (date, words, hits); read the closest papers | A search log and a "closest work vs CricketMind" table in `related_work.md`; the novelty claims re-checked |
+| 14 | How journals judge a paper | With your supervisor: 2–3 candidate journals; read 2 recent papers from the first choice; note its scope, length and how its papers evaluate. Ask whether the human study (Days 153–155) needs ethics approval; if so, apply now | Venue chosen and written in `outline.md`; ethics request sent if needed |
+| 15 | Why a test is written before the answers exist | The locked final exam: 100 questions across the five kinds (20 written 4 ways each, plus 20 outside any list), each with its expected handling. You write it, ideally with 2–3 friends in their own words; Claude only explains the format. Save it, record its SHA-256 in `evidence.md`, and do not open it again until Day 149 | The file and its checksum committed |
 
 #### How a Phase 1 day works
 
@@ -1411,7 +1422,7 @@ says why.
 
 **Goal:** the "what kind" and the "who and what" of every claim.
 
-**Why it matters:** C2 (Day 16) asks the engine again using the claim's `Subject`. That is
+**Why it matters:** C2 (Day 19) asks the engine again using the claim's `Subject`. That is
 what catches the Kohli/Rohit swap.
 
 **Learn**
@@ -1483,7 +1494,7 @@ class Claim:
 | A **P** claim has a range, and its value sits inside it | 0.405 with no range; 0.9 with [0.155, 0.697] |
 | An **M** claim names its clip (invariant I5) | a weight transfer with no `clip_id` |
 
-There is no `band` field: Day 13 works the band out from the value, so the two can never
+There is no `band` field: Day 16 works the band out from the value, so the two can never
 disagree.
 
 **Tests:** the document's two example claims (c1 and c2) are accepted; each rule is broken
@@ -1579,7 +1590,7 @@ class ClaimType:
     required_any: tuple[str, ...] = ()   # at least one of these must be filled
 ```
 
-The 9 types of Table 4 in the v3 document, plus `sr_vs_average` for the tone check (C7, Day 22):
+The 9 types of Table 4 in the v3 document, plus `sr_vs_average` for the tone check (C7, Day 25):
 
 | Name | Kind | Source | Needs |
 |---|---|---|---|
@@ -1597,7 +1608,7 @@ The 9 types of Table 4 in the v3 document, plus `sr_vs_average` for the tone che
 `Subject` gains the fields these need: `other_shot`, `bowler`, `other_bowler`, `venue`,
 `match_format`, `team`, `dismissal_type`, `date`, `k`. Two functions: `lookup(name)` gives
 the type or `None`; `missing_keys(claim_type, subject)` lists what is still empty (C1 uses
-it on Day 15). Days 40–42 add more measures and filters, one registry row each.
+it on Day 18). Days 43–45 add more measures and filters, one registry row each.
 
 **Tests:** all 10 are there; lookup works; an unknown name gives `None`; missing keys are
 listed; `review_overturn_rate` passes with a team or a dismissal type, but not with neither.
@@ -1624,7 +1635,7 @@ def check_registry(agent_types: dict[str, list[str]], engine_metrics: set[str]) 
 It reports two kinds of problem: an agent declares a claim type that is not in the registry,
 and a registry entry names a source no engine provides. Agents and engines do not exist yet,
 so the tests pass them in by hand; Phase 5 runs it on the real ones every time the graph is
-built (Day 66).
+built (Day 69).
 
 **Tests:** a good setup has no problems; `pitch_holding_pace` is reported; an entry pointing
 at a missing engine is reported; two problems are both reported, not only the first.
@@ -1648,9 +1659,79 @@ proved by this test.
 
 **Done when:** all tests green; the teach-back done; the draft saved.
 
-**Commit:** `day 12: review, Phase 1 done`
+**Commit:** `day 12: review of the claim code`
 
-#### End of Phase 1 — check before Day 13
+#### Day 13 — The literature search
+
+**Goal:** make sure nobody has already built what the paper will claim, and know the closest
+work well.
+
+**Why it matters:** a journal rejects a paper that calls something new when it is not. Better
+to find out now than on Day 177.
+
+**Learn:** a *systematic* search: fixed search words, several databases and a written log, so a
+reviewer could repeat it.
+
+**Do**
+
+- Search Google Scholar, Semantic Scholar, the ACL Anthology and arXiv with fixed words, for
+  example "LLM numeric claim verification", "faithful uncertainty language model",
+  "multi-agent sports analytics", "cricket question answering LLM".
+- Log every search in `thesis/related_work.md`: date, database, words, hits, papers kept.
+- Read the closest papers (Proof-Carrying Numbers, tool receipts, and whatever the search
+  finds) and fill a table: what each one checks, and what CricketMind adds.
+
+**Done when:** the search log and the table exist, and each novelty claim in the v3 document
+is marked "still new" or "already done by …".
+
+**Commit:** `day 13: literature search`
+
+#### Day 14 — Choosing the journal
+
+**Goal:** pick the journal now, so every test from here on is the kind its reviewers expect.
+
+**Do, with your supervisor**
+
+- A shortlist of 2–3 journals; read 2 recent papers from the first choice.
+- Note in `thesis/outline.md`: the journal, its length limit, and how its papers evaluate
+  (baselines? user studies? open code and data?).
+- Ask whether the human study (Days 153–155) needs ethics approval at MIST. If it does, apply
+  now: approval can take weeks.
+
+**Done when:** the journal is written in `outline.md`, and the ethics request is sent if
+needed.
+
+**Commit:** `day 14: target journal chosen`
+
+#### Day 15 — The locked final exam
+
+**Goal:** write the questions that will produce the paper's final numbers, before the system
+can answer any of them.
+
+**Why it matters:** questions written after a system works tend, without anyone meaning to,
+to be the ones it handles well. Written today and locked, they make a fair exam.
+
+**Learn:** a *checksum* (SHA-256) is a fingerprint of a file. If even one letter changes, the
+fingerprint changes, so anyone can check that the exam was never edited.
+
+**Do**
+
+- 100 questions across the five kinds (stats, prediction, video, rules, can't-check): 20
+  written 4 different ways each, plus 20 that are outside every list in this plan. Video
+  questions name a CricShot10k test clip.
+- Next to each, its expected handling: which kind, and for stats, which measure and filters.
+  No expected numbers: the data is not loaded yet.
+- You write them, ideally with 2–3 friends in their own words. Claude only explains the
+  format and never reads the file before Day 149, so the system's builder does not write,
+  or study, its own exam.
+- Save it as `thesis/exam/final_exam.csv`; record its SHA-256 in `thesis/evidence.md`
+  (E-013); do not open it again until Day 149.
+
+**Done when:** the file and its checksum are committed.
+
+**Commit:** `day 15: locked final exam`
+
+#### End of Phase 1 — check before Day 16
 
 From `backend/`:
 
@@ -1663,7 +1744,7 @@ Phase 2 builds the Faith Check on top of these pieces.
 
 ---
 
-### Phase 2 — Faith Check v3 (Days 13–24)
+### Phase 2 — Faith Check v3 (Days 16–27)
 
 **In simple words:** the Faith Check is the editor. It runs seven checks, and each check asks
 one question:
@@ -1687,22 +1768,22 @@ agent with that reason.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 13 | Words for probability (Kent's scale) | `domain/wording.py`: the five bands, `band_for(p)`, the hedge rule | Tests at the edges: 0.13, 0.40, 0.60, 0.87 |
-| 14 | A pipeline of checks | `domain/faith/gate.py`: `Failure` (agent, claim, check, reason); `run_checks()` runs C1→C7 and collects failures | Test with two dummy checks |
-| 15 | — | C1: schema, registry, agent permission | Tests: unknown type; agent not allowed; no source |
-| 16 | Ports again: ask an engine without knowing which engine | `application/ports.py`: `FactSource`; `FakeFactSource`; C2 re-query with rounding tolerance | Tests: wrong value (F1) and wrong subject (F2) rejected |
-| 17 | Why small samples lie: flip a coin 6 times | C3: evidence floor (30 balls), small-sample qualifier, generalising words ("struggles", "always") | Test: "struggles against spin" on 6 balls rejected; with "on only 6 balls" accepted |
-| 18 | What an interval means, in one picture | C4 part 1: wording must fit the band; a hedge is needed if the interval crosses bands | Test: p = 0.405 with "will probably get him out" rejected |
-| 19 | "No detectable difference" | C4 part 2: a comparison whose interval contains 0 must say so | Test: 142 vs 112 with interval [−16, +76] |
-| 20 | Scanning text for digits | C5: no orphan numbers (allowlist: T20, U-19) | Test: "about 150" in a template rejected |
-| 21 | A gazetteer: a list of known names | C6: names in a sentence must match the claim's subject | Test: the Rohit/Kohli swap rejected |
-| 22 | Tone words are hidden comparisons | C7: a word list with a direction ("strong", "dominates" up; "struggles", "weak" down); a tone word about a player needs a comparison claim (`sr_vs_average` or `sr_difference`) in the same sentence whose whole range is on that side of 0 | Tests: "struggles" with +22 [+8, +36] rejected; "strong" with it passes; "strong" with a range that includes 0 rejected; a tone word with no comparison rejected |
-| 23 | Testing by breaking things on purpose; the results ledger | Fabrication harness: build the F1–F8 versions of a correct finding (F8: a tone word the numbers do not support); a "v2 mode" gate that checks values only. Results go to `thesis/results/`, with one row per run in `ledger.jsonl` | Table: v2 mode catches F1 only; v3 catches F1–F8 (on fake data); E-004 verified |
-| 24 | Review day — **M1** | Tidy, then a journal teach-back | **M1:** the editor works on fake data |
+| 16 | Words for probability (Kent's scale) | `domain/wording.py`: the five bands, `band_for(p)`, the hedge rule | Tests at the edges: 0.13, 0.40, 0.60, 0.87 |
+| 17 | A pipeline of checks | `domain/faith/gate.py`: `Failure` (agent, claim, check, reason); `run_checks()` runs C1→C7 and collects failures | Test with two dummy checks |
+| 18 | — | C1: schema, registry, agent permission | Tests: unknown type; agent not allowed; no source |
+| 19 | Ports again: ask an engine without knowing which engine | `application/ports.py`: `FactSource`; `FakeFactSource`; C2 re-query with rounding tolerance | Tests: wrong value (F1) and wrong subject (F2) rejected |
+| 20 | Why small samples lie: flip a coin 6 times | C3: evidence floor (30 balls), small-sample qualifier, generalising words ("struggles", "always") | Test: "struggles against spin" on 6 balls rejected; with "on only 6 balls" accepted |
+| 21 | What an interval means, in one picture | C4 part 1: wording must fit the band; a hedge is needed if the interval crosses bands | Test: p = 0.405 with "will probably get him out" rejected |
+| 22 | "No detectable difference" | C4 part 2: a comparison whose interval contains 0 must say so | Test: 142 vs 112 with interval [−16, +76] |
+| 23 | Scanning text for digits | C5: no orphan numbers (allowlist: T20, U-19) | Test: "about 150" in a template rejected |
+| 24 | A gazetteer: a list of known names | C6: names in a sentence must match the claim's subject | Test: the Rohit/Kohli swap rejected |
+| 25 | Tone words are hidden comparisons | C7: a word list with a direction ("strong", "dominates" up; "struggles", "weak" down); a tone word about a player needs a comparison claim (`sr_vs_average` or `sr_difference`) in the same sentence whose whole range is on that side of 0 | Tests: "struggles" with +22 [+8, +36] rejected; "strong" with it passes; "strong" with a range that includes 0 rejected; a tone word with no comparison rejected |
+| 26 | Testing by breaking things on purpose; the results ledger | Fabrication harness: build the F1–F8 versions of a correct finding (F8: a tone word the numbers do not support); a "v2 mode" gate that checks values only. Results go to `thesis/results/`, with one row per run in `ledger.jsonl` | Table: v2 mode catches F1 only; v3 catches F1–F8 (on fake data); E-004 verified |
+| 27 | Review day — **M1** | Tidy, then a journal teach-back | **M1:** the editor works on fake data |
 
 ---
 
-### Phase 3 — Real cricket data (Days 25–34)
+### Phase 3 — Real cricket data (Days 28–37)
 
 **In simple words:** Cricsheet gives every ball of thousands of matches as free JSON files. You
 turn them into **one table with one row per ball.**
@@ -1720,20 +1801,20 @@ row:   match_id=1426279, innings=1, over=3, ball=2,
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 25 | Reading Cricsheet JSON by hand | Download 5 matches; write notes on `info`, `innings`, `overs`, `deliveries`, `extras`, `wickets`, `review` | Journal: a hand-drawn diagram of one delivery |
-| 26 | SQL basics with DuckDB: create, insert, select, group by; designing a table (a schema) | `pipeline/schema.py`: the delivery row; the phase rule per format | Test: a hand-made delivery becomes the right row |
-| 27 | Wides and no-balls (why ball numbers get tricky) | `pipeline/parse_match.py`: one match → rows, with plain loops | Tests on 2 fixture matches with a wide, a no-ball and a wicket |
-| 28 | Resumable jobs: a manifest plus atomic writes | `pipeline/ingest.py`: all files → DuckDB, skipping finished files | Test: running twice adds nothing; stopping and restarting works |
-| 29 | Checking data against itself | Checks: innings totals equal the sum of the balls; match counts; empty fields | Report printed; tests on fixtures |
-| 30 | Matching names (aliases) | The player table from the Cricsheet register; name search for N3 | Test: "Kohli" finds "V Kohli" |
-| 31 | Where batting hand and bowling type come from | Route A: export from the `cricketdata` package (needs R, once). Route B: hand-label the players in your evaluation set | Coverage report: the share of balls with a bowler type |
-| 32 | — | Finish the attribute join (a spillover day if Day 31 runs long) | Test: the join keeps every delivery |
-| 33 | Derived tables | The venue table; balls bowled per bowler per date; the reviews table | Tests on fixtures |
-| 34 | Review day | Row counts and file size into the journal | The numbers are written down |
+| 28 | Reading Cricsheet JSON by hand | Download 5 matches; write notes on `info`, `innings`, `overs`, `deliveries`, `extras`, `wickets`, `review` | Journal: a hand-drawn diagram of one delivery |
+| 29 | SQL basics with DuckDB: create, insert, select, group by; designing a table (a schema) | `pipeline/schema.py`: the delivery row; the phase rule per format | Test: a hand-made delivery becomes the right row |
+| 30 | Wides and no-balls (why ball numbers get tricky) | `pipeline/parse_match.py`: one match → rows, with plain loops | Tests on 2 fixture matches with a wide, a no-ball and a wicket |
+| 31 | Resumable jobs: a manifest plus atomic writes | `pipeline/ingest.py`: all files → DuckDB, skipping finished files | Test: running twice adds nothing; stopping and restarting works |
+| 32 | Checking data against itself | Checks: innings totals equal the sum of the balls; match counts; empty fields | Report printed; tests on fixtures |
+| 33 | Matching names (aliases) | The player table from the Cricsheet register; name search for N3 | Test: "Kohli" finds "V Kohli" |
+| 34 | Where batting hand and bowling type come from | Route A: export from the `cricketdata` package (needs R, once). Route B: hand-label the players in your evaluation set | Coverage report: the share of balls with a bowler type |
+| 35 | — | Finish the attribute join (a spillover day if Day 34 runs long) | Test: the join keeps every delivery |
+| 36 | Derived tables | The venue table; balls bowled per bowler per date; the reviews table | Tests on fixtures |
+| 37 | Review day | Row counts and file size into the journal | The numbers are written down |
 
 ---
 
-### Phase 4 — Engines (Days 35–49)
+### Phase 4 — Engines (Days 38–52)
 
 **In simple words:** engines are the only calculators allowed to produce numbers. **N8 counts
 the past. N9 simulates the future and says how unsure it is.**
@@ -1748,25 +1829,25 @@ from 50 balls is wide; one from 5,000 balls is narrow.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 35 | Rates and sample size (why 2 balls tell you nothing); the repository pattern with real SQL | `DeliveryRepository` port, DuckDB adapter, fake; M1: strike rate, dismissal rate, n | Tests on the fake and on a tiny DuckDB file; journal: why 2 balls tell you nothing |
-| 36 | Bootstrap (resampling) | M1: a difference with a 95% interval, fixed seed; the same for a player against the average batter with the same filters (`sr_vs_average`, for C7) | Test reproduces [−16, +76] on the synthetic example; a hand-made `sr_vs_average` case |
-| 37 | — | M2: venue profile (first-innings average, chasing wins, pace and spin wicket share) | Tests |
-| 38 | The workload ratio, and why scientists argue about it | M3: balls bowled in 7 and 28 days, the ratio, a flag (never a probability) | Test with a made-up bowler calendar |
-| 39 | — | M4: DRS reviews, counts and overturn rate | Tests |
-| 40 | Filters times measures: one engine for many questions | Any stats question, part 1: the engine's query is a set of filters (player, bowler, opposition, venue, season, format, innings, phase, bowler type, batting hand) and one measure; every filter is a `Subject` field | Tests: the same measure under different filters, checked by hand on fixtures |
-| 41 | — | Any stats question, part 2: more measures: batting (runs, average, boundary %, dot-ball %) and bowling (wickets, economy, bowling strike rate); each is a registry row, an engine function and renderer words | Tests on hand-computed fixtures; the registry check passes |
-| 42 | — | Any stats question, part 3: batter against bowler (head-to-head) and match results (winner, margin) | Tests on fixtures; the registry check passes |
-| 43 | Connecting the editor to the real engine | The real `FactSource`: registry metric → engine function | C2 test against the tiny DuckDB |
-| 44 | Monte Carlo, and the Beta distribution | N9.T1: chance of being out within k balls, with estimation uncertainty | Test: median ≈ 0.405, interval ≈ [0.155, 0.697] (seeded); journal: the curve for 4 outs in 50 balls |
-| 45 | Shrinkage: pulling small samples toward the average | A population prior from the data | Test: 1 out in 2 balls is not a 50% risk |
-| 46 | — | N9.T2 part 1: head-to-head rates with shrinkage; baseline and counterfactual | Tests |
-| 47 | — | N9.T2 part 2: the simulated difference, its interval, "no detectable difference" | Tests |
-| 48 | Calibration (the weather-forecast example); the Brier score | Calibration run: fit on older seasons, test on the newest | Reliability plot and Brier score saved; journal: what "70% means 70%" means |
-| 49 | Review day — **M2** | The engine report | **M2:** engines on real data |
+| 38 | Rates and sample size (why 2 balls tell you nothing); the repository pattern with real SQL | `DeliveryRepository` port, DuckDB adapter, fake; M1: strike rate, dismissal rate, n | Tests on the fake and on a tiny DuckDB file; journal: why 2 balls tell you nothing |
+| 39 | Bootstrap (resampling) | M1: a difference with a 95% interval, fixed seed; the same for a player against the average batter with the same filters (`sr_vs_average`, for C7) | Test reproduces [−16, +76] on the synthetic example; a hand-made `sr_vs_average` case |
+| 40 | — | M2: venue profile (first-innings average, chasing wins, pace and spin wicket share) | Tests |
+| 41 | The workload ratio, and why scientists argue about it | M3: balls bowled in 7 and 28 days, the ratio, a flag (never a probability) | Test with a made-up bowler calendar |
+| 42 | — | M4: DRS reviews, counts and overturn rate | Tests |
+| 43 | Filters times measures: one engine for many questions | Any stats question, part 1: the engine's query is a set of filters (player, bowler, opposition, venue, season, format, innings, phase, bowler type, batting hand) and one measure; every filter is a `Subject` field | Tests: the same measure under different filters, checked by hand on fixtures |
+| 44 | — | Any stats question, part 2: more measures: batting (runs, average, boundary %, dot-ball %) and bowling (wickets, economy, bowling strike rate); each is a registry row, an engine function and renderer words | Tests on hand-computed fixtures; the registry check passes |
+| 45 | — | Any stats question, part 3: batter against bowler (head-to-head) and match results (winner, margin) | Tests on fixtures; the registry check passes |
+| 46 | Connecting the editor to the real engine | The real `FactSource`: registry metric → engine function | C2 test against the tiny DuckDB |
+| 47 | Monte Carlo, and the Beta distribution | N9.T1: chance of being out within k balls, with estimation uncertainty | Test: median ≈ 0.405, interval ≈ [0.155, 0.697] (seeded); journal: the curve for 4 outs in 50 balls |
+| 48 | Shrinkage: pulling small samples toward the average | A population prior from the data | Test: 1 out in 2 balls is not a 50% risk |
+| 49 | — | N9.T2 part 1: head-to-head rates with shrinkage; baseline and counterfactual | Tests |
+| 50 | — | N9.T2 part 2: the simulated difference, its interval, "no detectable difference" | Tests |
+| 51 | Calibration (the weather-forecast example); the Brier score | Calibration run: fit on older seasons, test on the newest | Reliability plot and Brier score saved; journal: what "70% means 70%" means |
+| 52 | Review day — **M2** | The engine report | **M2:** engines on real data |
 
 ---
 
-### Phase 5 — The graph (Days 50–73)
+### Phase 5 — The graph (Days 53–76)
 
 **In simple words:** LangGraph is a **flowchart that runs**. The **state** is a shared notebook
 that every node reads and writes. You build the whole flowchart with stubs first, then make
@@ -1779,34 +1860,34 @@ writes the report → N13 shows it.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 50 | LangGraph basics: state, nodes, edges, reducers | `application/graph/state.py`; the full skeleton with every node as a stub (node name = function name) | Test: the graph compiles and runs end to end |
-| 51 | Conditional edges: a branch in the flowchart | The entry branch (clip or text only); N3 with a simple rule-based parser first | Tests for both paths |
-| 52 | What a local LLM is; JSON-schema output | `LLM` port, `OllamaLLM` adapter, `FakeLLM` | Test with `FakeLLM`; a manual run with qwen2.5:7b |
-| 53 | — | N3 for real: structured parse → Pydantic; an unknown player gets a clear status | Tests with the fake; 5 manual queries |
-| 54 | Sorting questions by kind | N3 also sorts each question: stats, prediction, video, rules, or can't-check. Every answer starts with "I read this as: …" so a user can see a misunderstanding. A can't-check question (injuries, salaries) gets an honest answer that says what CricketMind can answer instead | Tests on 30 example questions, 6 of each kind, each asked 3 ways |
-| 55 | — | N6 Shot DNA (stub perception); N7a subject-keyed retrieval; N7b context | Tests |
-| 56 | — | N8 and N9 as graph nodes; the sanctioned fact surface | Tests |
-| 57 | Capabilities: what can this question support? | Capability filter: posture needs a clip, matchups need two bowlers, venue claims need a venue | Tests |
-| 58 | — | N10 router part 1: keyword rules, capability filter, cap of 4, default pair | Tests |
-| 59 | — | N10 router part 2: the LLM proposes, using an evidence summary; rules as the fallback | Tests with a scripted `FakeLLM` |
-| 60 | Writing good prompts | Agent spec: stakeholder, allowed claim types, voice; one file per agent in `prompts/` | All 12 prompt files written |
-| 61 | — | Agent factory: LLM → `Finding` (claims + template) under a JSON schema | Tests with scripted findings |
-| 62 | — | The first real agent: Tactical Analysis (N11b), with the real LLM | 5 real findings pass C1–C7; journal notes |
-| 63 | — | N11a Club Operations, N11c Personal Performance, N11d Global Scouting | Tests |
-| 64 | — | N11e Fan Concierge, N11f Stadium Operations (uses M2), N11g Bowling Performance (new, uses T2) | Tests |
-| 65 | — | N11h Content Production, N11i Match Officials (uses M4), N11j Talent Development | Tests |
-| 66 | — | N11k Injury Management (M3 flag), N11l Player Representation | The registry check passes for all 12 |
-| 67 | Explaining without numbers | The Explainer (N11m) for rules and general questions ("What is LBW?"): words only, labelled "general explanation, not checked against data"; no digits (C5) and no named players | Tests: a digit or a player's name in an explanation is rejected; the label is always shown |
-| 68 | Fan-out and collecting results | Dispatch to the chosen agents; collect their findings | Tests |
-| 69 | A bounded loop | The Faith gate node; regenerate only the failing agents, with reasons; budget of 2 | Tests: lie-once is fixed; lie-always is withheld; the loop never runs a third time |
-| 70 | — | The withhold path; N12 synthesis (claim references only) with a fallback; N13 provenance tags | Tests |
-| 71 | — | End-to-end tests: 6 text-only scenarios with fakes | All pass |
-| 72 | — | 10 runs with the real LLM; fix prompts | Journal: what failed and why |
-| 73 | Counting cost | Count steps and agent calls; write the worst-case bound; test it | **M3:** text answers work in the terminal |
+| 53 | LangGraph basics: state, nodes, edges, reducers | `application/graph/state.py`; the full skeleton with every node as a stub (node name = function name) | Test: the graph compiles and runs end to end |
+| 54 | Conditional edges: a branch in the flowchart | The entry branch (clip or text only); N3 with a simple rule-based parser first | Tests for both paths |
+| 55 | What a local LLM is; JSON-schema output | `LLM` port, `OllamaLLM` adapter, `FakeLLM` | Test with `FakeLLM`; a manual run with qwen2.5:7b |
+| 56 | — | N3 for real: structured parse → Pydantic; an unknown player gets a clear status | Tests with the fake; 5 manual queries |
+| 57 | Sorting questions by kind | N3 also sorts each question: stats, prediction, video, rules, or can't-check. Every answer starts with "I read this as: …" so a user can see a misunderstanding. A can't-check question (injuries, salaries) gets an honest answer that says what CricketMind can answer instead | Tests on 30 example questions, 6 of each kind, each asked 3 ways |
+| 58 | — | N6 Shot DNA (stub perception); N7a subject-keyed retrieval; N7b context | Tests |
+| 59 | — | N8 and N9 as graph nodes; the sanctioned fact surface | Tests |
+| 60 | Capabilities: what can this question support? | Capability filter: posture needs a clip, matchups need two bowlers, venue claims need a venue | Tests |
+| 61 | — | N10 router part 1: keyword rules, capability filter, cap of 4, default pair | Tests |
+| 62 | — | N10 router part 2: the LLM proposes, using an evidence summary; rules as the fallback | Tests with a scripted `FakeLLM` |
+| 63 | Writing good prompts | Agent spec: stakeholder, allowed claim types, voice; one file per agent in `prompts/` | All 12 prompt files written |
+| 64 | — | Agent factory: LLM → `Finding` (claims + template) under a JSON schema | Tests with scripted findings |
+| 65 | — | The first real agent: Tactical Analysis (N11b), with the real LLM | 5 real findings pass C1–C7; journal notes |
+| 66 | — | N11a Club Operations, N11c Personal Performance, N11d Global Scouting | Tests |
+| 67 | — | N11e Fan Concierge, N11f Stadium Operations (uses M2), N11g Bowling Performance (new, uses T2) | Tests |
+| 68 | — | N11h Content Production, N11i Match Officials (uses M4), N11j Talent Development | Tests |
+| 69 | — | N11k Injury Management (M3 flag), N11l Player Representation | The registry check passes for all 12 |
+| 70 | Explaining without numbers | The Explainer (N11m) for rules and general questions ("What is LBW?"): words only, labelled "general explanation, not checked against data"; no digits (C5) and no named players | Tests: a digit or a player's name in an explanation is rejected; the label is always shown |
+| 71 | Fan-out and collecting results | Dispatch to the chosen agents; collect their findings | Tests |
+| 72 | A bounded loop | The Faith gate node; regenerate only the failing agents, with reasons; budget of 2 | Tests: lie-once is fixed; lie-always is withheld; the loop never runs a third time |
+| 73 | — | The withhold path; N12 synthesis (claim references only) with a fallback; N13 provenance tags | Tests |
+| 74 | — | End-to-end tests: 6 text-only scenarios with fakes | All pass |
+| 75 | — | 10 runs with the real LLM; fix prompts | Journal: what failed and why |
+| 76 | Counting cost | Count steps and agent calls; write the worst-case bound; test it | **M3:** text answers work in the terminal |
 
 ---
 
-### Phase 6 — The web API (Days 74–85)
+### Phase 6 — The web API (Days 77–88)
 
 **In simple words:** the API is the **waiter** between the website and the kitchen.
 
@@ -1823,22 +1904,22 @@ API      ←  { the full checked report }
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 74 | Contract first: decide the shapes before the code | Pydantic request and response schemas | Visible on the `/docs` page |
-| 75 | FastAPI basics: routes, path parameters, `TestClient`; the app factory; settings from `.env`; logging | `api/main.py`; `GET /api/health` | Test: health returns ok |
-| 76 | `Depends` (dependency injection) and the composition root: wire ports to adapters in one place | `infrastructure/container.py` | Test: fakes swapped in for tests |
-| 77 | — | `POST /api/queries` for text questions, synchronous first | Test with fakes |
-| 78 | Background jobs: why slow work must not block a request | A job store; POST returns a job id; `GET /api/queries/{id}` | Tests |
-| 79 | Server-Sent Events: one-way live updates | `GET /api/queries/{id}/events` streams node progress | Stream test |
-| 80 | Saving data with SQLite and SQLModel | A reports table; a history endpoint | Tests |
-| 81 | Uploading files safely | `POST /api/clips` with type and size limits | Tests: too big and wrong type rejected |
-| 82 | — | `GET /api/players?q=koh` for autocomplete | Tests |
-| 83 | Errors people can understand | One error format for 404, 422 and 500 | Tests |
-| 84 | Security basics: CORS, limits, secrets | CORS for the dev site; `.env` never committed | Tests |
-| 85 | Review day | Export `openapi.json`; try every endpoint by hand | Journal |
+| 77 | Contract first: decide the shapes before the code | Pydantic request and response schemas | Visible on the `/docs` page |
+| 78 | FastAPI basics: routes, path parameters, `TestClient`; the app factory; settings from `.env`; logging | `api/main.py`; `GET /api/health` | Test: health returns ok |
+| 79 | `Depends` (dependency injection) and the composition root: wire ports to adapters in one place | `infrastructure/container.py` | Test: fakes swapped in for tests |
+| 80 | — | `POST /api/queries` for text questions, synchronous first | Test with fakes |
+| 81 | Background jobs: why slow work must not block a request | A job store; POST returns a job id; `GET /api/queries/{id}` | Tests |
+| 82 | Server-Sent Events: one-way live updates | `GET /api/queries/{id}/events` streams node progress | Stream test |
+| 83 | Saving data with SQLite and SQLModel | A reports table; a history endpoint | Tests |
+| 84 | Uploading files safely | `POST /api/clips` with type and size limits | Tests: too big and wrong type rejected |
+| 85 | — | `GET /api/players?q=koh` for autocomplete | Tests |
+| 86 | Errors people can understand | One error format for 404, 422 and 500 | Tests |
+| 87 | Security basics: CORS, limits, secrets | CORS for the dev site; `.env` never committed | Tests |
+| 88 | Review day | Export `openapi.json`; try every endpoint by hand | Journal |
 
 ---
 
-### Phase 7 — The website (Days 86–105)
+### Phase 7 — The website (Days 89–108)
 
 **In simple words:** React builds pages from small reusable components, like LEGO bricks.
 TypeScript tells you about mistakes before you run the page.
@@ -1856,30 +1937,30 @@ export function ProvenanceBadge({ kind }: Props) {
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 86 | JavaScript for Python people (let/const, functions, arrays, objects, async/await); TypeScript basics (types, unions, optional fields) | Vite + React + TypeScript + Tailwind + shadcn/ui + React Router + linter | The home page renders |
-| 87 | React components and props | `ProvenanceBadge` and `ClaimLine`, the first real components | They render on the home page |
-| 88 | `fetch` and promises; effects and loading states, and why TanStack Query exists; types generated from the API | `openapi-typescript` + `openapi-fetch` client; TanStack Query provider | The home page shows a spinner, then "ok" from the typed health check |
-| 89 | — | Layout and pages: Ask, Live, Report, History, How it works | Navigation works |
-| 90 | React state, events and lists; forms | Ask page part 1: the question and player autocomplete | Validation messages show |
-| 91 | Uploads with progress | Ask page part 2: optional clip upload | The progress bar moves |
-| 92 | — | Submit → job id → the Live page | It navigates with the id |
-| 93 | EventSource (the browser side of SSE) | The Live page: a node timeline showing retries and regenerations | The timeline fills in live |
-| 94 | — | Report page part 1: findings per agent; claims with M/D/P badges, sample size, intervals | A saved report renders |
-| 95 | — | Report page part 2: withheld findings, and which check failed; an explanation shows its "not checked" label; a declined question shows what can be asked instead | "Why?" expands |
-| 96 | — | The History page | The list opens a report |
-| 97 | — | The How-it-works page: the v3 diagram, explained simply | It renders |
-| 98 | — | Errors, empty states, skeletons while the LLM is slow | Each state can be seen |
-| 99 | Testing components: Vitest + Testing Library | Tests for the badge, the form and the report | Green |
-| 100 | Mocking | A Live-timeline test with a fake EventSource | Green |
-| 101 | End-to-end tests with Playwright | Ask → report, against the backend in fake mode | Green |
-| 102 | Accessibility and small screens | Labels, keyboard use, contrast, phone layout | Checklist done |
-| 103 | — | Polish; production build | `npm run build` works |
-| 104 | Review day — **M4** | Give yourself a demo | **M4:** the website answers text questions |
-| 105 | — | A spillover day for frontend learning | — |
+| 89 | JavaScript for Python people (let/const, functions, arrays, objects, async/await); TypeScript basics (types, unions, optional fields) | Vite + React + TypeScript + Tailwind + shadcn/ui + React Router + linter | The home page renders |
+| 90 | React components and props | `ProvenanceBadge` and `ClaimLine`, the first real components | They render on the home page |
+| 91 | `fetch` and promises; effects and loading states, and why TanStack Query exists; types generated from the API | `openapi-typescript` + `openapi-fetch` client; TanStack Query provider | The home page shows a spinner, then "ok" from the typed health check |
+| 92 | — | Layout and pages: Ask, Live, Report, History, How it works | Navigation works |
+| 93 | React state, events and lists; forms | Ask page part 1: the question and player autocomplete | Validation messages show |
+| 94 | Uploads with progress | Ask page part 2: optional clip upload | The progress bar moves |
+| 95 | — | Submit → job id → the Live page | It navigates with the id |
+| 96 | EventSource (the browser side of SSE) | The Live page: a node timeline showing retries and regenerations | The timeline fills in live |
+| 97 | — | Report page part 1: findings per agent; claims with M/D/P badges, sample size, intervals | A saved report renders |
+| 98 | — | Report page part 2: withheld findings, and which check failed; an explanation shows its "not checked" label; a declined question shows what can be asked instead | "Why?" expands |
+| 99 | — | The History page | The list opens a report |
+| 100 | — | The How-it-works page: the v3 diagram, explained simply | It renders |
+| 101 | — | Errors, empty states, skeletons while the LLM is slow | Each state can be seen |
+| 102 | Testing components: Vitest + Testing Library | Tests for the badge, the form and the report | Green |
+| 103 | Mocking | A Live-timeline test with a fake EventSource | Green |
+| 104 | End-to-end tests with Playwright | Ask → report, against the backend in fake mode | Green |
+| 105 | Accessibility and small screens | Labels, keyboard use, contrast, phone layout | Checklist done |
+| 106 | — | Polish; production build | `npm run build` works |
+| 107 | Review day — **M4** | Give yourself a demo | **M4:** the website answers text questions |
+| 108 | — | A spillover day for frontend learning | — |
 
 ---
 
-### Phase 8 — Video: classifier and pose (Days 106–121)
+### Phase 8 — Video: classifier and pose (Days 109–124)
 
 **In simple words:** the video path turns a clip into *"this is a Pull, 92% sure"* and measures
 the batter's body.
@@ -1892,22 +1973,22 @@ its final model will be ready. Until it is, a stub stands in for it, and nothing
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 106 | A contract between two projects | In the CricShot repo: export the final classifier (TorchScript), `classes.json`, a model card, and the frame numbers it picks for the 20 parity clips. Copy them into CricketMind's `models/` with a checksum | Checksum matches; the model card states the exact input, step by step (see the note below) |
-| 107 | — | The device helper: XPU → CUDA → CPU | Runs on both machines |
-| 108 | Reading video frames | N1: decode the clip and pick frames exactly as the model card says | Test on a tiny clip |
-| 109 | — | The striker crop, following the model card | The crops look right on 5 clips |
-| 110 | Parity tests: same input, same output | Compare your frames and crops with CricShot's processed clips on the 20 parity clips | The same frame numbers are picked, and the pixel difference is under the agreed limit |
-| 111 | — | The classifier adapter: label and confidence | Stub test, plus one real run |
-| 112 | — | The confidence gate; retry up to 2 times; the low-confidence exit | Tests |
-| 113 | — | The video path wired into the graph and the API | End to end with a real clip |
-| 114 | Pose keypoints: 17 dots on the joints | Run pose on one frame and draw it | Picture saved |
-| 115 | — | N2b on all 15 frames; pick the striker; handle missing joints | Tests |
-| 116 | Turning dots into measurements | Weight transfer, stride length, head over front knee | Tests on hand-made keypoints |
-| 117 | — | Posture validation run on the CricShot10k test clips, resumable | All clips done |
-| 118 | ROC-AUC, in simple words | AUC per metric; keep a metric only if AUC ≥ 0.75 | Report written; registry updated |
-| 119 | — | Measured posture into N6; N11c and N11j cite it | Tests |
-| 120 | — | The website shows the clip, the predicted shot, its confidence and the posture | Tests |
-| 121 | Review day — **M5** | Journal | **M5:** the video path works |
+| 109 | A contract between two projects | In the CricShot repo: export the final classifier (TorchScript), `classes.json`, a model card, and the frame numbers it picks for the 20 parity clips. Copy them into CricketMind's `models/` with a checksum | Checksum matches; the model card states the exact input, step by step (see the note below) |
+| 110 | — | The device helper: XPU → CUDA → CPU | Runs on both machines |
+| 111 | Reading video frames | N1: decode the clip and pick frames exactly as the model card says | Test on a tiny clip |
+| 112 | — | The striker crop, following the model card | The crops look right on 5 clips |
+| 113 | Parity tests: same input, same output | Compare your frames and crops with CricShot's processed clips on the 20 parity clips | The same frame numbers are picked, and the pixel difference is under the agreed limit |
+| 114 | — | The classifier adapter: label and confidence | Stub test, plus one real run |
+| 115 | — | The confidence gate; retry up to 2 times; the low-confidence exit | Tests |
+| 116 | — | The video path wired into the graph and the API | End to end with a real clip |
+| 117 | Pose keypoints: 17 dots on the joints | Run pose on one frame and draw it | Picture saved |
+| 118 | — | N2b on all 15 frames; pick the striker; handle missing joints | Tests |
+| 119 | Turning dots into measurements | Weight transfer, stride length, head over front knee | Tests on hand-made keypoints |
+| 120 | — | Posture validation run on the CricShot10k test clips, resumable | All clips done |
+| 121 | ROC-AUC, in simple words | AUC per metric; keep a metric only if AUC ≥ 0.75 | Report written; registry updated |
+| 122 | — | Measured posture into N6; N11c and N11j cite it | Tests |
+| 123 | — | The website shows the clip, the predicted shot, its confidence and the posture | Tests |
+| 124 | Review day — **M5** | Journal | **M5:** the video path works |
 
 **Which frames is part of the contract.** Never assume "15 evenly spaced frames from the raw
 clip". On 2026-10-16, CricShot's pipeline was: read the clip as RGB → drop repeated frames
@@ -1917,14 +1998,14 @@ what is left. The final model may want a different count too (video models often
 Get any step wrong and nothing crashes: the classifier just sees inputs it never trained on,
 and answers worse. CricShot learned this the hard way: the authors' own model, fed crops made a
 different way, lost more than half its accuracy. So N1 follows the model card, never the
-numbers in this plan, and Day 110 checks the frame numbers exactly, because a frame or two off
+numbers in this plan, and Day 113 checks the frame numbers exactly, because a frame or two off
 can hide inside a pixel tolerance.
 
 The website shows a prediction for a clip, but never the classifier's accuracy.
 
 ---
 
-### Phase 9 — The commentary-to-shot bridge (Days 122–136)
+### Phase 9 — The commentary-to-shot bridge (Days 125–139)
 
 **In simple words:** Cricsheet knows what happened on each ball, but not which shot was played.
 Commentary text often says it. You teach the computer to read it.
@@ -1932,71 +2013,79 @@ Commentary text often says it. You teach the computer to read it.
 **Example:** *"Bumrah to Kohli, FOUR, drives through cover"* → **Cover Drive**.
 
 **A go/no-go gate comes first.** If no commentary corpus you are allowed to use exists, or if
-the labels turn out too unreliable, you take the fallback path on Day 132. That is still a
+the labels turn out too unreliable, you take the fallback path on Day 135. That is still a
 result you can report.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 122 | Licences, and go/no-go decisions | Find a commentary corpus you may use, with match/over/ball keys; read the licence; check the columns | GO or NO-GO written in the journal. NO-GO → Day 132 |
-| 123 | — | Keyword and synonym rules for the 15 shots ("cuts" → Square Cut, "reverse-sweeps" → Reverse Sweep) | Tests |
-| 124 | — | The rules labeller on the whole corpus | Coverage numbers in the journal |
-| 125 | — | An LLM labeller for the lines the rules miss: 15 classes or "none", temperature 0; resumable | `FakeLLM` tests |
-| 126 | Sampling fairly | A tiny labelling tool; a stratified sample of 500 lines | The tool works |
-| 127 | — | Hand-label 250 lines | Saved |
-| 128 | — | Hand-label 250 more | 500 saved |
-| 129 | Cohen's kappa: agreement beyond luck | κ and per-class F1 | Decision: is κ ≥ 0.61? |
-| 130 | — | Join labels to deliveries (match, innings, over, ball; careful with wides and no-balls) | Join-rate report; tests |
-| 131 | — | Shot labels, with confidence, into the delivery table; N7a uses them | Tests |
-| 132 | — | The fallback path: a hand-labelled evaluation set only | Tests |
-| 133 | — | Re-run the engines with shot labels; spot-check | Journal |
-| 134 | Review day — **M6** | The bridge report (a positive or negative result) | **M6** |
-| 135–136 | — | Spillover for labelling and join problems | — |
+| 125 | Licences, and go/no-go decisions | Find a commentary corpus you may use, with match/over/ball keys; read the licence; check the columns | GO or NO-GO written in the journal. NO-GO → Day 135 |
+| 126 | — | Keyword and synonym rules for the 15 shots ("cuts" → Square Cut, "reverse-sweeps" → Reverse Sweep) | Tests |
+| 127 | — | The rules labeller on the whole corpus | Coverage numbers in the journal |
+| 128 | — | An LLM labeller for the lines the rules miss: 15 classes or "none", temperature 0; resumable | `FakeLLM` tests |
+| 129 | Sampling fairly | A tiny labelling tool; a stratified sample of 500 lines | The tool works |
+| 130 | — | Hand-label 250 lines | Saved |
+| 131 | — | Hand-label 250 more | 500 saved |
+| 132 | Cohen's kappa: agreement beyond luck | κ and per-class F1 | Decision: is κ ≥ 0.61? |
+| 133 | — | Join labels to deliveries (match, innings, over, ball; careful with wides and no-balls) | Join-rate report; tests |
+| 134 | — | Shot labels, with confidence, into the delivery table; N7a uses them | Tests |
+| 135 | — | The fallback path: a hand-labelled evaluation set only | Tests |
+| 136 | — | Re-run the engines with shot labels; spot-check | Journal |
+| 137 | Review day — **M6** | The bridge report (a positive or negative result) | **M6** |
+| 138–139 | — | Spillover for labelling and join problems | — |
 
 ---
 
-### Phase 10 — Evaluation for the thesis (Days 137–150)
+### Phase 10 — Evaluation for the thesis (Days 140–160)
 
 **In simple words:** an exam for your system. Each experiment asks one question and has a
-pass rule written down *before* you run it.
+pass rule written down *before* you run it. The final numbers come from the locked exam
+written on Day 15, run once, and are compared with two baselines and rated by people.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 137 | Designing experiments | The evaluation plan: question, method, pass rule for each | Written |
-| 138 | — | Fabrication containment F1–F8: v2 mode vs v3 | Catch-rate table |
-| 139 | — | False rejections: how often correct findings are wrongly stopped | Rate and examples |
-| 140 | — | The cost of containment: vary how often agents lie | Plot |
-| 141 | Writing good test questions | Routing set: the first 50 labelled questions | Saved |
-| 142 | — | Routing set: 50 more, then check the labels | 100 questions |
-| 143 | — | Keyword router vs LLM router, 3 runs each | Accuracy and stability |
-| 144 | Measuring coverage honestly | Coverage set: 40 questions across the five kinds, each written 5 different ways, plus 30 questions outside the plan's lists; the right handling of each is written down before anything runs | 230 questions saved and labelled |
-| 145 | — | Run the coverage set: how many were proved, explained or declined; every wrong answer; and whether all 5 wordings of a question got the same checked facts | `results/coverage.csv`; a row in `evidence.md` |
-| 146 | — | Engine validation: calibration plots and spot checks | Figures |
-| 147 | — | Measured cost vs the formula, across scenarios | Table |
-| 148 | — | All figures and tables in one style | `docs/results/` |
-| 149 | Honest limits | Threats to validity; what not to claim | Written |
-| 150 | Review day — **M7** | Journal | **M7:** thesis results ready |
+| 140 | Designing experiments | The evaluation plan: question, method, pass rule for each, including the baselines, the ablation and the human study | Written |
+| 141 | — | Fabrication containment F1–F8: v2 mode, v3, and v3 with each check turned off in turn (ablation) | Catch-rate table; which lies get through with each check off; E-016 verified |
+| 142 | — | False rejections: how often correct findings are wrongly stopped | Rate and examples |
+| 143 | — | The cost of containment: vary how often agents lie | Plot |
+| 144 | Writing good test questions | Routing set: the first 50 labelled questions | Saved |
+| 145 | — | Routing set: 50 more, then check the labels | 100 questions |
+| 146 | — | Keyword router vs LLM router, 3 runs each | Accuracy and stability |
+| 147 | Practice before the exam | Practice set: 40 questions across the five kinds, each written 5 different ways, plus 30 outside the plan's lists, labelled before running; run it and list every gap and wrong answer | `results/coverage_practice.csv` (never reported as a final result) |
+| 148 | — | Fill the gaps the practice set found (each new measure: a registry row, an engine function, a hand-checked test); run the practice set again | Fewer gaps; every change in the journal |
+| 149 | Testing once, honestly | The final exam: open the locked set from Day 15, check its checksum, run it once. How many were proved, explained or declined; every wrong answer; the same checked facts for every wording? | `results/coverage_final.csv`; E-013 verified |
+| 150 | What a baseline is, and why it must be fair | Baseline 1, plain AI: the same local model, with no data and no checks, answers the locked set; every answer saved, resumable. If you can, a large online model as well | All answers saved |
+| 151 | — | Baseline 2, AI with facts but no checks: the agents get the engine's facts, but the Faith Check is switched off; it answers the locked set | All answers saved |
+| 152 | — | Score all three systems: check every number each one states against the engine; count wrong numbers, unchecked numbers and honest declines | `results/baselines.csv`; E-014 verified |
+| 153 | Designing a fair human study | 20 questions from the locked set; the three systems' answers shown blind and in random order; raters score trust and usefulness; a consent form; the ethics approval asked for on Day 14 in hand | Study pack ready |
+| 154 | — | Run the study with at least 10 raters (cricket fans, players or coaches); save every rating as it comes in | All ratings saved |
+| 155 | Comparing ratings fairly | Mean rating per system, agreement between raters, a significance test | `results/human_study.csv`; E-015 verified |
+| 156 | — | Engine validation: calibration plots and spot checks | Figures |
+| 157 | — | Measured cost vs the formula, across scenarios | Table |
+| 158 | — | All figures and tables in one style | `docs/results/` |
+| 159 | Honest limits | Threats to validity; what not to claim | Written |
+| 160 | Review day — **M7** | Journal | **M7:** thesis results ready |
 
 ---
 
-### Phase 11 — Ship it (Days 151–158)
+### Phase 11 — Ship it (Days 161–168)
 
 **In simple words:** a Docker container is a shipping box for software. Everything the app
 needs goes inside, so it runs the same on any computer.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 151 | Containers, simply; install Docker Desktop | Dockerfiles for the backend and the frontend | Both images build |
-| 152 | — | `docker-compose.yml`; Ollama stays on the host | One command starts everything |
-| 153 | — | Production settings; smoke test from a clean start | It works |
-| 154 | Writing for other people | README (a 10-step setup), architecture notes, decision records | A friend can run it |
-| 155 | — | The demo script: a text question, a clip question, and the Faith Check catching a planted lie | Rehearsed |
-| 156 | — | Record the demo video | Saved |
-| 157 | — | Final checklist; tag v1.0 | **M8:** shipped |
-| 158 | — | Buffer | — |
+| 161 | Containers, simply; install Docker Desktop | Dockerfiles for the backend and the frontend | Both images build |
+| 162 | — | `docker-compose.yml`; Ollama stays on the host | One command starts everything |
+| 163 | — | Production settings; smoke test from a clean start | It works |
+| 164 | Writing for other people | README (a 10-step setup), architecture notes, decision records | A friend can run it |
+| 165 | — | The demo script: a text question, a clip question, and the Faith Check catching a planted lie | Rehearsed |
+| 166 | — | Record the demo video | Saved |
+| 167 | — | Final checklist; tag v1.0 | **M8:** shipped |
+| 168 | — | Buffer | — |
 
 ---
 
-### Phase 12 — Write the paper (Days 159–173)
+### Phase 12 — Write the paper (Days 169–183)
 
 **In simple words:** by now the paper's pieces already exist — decisions, numbers, evidence,
 limitations, references and rough drafts. This phase assembles them and polishes. The
@@ -2004,21 +2093,21 @@ introduction and abstract are written last, once you know exactly what you found
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 159 | How papers in your target venue are written | Choose the venue and its template; read 3 recent papers from it; set word budgets in `outline.md` | Venue, template and budgets decided |
-| 160 | — | Final check of figures and tables (all rebuilt by script); `evidence.md` and `numbers.md` complete | Every planned claim is verified or dropped |
-| 161 | Writing a method section | Method part 1: provenance classes, the claim contract, the registry | Draft done |
-| 162 | — | Method part 2: Faith Check C1–C7, the engines and their uncertainty, the evidence pipeline, perception (no accuracy) | Draft done |
-| 163 | — | Implementation: clean architecture, the API, the website | Draft done |
-| 164 | — | Evaluation setup: questions, data, metrics, pass rules | Draft done |
-| 165 | Writing results: say what you measured, not what you hoped | Results part 1: containment, false rejections, cost of containment | Draft done |
-| 166 | — | Results part 2: calibration, posture, bridge, routing, cost bounds; discussion | Draft done |
-| 167 | Positioning against related work | Related work from `related_work.md` | Draft done |
-| 168 | — | Introduction and abstract (written last, on purpose) | Draft done |
-| 169 | — | Limitations (from `limitations.md`), data licences and ethics, conclusion | Full draft done |
-| 170 | Be the paper's Faith Check | Check every number against `numbers.md` and every claim against `evidence.md`; no classifier accuracy anywhere | Zero unsupported numbers or claims |
-| 171 | — | Revise after your supervisor's feedback | Feedback addressed |
-| 172 | — | Polish: language, references, formatting, page limit | Fits the template |
-| 173 | — | Final read-through; a submission-ready PDF; tag the commit | **M9:** the paper is ready |
+| 169 | How papers in your target venue are written | Confirm the journal chosen on Day 14 and get its template; read 3 recent papers from it; set word budgets in `outline.md` | Template and budgets set |
+| 170 | — | Final check of figures and tables (all rebuilt by script); `evidence.md` and `numbers.md` complete | Every planned claim is verified or dropped |
+| 171 | Writing a method section | Method part 1: provenance classes, the claim contract, the registry | Draft done |
+| 172 | — | Method part 2: Faith Check C1–C7, the engines and their uncertainty, the evidence pipeline, perception (no accuracy) | Draft done |
+| 173 | — | Implementation: clean architecture, the API, the website | Draft done |
+| 174 | — | Evaluation setup: questions, data, metrics, pass rules | Draft done |
+| 175 | Writing results: say what you measured, not what you hoped | Results part 1: containment, false rejections, cost of containment | Draft done |
+| 176 | — | Results part 2: calibration, posture, bridge, routing, cost bounds; discussion | Draft done |
+| 177 | Positioning against related work | Related work from `related_work.md` | Draft done |
+| 178 | — | Introduction and abstract (written last, on purpose) | Draft done |
+| 179 | — | Limitations (from `limitations.md`), data licences and ethics, conclusion | Full draft done |
+| 180 | Be the paper's Faith Check | Check every number against `numbers.md` and every claim against `evidence.md`; no classifier accuracy anywhere | Zero unsupported numbers or claims |
+| 181 | — | Revise after your supervisor's feedback | Feedback addressed |
+| 182 | — | Polish: language, references, formatting, page limit | Fits the template |
+| 183 | — | Final read-through; a submission-ready PDF; tag the commit | **M9:** the paper is ready |
 
 ---
 
@@ -2044,10 +2133,12 @@ when" check passes.
 
 | Word | Meaning, simply |
 |---|---|
+| **Ablation** | Turning one part off at a time, to prove each part is needed. |
 | **Agent** | A part of the system that writes for one audience (coaches, fans…). It may only quote checked facts. |
 | **API / endpoint** | A door into the backend. `POST /api/queries` is one door. |
 | **Adapter** | Code that implements a port using a real tool (DuckDB, Ollama). |
 | **AUC** | How well a number separates two groups. 0.5 is a coin flip; 1.0 is perfect. |
+| **Baseline** | A simpler system answering the same questions, so the paper can show what is gained. |
 | **Beta distribution** | A curve of how believable each possible rate is, given what you have seen. |
 | **Bootstrap** | Replaying your data many times by random picking, to see how much a result could change. |
 | **Brier score** | A score for probability forecasts. Lower is better. |
@@ -2063,6 +2154,7 @@ when" check passes.
 | **Fan-out** | Running several nodes or agents at the same time. |
 | **Gazetteer** | A list of known names: players, shots, venues. |
 | **Ledger** | A file that gains one row per experiment run, written automatically, so no result is ever typed by hand. |
+| **Locked exam** | Test questions written early, fingerprinted with a checksum, and run once at the end, so nobody can tune the system to them. |
 | **Monte Carlo** | Answering a question by simulating it many times with random numbers. |
 | **Orphan number** | A number in a sentence that did not come from a checked claim. |
 | **Port** | A promise about what a tool can do, written without naming the tool. |
