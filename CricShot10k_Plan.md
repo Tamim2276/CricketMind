@@ -4040,6 +4040,11 @@ A03's author row stays as recorded. Re-run it deterministic at the end of
 11.2 (`--exp A03_gru128 --split author --force`), so the whole family runs
 in one mode and the force run gives a third number for the same model.
 
+**The re-run, 2026-10-19: 51.96%**, deterministic, 58 epochs. Three runs of
+one model and seed: **53.66%, 52.59%, 51.96%**: mean 52.74%, spread 1.70
+points. That is the size of a single flat-GRU run's noise, and it backs the
+rule above: gaps under ~1.5 points are ties.
+
 ### 11.2 Launch the family (≈30 GPU-hours)
 
 **Run.**

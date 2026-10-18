@@ -3120,3 +3120,35 @@ single flat-GRU run is good to about a point, from the GPU alone. Gaps
 under ~1.5 points in Family A are ties until Phase 4.
 
 Tests: 199 pass with the project's .venv.
+
+## 2026-10-18/19 — Family A finished, and A03 a third time
+
+All 28 runs, about 20 hours, every row deterministic (A03 author re-run
+with --force on the 19th: 51.96%).
+
+The same model and seed, three times: 53.66% (cached_gru), 52.59% (A03,
+not deterministic), 51.96% (A03, deterministic). Spread 1.70 points. That is
+the noise floor for comparing single runs of the flat GRU.
+
+What Family A says (grouped val first, author second):
+- Shrink first, then read: transformer 4L/8H 70.11 / 68.81, TCN 69.66 /
+  67.17, transformer 2L 68.96 / 66.22, attention pooling 68.13 / 64.90,
+  NetVLAD 63.54 / 65.03. All project 62,720 -> 256 before the temporal step.
+- The recurrent heads on the raw 62,720: 50-56%. The same GRU on the
+  1,280-wide avg view (A14): 63.10 / 62.44, with 0% pinned and 0% dead
+  against A03's 41% / 16%. The GRU's trouble is input width.
+- A13 (LayerNorm, then GRU) made it worse: 52.71 / 49.43, pinned 53%, dead
+  33%. LayerNorm centres the features but also scales the many near-zero
+  SiLU values up to unit size, so the 62,720-wide sum into each gate gets
+  larger, not smaller. My hypothesis from 8.6 was wrong; the write-up should
+  say so.
+- Order matters a little: attention pooling (order-blind) 68.13 against the
+  transformer's 70.11 and the TCN's 69.66, within noise of each other.
+- The authors' recurrent ranking (BiLSTM second best at 87.65%) does not
+  carry over to frozen features: every recurrent head sits in 48-56%.
+- Gap (author - grouped) across A: -5.41 to +3.32, mean -1.50. Each gap is
+  two single runs, so about +-2 is noise.
+
+Open question, not in the registry: a GRU after the same learned 256-wide
+projection. It would separate "shrink" from "attention" cleanly. A Phase 4
+candidate.
