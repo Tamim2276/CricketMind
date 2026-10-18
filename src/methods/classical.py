@@ -16,6 +16,8 @@ fixed for all six: Family D asks how separable the features already are,
 not how far each model can be tuned.
 """
 import os
+import sys
+import threading
 import time
 
 import joblib
@@ -23,6 +25,7 @@ import numpy as np
 
 from src.data.features import FeatureDataset
 from src.evaluate import confusion, file_fingerprint, per_class
+from src.utils import progress
 from src.utils.checkpoint import append_result
 
 NAME = "classical"
@@ -45,19 +48,51 @@ def check(cfg):
     return None
 
 
-def vectors(cfg, split_csv, classes=None):
-    """(clips, D) numbers and (clips,) labels for one split."""
+def vectors(cfg, split_csv, classes=None, label=None):
+    """(clips, D) numbers and (clips,) labels for one split. With a label,
+    a progress line while the files load."""
     data = FeatureDataset(split_csv, features=cfg["features"], view=cfg["view"],
                           classes=classes)
+    show = label is not None and progress.is_tty()
     rows = []
     labels = []
     for i in range(len(data)):
-        x, label = data[i]
+        x, y = data[i]
         if x.dim() == 2:
             x = x.mean(dim=0)              # 15 frames -> one vector
         rows.append(x.numpy())
-        labels.append(label)
+        labels.append(y)
+        if show and (i % 50 == 0 or i == len(data) - 1):
+            sys.stdout.write(progress.line(i + 1, len(data), prefix=label))
+            sys.stdout.flush()
+    if show:
+        sys.stdout.write("\r" + " " * 100 + "\r")
     return np.stack(rows), np.array(labels), data
+
+
+def _fit_with_clock(model, x, y, head, quiet):
+    """sklearn's fit is one call with nothing to count, so show a clock."""
+    if quiet or not progress.is_tty():
+        model.fit(x, y)
+        return
+    done = threading.Event()
+
+    def clock():
+        start = time.time()
+        while not done.wait(1.0):
+            gone = int(time.time() - start)
+            sys.stdout.write(f"\r  fitting {head} ... {gone // 60}:{gone % 60:02d}"
+                             f" elapsed")
+            sys.stdout.flush()
+
+    ticker = threading.Thread(target=clock, daemon=True)
+    ticker.start()
+    try:
+        model.fit(x, y)
+    finally:
+        done.set()
+        ticker.join()
+        sys.stdout.write("\r" + " " * 60 + "\r")
 
 
 def estimator(cfg):
@@ -111,16 +146,22 @@ def fit(cfg, quiet=False):
     out = run_dir(cfg)
     os.makedirs(out, exist_ok=True)
 
-    x, y, data = vectors(cfg, os.path.join(cfg["split"], "train.csv"))
+    load_label = None
+    if not quiet:
+        load_label = "  loading train "
+    x, y, data = vectors(cfg, os.path.join(cfg["split"], "train.csv"),
+                         label=load_label)
+    if not quiet:
+        load_label = "  loading val   "
     xv, yv, _ = vectors(cfg, os.path.join(cfg["split"], "val.csv"),
-                        data.classes)
+                        data.classes, label=load_label)
     if not quiet:
         print(f"{cfg['name']} [classical {cfg['head']}]: {len(y)} train, "
               f"{len(yv)} val, {x.shape[1]} numbers per clip", flush=True)
 
     started = time.time()
     model = estimator(cfg)
-    model.fit(x, y)
+    _fit_with_clock(model, x, y, cfg["head"], quiet)
     minutes = (time.time() - started) / 60
     val_top1 = float((model.predict(xv) == yv).mean())
 
@@ -149,7 +190,9 @@ def score(ckpt_path, split_csv):
     cfg = saved["cfg"]
     classes = saved["classes"]
     model = saved["model"]
-    x, y, data = vectors(cfg, split_csv, classes)
+    part = os.path.splitext(os.path.basename(split_csv))[0]
+    x, y, data = vectors(cfg, split_csv, classes,
+                         label=f"  scoring {part:<6}")
 
     scores = _scores(model, x)
     order = np.argsort(-scores, axis=1)

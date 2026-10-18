@@ -143,3 +143,37 @@ def test_settings_a_single_fit_cannot_use_are_refused():
 def test_all_six_family_d_ids_are_valid():
     for entry in R.entries("D"):
         assert C.check(R.resolve(entry, "author")) is None, entry["id"]
+
+
+# ---- progress: a loading bar and a fitting clock --------------------------
+
+def test_loading_shows_a_progress_line(world, monkeypatch, capsys):
+    monkeypatch.setattr(C.progress, "is_tty", lambda: True)
+    runner.run_one(R.get("X01_linear"), "author", overrides=world["over"],
+                   quiet=False)
+    out = capsys.readouterr().out
+    assert "loading train" in out
+    assert "scoring val" in out
+    assert "fitted in" in out
+
+
+def test_a_slow_fit_shows_a_running_clock(monkeypatch, capsys):
+    import time
+
+    class Slow:
+        def fit(self, x, y):
+            time.sleep(1.3)
+
+    monkeypatch.setattr(C.progress, "is_tty", lambda: True)
+    C._fit_with_clock(Slow(), None, None, "svm", quiet=False)
+    assert "fitting svm ... 0:01 elapsed" in capsys.readouterr().out
+
+
+def test_quiet_fits_print_nothing(monkeypatch, capsys):
+    class Quick:
+        def fit(self, x, y):
+            pass
+
+    monkeypatch.setattr(C.progress, "is_tty", lambda: True)
+    C._fit_with_clock(Quick(), None, None, "rf", quiet=True)
+    assert capsys.readouterr().out == ""
