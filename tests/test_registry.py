@@ -144,7 +144,9 @@ def test_unread_key_is_caught(monkeypatch):
 def test_status_names_what_is_missing():
     assert R.status(R.get("C01_r2plus1d_18")) == "needs method video3d"
     assert R.status(R.get("B01_effnetv2s")) == "ready"
-    assert R.status(R.get("B03_xception")) == "torchvision has no xception"
+    fake = {"id": "B99_fake", "base": "mimic_author",
+            "cfg": {"backbone": "no_such_net"}, "why": "x"}
+    assert R.status(fake) == "neither torchvision nor timm has no_such_net"
 
 
 def test_status_spots_a_missing_cache(monkeypatch, tmp_path):

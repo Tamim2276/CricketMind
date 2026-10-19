@@ -22,10 +22,8 @@ READS = ("variant", "processed", "flip", "backbone", "pretrained", "freeze",
 
 def check(cfg):
     """Why this config cannot start yet, or None."""
-    from torchvision.models import list_models
-    if cfg["backbone"] not in list_models():
-        return f"torchvision has no {cfg['backbone']}"
-    return None
+    from src.models.encoder import backbone_problem
+    return backbone_problem(cfg["backbone"], cfg["pretrained"])
 
 
 def datasets(cfg):

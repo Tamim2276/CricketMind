@@ -25,11 +25,11 @@ SPLITS = {
 # family -> (what it asks, the plan day it runs)
 FAMILIES = {
     "P": ("linear probe on each cache", "9"),
-    "A": ("temporal heads on frozen EfficientNetV2-S", "10"),
-    "D": ("classical models on frozen EfficientNetV2-S", "11"),
-    "V": ("video- and image-pretrained features, frozen", "12"),
-    "B": ("CNN backbones, end to end", "13-18"),
-    "C": ("3D and video models, end to end", "19-27"),
+    "A": ("temporal heads on frozen EfficientNetV2-S", "10-11"),
+    "D": ("classical models on frozen EfficientNetV2-S", "12"),
+    "V": ("video- and image-pretrained features, frozen", "14-15"),
+    "B": ("CNN backbones, end to end", "17-22"),
+    "C": ("3D and video models, end to end", "23-27"),
 }
 
 MAX_DELTA = 3
@@ -191,11 +191,11 @@ ENTRIES = [
      "why": "the authors' backbone; the author row is the 78.14% "
             "reproduction, the grouped row has never been measured"},
     {"id": "B02_effnetv2b3", "base": "mimic_author",
-     "cfg": {"backbone": "efficientnetv2_b3"},
+     "cfg": {"backbone": "tf_efficientnetv2_b3.in1k"},
      "why": "does two-thirds the size cost anything? The authors report "
             "88.39%"},
     {"id": "B03_xception", "base": "mimic_author",
-     "cfg": {"backbone": "xception"},
+     "cfg": {"backbone": "legacy_xception.tf_in1k"},
      "why": "the authors report 88.64%; does it reproduce?"},
     {"id": "B04_convnext_t", "base": "mimic_author",
      "cfg": {"backbone": "convnext_tiny"},

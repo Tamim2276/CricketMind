@@ -3338,3 +3338,23 @@ CNN (10/15/20 frames)" and also "your existing multiscale_model.py", but
 that file is multi-scale in *space* (three EfficientNetV2-S stages joined),
 not in time. F01 is now the model the file describes; the 10/15/20-frame
 idea already lives in Tier 2 #5 and Phase 4's frames axis.
+
+## 2026-10-19 — Day 17 built: timm backbones and a memory probe
+
+B02 and B03 aren't in torchvision, so the frame encoder now asks timm for
+any name torchvision doesn't know. torchvision still wins a shared name
+(resnet50), so nothing earlier changes. B02 = tf_efficientnetv2_b3.in1k,
+B03 = legacy_xception.tf_in1k, the original Keras Xception.
+
+Caught before it cost a run: Xception was trained on inputs scaled to
+mean/std 0.5, not ImageNet's. Fed ImageNet-normalised frames, fine-tuning
+would have spent its first epochs undoing the mismatch, and B03 would have
+lost to the others for a reason that has nothing to do with Xception. The
+encoder now converts, with one multiply-add derived from the name.
+
+Swin turned out not to need anything: torchvision already permutes it to
+channels first before the pool.
+
+RegNetY-16GF's grid flattens to 148,176 numbers, so its GRU kernel alone is
+57M parameters. If anything doesn't fit, it's that one; the memory probe
+will say.

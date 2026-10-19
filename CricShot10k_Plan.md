@@ -4472,6 +4472,28 @@ the pooling must handle that.
 
 **Check.** `--list --family B` shows all 8 `ready`.
 
+**Built 2026-10-19.** `src/models/encoder.py`: a name torchvision lacks is
+built by timm (`is_timm`, `_timm_backbone`); torchvision wins a name both
+have, so every earlier run is unchanged.
+1. **Names:** B02 = `tf_efficientnetv2_b3.in1k` (12.8M, ImageNet-1k like
+   the rest of B), B03 = `legacy_xception.tf_in1k` (20.8M, the original
+   Keras Xception the authors used). Both match Appendix A's sizes.
+2. **Colours from the weights (8.10's rule).** Xception was trained on mean
+   and std 0.5, not ImageNet's; the encoder converts the dataset's ImageNet
+   colours with one multiply-add (`recolour`), derived from the name and not
+   saved. B3 uses ImageNet's, so nothing changes for it.
+3. **Swin needed nothing.** torchvision permutes Swin's (N, H, W, C) to
+   channels first before its pool, so removing the pool gives the same
+   channel-major grid as every CNN (a test pins it).
+4. **Grids, flattened** (7 × 7 × channels): ConvNeXt-T and Swin-T 37,632;
+   MobileNetV3-L 47,040; B01 62,720; B3 75,264; Xception and ResNet-50
+   100,352; RegNetY-16GF 148,176, which makes its GRU kernel 57M on its own.
+5. **`check()` names what is missing.** B3's weights live on Hugging Face,
+   which this machine keeps offline, so `--list` prints the one download
+   command until they are there. Xception's come from a plain URL and the
+   torchvision ones from download.pytorch.org; both download themselves.
+6. `FAMILIES`' day ranges updated to the rewritten Phase 3.
+
 ### 17.2 Will it fit? A memory probe (≈1 h)
 
 **Why.** RegNetY-16GF has 83M parameters, and a batch is 60 frames. It may not
@@ -4483,6 +4505,15 @@ resolved config, train 3 batches, print the peak GPU memory.
 **Check.** Each backbone fits at batch 4. If one does not: batch 2 with
 accumulation 2 (the same effective batch), added as that ID's delta and written
 in the journal as a protocol change. Never change it silently.
+
+**Built 2026-10-19.** `tools/memprobe.py` builds the run with train.py's own
+pieces (`_make_loaders`, the method's `model`, `_make_optimizer`,
+`train_epoch`), trains one warm-up batch and three timed ones, and prints
+peak memory against the card (`torch.cuda` or `torch.xpu`, whichever it
+is), seconds per batch and minutes per epoch. "Fits" means under 90% of the
+card. Running out of memory is caught and turned into the batch 2 × accum 2
+advice. Nothing is saved. Probing B01 too gives a check on the estimate,
+since its real epoch time is known.
 
 ### 17.3 Re-cost on B02, alone (≈4 GPU-hours)
 

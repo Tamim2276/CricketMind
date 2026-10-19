@@ -135,3 +135,95 @@ def test_convnext_keeps_its_final_layernorm():
         mine = full.classifier[2](e(x))
         theirs = full(x.flatten(0, 1)).unflatten(0, (1, 2))
     assert torch.allclose(mine, theirs, atol=1e-5)
+
+
+# --- Day 17: Family B's backbones -------------------------------------------
+
+@pytest.mark.parametrize("name, flat", [
+    ("convnext_tiny", 37632),        # 768 x 7 x 7
+    ("mobilenet_v3_large", 47040),   # 960 x 7 x 7
+    ("resnet50", 100352),            # 2048 x 7 x 7
+    ("swin_t", 37632),               # 768 x 7 x 7
+])
+def test_every_torchvision_b_backbone_gives_its_whole_grid(name, flat):
+    e = FrameEncoder(name, pretrained=False, pool="flatten")
+    assert e.out_dim == flat
+
+
+def test_swin_hands_over_its_grid_channels_first_like_a_cnn():
+    """Swin works in (N, H, W, C); torchvision permutes before its pool, so
+    the flattened row is channel-major like every CNN's."""
+    from torchvision.models import get_model
+
+    e = FrameEncoder("swin_t", pretrained=False, pool="flatten").eval()
+    full = get_model("swin_t", weights=None).eval()
+    e.backbone.load_state_dict(full.state_dict(), strict=False)
+    x = clip(1, 1, 224)
+    with torch.no_grad():
+        grid = full.permute(full.norm(full.features(x.flatten(0, 1))))
+        assert grid.shape == (1, 768, 7, 7)
+        assert torch.equal(e(x)[0], grid.flatten(1))
+
+
+@pytest.mark.parametrize("name, avg, flat", [
+    ("tf_efficientnetv2_b3.in1k", 1536, 75264),
+    ("legacy_xception.tf_in1k", 2048, 100352),
+])
+def test_the_timm_backbones_build_both_ways(name, avg, flat):
+    pytest.importorskip("timm")
+    assert FrameEncoder(name, pretrained=False).out_dim == avg
+    assert FrameEncoder(name, pretrained=False, pool="flatten").out_dim == flat
+
+
+def test_torchvision_wins_a_name_both_libraries_have():
+    """resnet50 is in both. torchvision, or B06 would change under B01's
+    protocol without anyone deciding it."""
+    from src.models.encoder import is_timm
+
+    assert not is_timm("resnet50")
+    e = FrameEncoder("resnet50", pretrained=False)
+    assert type(e.backbone).__module__.startswith("torchvision")
+
+
+def test_xception_gets_its_own_colours():
+    """Trained on 0.5 / 0.5. The dataset hands over ImageNet colours, so the
+    encoder must turn them back into what Xception expects."""
+    pytest.importorskip("timm")
+    from src.data.dataset import IMAGENET_MEAN, IMAGENET_STD
+
+    e = FrameEncoder("legacy_xception.tf_in1k", pretrained=False).eval()
+    assert e.recolour
+    assert not FrameEncoder("tf_efficientnetv2_b3.in1k",
+                            pretrained=False).recolour
+    raw = torch.rand(1, 1, 3, 96, 96)
+    mean = torch.tensor(IMAGENET_MEAN).view(1, 1, 3, 1, 1)
+    std = torch.tensor(IMAGENET_STD).view(1, 1, 3, 1, 1)
+    with torch.no_grad():
+        mine = e((raw - mean) / std)
+        theirs = e.backbone((raw[0] - 0.5) / 0.5)
+    assert torch.allclose(mine[0], theirs, atol=1e-5)
+
+
+def test_the_colour_fix_is_not_saved():
+    """It follows from the name; a saved copy could only go stale."""
+    pytest.importorskip("timm")
+    e = FrameEncoder("legacy_xception.tf_in1k", pretrained=False)
+    for key in e.state_dict():
+        assert key not in ("scale", "shift")
+
+
+def test_backbone_problem_names_what_is_missing(monkeypatch):
+    pytest.importorskip("timm")
+    import src.models.encoder as encoder
+
+    assert encoder.backbone_problem("resnet50") is None
+    assert encoder.backbone_problem("no_such_net") == \
+        "neither torchvision nor timm has no_such_net"
+    # Xception's weights come from a plain URL: they download themselves
+    assert encoder.backbone_problem("legacy_xception.tf_in1k") is None
+    # B3's live on Hugging Face, which this machine keeps offline
+    monkeypatch.setattr(encoder, "_hf_cached", lambda repo, filename: False)
+    told = encoder.backbone_problem("tf_efficientnetv2_b3.in1k")
+    assert "HF_HUB_OFFLINE=0 hf download timm/tf_efficientnetv2_b3.in1k" in told
+    assert encoder.backbone_problem("tf_efficientnetv2_b3.in1k",
+                                    pretrained=False) is None
