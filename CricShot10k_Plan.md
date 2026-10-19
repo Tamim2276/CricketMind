@@ -4296,12 +4296,60 @@ python -m src.experiments.run --family V
 **Check.** 20 rows. **V01 should not lose to P03** (the same r3d_18 features; an
 MLP can do anything a Linear can). The probe suggests V07 (VideoMAE) leads.
 
+**Ran 2026-10-19.** 20 rows in 2.5 h, 4–10 min each. Val, author / grouped:
+
+| ID | backbone, pretraining | top-1 | macro-F1 |
+| --- | --- | --- | --- |
+| V01 | r3d_18, Kinetics labels | 45.58 / 46.91 | 0.441 / 0.458 |
+| V02 | mc3_18, Kinetics labels | 52.71 / 55.07 | 0.504 / 0.529 |
+| V03 | r2plus1d_18, Kinetics labels | 45.90 / 49.59 | 0.443 / 0.480 |
+| V04 | s3d, Kinetics labels | 41.48 / 46.21 | 0.382 / 0.447 |
+| V05 | swin3d_t, Kinetics labels | 55.74 / 57.43 | 0.539 / 0.567 |
+| V06 | mvit_v2_s, Kinetics labels | 51.70 / 54.49 | 0.489 / 0.516 |
+| V07 | VideoMAE, masked video + Kinetics labels | **61.68 / 67.18** | 0.598 / 0.656 |
+| V08 | TimeSformer, Kinetics labels | 50.51 / 57.81 | 0.498 / 0.581 |
+| V09 | CLIP B/16, captions | 46.46 / 49.71 | 0.454 / 0.475 |
+| V10 | DINOv2-B, images, no labels | **61.36** / 64.18 | 0.598 / 0.635 |
+
+Both checks pass. V01 beats P03 by 4.2 / 3.3 (45.58 vs 41.41, 46.91 vs
+43.59). VideoMAE leads, as the probe said; on author it ties DINOv2.
+
 ### 15.2 Read Family V (≈30 min)
 
 - Which pretraining wins: Kinetics video, ImageNet photos, captions (CLIP) or
   no labels at all (DINOv2)?
 - Does the MLP ranking agree with the probe's? If yes, the probe was a good
   cheap guide, which is worth saying in the write-up.
+
+**Read 2026-10-19.** Gaps under ~1.5 points are ties (the noise floor, 11.1).
+
+1. **Self-supervised pretraining wins, not video.** The two leaders were
+   both pretrained without labels first: VideoMAE (masked video, then
+   Kinetics labels) and DINOv2 (photos, never any labels). Tied on author,
+   VideoMAE ahead by 3.0 on grouped. Plain Kinetics-label models reach
+   41–58 (Swin best); CLIP's captions are near the bottom, 46.5 / 49.7.
+2. **Motion inside the backbone is not what wins.** DINOv2 looks at each
+   frame alone and never sees motion, yet ties the best video model, while
+   the 3D CNNs (r3d, r2plus1d, s3d) are at the bottom. One caveat: DINOv2's
+   MLP gets all 15 frames in order, while each video model has already
+   pooled time into one vector.
+3. **ImageNet photos** have no V entry. The nearest like-for-like is A01
+   (EfficientNetV2-S frames, mean, MLP) at 52.8 / 58.2: mid-table.
+4. **Frozen features stop in the 60s.** The best V (VideoMAE, 67.2 grouped)
+   matches the best A (A08, 66.2 / 69.0). B01, fine-tuned end to end, is
+   79.2 / 77.7: ten points above anything frozen.
+5. **The probe was a good cheap guide to the leader.** On the three
+   backbones both measured, the probe put VideoMAE first (52.2 / 57.0) and
+   so does the MLP (61.7 / 67.2). r3d against CLIP is too close to call
+   both times; its order flips between splits. Worth one sentence in the
+   write-up.
+6. **Every V model scores higher on grouped val than on author val**, by
+   1.3 to 7.3 (TimeSformer the most). P and A do the same; B01 is the only
+   exception so far. That is Day 16's gap question.
+7. **MViT may be undersold a little.** Its features are about 7x smaller
+   (largest activation 1.2 against 7–9), its gradients were a third of the
+   others', and it started slowest (15% after one epoch). It did converge,
+   but one learning rate for all may not suit it.
 
 ---
 

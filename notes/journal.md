@@ -3270,3 +3270,30 @@ DINOv2 redone with eager attention: 0 failed on both halves, verify
 11.6 min a half, not the ~8.5 I predicted from a 23 clips/s GPU-only number.
 Under full load the GPU became the bottleneck. 6 extra minutes for a cache
 that repeats itself is a fair trade.
+
+## 2026-10-19 — Day 15: Family V
+
+20 runs, 2.5 hours. The same MLP head on ten frozen backbones' features.
+
+The answer to "which pretraining wins" is not the one I'd have guessed. The
+top two, VideoMAE (61.7 / 67.2) and DINOv2 (61.4 / 64.2), were both
+pretrained *without labels* first. DINOv2 is an image model: it sees each
+frame alone and has never seen motion, and it ties the best video model on
+author. The 3D CNNs, built to model motion, are at the bottom (41–50).
+CLIP's captions don't help much either (46.5 / 49.7).
+
+So for cricket shots, a strong general visual representation matters more
+than motion modelling inside a frozen backbone. One caveat: DINOv2's MLP
+sees all 15 frames in order; a video model has pooled time away already.
+
+Checks: V01 beats P03 (an MLP should never lose to a Linear on the same
+features), by 4.2 / 3.3. The probe's leader (VideoMAE) is the MLP's leader
+too, so the cheap probe was a fair guide.
+
+Frozen features top out around 67–69%: best V = best A within noise. B01
+(fine-tuned end to end) is still ten points clear. And again every V model
+does better on grouped val than author val; B01 is the only run that
+doesn't. Saving that for Day 16.
+
+MViT: tiny features (max 1.2), small gradients, slowest start. It
+converged, but a shared learning rate may undersell it. Noted, not chased.
