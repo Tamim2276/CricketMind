@@ -61,16 +61,16 @@ BASES = {
         "set": {"method": "cached_head", "head": "linear"},
     },
     # the authors' end-to-end model, exactly as it reproduced 78.14%
-    # end to end, deterministic kernels cost 1.5-1.7x the time (17.3), so
-    # these bases run without them. B01 never had them: it predates 11.1
+    # deterministic kernels cost 1.5-1.7x the time end to end (17.3); kept
+    # anyway, so every run repeats exactly and a power cut leaves no trace
     "mimic_author": {
         "config": os.path.join("configs", "mimic_author.yaml"),
-        "set": {"deterministic": False},
+        "set": {},
     },
     # the same training protocol around a 3D model
     "video3d": {
         "config": os.path.join("configs", "mimic_author.yaml"),
-        "set": {"method": "video3d", "deterministic": False},
+        "set": {"method": "video3d"},
     },
 }
 

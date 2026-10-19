@@ -92,12 +92,9 @@ def test_b01_is_mimic_author_exactly():
     want = dict(DEFAULTS)
     want.update(load_config(os.path.join("configs", "mimic_author.yaml")))
     for key in want:
-        if key in ("name", "deterministic"):
+        if key == "name":
             continue
         assert cfg[key] == want[key], key
-    # mimic_author ran before deterministic kernels existed (11.1), so
-    # saying False is saying what that run actually did
-    assert cfg["deterministic"] is False
 
 
 def test_a03_is_cached_gru_but_for_the_method():
@@ -188,13 +185,10 @@ def test_every_b_run_updates_on_four_clips():
     assert R.status(R.get("B07_regnety_16gf")) == "ready"
 
 
-def test_end_to_end_runs_skip_deterministic_kernels_and_cached_ones_keep_them():
-    """17.3: 1.5-1.7x the time end to end, nothing on cached features."""
-    for family in ("B", "C"):
-        for entry in R.entries(family):
-            assert R.resolve(entry, "author")["deterministic"] is False, \
-                entry["id"]
-    for family in ("P", "A", "V"):
+def test_every_training_run_uses_deterministic_kernels():
+    """17.3: 1.5-1.7x the time end to end, kept anyway (2026-10-20), so a
+    run repeats exactly and a resumed run equals an unbroken one."""
+    for family in ("P", "A", "V", "B", "C"):
         for entry in R.entries(family):
             assert R.resolve(entry, "author")["deterministic"] is True, \
                 entry["id"]

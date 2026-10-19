@@ -3399,13 +3399,16 @@ Harmless for learning, but a resumed run isn't bit-identical to an
 unbroken one. And the open question: keep deterministic mode for end-to-end
 runs at roughly 1.6x the time, or not.
 
-Decided with the user: end-to-end runs go without deterministic kernels.
-Measured properly this time, 60 batches each way: B02 0.21 vs 0.31 s a
-batch, B01 0.23 vs 0.40. That's a third to two-fifths of the time, ~35
-GPU-hours on Family B alone, more across C and F. The cached families keep
-it, where it's free and the gaps are small enough to need it. Nothing
-already run is touched: determinism picks kernels, not the experiment, and
-every row says how its own run went.
+Deterministic kernels: measured properly this time, 60 batches each way,
+B02 0.21 vs 0.31 s a batch, B01 0.23 vs 0.40. Off would save a third to
+two-fifths of every end-to-end run, ~35 GPU-hours on Family B alone. I
+recommended switching them off; the user's answer was that time isn't the
+problem, and with time off the table they're worth keeping: every run
+repeats exactly, and with the resume fix a power cut leaves no trace in the
+result. Neither choice changes accuracy. So they stay on everywhere, and
+Family B is ~95 GPU-hours. `deterministic` became a config key anyway, so
+the choice is visible in every config, and it doesn't count as a change in
+what a run means: it picks kernels, not the experiment.
 
 And the resume gap is closed: the shuffle state is saved now. The test cuts
 a run in epoch 2, resumes it, and checks its losses equal an unbroken run's
@@ -3413,5 +3416,6 @@ exactly, then deletes the saved state and checks they no longer do. That
 second half matters: it proves the test can see the bug at all.
 
 While in there: set_seed(deterministic=False) used to leave the mode as
-the last run left it. With A runs (on) and B runs (off) in one process,
-B would quietly have run deterministic anyway. Fixed, tested.
+the last run left it, so a run asking for "off" after one that turned it on
+would quietly have run deterministic anyway. Fixed, tested, for the day
+anyone does switch it off.
