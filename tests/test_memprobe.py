@@ -27,6 +27,21 @@ def test_a_probe_trains_and_times_on_the_cpu():
     assert "fits" in describe(found)
 
 
+@needs_clips
+def test_a_probe_on_the_gpu_reads_its_peak():
+    """Found on its first real run: the XPU would not reset its counters
+    before anything had been allocated on it."""
+    from src.utils.device import get_device
+
+    device = get_device()
+    if device.type == "cpu":
+        pytest.skip("no GPU")
+    found = probe(R.get("B01_effnetv2s"), batches=1, overrides=TINY,
+                  device=device)
+    assert found["fits"] is True
+    assert 0 < found["peak_gb"] < found["total_gb"]
+
+
 def test_a_run_that_does_not_fit_says_what_to_try():
     found = {"id": "B07_regnety_16gf", "batch": 4, "fits": False,
              "peak_gb": None, "error": "XPU out of memory"}

@@ -55,6 +55,9 @@ def probe(entry, split="author", batches=3, overrides=None, device=None):
     optimizer = None
     try:
         if mem is not None:
+            # the XPU refuses to reset its counters before its first
+            # allocation ("Invalid device argument"); one number wakes it
+            torch.zeros(1, device=device)
             mem.empty_cache()
             mem.reset_peak_memory_stats(device)
         model = method.model(cfg, train_set, len(classes)).to(device)
