@@ -3297,3 +3297,31 @@ doesn't. Saving that for Day 16.
 
 MViT: tiny features (max 1.2), small gradients, slowest start. It
 converged, but a shared learning rate may undersell it. Noted, not chased.
+
+## 2026-10-19 — Day 16: the cheap half, reviewed
+
+Best by grouped val: P04 56.98, A09 70.11, D01 45.70, V07 67.18, and B01
+77.69 still well ahead of everything frozen.
+
+The big one is section 6's question. I expected the author split to flatter
+models (it shares match videos with training). Over 35 IDs it does the
+opposite: grouped val is higher for 32 of them, by 2.8 points on average.
+
+Why: the author split keeps a clip's own match out of training only for the
+*same* shot, so its own match is in train with *other* shots. Same ground,
+same light, same broadcast, different answer. For a model that reads the
+scene, that's a trap. I tested it with k-NN on the very same author val
+clips: 18.50% with all train clips, 24.75% with each clip's own match left
+out. For 43% of clips the nearest train clip came from their own match, and
+it was a different shot every time. Without those, author scores about
+the same as grouped (23.07%).
+
+So the gap is the data's doing, and the model decides how much it costs:
+~3 points for frozen features, nothing measurable for fine-tuned B01. Which
+also means section 6's "89.09% is likely a little optimistic" doesn't hold
+for these models. I've added a dated note there rather than rewriting it.
+The test is now tools/same_match.py.
+
+Cost check: A, D, V took ~28 GPU-hours against ~37 estimated. The recurrent
+heads on the flat view were the slow ones (up to 116 min a run); everything
+else was quicker than planned.

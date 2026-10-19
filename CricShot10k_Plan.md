@@ -671,6 +671,14 @@ rather than the answer. **So 89.09% is likely a little optimistic relative to
 strict grouping, by an amount nobody has measured.** That is not an accusation;
 it is an open question, and you are in a position to answer it.
 
+**Measured 2026-10-19 (Day 16): for our frozen-feature models it is the
+other way round.** Every own-match clip in training is a different shot, so
+it pulls a scene-reading model to a wrong answer. Grouped val is higher for
+32 of the 35 cheap IDs (mean 2.8 points), and k-NN on the same author val
+clips goes from 18.50% to 24.75% when each clip's own match is left out.
+B01, fine-tuned end to end, shows no such penalty (+1.5, within noise).
+What it means for a fine-tuned model like theirs is still open.
+
 ### So: build both, and run everything twice
 
 ```
@@ -3820,6 +3828,9 @@ own runs:
 | C01–C08, end to end | 16 | 4–8 h (estimate: heavier models) | ~65–130 |
 | **total** | **90** | | **~150–250** |
 
+**Re-checked on Day 16:** A, D and V took ~28 GPU-hours, not ~37 (Day 16
+has the breakdown). B and C are unchanged.
+
 **Count GPU-hours, not days.** At about 8 usable GPU-hours a day this is 20–30
 days; if the machine also runs overnight when the power holds, 10–15. The days
 below assume the overnight queue. If the power will not allow it, Phase 3
@@ -4371,6 +4382,64 @@ Both checks pass. V01 beats P03 by 4.2 / 3.3 (45.58 vs 41.41, 46.91 vs
 
 **Takeaway.** Stop and read before the expensive half. The next 30 runs cost
 four times more than the last 60 together.
+
+**Done 2026-10-19.**
+
+**1. Best so far in each family, by grouped val:**
+
+| family | best | grouped | author |
+| --- | --- | --- | --- |
+| P, linear probe | P04 VideoMAE | 56.98 | 52.21 |
+| A, temporal heads | A09 transformer, 4 layers | 70.11 | 68.81 |
+| D, classical | D01 logistic regression | 45.70 | 42.49 |
+| V, frozen backbones | V07 VideoMAE | 67.18 | 61.68 |
+| B, end to end | B01 EfficientNetV2-S + GRU | 77.69 | 79.23 |
+
+**2. Section 6's question.** Gap = author − grouped, over all 35 P, A, D
+and V IDs: mean **−2.84**, SD 2.30, range −7.30 to +3.32. **Grouped is
+higher for 32 of 35.** By family: P −3.3, D −4.3, V −3.5, A −1.5. The only
+positive gaps are A04 and A07 (unstable recurrent heads on the flat view)
+and A12; B01 is +1.5. One run's gap carries about ±1.2 of noise (11.1: SD
+0.86 for one model, times √2), so the spread is about twice the noise:
+mostly one shared offset, plus a little from the model.
+
+**Why the author split is the harder one.** It trains on each val clip's own
+match, always with other shots (6: 1,612 of 1,614). Those clips share the
+ground, light and broadcast, so a model that leans on the scene is pulled to
+a wrong shot. `tools/same_match.py` tests it on the same val clips, with
+D05's features and k-NN:
+
+| author val, k-NN | top-1 |
+| --- | --- |
+| all train clips (D05) | 18.50% |
+| each clip's own match left out | **24.75%** |
+| grouped val, for scale | 23.07% |
+
+For 43% of author val clips the single nearest train clip is from their own
+match, and every such neighbour is a different shot. Leaving them out is
+worth 6.25 points and brings author level with grouped.
+
+**In one sentence:** the gap is a property of the data (the author split
+trains on each clip's own match, with other shots, which misleads anything
+that reads the scene), and the model sets the price: about 3 points for
+frozen features, nothing measurable for the fine-tuned B01.
+
+So B and C keep both splits, since a fine-tuned model may behave like B01
+rather than like the cheap half. Phase 4 still chooses by grouped val, now
+for a second reason: no own-match clips pulling it either way.
+
+**3. Cost, estimated against real** (GPU-hours):
+
+| block | estimate | real |
+| --- | --- | --- |
+| A01–A13, flat view | ~30 | 21.5, 20–116 min a run (recurrent heads slowest); +1 re-running A03 |
+| A14, avg view | < 0.5 | 0.7 |
+| D, classical (CPU) | ~1.5 | 0.2 of fitting recorded; loading not counted |
+| V, extract 7 caches | ~3 | 1.6; +0.3 thrown away (DINOv2 with SDPA) |
+| V, train the heads | ~3 | 2.5 |
+| **A + D + V** | **~37** | **~28** |
+
+The B and C estimates stand; nothing here changes them.
 
 ---
 
