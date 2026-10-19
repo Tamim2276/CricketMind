@@ -2644,7 +2644,7 @@ wrong.**
 So the comparison is a **frozen video run**, and flip is held at 0 because the
 un-mirrored cache cannot flip (8.7 restores it). This also means the 60 cached
 rows of Families A, D and V are comparable **to each other** and not to
-78.14% — which is what Days 28–30 exist for: take the best heads from the
+78.14% — which is what Days 38–40 exist for: take the best heads from the
 cheap frozen sweep and re-run those few end to end.
 
 **Run.**
@@ -3314,7 +3314,7 @@ run on the other.
 **It evaluates test automatically**, by calling `src/evaluate.py` on the best
 checkpoint right after training. Not as a separate command you remember. The
 thing to understand: this does not break rule 5. Rule 5 says never *choose*
-using test, and the choosing happens in Days 28–30 from the ledger. Scoring it
+using test, and the choosing happens in Days 38–40 from the ledger. Scoring it
 once, recording it, and not looking at it is what the rule asks for — and
 automating it is what makes "once" true.
 
@@ -3546,7 +3546,7 @@ shows the wins, because the gaps are the thing you can still act on.
 at the end is a figure made from whatever you remember. So every run draws its
 own figures the moment it finishes, and every comparison figure is rebuilt from
 the ledger by one command. Nothing is drawn by hand, nothing is drawn twice, and
-Day 33's package already exists by then.
+Day 43's package already exists by then.
 
 **Build.** Two levels.
 
@@ -3650,7 +3650,7 @@ PNGs (the same check as 9.3's determinism, for figures).
 
 **Takeaway.** Make the figure part of the run, not part of the write-up. A
 figure drawn automatically from the ledger cannot drift from the number it
-shows, and on Day 33 you are choosing figures rather than making them.
+shows, and on Day 43 you are choosing figures rather than making them.
 
 ---
 
@@ -3723,7 +3723,7 @@ Having seen the test footage is worth about 3 points to this model, so the
 overlap is real but explains only a small part of the gap to 89.09%. The
 largest per-class drops are Hook (-0.117 F1), Straight Drive (-0.106) and
 Lofted Offside (-0.097); Upper Cut rises (+0.066, 53 clips). One seed per
-split: Days 28-30 decide whether 2.9 points survives three.
+split: Days 38–40 decide whether 2.9 points survives three.
 
 > We reproduce 78.14% under the authors' protocol. On a grouped split with
 > no shared source videos the same model reaches 75.23%. 99.5% of the
@@ -3796,11 +3796,15 @@ finitely many. Those rows have to be end-to-end or not at all.
 
 ---
 
-# PHASE 3 — The 46 experiments, twice (Days 10–27)
+# PHASE 3 — The 60 experiments, twice (Days 10–37)
 
 Phase 2 built the machine. Phase 3 feeds it: the 46 committed experiments, each
 on both splits. The probe (P01–P05) and B01 are already done, so **90 runs are
 left**. The full list, with the question each one asks, is in **Appendix A**.
+
+**Updated 2026-10-19:** the 14 stretch experiments (Families E, W and F) are
+in the active plan too, Days 28–37, so Phase 3 is **60 experiments, 118 runs
+after the probe and B01**. Phase 4 moves to Days 38–42.
 
 Almost everything you need already exists:
 
@@ -3826,7 +3830,14 @@ own runs:
 | V: train the heads | 20 | ~8 min | ~3 |
 | B02–B08, end to end | 14 | 3.5–6 h (B01: 3.3 h alone, 6.3 h shared) | ~50–85 |
 | C01–C08, end to end | 16 | 4–8 h (estimate: heavier models) | ~65–130 |
-| **total** | **90** | | **~150–250** |
+| **committed total** | **90** | | **~150–250** |
+| E: pose cache, E01, E02, E04 | 6 | minutes; pose runs on the CPU | ~1 (+1–2 CPU) |
+| W: bat, ball and flow caches | — | detection at 896 is the slow part | ~5 |
+| W02–W04, track heads | 6 | minutes | ~1 |
+| W01, W05, motion r3d_18 | 4 | 2–5 h (estimate) | ~8–20 |
+| F01, F02, F04, F05, end to end | 8 | 3.5–6 h (B01-like) | ~30–50 |
+| E03, F03, fusion | 4 | seconds, no training | 0 |
+| **with the stretch families** | **118** | | **~195–330** |
 
 **Re-checked on Day 16:** A, D and V took ~28 GPU-hours, not ~37 (Day 16
 has the breakdown). B and C are unchanged.
@@ -4564,11 +4575,218 @@ python -m src.experiments.run --family C
 - **C08 (VideoMAE):** the strongest candidate to pass 89%, and the probe's
   favourite.
 
+**While it runs:** build Days 28 and 30 (the pose and track code), CPU only.
+Their GPU extractions wait for the queue (rule 6).
+
+---
+
+## Days 28–37 — The stretch families: E, W and F
+
+*In the active plan since 2026-10-19.* These were stretch work (Phase 1's
+note); now they run on both splits like everything else: **14 IDs, 28 runs,
+~45–80 GPU-hours.** Cheapest first: E (pose, minutes a run), then W (small
+signals, then two motion models), then F (end to end, hours a run).
+
+Each family needs one new kind of input, built once with Day 8's rules: one
+cache, a manifest, resumable, verified, mirrored exactly. Days 28, 30 and 33
+each add their family's registry entries, a base plus a small delta like the
+rest; only the new methods should be new code.
+
+## Day 28 — Family E, part 1: pose
+
+*Question: does explicit body structure help?*
+
+### 28.1 A pose cache (≈2 h build, 1–2 h on the CPU)
+
+**Why.** 33 points a frame instead of 1,280 numbers, and they say exactly
+where the arms, hips and feet are: what a stroke is made of.
+
+**Build.** `src/preprocess/pose.py`, MediaPipe Pose (`pip install mediapipe`;
+it runs on the CPU, which leaves the GPU alone):
+- on the processed **box** crops, where Day 3 already found the striker, so
+  it never has to choose between players;
+- per frame: 33 landmarks × (x, y, visibility), centred on the hips and
+  scaled by torso length, so crop position and batter size drop out;
+- a frame with no pose is marked missing, not filled with zeros, and the
+  coverage goes in the manifest;
+- **mirroring is exact here**: flip x and swap left and right joints. A pose
+  is geometry, unlike a CNN feature map (8.7: flipping cached features gave
+  cosine 0.41), so no second pass;
+- `python -m src.extract --pose` writes `data/features/pose/`, resumable,
+  with a row in `caches.jsonl`.
+
+Fallback: if MediaPipe will not install or misses too many frames,
+ultralytics' YOLO11-pose (17 joints, on the GPU) is already installed. Record
+the switch in the journal.
+
+**Check.** Coverage per class (one class losing most of its frames is a
+finding), and 30 overlays you have looked at, as on Day 3.
+
+### 28.2 Two pose heads (≈2 h)
+
+- **E01**: the pose sequence (15 × 99) into GRU-128, the authors' head, so
+  E01 against A03 is pose against RGB with nothing else changed.
+- **E02, ST-GCN**: joints as graph nodes, edges along the skeleton; three
+  blocks of graph convolution over joints, then convolution over time, then
+  pool. Plain PyTorch, about 60 lines, no new package.
+
+**Check.** Tests: shapes, one training step, and the skeleton's adjacency is
+symmetric with self-loops.
+
+## Day 29 — Family E, part 2: fusion, then run
+
+### 29.1 Late fusion, no training (≈1 h)
+
+A `fusion` method. It trains nothing: it loads two finished runs' saved
+probabilities and averages them. **E03** = A09 (the best RGB head) + the
+better of E01 and E02 on val. F03 and Phase 4's ensembles reuse it.
+
+**Check.** A run fused with itself scores exactly what it scored alone.
+
+### 29.2 Cross-attention (≈1.5 h)
+
+**E04**: pose frames attend to RGB frames (the cached `avg` view, 15 × 1280,
+projected to 256) through one cross-attention layer, then pool. Deeper than
+averaging two answers: each stream takes what it needs from the other.
+
+### 29.3 Run (≈1 GPU-hour)
+
+```bash
+python -m src.experiments.run --family E
+```
+
+**Read.** Pose alone against RGB alone (E01 against A03), and whether fusion
+beats A09 by more than the noise (~1.5 points).
+
+## Day 30 — Family W, part 1: bat and ball tracks
+
+*Question: can a compact physical description of the stroke compete? Nobody
+has published these on CricShot10k.*
+
+### 30.1 Tracks (≈3 h build, 3–4 GPU-hours)
+
+`src/preprocess/tracks.py`, with your own detectors in `CricShoot10kModels/`:
+- **bat**: `Bat_Detection_Model.pt` on the box crops, which makes the
+  coordinates body-relative for free. Per frame: centre, size, angle (the
+  main axis of the segmentation model's bat mask), speed, and a found flag;
+- **ball**: `Ball_Detection_Model.pt` on the **raw** frames at 896, because
+  the ball is tiny and mostly outside the striker crop. Per frame: position
+  and a found flag, then approach angle and speed. The processed clips did not
+  save which raw frames they kept, so detect on every raw frame and resample
+  the track to 15 time points;
+- mirrored = flip x, negate the angle and horizontal speed. Exact.
+
+**Check first, on 30 clips:** how often the bat and the ball are found. Day 7
+found the masks cover the bat in only 65% of frames. If detection is that
+patchy, W02 is capped by it, and the cap is a finding to report.
+
+### 30.2 Track heads (≈1 h)
+
+W02 (bat), W03 (ball) and W04 (bat + ball + pose, joined per frame) all go
+through GRU-128 as cached views, like E01. A missing frame gets a mask
+channel, not zeros.
+
+## Day 31 — Family W, part 2: run the tracks
+
+```bash
+python -m src.experiments.run --exp W02_bat W03_ball W04_bat_ball_pose
+```
+
+**Read.** The claim to test: **a trajectory of a few dozen numbers a frame,
+within a few points of a deep model, would be publishable.** Compare W02 and
+W04 with A03 (same head, RGB) and with B01.
+
+## Day 32 — Family W, part 3: motion, two ways
+
+### 32.1 Optical flow cache (≈2 h build, 1–2 GPU-hours)
+
+`src/preprocess/flow.py`: torchvision's RAFT-small (weights download once)
+between consecutive box frames, 14 flows a clip, stored at 112 × 112 in fp16
+(~0.7 MB a clip, ~7 GB). Mirroring is exact: flip, and negate the horizontal
+component. Verify on more than 20 clips; Day 14 showed a GPU kernel can fail
+to repeat itself 1% of the time.
+
+### 32.2 A motion method (≈2 h)
+
+One method, two inputs, the same 3D CNN (r3d_18 from Kinetics, first conv
+adapted to the input, Day 23's protocol):
+- **W01**: the flow stack (2 channels; start from the mean of the pretrained
+  RGB filters);
+- **W05**: frame differences |f(t+1) − f(t)|, made on the fly from the box
+  clips (3 channels, no cache). The cheapest motion signal there is, and the
+  control for W01.
+
+### 32.3 Launch, and F03 when it lands (8–20 GPU-hours)
+
+```bash
+python -m src.experiments.run --exp W01_flow_r3d W05_framediff_r3d
+```
+
+**F03**, two-stream RGB + flow, the classic video recipe: the `fusion` method
+on C02 (RGB r3d_18) and W01 (flow r3d_18), one network on two inputs. No
+training.
+
+**Read.** W05 against W01: is flow worth its cost over plain differences?
+F03 against C02: does motion add to an RGB 3D CNN?
+
+## Day 33 — Family F, part 1: multi-scale and hybrid
+
+*Question: do a richer encoder or a richer head beat B01's plain recipe?*
+Each is B01 with one change, or F01 with one change, so each answers one
+question.
+
+### 33.1 Four models (≈3 h)
+
+- **F01, multi-scale CNN.** Your `archive/src_old/models/multiscale_model.py`,
+  rebuilt in the new code with tests, not imported (1.1's rule): three stages
+  of one EfficientNetV2-S pass (fine, mid, global; 1,504 numbers) projected to
+  1,280, then **B01's GRU-128**. The old file used GRU-256 with dropout 0.5;
+  B01's head keeps F01 against B01 a one-variable test. *Appendix A's
+  "10/15/20 frames" is a different idea, multi-scale in time; that is Tier 2
+  #5 and Phase 4's frames axis, so it is tested there.*
+- **F02, hybrid CNN + Transformer.** Your `combined_model.py`: F01's encoder
+  with the transformer head (2 layers, 4 heads). F02 against F01 isolates the
+  head.
+- **F04, multi-resolution.** The same frames at 224 and at 112 through one
+  shared EfficientNetV2-S, the two vectors joined per frame, then GRU-128:
+  context plus detail.
+- **F05, CNN + GRU + attention.** B01 with attention pooling over the GRU's
+  outputs instead of its last state: the kitchen sink, as an upper bound.
+
+**Check.** A test each (shape, one step), then 17.2's memory probe on all four.
+
+### 33.2 Re-cost on F01, alone (≈4 GPU-hours)
+
+As 17.3: one run with nothing else open, then update the cost table.
+
+## Days 34–36 — Family F, part 2: the queue
+
+*A launch step: about 25–50 GPU-hours.*
+
+```bash
+python -m src.experiments.run --family F
+```
+
+F03 is scored by fusion, not trained, so it takes seconds once C02 and W01
+exist.
+
+## Day 37 — Read the stretch families, and close Phase 3
+
+**Write down:**
+1. The best of E, W and F by grouped val, and whether any enters Phase 4's
+   top 5.
+2. Explicit structure (pose, tracks) against learned pixels (A, B), per
+   class. A pull and a hook differ mainly in bat path, so if W02 helps
+   anywhere, it should be there.
+3. **A prediction from Day 16 to check:** pose and tracks barely see the
+   scene, so their author–grouped gap should be near zero, not the −3 of
+   frozen RGB features.
+
 ### End of Phase 3
 
 **Run.** `python -m tools.leaderboard`, `python -m tools.figures`.
 
-**Check.** Every one of the 102 runs has a row, or a journal line saying why it
+**Check.** Every one of the 130 runs has a row, or a journal line saying why it
 could not run.
 
 **Commit and tag:**
@@ -4583,11 +4801,11 @@ down what it means while you still remember why you ran it.
 
 ---
 
-# PHASE 4 — Combine and improve (Days 28–32, ~41 GPU-hours)
+# PHASE 4 — Combine and improve (Days 38–42, ~41 GPU-hours)
 
 Only now do you look at the leaderboard and pick.
 
-## Days 28–30 — Choose honestly, then tune the winner
+## Days 38–40 — Choose honestly, then tune the winner
 
 **~39 GPU-hours.** Re-running the top 3 with 3 seeds is 9 trainings, and if the
 winner is an end-to-end model that alone is ~27 hours. Budget three days, not
@@ -4610,7 +4828,7 @@ seeds** and report mean ± std.
 
 **Check:** every tuning run is also a ledger row.
 
-## Day 31 — Ensembles and test-time augmentation
+## Day 41 — Ensembles and test-time augmentation
 
 - Soft-vote the top 3 (different backbones ensemble better than similar ones)
 - TTA: horizontal flip + 2 temporal crops
@@ -4618,7 +4836,7 @@ seeds** and report mean ± std.
 
 **Check:** the ensemble beats its best member on val before you touch test.
 
-## Day 32 — Error analysis
+## Day 42 — Error analysis
 
 - Full 15×15 confusion matrix for the best model
 - The 20 worst-misclassified clips — **watch them**
@@ -4630,9 +4848,9 @@ This section is what turns a results table into a paper.
 
 ---
 
-# Day 33 — The package for your supervisor
+# Day 43 — The package for your supervisor
 
-1. `experiments/results.jsonl` — all 43+ rows (export to CSV for the write-up)
+1. `experiments/results.jsonl` — all 130+ rows (export to CSV for the write-up)
 2. A leaderboard table, sorted, grouped by family
 3. Confusion matrix of the baseline and of the best model, side by side
 4. Accuracy-vs-parameters scatter (which models earn their size)
@@ -4708,12 +4926,12 @@ to find out which of these heads can drop to `avg` without losing anything.*
 | D05 | k-NN | Are same-class clips neighbours in feature space? |
 | D06 | MLP (2 hidden layers) | Non-linear head, no recurrence |
 
-## Family E — Pose and graph (stretch)
-*2–4 hours each. Answers: does explicit body structure help?*
+## Family E — Pose and graph (stretch, in the active plan: Days 28–29)
+*Minutes each on cached pose and RGB features. Answers: does explicit body
+structure help?*
 
 **Stretch.** Moved out of the committed set when Phase 1 grew to seven days.
-Do these only if Phase 1 finished early; otherwise they are future work, and
-you say so in the write-up.
+**Back in the active plan since 2026-10-19**, with W and F (Days 28–37).
 
 | ID | Model | Why |
 |---|---|---|
@@ -4722,14 +4940,14 @@ you say so in the write-up.
 | E03 | Two-stream: RGB + pose, late fusion | Each stream's strength |
 | E04 | RGB + pose cross-attention | Deeper fusion |
 
-## Family F — Multi-scale and hybrid
-*2–4 hours each.*
+## Family F — Multi-scale and hybrid (stretch, in the active plan: Days 32–36)
+*3.5–6 hours each, end to end; F03 is a fusion, seconds.*
 
 | ID | Model | Why |
 |---|---|---|
-| F01 | **Multi-scale CNN** (10/15/20 frames) | Your existing `multiscale_model.py` |
+| F01 | **Multi-scale CNN**: three EfficientNetV2-S stages, projected to 1,280, then GRU-128 | Your existing `multiscale_model.py`. Multi-scale in space; the 10/15/20-frame idea is Tier 2 #5 (Day 33) |
 | F02 | **Hybrid CNN + Transformer** | Your existing `combined_model.py` |
-| F03 | Two-stream RGB + optical flow | The classic video recipe |
+| F03 | Two-stream RGB + optical flow | The classic video recipe: C02 and W01 fused (Day 32) |
 | F04 | Multi-resolution (224 + 112) | Cheap context + detail |
 | F05 | CNN + GRU + attention (all three) | Kitchen sink, as an upper bound |
 
@@ -4788,7 +5006,7 @@ a 10k-clip dataset — a genuinely useful number for a paper.
    — torchvision ships the correct preprocessing with the weights, so use it
    rather than reusing your ImageNet transform.
 
-## Family W — Cricket-specific motion features (stretch)
+## Family W — Cricket-specific motion features (stretch, in the active plan: Days 30–32)
 
 *Nobody has published these on CricShot10k. This is where an original
 contribution would come from.*
@@ -4807,7 +5025,7 @@ nobody has used for anything except cropping. A pull and a hook differ mainly in
 exactly what a 2D CNN throws away. A 40-dimensional trajectory feature that gets
 within a few points of an 89% deep model would be a genuinely publishable result.
 
-## Family G — Ensembles (Day 31)
+## Family G — Ensembles (Day 41)
 
 | ID | Method |
 |---|---|
@@ -4816,7 +5034,8 @@ within a few points of an 89% deep model would be a genuinely publishable result
 | G03 | Test-time augmentation (flip + temporal crops) |
 | G04 | Stacking: a logistic head over the 3 models' probabilities |
 
-**Total: 43 experiments.**
+**Total: 60 experiments in Phase 3 (46 committed + 14 stretch, all in the
+active plan since 2026-10-19), each on both splits, plus G's 4 in Phase 4.**
 
 ---
 
@@ -4918,10 +5137,13 @@ Measured 2026-10-13 on `splits_author`, test top-1. Three notes:
 | 14–16 | V on both splits, then the review | seven new extractors | 20 rows; is the gap a property of the data or the model? |
 | 17–22 | B — CNN backbones, both splits | timm backbones, `memprobe.py` | 14 rows, ~50–85 GPU-h |
 | 23–27 | C — 3D / video models, both splits | `video3d.py` | 16 rows, ~65–130 GPU-h |
-| 28–30 | Choose (3 seeds × top 3) and tune the winner | — | best model + mean ± std, ~39 GPU-h |
-| 31 | Ensembles + TTA | — | reuses existing checkpoints, ~2 GPU-h |
-| 32 | Error analysis | — | per-class failures, the leak gap explained |
-| 33 | Package for supervisor | — | leaderboard, figures, summary |
+| 28–29 | E — pose and graph, both splits | `pose.py`, ST-GCN, `fusion` | 8 rows, ~1 GPU-h + pose on the CPU |
+| 30–32 | W — bat, ball, flow, frame differences | `tracks.py`, `flow.py`, a motion method | 10 rows, ~15–25 GPU-h |
+| 33–37 | F — multi-scale and hybrid; read E, W, F | multi-scale encoder, three heads | 10 rows, ~30–50 GPU-h |
+| 38–40 | Choose (3 seeds × top 3) and tune the winner | — | best model + mean ± std, ~39 GPU-h |
+| 41 | Ensembles + TTA | — | reuses existing checkpoints, ~2 GPU-h |
+| 42 | Error analysis | — | per-class failures, the leak gap explained |
+| 43 | Package for supervisor | — | leaderboard, figures, summary |
 
 ---
 

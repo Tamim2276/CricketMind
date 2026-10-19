@@ -3325,3 +3325,16 @@ The test is now tools/same_match.py.
 Cost check: A, D, V took ~28 GPU-hours against ~37 estimated. The recurrent
 heads on the flat view were the slow ones (up to 116 min a run); everything
 else was quicker than planned.
+
+## 2026-10-19 — The stretch families join the plan
+
+E (pose and graph), W (bat, ball, flow, frame differences) and F
+(multi-scale and hybrid) are now Days 28–37, after Family C and before
+Phase 4 chooses anything, so they can compete for the top 3. 14 IDs, 28
+runs, an estimated 45–80 GPU-hours. Phase 4 moves to Days 38–42.
+
+One thing fixed while writing it up: Appendix A said F01 was "multi-scale
+CNN (10/15/20 frames)" and also "your existing multiscale_model.py", but
+that file is multi-scale in *space* (three EfficientNetV2-S stages joined),
+not in time. F01 is now the model the file describes; the 10/15/20-frame
+idea already lives in Tier 2 #5 and Phase 4's frames axis.
