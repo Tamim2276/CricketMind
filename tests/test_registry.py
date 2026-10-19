@@ -92,9 +92,12 @@ def test_b01_is_mimic_author_exactly():
     want = dict(DEFAULTS)
     want.update(load_config(os.path.join("configs", "mimic_author.yaml")))
     for key in want:
-        if key == "name":
+        if key in ("name", "deterministic"):
             continue
         assert cfg[key] == want[key], key
+    # mimic_author ran before deterministic kernels existed (11.1), so
+    # saying False is saying what that run actually did
+    assert cfg["deterministic"] is False
 
 
 def test_a03_is_cached_gru_but_for_the_method():
@@ -183,3 +186,23 @@ def test_every_b_run_updates_on_four_clips():
     b07 = R.resolve(R.get("B07_regnety_16gf"), "author")
     assert (b07["batch_size"], b07["accum"]) == (2, 2)
     assert R.status(R.get("B07_regnety_16gf")) == "ready"
+
+
+def test_end_to_end_runs_skip_deterministic_kernels_and_cached_ones_keep_them():
+    """17.3: 1.5-1.7x the time end to end, nothing on cached features."""
+    for family in ("B", "C"):
+        for entry in R.entries(family):
+            assert R.resolve(entry, "author")["deterministic"] is False, \
+                entry["id"]
+    for family in ("P", "A", "V"):
+        for entry in R.entries(family):
+            assert R.resolve(entry, "author")["deterministic"] is True, \
+                entry["id"]
+
+
+def test_deterministic_does_not_change_what_a_row_means():
+    old = {"lr": 1e-4}
+    new = {"lr": 1e-4, "deterministic": False, "name": "x"}
+    assert R.config_differences(old, new) == []
+    new["lr"] = 3e-4
+    assert R.config_differences(old, new) == ["lr"]

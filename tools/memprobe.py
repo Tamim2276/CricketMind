@@ -45,7 +45,7 @@ def _out_of_memory(err):
 def probe(entry, split="author", batches=3, overrides=None, device=None):
     """One run's peak memory and seconds per batch, as a dict."""
     cfg = R.resolve(entry, split, overrides)
-    set_seed(cfg["seed"], deterministic=True)
+    set_seed(cfg["seed"], deterministic=cfg["deterministic"])   # as the run will
     device = device or get_device()
     mem = _memory(device)
     method = methods.load(cfg["method"])

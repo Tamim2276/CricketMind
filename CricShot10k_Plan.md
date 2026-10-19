@@ -3828,7 +3828,7 @@ own runs:
 | D, classical models | 12 | minutes, on the CPU | ~1.5 (CPU) |
 | V: extract 7 new caches | 7 | 10–40 min each, both halves | ~3 |
 | V: train the heads | 20 | ~8 min | ~3 |
-| B02–B08, end to end | 14 | 3.5–6 h (B01: 3.3 h alone, 6.3 h shared) | ~50–85 |
+| B02–B08, end to end | 14 | 3.5–6 h (B01: 3.3 h alone, 6.3 h shared); **measured 17.3: B02 7.3 h** | ~50–85; **re-costed ~67 (deterministic off)** |
 | C01–C08, end to end | 16 | 4–8 h (estimate: heavier models) | ~65–130 |
 | **committed total** | **90** | | **~150–250** |
 | E: pose cache, E01, E02, E04 | 6 | minutes; pose runs on the CPU | ~1 (+1–2 CPU) |
@@ -4556,6 +4556,41 @@ python -m src.experiments.run --exp B02_effnetv2b3 --split author
 **Check.** Note the minutes per epoch and update the cost table. This number
 decides how many days Family B really needs.
 
+**Ran 2026-10-19/20**, one power cut at epoch 23 (resumed cleanly).
+**B02 author: 77.02% val, macro-F1 0.747**, best at epoch 38 of 48, against
+B01's 79.23 / 0.778. 2.2 points behind, just past the noise floor; the
+authors also had B3 a little behind (88.39 against 89.09).
+
+- **9.1 min an epoch, 436 min in all**, against B01's 4.4 and 199. The probe
+  said 0.33 s a batch and the run did about 0.32, so the probe's timing is
+  right for runs made today; B01 is the outlier because it ran before
+  deterministic mode.
+- Train 91.8% against val 77%: a 15-point gap, wider than B01's 8.5. No
+  dropout (the authors' 0.0), and Tier 2 #13 is the obvious fix in Phase 4.
+- **Family B re-costed** from the probe's per-batch times, scaled to this
+  run, ~45 epochs each: B03 ~7.7 h, B04 ~5.2, B05 ~4.8, B06 ~5.6, B07 ~14.6
+  (batch 2), B08 ~6.2, B02 grouped ~6.8. **The remaining 13 runs: ~95
+  GPU-hours**, against the 50–85 budgeted.
+
+**Decided 2026-10-20: no deterministic kernels end to end.** Measured over
+60 batches: B02 0.21 s/batch without, 0.31 with (32% saved); B01 0.23
+against 0.40 (43%). So the end-to-end bases (`mimic_author`, `video3d`, and
+Days 32–33's W01/W05 and F bases when they are built) set
+`deterministic: false`; the cached families keep it, where it costs nothing
+and tiny gaps matter. Runs stay seeded, just not bit-identical if repeated.
+B01 never had it (it predates 11.1); B02 author did. It changes kernels,
+not the experiment, so `config_differences` ignores it and nothing that
+ran is retrained; each row's `deterministic` field records what really
+happened. **Family B's 13 runs: ~60 GPU-hours instead of ~95.**
+
+**Fixed the same day: a resume now continues exactly.** The data loader's
+shuffle state goes into `resume.pt` and comes back on resume; before, the
+epoch after a cut replayed epoch 1's order. A test cuts a run in epoch 2
+and checks that the resumed run's losses match an unbroken run's exactly,
+and that they don't once the saved state is removed. Also: `set_seed(...,
+deterministic=False)` now switches the mode off, rather than leaving
+whatever the previous run in the same process set.
+
 ---
 
 ## Days 18–22 — Family B, part 2: the queue
@@ -4770,7 +4805,8 @@ to repeat itself 1% of the time.
 ### 32.2 A motion method (≈2 h)
 
 One method, two inputs, the same 3D CNN (r3d_18 from Kinetics, first conv
-adapted to the input, Day 23's protocol):
+adapted to the input, Day 23's protocol, `deterministic: false` as 17.3
+decided for end-to-end runs):
 - **W01**: the flow stack (2 channels; start from the mean of the pretrained
   RGB filters);
 - **W05**: frame differences |f(t+1) − f(t)|, made on the fly from the box
@@ -4794,7 +4830,8 @@ F03 against C02: does motion add to an RGB 3D CNN?
 
 *Question: do a richer encoder or a richer head beat B01's plain recipe?*
 Each is B01 with one change, or F01 with one change, so each answers one
-question.
+question. They build on the `mimic_author` base, so they inherit
+`deterministic: false` (17.3).
 
 ### 33.1 Four models (≈3 h)
 

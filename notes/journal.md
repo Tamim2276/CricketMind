@@ -3378,3 +3378,40 @@ Also found: deterministic mode (11.1) costs about 1.6x on B01 in the probe.
 B01 ran before that mode existed; B02 onwards run with it. It doesn't
 change what's learned, only which kernels run, so I'm keeping it, and B02's
 real run will show what it costs over a whole epoch.
+
+## 2026-10-20 — 17.3: B02 alone, 77.02%, and what Family B will cost
+
+B02 (EfficientNetV2-B3) author: 77.02% val, F1 0.747, against B01's 79.23.
+A power cut hit at epoch 23 and the resume picked it up cleanly. Epoch 23
+looked bad (val 68.3, train loss up) but that trend had started two epochs
+before the cut; the drop to lr 1e-5 after epoch 24 fixed it, and the best
+came at epoch 38.
+
+Cost: 9.1 min an epoch, 7.3 hours in all, where B01 took 4.4 and 3.3. The
+probe predicted B02's speed almost exactly, so it's B01's old number that's
+the odd one: it ran before deterministic mode existed. Re-costing the rest
+of Family B from the probe: ~95 GPU-hours for the 13 runs left, B07 alone
+~29 of them. The plan said 50–85.
+
+Two things noticed while checking the resume: the data loader's shuffle
+state isn't saved, so after a cut the shuffle order restarts from the seed.
+Harmless for learning, but a resumed run isn't bit-identical to an
+unbroken one. And the open question: keep deterministic mode for end-to-end
+runs at roughly 1.6x the time, or not.
+
+Decided with the user: end-to-end runs go without deterministic kernels.
+Measured properly this time, 60 batches each way: B02 0.21 vs 0.31 s a
+batch, B01 0.23 vs 0.40. That's a third to two-fifths of the time, ~35
+GPU-hours on Family B alone, more across C and F. The cached families keep
+it, where it's free and the gaps are small enough to need it. Nothing
+already run is touched: determinism picks kernels, not the experiment, and
+every row says how its own run went.
+
+And the resume gap is closed: the shuffle state is saved now. The test cuts
+a run in epoch 2, resumes it, and checks its losses equal an unbroken run's
+exactly, then deletes the saved state and checks they no longer do. That
+second half matters: it proves the test can see the bug at all.
+
+While in there: set_seed(deterministic=False) used to leave the mode as
+the last run left it. With A runs (on) and B runs (off) in one process,
+B would quietly have run deterministic anyway. Fixed, tested.

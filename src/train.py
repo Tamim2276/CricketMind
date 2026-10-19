@@ -75,6 +75,7 @@ DEFAULTS = {
     "patience": 8,
     "workers": 0,
     "seed": 42,
+    "deterministic": True,    # same seed, same run, bit for bit; off end to end (17.3)
     "limit_clips": None,      # a smoke-test subset, taken across all classes
     "max_train_batches": None,
     "max_val_batches": None,
@@ -87,7 +88,7 @@ DEFAULTS = {
 LOOP_READS = ("name", "method", "split", "seed", "optimizer", "lr",
               "backbone_lr", "weight_decay", "clip_grad", "scheduler",
               "lr_factor", "lr_patience", "min_lr", "batch_size", "accum",
-              "epochs", "patience", "workers", "limit_clips",
+              "epochs", "patience", "workers", "deterministic", "limit_clips",
               "max_train_batches", "max_val_batches", "out", "figures")
 
 
@@ -297,7 +298,7 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
         cfg.update(config)
 
     # deterministic kernels: the same seed gives the same run, bit for bit
-    set_seed(cfg["seed"], deterministic=True)
+    set_seed(cfg["seed"], deterministic=cfg["deterministic"])
     device = get_device()
     out = run_dir(cfg)
     os.makedirs(out, exist_ok=True)
@@ -324,6 +325,10 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
     if os.path.exists(resume_path):
         state = load_resume(resume_path, model, optimizer, scheduler,
                             scaler=scaler)
+        # the shuffle order too, or epoch N+1 sees epoch 1's order again.
+        # Resume files from before 2026-10-20 have none; they keep that
+        if state.get("loader_rng") is not None:
+            train_loader.generator.set_state(state["loader_rng"])
         start_epoch = state["epoch"] + 1
         history = state.get("history") or []
         best_top1 = state.get("best_val_top1", 0.0)
@@ -346,6 +351,8 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
 
     for epoch in range(start_epoch, cfg["epochs"] + 1):
         tick = time.time()
+        # before this epoch draws its shuffle: what a save of epoch - 1 needs
+        epoch_start_rng = train_loader.generator.get_state()
         try:
             tr = train_epoch(model, train_loader, optimizer, criterion, device,
                              scaler=scaler, accum=cfg["accum"],
@@ -362,7 +369,8 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
             save_resume(resume_path, epoch=epoch - 1, model=model,
                         optimizer=optimizer, scheduler=scheduler, scaler=scaler,
                         history=history, best_val_top1=best_top1,
-                        no_improve=no_improve, cfg=cfg)
+                        no_improve=no_improve, cfg=cfg,
+                        loader_rng=epoch_start_rng)
             raise
 
         pinned, dead = _saturation(model)
@@ -394,7 +402,8 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
         save_resume(resume_path, epoch=epoch, model=model,
                     optimizer=optimizer, scheduler=scheduler, scaler=scaler,
                     history=history, best_val_top1=best_top1,
-                    no_improve=no_improve, cfg=cfg)
+                    no_improve=no_improve, cfg=cfg,
+                    loader_rng=train_loader.generator.get_state())
         # and every epoch, not just at the end: a run killed at epoch 13 used
         # to leave its twelve finished epochs only in the terminal scrollback
         atomic_write_json(history, history_path)

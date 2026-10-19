@@ -135,6 +135,67 @@ def test_an_interrupted_run_leaves_one_and_resumes_from_it(workspace):
     assert row["resumed"] is True
 
 
+def _cut_during_epoch_2(cfg):
+    real = T.evaluate
+    calls = {"n": 0}
+
+    def die(*a, **k):
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise KeyboardInterrupt
+        return real(*a, **k)
+
+    T.evaluate = die
+    try:
+        with pytest.raises(KeyboardInterrupt):
+            T.train(cfg, quiet=True)
+    finally:
+        T.evaluate = real
+
+
+def _losses(cfg):
+    history = json.load(open(os.path.join(T.run_dir(cfg), "history.json")))
+    out = []
+    for h in history:
+        out.append((h["train_loss"], h["val_loss"]))
+    return out
+
+
+def test_a_resumed_run_is_the_run_that_never_stopped(workspace):
+    """Found 2026-10-20 after a power cut in B02: the shuffle order was not
+    saved, so the resumed epoch saw epoch 1's order again."""
+    whole = base_cfg(workspace, name="whole", epochs=3)
+    T.train(whole, quiet=True)
+
+    cut = base_cfg(workspace, name="cut", epochs=3)
+    _cut_during_epoch_2(cut)
+    T.train(cut, quiet=True)
+    assert _losses(cut) == _losses(whole)
+
+    # and without the saved shuffle state (the old files) it is not: this
+    # is what the test would miss if the shuffle had no effect here
+    old = base_cfg(workspace, name="old", epochs=3)
+    _cut_during_epoch_2(old)
+    path = os.path.join(T.run_dir(old), "resume.pt")
+    state = torch.load(path, map_location="cpu", weights_only=False)
+    del state["loader_rng"]
+    torch.save(state, path)
+    T.train(old, quiet=True)
+    assert _losses(old)[0] == _losses(whole)[0]
+    assert _losses(old)[1:] != _losses(whole)[1:]
+
+
+def test_deterministic_can_be_switched_off_after_a_run_switched_it_on(
+        workspace):
+    """One process trains many runs; the last run's choice must not leak."""
+    T.train(base_cfg(workspace, name="on"), quiet=True)
+    assert torch.are_deterministic_algorithms_enabled()
+    row = T.train(base_cfg(workspace, name="off", deterministic=False),
+                  quiet=True)
+    assert row["deterministic"] is False
+    assert not torch.are_deterministic_algorithms_enabled()
+
+
 def test_fresh_throws_the_resume_away(workspace):
     cfg = base_cfg(workspace, epochs=1)
     T.train(cfg, quiet=True)

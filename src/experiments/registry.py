@@ -61,14 +61,16 @@ BASES = {
         "set": {"method": "cached_head", "head": "linear"},
     },
     # the authors' end-to-end model, exactly as it reproduced 78.14%
+    # end to end, deterministic kernels cost 1.5-1.7x the time (17.3), so
+    # these bases run without them. B01 never had them: it predates 11.1
     "mimic_author": {
         "config": os.path.join("configs", "mimic_author.yaml"),
-        "set": {},
+        "set": {"deterministic": False},
     },
     # the same training protocol around a 3D model
     "video3d": {
         "config": os.path.join("configs", "mimic_author.yaml"),
-        "set": {"method": "video3d"},
+        "set": {"method": "video3d", "deterministic": False},
     },
 }
 
@@ -292,10 +294,13 @@ def config_differences(old, new):
     """Keys where an older run's config does not match `new`.
 
     A key the old run did not have yet must sit at its default, which is
-    the behaviour the old code had."""
+    the behaviour the old code had.
+
+    `deterministic` is skipped: it picks which kernels run, not what the
+    experiment is, and each row records how its own run went."""
     differ = []
     for key in sorted(new):
-        if key in ("name", "figures"):
+        if key in ("name", "figures", "deterministic"):
             continue
         if key in old:
             if old[key] != new[key]:
