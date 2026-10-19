@@ -3358,3 +3358,23 @@ channels first before the pool.
 RegNetY-16GF's grid flattens to 148,176 numbers, so its GRU kernel alone is
 57M parameters. If anything doesn't fit, it's that one; the memory probe
 will say.
+
+## 2026-10-19 — 17.2 measured: everything fits except, really, B07
+
+The probe said all eight fit. Seven do, with room to spare (2–6 GB of
+11.6). B07, RegNetY-16GF, was reported as fitting at 9.4 GB but ran at
+8–28 seconds a batch, wildly variable, where the others take a third of a
+second. Halving the batch gave 0.17 s a clip against 7.0: forty times
+faster per clip. That's not a slow kernel, that's the card running out of
+memory and Windows spilling it to system RAM. So B07 trains at batch 2 ×
+accum 2, the plan's own fallback. The head's BatchNorm now sees 2 clips at
+a time instead of 4, which is the one real difference, and it's recorded.
+
+The probe called it a fit because I checked peak allocated memory under
+90%. Reserved memory is what the card actually holds, and 87% plus the
+desktop was too much. Now: reserved under 80%.
+
+Also found: deterministic mode (11.1) costs about 1.6x on B01 in the probe.
+B01 ran before that mode existed; B02 onwards run with it. It doesn't
+change what's learned, only which kernels run, so I'm keeping it, and B02's
+real run will show what it costs over a whole epoch.

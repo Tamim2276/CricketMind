@@ -206,8 +206,10 @@ ENTRIES = [
     {"id": "B06_resnet50", "base": "mimic_author",
      "cfg": {"backbone": "resnet50"},
      "why": "where does the baseline everyone knows land?"},
+    # batch 4 spilled out of the card's memory (17.2): 7.0 s a clip against
+    # 0.17 at batch 2. Same effective batch, two halves added up
     {"id": "B07_regnety_16gf", "base": "mimic_author",
-     "cfg": {"backbone": "regnet_y_16gf"},
+     "cfg": {"backbone": "regnet_y_16gf", "batch_size": 2, "accum": 2},
      "why": "does raw capacity (83M) help on 10k clips?"},
     {"id": "B08_swin_t", "base": "mimic_author",
      "cfg": {"backbone": "swin_t"},

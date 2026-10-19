@@ -4515,6 +4515,36 @@ card. Running out of memory is caught and turned into the batch 2 × accum 2
 advice. Nothing is saved. Probing B01 too gives a check on the estimate,
 since its real epoch time is known.
 
+**Measured 2026-10-19**, batch 4, peak / reserved of 11.6 GB:
+
+| ID | peak | reserved | s/batch |
+| --- | --- | --- | --- |
+| B01 EfficientNetV2-S | 5.8 | 6.0 | 0.49 |
+| B02 EfficientNetV2-B3 | 4.6 | 5.0 | 0.33 |
+| B03 Xception | 6.1 | 6.4 | 0.37 |
+| B04 ConvNeXt-T | 4.5 | 4.9 | 0.25 |
+| B05 MobileNetV3-L | 2.2 | 2.5 | 0.23 |
+| B06 ResNet-50 | 4.6 | 4.8 | 0.27 |
+| B07 RegNetY-16GF | 9.4 | 10.1 | **8–28** |
+| B08 Swin-T | 5.0 | 5.4 | 0.30 |
+
+1. **B07 did not really fit.** It reserved 87% of the card, and with the
+   desktop's share on top the Arc spilled into system memory: 7.0 s a clip
+   at batch 4, 0.17 s at batch 2 (40x). **B07 now trains at batch 2 ×
+   accumulation 2**, its registry delta, so it still updates on four clips.
+   One difference remains: the head's BatchNorm sees two clips at a time,
+   not four. The probe now calls "fits" on reserved memory under 80%, not
+   peak under 90%, which had called B07 a fit.
+2. **Deterministic mode costs about 1.6x end to end** (B01: 0.27 s/batch
+   without it, 0.43 with it). B01 itself ran before 11.1 added the mode;
+   B02–B08 run with it, like every Phase 3 run since. It changes which
+   kernels run, not what the model learns, so it is not a second variable.
+   17.3's real B02 run gives the real cost.
+3. **The probe's timing is rough.** Even without deterministic mode it gives
+   B01 0.27 s/batch, against about 0.15 in B01's real run (199 min for 45
+   epochs). A dozen batches is too short a sample. Trust it for memory, and
+   17.3 for time.
+
 ### 17.3 Re-cost on B02, alone (≈4 GPU-hours)
 
 **Run.** B02's author run with nothing else open:

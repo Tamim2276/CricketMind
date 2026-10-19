@@ -24,7 +24,11 @@ from src.utils.device import get_device
 from src.utils.seed import set_seed
 
 GB = 1024 ** 3
-FITS = 0.9          # leave a tenth of the card for the allocator's slack
+# share of the card the allocator may reserve. Measured 2026-10-19: B07 at
+# batch 4 reserved 10.1 of 11.6 GB (87%), and with the desktop's share on
+# top the Arc spilled into system memory: 7.0 s a clip against 0.17 at
+# batch 2. 80% leaves room for what else is on the card
+FITS = 0.8
 
 
 def _memory(device):
@@ -82,7 +86,7 @@ def probe(entry, split="author", batches=3, overrides=None, device=None):
             found["reserved_gb"] = mem.max_memory_reserved(device) / GB
             total = mem.get_device_properties(device).total_memory / GB
             found["total_gb"] = total
-            found["fits"] = found["peak_gb"] <= FITS * total
+            found["fits"] = found["reserved_gb"] <= FITS * total
     except (RuntimeError, MemoryError) as err:
         if not _out_of_memory(err):
             raise

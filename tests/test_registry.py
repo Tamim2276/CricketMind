@@ -172,3 +172,14 @@ def test_list_one_family():
     out = io.StringIO()
     assert runner.print_list("D", out=out) == 6
     assert "A01_mean" not in out.getvalue()
+
+
+def test_every_b_run_updates_on_four_clips():
+    """B07 trains two clips at a time (17.2: batch 4 did not fit), so it adds
+    two halves before each step. The effective batch stays B01's."""
+    for entry in R.entries("B"):
+        cfg = R.resolve(entry, "author")
+        assert cfg["batch_size"] * cfg["accum"] == 4, entry["id"]
+    b07 = R.resolve(R.get("B07_regnety_16gf"), "author")
+    assert (b07["batch_size"], b07["accum"]) == (2, 2)
+    assert R.status(R.get("B07_regnety_16gf")) == "ready"
