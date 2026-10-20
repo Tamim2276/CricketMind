@@ -41,7 +41,11 @@ def test_domain_uses_only_the_standard_library():
 
 
 def test_application_never_imports_outer_layers():
-    outer = ["cricketmind_v3.infrastructure", "cricketmind_v3.pipeline", "cricketmind_v3.api"]
+    outer = [
+        "cricketmind_v3.infrastructure",
+        "cricketmind_v3.pipeline",
+        "cricketmind_v3.api",
+    ]
     bad = []
     for file_name, name in imports_in_layer("application"):
         if name == "(relative import)":

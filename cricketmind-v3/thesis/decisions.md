@@ -61,7 +61,8 @@ Template:
   and an uncited figure (E-001). Its conclusion named a subject-keyed contract as a requirement.
 - Alternatives considered: checking prose with a second LLM (not auditable: an LLM judging an
   LLM); keeping v2's value-only check (known blind spots).
-- Status: designed
+- Status: built (claims and findings Days 7–8, the renderer Day 9; the subject-bound re-query,
+  C2, Day 19)
 - Paper section: Method (claim contract)
 
 ## D-005 — Three provenance classes, still two engines
@@ -84,7 +85,7 @@ Template:
   sound certain about a coin flip.
 - Alternatives considered: numbers only, no prose (rejected: the stakeholders need prose);
   no wording check (the v2 behaviour).
-- Status: designed
+- Status: built (the bands Day 16; C4 Days 21–22; refinements in D-029)
 - Paper section: Method (Faith Check C4)
 
 ## D-007 — Claim-type registry, checked at build time
@@ -128,7 +129,8 @@ Template:
 
 ## D-010 — Design parameters (to revisit with data)
 - Date: 2026-10-16
-- Decision: evidence floor n_min = 30 balls; bridge acceptance κ ≥ 0.61 ("substantial", Landis
+- Decision: evidence floor n_min = 30 balls (10 innings and 20 reviews added on Day 20,
+  D-030); bridge acceptance κ ≥ 0.61 ("substantial", Landis
   and Koch 1977); posture metric acceptance AUC ≥ 0.75; at most 4 active agents; at most 2
   retries and 2 regenerations.
 - Why: reasonable starting points. The paper must call them design parameters, not tuned values.
@@ -191,7 +193,8 @@ Template:
   four rules: the id is `c` plus digits; a descriptive claim carries its sample size
   (n ≥ 1); a predictive claim carries a 95% range that contains its value; a measured claim
   names its clip. The wording band shown in the v3 document's example claim
-  (`"band": "about even"`) is not stored; it is computed from the value when needed (Day 13).
+  (`"band": "about even"`) is not stored; it is computed from the value when needed (built
+  on Day 16: `band_for` in `domain/wording.py`).
 - Why: a malformed claim is stopped where it is made, before it reaches the Faith Check, the
   report or a user. A stored band could disagree with the value it describes.
 - Alternatives considered: leaving all validation to the Faith Check (a malformed claim
@@ -231,7 +234,8 @@ Template:
 - Alternatives considered: a second language model judging tone (not auditable, so not a
   gate, as in D-004; it may still help measure); fixed sentence templates only (removes the
   agents' voice); leaving tone unchecked.
-- Status: designed (built on Day 22; F8 in the harness on Day 23)
+- Status: built (C7 on Day 25; F8 in the harness on Day 26: the v3 design without C7 misses
+  it, the full gate catches it; E-004, synthetic)
 - Paper section: Method (Faith Check); Results (F8)
 
 ## D-018 — Every question gets an honest answer, however it is worded
@@ -395,3 +399,94 @@ Template:
   found).
 - Status: designed (verdicts at abstract level; confirmed after reading the full texts)
 - Paper section: Introduction (contributions); Related work
+
+## D-027 — How the Faith Check is built: pure checks, one asking step, fail closed
+- Date: 2026-10-21
+- Decision: the seven checks are pure functions in `domain/faith/`, each reading a finding and
+  a `Context` (the roster, the engines' answers, the name list) and returning `Failure`s
+  (agent, claim, check, reason). `run_checks` runs them in order, cheapest first, and keeps
+  every failure, so an agent hears all its mistakes at once. Asking the engines again is the
+  one step with input and output; it lives in `application/faith_check.py`, behind the
+  `FactSource` port. The gate fails closed: a number nobody re-checked, an engine with no
+  answer, an impossible chance, or a check that crashes all hold the finding back with a
+  reason. To make the checks possible, a claim names its `source`, and a claim type its
+  `unit` and whether it is a `comparison`.
+- Why: pure checks are tested in milliseconds without engines, and the architecture test
+  keeps `domain/` free of outside code. Collecting every failure saves regeneration rounds.
+  A safety gate that crashes, or passes a number by default, fails at its one job.
+- Alternatives considered: C2 inside `domain/` holding a port (domain would depend on outer
+  code); stopping at the first failure (more rounds of regeneration); letting exceptions
+  through (the whole question fails, or worse, a finding passes unchecked).
+- Status: built (Days 17–19, 27)
+- Paper section: Method (Faith Check); Implementation
+
+## D-028 — C2: "within rounding" means the reader would see the same number
+- Date: 2026-10-21
+- Decision: C2 passes a value when it shows exactly as the engine's value shows (the
+  renderer's own rounding: 142.04 and 142.0 both show "142.0"; 0.4049 shows "40%" and the
+  engine's 0.405 "41%", so it fails). A count's sample size must match exactly, and a range
+  must match end for end, or both be absent.
+- Why: what matters is what the reader sees. A fixed tolerance would either pass numbers
+  that display differently or reject ones that display the same. An inflated sample size
+  would let a small-sample claim dodge C3.
+- Alternatives considered: an absolute tolerance (arbitrary, unit-dependent); a relative
+  tolerance (passes visibly different numbers at large values).
+- Status: built (Day 19)
+- Paper section: Method (C2)
+
+## D-029 — C4 refinements: the word lists, optional words, digit-free hedges
+- Date: 2026-10-21
+- Decision: (1) The bands keep Kent's edges (0.13, 0.40, 0.60, 0.87; each edge goes to the
+  outer band) and the v4 table's words, plus close variants ("very unlikely", "probably",
+  "even chance", "highly likely"); "definitely" and "surely" join the words too strong for
+  any band. (2) Words are optional: the number and its range speak for themselves, but any
+  word about a chance must fit its band, and a word of another band fails. (3) With two
+  chances in one sentence, a word may describe either. (4) A hedge for a range that spans
+  bands has no digits ("the estimate is very uncertain"), so it passes C5; the numbers are
+  in the tag. (5) A difference (`comparison` in the registry) is judged by part 2 only,
+  never by bands: a gap of 12 points is not a 12% chance.
+- Why: forcing a band word into every sentence would reject honest findings; leaving a
+  phrase like "probably" unrecognised would let it through at 20%. The v4 document's hedge
+  "on 4 dismissals in 50 balls" would itself fail C5: the design contradicted itself.
+- Alternatives considered: a required band word in every sentence (many false alarms);
+  hedges with digits (they fail C5).
+- Status: built (Days 16, 21, 22); the v4 document's example is corrected at its next revision
+- Paper section: Method (C4)
+
+## D-030 — C3: a floor per unit, and a warning whatever the words
+- Date: 2026-10-21
+- Decision: a count under its floor (30 balls, 10 innings, 20 reviews; design parameters,
+  D-010) must carry a warning in its own sentence ("on only a few balls", "a small sample"),
+  whatever words surround it. The unit lives in the registry, so C3 and the renderer read
+  the same one. The warnings have no digits. For a difference, the engine reports n as the
+  smaller of its two samples, so the floor protects the thinner side (Day 39).
+- Why: a list of "generalising words" would never be complete ("a liability against spin");
+  requiring the warning for every small count does not depend on any list. The plan's own
+  example, "on only 6 balls", would have failed C5.
+- Alternatives considered: a warning only beside generalising words (leaks); a floor on the
+  total of both samples of a difference (hides a thin side).
+- Status: built (Day 20; the difference rule on Day 39)
+- Paper section: Method (C3); Limitations (L-010)
+
+## D-031 — C5, C6, C7 rules, and the fabrication harness
+- Date: 2026-10-21
+- Decision: one shared reader splits sentences and finds phrases, longest first, each word
+  used once ("as likely as not" is not also "likely"). C5: apart from claim slots and a short
+  allowlist (T20, T20I, U-19), no digit in any script. C6: in a sentence with a claim, every
+  known name must fill a matching field of at least one claim there; an empty field does not
+  match, so the prose cannot narrow a claim ("cover drive" beside an all-shots number); a
+  person may fill player, bowler or other bowler. C7: every tone word, in any sentence, needs
+  a comparison in its own sentence whose whole range is on its side of zero; "not" or "never"
+  one or two words before it turns it around. The harness (Day 26) builds one correct
+  synthetic finding, a second correct one with a warned small sample, and nine broken
+  versions (F1–F8, F2 two ways), runs v2 mode (exact equality on values, like v2's code), the
+  v3 design (no C7) and the full gate, and writes a CSV plus a ledger line (commit, changed
+  files, the output's SHA-256).
+- Why: one reader for every check means one tokenisation to test. Two correct findings
+  measure false alarms; two versions of F2 separate C2 (the claim lies) from C6 (the sentence
+  lies). A broken version that silently fails to apply is refused, so a typo cannot pass
+  for a caught lie.
+- Alternatives considered: separate regular expressions per check; one broken version per
+  class (it would hide that C6 is needed when the claim is right but the prose is wrong).
+- Status: built (Days 20, 23–26)
+- Paper section: Method (C5–C7); Results (containment, E-004)

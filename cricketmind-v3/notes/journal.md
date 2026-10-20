@@ -550,3 +550,264 @@ document; **v2** is the ICCIT system. The plan now says so at the top. Phase 2 i
 "Faith Check, v4 design", and Day 26's table gains a middle row: the v3 design (C1–C6,
 no C7) should catch F1–F7 and miss F8, which shows exactly what C7 adds. E-004, E-005,
 Day 151 and the outline use the same three names. No change to the number of days (202).
+
+---
+
+## Phase 2 note — 2026-10-21 — built ahead of Days 12, 14 and 15
+
+At the user's request, Claude built Phase 2 (Days 16–27) in one go, testing each day before
+the next, and then explained it day by day. Days 12 (tidy, teach-back, draft), 14 (the
+supervisor meeting) and 15 (the locked exam) are still open. Phase 2 answers no questions
+(no data, no language model), so the exam is still written before the system can answer
+anything; it must be locked before Phase 5 at the latest.
+
+---
+
+## Day 16 — 2026-10-21 — Words for probability
+
+**Learned:** Kent's words of estimative probability turn a chance into words: below 13% is
+"almost certainly not", 40–60% "about even", 87% and above "almost certain". Each edge belongs
+to the outer band, so the bands mirror each other around 50%.
+**Built:** `domain/wording.py`: five `Band`s (name, the words that fit, the words that do
+not), `NEVER` (will, certain, guaranteed, always, never, definitely, surely), digit-free
+`HEDGES`, `band_for(p)`, `needs_hedge(range)`, `fits(phrase, band)` and `vocabulary()`.
+**Tests:** 98 passed (15 new: the four edges, 0 and 1, outside 0–1 refused, the mirror, the
+document's 0.405 "about even" with a range across three bands, which words fit). Broke it:
+`p <= 0.13` changed to `p < 0.13` failed the 0.13 edge test.
+**Surprise:** the v4 table's own hedge, "on 4 dismissals in 50 balls", has digits, which C5
+forbids: the hedges had to be digit-free (D-029).
+
+**For the paper:**
+- Decisions: D-006 (now built), D-015 (the band is computed, Day 16), D-029
+- Section it feeds: Method (C4)
+
+---
+
+## Day 17 — 2026-10-21 — A pipeline of checks
+
+**Learned:** functions are values: a list of functions can be run one by one. Every check has
+the same shape (finding and context in, failures out), so the gate does not care which
+check it runs.
+**Built:** `domain/faith/gate.py`: `Failure` (agent, claim, check, reason), `Context`, the
+`Check` type and `run_checks()`, which runs every check in order and keeps every failure.
+**Tests:** 104 passed (6 new, with two dummy checks). Broke it: stopping at the first failure
+failed `test_every_check_runs_even_after_a_failure`. Ruff asked for `extend` instead of an
+append loop.
+
+**For the paper:**
+- Decision: D-027
+- Section it feeds: Method (Faith Check)
+
+---
+
+## Day 18 — 2026-10-21 — C1: is this claim allowed?
+
+**Learned:** the first check is the cheapest: look things up on the menu before asking any
+engine.
+**Built:** a claim now names its `source` (the engine the agent says it used). `Context`
+gains the roster (`allowed`). `domain/faith/c1_registry.py`: the agent is on the roster; the
+claim type is on the menu (if not, nothing else is checked for that claim); the agent may
+assert it; the claim names the right engine; its kind (M, D, P) matches the menu; its
+subject has every field the type needs; a comparison carries its range.
+**Tests:** 115 passed (11 new: unknown type reported once, agent not allowed, agent not on the
+roster, no source, wrong source, a count posing as a prediction, missing player, every
+missing field named, a comparison with no range, three problems at once). Broke it twice:
+without the stop after an unknown type the test failed; with the range rule off the
+comparison test failed.
+
+**For the paper:**
+- Decisions: D-007, D-027
+- Section it feeds: Method (C1)
+
+---
+
+## Day 19 — 2026-10-21 — C2: ask the engine again
+
+**Learned:** a port again: the gate asks "an engine" without knowing which. The asking step
+has input and output, so it lives in `application/`; the comparison is pure, so it lives in
+`domain/`.
+**Built:** `domain/facts.py` (`Fact`: value, n, range; refuses a value outside its own
+range); `render.shown()` (a number as the reader sees it); `Context.facts`;
+`domain/faith/c2_values.py`; `application/ports.py` (`FactSource`, `FakeFactSource`);
+`application/faith_check.py` (`recompute()` asks with the claim's metric and subject, never
+its value; `faith_check()` asks, then runs the checks).
+**Tests:** 136 passed (21 new). Broke it twice: a gate that always asks about Kohli let Kohli's
+number on Rohit through, and the F2 test failed; with the sample-size comparison off, two
+tests failed.
+**Surprise:** Kohli's 142.0 given to Rohit fails twice: the value (Rohit's is 118.0) and the
+sample (44 balls, not 50).
+
+**For the paper:**
+- Decisions: D-004 (now built), D-027, D-028 (within rounding = the same number on screen)
+- Section it feeds: Method (C2)
+
+---
+
+## Day 20 — 2026-10-21 — C3: is the evidence big enough?
+
+**Learned:** six balls are like six coin flips: anything can happen, so a number on six balls
+must say so.
+**Built:** the registry now owns each type's `unit` (balls, innings, reviews), and the
+renderer reads it from there; `render.counted()`. `domain/faith/text.py`, one reader for the
+sentence checks: sentences, words, phrases found longest first with each word used once,
+the sentence of a claim, the claims in a sentence. `domain/faith/c3_evidence.py`: floors of
+30 balls, 10 innings, 20 reviews; below the floor, the claim's own sentence must warn the
+reader, in words without digits.
+**Tests:** 164 passed (28 new). One mistake of mine: a test used the document's two-slot
+sentence with one claim, which `Finding` refused. Broke it twice: with the floor never
+applying, six C3 tests failed; searching shortest phrases first failed the reader's test.
+**Surprise:** the plan's example warning, "on only 6 balls", would fail C5: the warnings are
+digit-free ("on only a few balls"). No list of "generalising words" is needed: every small
+count needs the warning, and a word list would leak (D-030).
+
+**For the paper:**
+- Decisions: D-010 (floors widened), D-030
+- Limitations: L-010 widened, L-019, L-021
+- Section it feeds: Method (C3)
+
+---
+
+## Day 21 — 2026-10-21 — C4 part 1: words must fit the chance
+
+**Learned:** "will probably get him out" at 41% is two lies at once: "will" is too sure for
+any model, and "probably" belongs to the 60–87% band.
+**Built:** the registry marks `comparison` types (a difference: zero means none).
+`domain/faith/c4_wording.py`, part 1: in each sentence with a predicted chance, every word
+about a chance must fit its band (with two chances, either); "never" words always fail; a
+range across bands needs a hedge. A sentence with no such words passes: the number and its
+range speak for themselves.
+**Tests:** 175 passed (11 new). Broke it twice: with the hedge rule off its test failed; with
+every word fitting, three tests failed.
+
+**For the paper:**
+- Decisions: D-006, D-029
+- Section it feeds: Method (C4)
+
+---
+
+## Day 22 — 2026-10-21 — C4 part 2: "no detectable difference"
+
+**Learned:** a range from −16 to +76 includes zero, so the cover drive and the pull may not
+differ at all; "the stronger stroke" claims more than the data shows.
+**Built:** part 2: a comparison whose range includes zero (touching counts) must say "no
+detectable difference" (or a close phrase) and may use no verdict word ("stronger",
+"better"); a range that excludes zero may not say there is no difference. A matchup gap is
+judged as a difference, never as a chance.
+**Tests:** 183 passed (8 new, including the comparison flags in the registry). Broke it
+twice: `<` for `<=` let a range touching zero through; judging differences as chances failed
+the matchup test.
+
+**For the paper:**
+- Decisions: D-006, D-029
+- Section it feeds: Method (C4); Results (F6)
+
+---
+
+## Day 23 — 2026-10-21 — C5: no typed numbers
+
+**Learned:** the slots `{c1}` contain a digit but are not numbers, so they are taken out
+before scanning.
+**Built:** `domain/faith/c5_numbers.py`: no digit in any script (so Bengali "১৫০" is caught),
+apart from T20, T20I, U-19 and their forms.
+**Tests:** 192 passed (9 new). A known gap is kept as a test: "one hundred and fifty" in words
+passes (L-020). Broke it twice: judging the slots as numbers failed nine tests; accepting
+only Western digits missed "১৫০".
+
+**For the paper:**
+- Decision: D-031
+- Limitation: L-020
+- Section it feeds: Method (C5); Results (F3)
+
+---
+
+## Day 24 — 2026-10-21 — C6: same player, same shot
+
+**Learned:** a gazetteer is a list of known names and what each stands for. "Kohli" fills a
+player field; "pull" a shot field; "at the death" the phase.
+**Built:** `domain/faith/gazetteer.py`: the fifteen CricShot10k shots (names read from the v2
+config, not changed) with plurals and synonyms, phases, bowler types, and players passed in
+(the full register comes on Day 33); a surname may belong to two players. `Context.names`.
+`domain/faith/c6_names.py`: in a sentence with a claim, every known name must fill a matching
+field of a claim there; an empty field does not match, so the sentence cannot narrow a
+number ("cover drive" beside an all-shots number fails).
+**Tests:** 209 passed (17 new: the Rohit/Kohli swap, wrong shot, wrong phase and bowler type,
+narrowing, the second side of a comparison, both bowlers of a matchup, reverse sweep not
+read as sweep, a shared surname, case and possessives, and a name not on the list, a known
+gap). Broke it twice: letting an empty field fit any name failed three tests; letting names
+only bat failed the matchup test.
+
+**For the paper:**
+- Decision: D-031
+- Limitation: L-019
+- Section it feeds: Method (C6); Results (F2)
+
+---
+
+## Day 25 — 2026-10-21 — C7: tone words are hidden comparisons
+
+**Learned:** "struggles" means "does worse than someone", so it needs a checked comparison,
+and the whole range must sit on its side of zero.
+**Built:** `domain/faith/c7_tone.py`: tone words pointing better ("strong", "dominates",
+"better") or worse ("struggles", "weak", "worse"); "not" or "never" one or two words before
+turns them around; every tone word in every sentence needs a comparison in that sentence
+whose whole range is on its side. The reasons say which way the numbers point. The labels
+"(F7)" and "(F3)" were taken out of C1 and C5's reasons: agents do not know our lie classes.
+**Tests:** 220 passed (11 new: the plan's four, a comparison in another sentence, a judgment
+with no number, one backing comparison is enough, "not strong", "never struggles", no tone
+words, "out of form" read once). Broke it twice: ignoring "not" failed two tests; letting
+part of the range count failed the zero test.
+
+**For the paper:**
+- Decisions: D-017 (now built), D-031
+- Limitations: L-013, L-022
+- Section it feeds: Method (C7); Results (F8)
+
+---
+
+## Day 26 — 2026-10-21 — Breaking things on purpose: the fabrication harness
+
+**Learned:** to prove a gate works, break a correct finding in every way it could lie, and
+also show it lets correct findings through (no false alarms). A result is recorded with the
+code version that made it.
+**Built:** `Context.surface`; `FakeFactSource.numbers()`; `domain/faith/v2_mode.py` (v2's rule,
+exact equality on values, read from v2's code without changing it); `domain/faith/checks.py`
+(the full gate C1–C7, the v3 design C1–C6, v2 mode); `faith_check` uses the full gate by
+default; `application/harness.py` (a synthetic world, a correct finding with four claims in
+three sentences, a second correct one with a warned small sample, nine broken versions: F1,
+F2 in the claim, F2 in the sentence, F3–F8; a change that does not apply exactly once is
+refused); `thesis/scripts/fabrication_synthetic.py` (the CSV, written safely, and a ledger
+line with the commit, the changed-files flag and the output's SHA-256).
+**Tests:** 230 passed (10 new). Every broken version was stopped by exactly the checks meant
+for it (F6 by C4 and C7). One weak test of mine (it allowed digits 1–4 anywhere) was made
+strict. Broke it twice: leaving C7 out of the gate failed two harness tests; a broken
+version with a typo went unrefused and its test failed.
+**Result (synthetic):** v2 mode catches 1 of 8 lie classes (F1), the v3 design 7 of 8 (it
+misses F8, the tone lie), the v4 gate 8 of 8; all three let both correct findings through.
+
+**For the paper:**
+- Evidence: E-004 (verified, synthetic)
+- Number: N-010 (synthetic)
+- Decision: D-031
+- Limitation: L-023
+- Section it feeds: Results (containment)
+
+---
+
+## Day 27 — 2026-10-21 — Review day — M1
+
+**Did:** read every Phase 2 file again. Two real problems found and fixed: (1) a "chance" above
+100% made C4 crash instead of failing; it is now reported; (2) any check that crashes now holds
+the finding back with a reason instead of crashing the gate (fail closed). Formatted the two
+older files ruff had flagged since Day 9 (line breaks only). Wrote the plan's "Built" notes for
+Phase 2 and a Day 39 note (a difference's n is its thinner side).
+**Tests:** 232 passed (2 new); `ruff check` and `ruff format --check` clean. Broke both fixes
+on purpose: each test failed, then passed again.
+**M1:** the editor works on fake data: seven checks, 8 of 8 lie classes, no false alarm on
+the two correct findings (E-004, synthetic).
+**Still to do:** the user's teach-back (explain the Faith Check in their own words); re-run
+the harness after committing, so the ledger has a line made from committed code; correct the
+v4 document's hedge example at its next revision.
+
+**For the paper:**
+- Decisions: D-027 (fail closed)
+- Section it feeds: Method (Faith Check); Implementation

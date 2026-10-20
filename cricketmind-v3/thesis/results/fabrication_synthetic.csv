@@ -1,0 +1,12 @@
+case,lie,data,v2 mode,v2 mode: checks that fired,v3 design,v3 design: checks that fired,v4 design,v4 design: checks that fired
+control,none: the correct finding,synthetic,passed,,passed,,passed,
+control-small,"none: a small sample, with its warning",synthetic,passed,,passed,,passed,
+F1,wrong value: 162.0 instead of 142.0,synthetic,caught,V2,caught,C2,caught,C2
+F2a,"right value, wrong subject: the claim says Rohit",synthetic,missed,,caught,C2,caught,C2
+F2b,"right value, wrong subject: the sentence says Rohit",synthetic,missed,,caught,C6,caught,C6
+F3,uncited number: 'close to 150' typed in the sentence,synthetic,missed,,caught,C5,caught,C5
+F4,certainty inflation: 'will likely be dismissed' at 41%,synthetic,missed,,caught,C4,caught,C4
+F5,small-sample generalisation: 'struggles' on six balls,synthetic,missed,,caught,C3,caught,C3
+F6,"spurious difference: 'the stronger stroke', range includes zero",synthetic,missed,,caught,C4,caught,C4 C7
+F7,unsupported claim type: the surface is holding together,synthetic,missed,,caught,C1,caught,C1
+F8,unsupported tone: 'struggles' beside +22 against the average,synthetic,missed,,missed,,caught,C7

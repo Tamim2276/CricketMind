@@ -45,5 +45,6 @@ class Finding:
         # rule 3: every slot names one of this finding's claims
         for slot in references(self.template):
             if slot not in ids:
-                raise FindingError(f"{self.agent}: the sentence uses {slot}, but no claim has that id")
-
+                raise FindingError(
+                    f"{self.agent}: the sentence uses {slot}, but no claim has that id"
+                )

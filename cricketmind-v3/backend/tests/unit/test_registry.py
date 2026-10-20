@@ -221,3 +221,36 @@ def test_a_prediction_without_a_range_is_refused_on_the_menu():
     p_type = lookup("p_dismissal_within_k")
     with pytest.raises(RegistryError):
         dataclasses.replace(p_type, needs_range=False)
+
+
+# What n counts (Day 20)
+
+
+def test_most_counts_are_balls():
+    assert lookup("strike_rate").unit == "balls"
+
+
+def test_a_venue_average_counts_innings_and_overturns_count_reviews():
+    assert lookup("venue_first_innings_avg").unit == "innings"
+    assert lookup("review_overturn_rate").unit == "reviews"
+
+
+def test_an_unknown_unit_is_refused():
+    with pytest.raises(RegistryError):
+        dataclasses.replace(strike_rate_type(), unit="overs")
+
+
+# Comparisons (Day 21)
+
+
+def test_the_comparisons_on_the_menu():
+    names = []
+    for claim_type in CLAIM_TYPES:
+        if claim_type.comparison:
+            names.append(claim_type.name)
+    assert sorted(names) == ["matchup_difference", "sr_difference", "sr_vs_average"]
+
+
+def test_a_comparison_without_a_range_is_refused_on_the_menu():
+    with pytest.raises(RegistryError):
+        dataclasses.replace(strike_rate_type(), comparison=True)

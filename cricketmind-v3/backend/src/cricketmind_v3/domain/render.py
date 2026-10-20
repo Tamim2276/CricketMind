@@ -3,43 +3,44 @@ from decimal import ROUND_HALF_UP, Decimal
 from cricketmind_v3.domain.claims import Claim
 from cricketmind_v3.domain.findings import Finding
 from cricketmind_v3.domain.provenance import Provenance
+from cricketmind_v3.domain.registry import lookup
 
 
 class RenderError(ValueError):
     """A claim that cannot be turned into words."""
 
 
-# metric: (words with a {} for the number, number style, decimal places, what n counts)
+# metric: (words with a {} for the number, number style, decimal places)
 METRICS = {
-    "strike_rate": ("a strike rate of {}", "fixed", 1, "balls"),
-    "dismissal_rate": ("a dismissal rate of {} per ball", "percent", 1, "balls"),
-    "sr_difference": ("a strike-rate difference of {}", "signed", 1, "balls"),
+    "strike_rate": ("a strike rate of {}", "fixed", 1),
+    "dismissal_rate": ("a dismissal rate of {} per ball", "percent", 1),
+    "sr_difference": ("a strike-rate difference of {}", "signed", 1),
     "sr_vs_average": (
         "a strike-rate difference of {} from the average batter",
         "signed",
         1,
-        "balls",
     ),
-    "venue_first_innings_avg": (
-        "a first-innings average of {} runs",
-        "fixed",
-        0,
-        "innings",
-    ),
-    "workload_ratio_flag": ("a workload ratio of {}", "fixed", 2, "balls"),
-    "review_overturn_rate": ("a review overturn rate of {}", "percent", 0, "reviews"),
-    "weight_transfer": ("a weight transfer of {}", "fixed", 2, "balls"),
-    "p_dismissal_within_k": ("a {} chance", "percent", 0, "balls"),
+    "venue_first_innings_avg": ("a first-innings average of {} runs", "fixed", 0),
+    "workload_ratio_flag": ("a workload ratio of {}", "fixed", 2),
+    "review_overturn_rate": ("a review overturn rate of {}", "percent", 0),
+    "weight_transfer": ("a weight transfer of {}", "fixed", 2),
+    "p_dismissal_within_k": ("a {} chance", "percent", 0),
     "matchup_difference": (
         "a difference of {} percentage points in the chance of a dismissal",
         "signed_points",
         0,
-        "balls",
     ),
 }
 
 # "1 ball", "1 review", but "1 innings"
 ONE = {"balls": "ball", "innings": "innings", "reviews": "review"}
+
+
+def counted(n: int, unit: str) -> str:
+    """A sample size in words: 50 balls, 1 ball, 1 innings."""
+    if n == 1:
+        return "1 " + ONE[unit]
+    return f"{n} {unit}"
 
 
 def _round_half_up(number: Decimal, places: int) -> str:
@@ -91,6 +92,14 @@ def _number(value: float, style: str, places: int) -> str:
     raise RenderError(f"no number style called '{style}'")
 
 
+def shown(metric: str, value: float) -> str:
+    """A number exactly as a reader sees it: 0.405 as a chance is '41%'."""
+    if metric not in METRICS:
+        raise RenderError(f"no words for the metric '{metric}'")
+    _words, style, places = METRICS[metric]
+    return _number(value, style, places)
+
+
 def _range(interval: tuple[float, float], style: str, places: int) -> str:
     low, high = interval
     return (
@@ -102,13 +111,14 @@ def render_claim(claim: Claim) -> str:
     """One claim as words plus its tag: 'a strike rate of 142.0 [D, 50 balls]'."""
     if claim.metric not in METRICS:
         raise RenderError(f"{claim.id}: no words for the metric '{claim.metric}'")
-    words, style, places, unit = METRICS[claim.metric]
+    claim_type = lookup(claim.metric)
+    if claim_type is None:
+        raise RenderError(f"{claim.id}: '{claim.metric}' is not on the menu")
+    words, style, places = METRICS[claim.metric]
     text = words.format(_number(claim.value, style, places))
 
     if claim.kind == Provenance.DESCRIPTIVE:
-        if claim.n == 1:
-            unit = ONE[unit]
-        tag = f"[D, {claim.n} {unit}"
+        tag = "[D, " + counted(claim.n, claim_type.unit)
         if claim.interval is not None:
             tag += ", " + _range(claim.interval, style, places)  # a comparison
         tag += "]"

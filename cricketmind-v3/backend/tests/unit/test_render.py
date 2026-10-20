@@ -7,6 +7,7 @@ from cricketmind_v3.domain.findings import Finding
 from cricketmind_v3.domain.registry import CLAIM_TYPES
 from cricketmind_v3.domain.render import (
     RenderError,
+    counted,
     fixed,
     percent,
     render,
@@ -175,3 +176,13 @@ def test_a_counted_comparison_shows_its_range():
     assert render_claim(claim) == (
         "a strike-rate difference of +30.0 [D, 100 balls, range -16.0 to +76.0]"
     )
+
+
+# Sample sizes in words (Day 20)
+
+
+def test_counted():
+    assert counted(50, "balls") == "50 balls"
+    assert counted(1, "balls") == "1 ball"
+    assert counted(1, "innings") == "1 innings"
+    assert counted(1, "reviews") == "1 review"

@@ -26,6 +26,7 @@ def c1() -> Claim:
         subject=KOHLI_COVER_DRIVE,
         value=142.0,
         n=50,
+        source="N8.M1",
     )
 
 
@@ -38,6 +39,7 @@ def c2() -> Claim:
         subject=KOHLI_PULL,
         value=0.405,
         interval=(0.155, 0.697),
+        source="N9.T1",
     )
 
 
@@ -50,4 +52,28 @@ def c3() -> Claim:
         subject=CricketSubject(player="V Kohli", shot="Cover Drive"),
         value=0.31,
         clip_id="vid1_0",
+        source="N6",
+    )
+
+
+KOHLI_SPIN = CricketSubject(player="V Kohli", phase="powerplay", bowler_type="spin")
+
+
+def compared(
+    claim_id: str = "c1",
+    value: float = 22.0,
+    interval: tuple[float, float] = (8.0, 36.0),
+    n: int = 50,
+    subject: CricketSubject = KOHLI_COVER_DRIVE,
+) -> Claim:
+    # sr_vs_average: the player against the average batter with the same filters
+    return Claim(
+        id=claim_id,
+        kind=Provenance.DESCRIPTIVE,
+        metric="sr_vs_average",
+        subject=subject,
+        value=value,
+        n=n,
+        interval=interval,
+        source="N8.M1",
     )

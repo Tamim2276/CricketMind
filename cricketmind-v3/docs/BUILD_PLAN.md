@@ -1819,6 +1819,27 @@ agent with that reason.
 | 26 | Testing by breaking things on purpose; the results ledger | Fabrication harness: build the F1–F8 versions of a correct finding (F8: a tone word the numbers do not support); a "v2 mode" gate that checks values only, and a "v3-design mode" with C7 switched off. Results go to `thesis/results/`, with one row per run in `ledger.jsonl` | Table, on fake data: v2 mode catches F1 only; v3-design mode (C1–C6) catches F1–F7 and misses F8; the full gate (C1–C7, v4 design) catches F1–F8; E-004 verified |
 | 27 | Review day — **M1** | Tidy, then a journal teach-back | **M1:** the editor works on fake data |
 
+**Built (2026-10-21), and what changed on the way.** Phase 2 is in `domain/wording.py`,
+`domain/facts.py`, `domain/faith/` (the gate, a shared text reader, C1–C7, the gazetteer, v2
+mode and the ordered gates) and `application/` (the `FactSource` port, the node that asks the
+engines again, and the harness). 232 tests; M1 reached on fake data (E-004, synthetic).
+
+- C2 is split in two (D-027): `application/faith_check.py` asks the engine again (it has the
+  port), and `domain/faith/c2_values.py` compares, so the domain stays pure. "Within rounding"
+  means the reader would see the same number; the sample size must match exactly, or a claim
+  could dodge C3 (D-028).
+- A claim now names its `source`, and a claim type its `unit` and whether it is a
+  `comparison` (D-027).
+- Hedges and small-sample warnings have no digits, so they pass C5: "on only a few balls",
+  not "on only 6 balls" as Day 20 first said; the v4 document's hedge "on 4 dismissals in
+  50 balls" has the same conflict and is fixed at its next revision (D-029, D-030).
+- Any count under its floor needs a warning, whatever its words: a list of generalising
+  words would leak (D-030). Floors: 30 balls, 10 innings, 20 reviews.
+- A gate never crashes: a check that breaks holds the finding back with a reason (D-027).
+- Day 26 runs three gates (v2 mode, the v3 design without C7, the full v4 gate) on two
+  correct findings and nine broken ones (F2 broken two ways: in the claim, in the sentence),
+  and writes `thesis/results/fabrication_synthetic.csv` plus a line in `ledger.jsonl` (D-031).
+
 ---
 
 ### Phase 3 — Real cricket data (Days 28–37)
@@ -1868,7 +1889,7 @@ from 50 balls is wide; one from 5,000 balls is narrow.
 | Day | Learn | Build | Done when |
 |---|---|---|---|
 | 38 | Rates and sample size (why 2 balls tell you nothing); the repository pattern with real SQL | `DeliveryRepository` port, DuckDB adapter, fake; M1: strike rate, dismissal rate, n | Tests on the fake and on a tiny DuckDB file; journal: why 2 balls tell you nothing |
-| 39 | Bootstrap (resampling) | M1: a difference with a 95% interval, fixed seed; the same for a player against the average batter with the same filters (`sr_vs_average`, for C7) | Test reproduces [−16, +76] on the synthetic example; a hand-made `sr_vs_average` case |
+| 39 | Bootstrap (resampling) | M1: a difference with a 95% interval, fixed seed; the same for a player against the average batter with the same filters (`sr_vs_average`, for C7). A difference's n is the smaller of its two samples, so C3's floor protects the thinner side (D-030) | Test reproduces [−16, +76] on the synthetic example; a hand-made `sr_vs_average` case |
 | 40 | — | M2: venue profile (first-innings average, chasing wins, pace and spin wicket share) | Tests |
 | 41 | The workload ratio, and why scientists argue about it | M3: balls bowled in 7 and 28 days, the ratio, a flag (never a probability) | Test with a made-up bowler calendar |
 | 42 | — | M4: DRS reviews, counts and overturn rate | Tests |

@@ -12,7 +12,7 @@ Status: **verified** (the evidence exists) · **planned** (a plan day will produ
 | E-001 | v2's gate passes a correct figure attached to the wrong subject, and a figure left uncited | ICCIT paper, boundary experiment; v2 `nodes/verification.py` docstring | verified (prior work) | — |
 | E-002 | Four v2 agents assert claims no engine computes (Stadium, Compliance, Injury, Sponsorship) | v2 templates in `cricshot-improve/cricketmind/agents.py` (N11f, N11i, N11k, N11g), read 2026-10-16 | verified | — |
 | E-003 | v2's N9 interval reflects Monte Carlo error only | v2 `nodes/analytics.py`: `se = sqrt(p(1-p)/trials)` | verified | — |
-| E-004 | On synthetic findings, the full gate (C1–C7, v4 design) catches all eight fabrication classes F1–F8; the v3 design (C1–C6) misses F8; v2 mode catches F1 only | `results/fabrication_synthetic.csv` | planned | 26 |
+| E-004 | On synthetic findings, the full gate (C1–C7, v4 design) catches all eight fabrication classes F1–F8; the v3 design (C1–C6) misses F8; v2 mode catches F1 only. Both correct findings pass all three gates | `results/fabrication_synthetic.csv` and its line in `results/ledger.jsonl`, made by `scripts/fabrication_synthetic.py`; checked by `backend/tests/unit/test_harness.py` | verified (synthetic, 2026-10-21) | 26 |
 | E-005 | The full gate catches F1–F8 on real-data findings, and its false-rejection rate is X | `results/fabrication_real.csv`, `results/false_rejections.csv` | planned | 151, 155 |
 | E-006 | The cost of containment: invocations and completeness as the fabrication rate rises | `results/containment_cost.csv` | planned | 156 |
 | E-007 | N9 T1/T2 are calibrated on a held-out season (Brier score, reliability) | `results/calibration_*.csv`, `figures/reliability_*.pdf` | planned | 53, 175 |

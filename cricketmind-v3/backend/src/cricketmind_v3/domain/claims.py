@@ -18,8 +18,9 @@ class Claim:
     subject: Subject
     value: float
     n: int | None = None  # sample size of a D claim: balls, innings or reviews
-    interval: tuple[float, float] | None = None  # 95% range of a P claim
+    interval: tuple[float, float] | None = None  # 95% range: a P claim or a comparison
     clip_id: str | None = None  # the clip behind an M claim
+    source: str | None = None  # "N8.M1": the engine the agent says it used (C1)
 
     def __post_init__(self):
         # rule 1: Day 8 looks for {c1} in the sentence

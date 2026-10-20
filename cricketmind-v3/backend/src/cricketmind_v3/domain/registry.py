@@ -8,6 +8,10 @@ class RegistryError(ValueError):
     """A claim type is written wrongly."""
 
 
+# what the sample size n of a count can count
+UNITS = ("balls", "innings", "reviews")
+
+
 @dataclass(frozen=True, kw_only=True)
 class ClaimType:
     """One item on the menu: a kind of claim, and the engine behind it."""
@@ -18,6 +22,8 @@ class ClaimType:
     required_keys: tuple[str, ...]  # Subject fields that must be filled
     required_any: tuple[str, ...] = ()  # at least one of these must be filled
     needs_range: bool = False  # comparisons and predictions carry their range (I4)
+    unit: str = "balls"  # what n counts (C3, the renderer's tag)
+    comparison: bool = False  # a difference between two things: 0 means none (C4, C7)
 
     def __post_init__(self):
         # ("player") is plain text; ("player",) is a tuple
@@ -27,6 +33,10 @@ class ClaimType:
             raise RegistryError(f"{self.name}: required_any must be a tuple")
         if self.provenance == Provenance.PREDICTIVE and not self.needs_range:
             raise RegistryError(f"{self.name}: a prediction always needs its range")
+        if self.unit not in UNITS:
+            raise RegistryError(f"{self.name}: n cannot count '{self.unit}'")
+        if self.comparison and not self.needs_range:
+            raise RegistryError(f"{self.name}: a comparison is judged by its range")
 
 
 # the menu: every kind of claim CricketMind may make (invariant I2)
@@ -50,6 +60,7 @@ CLAIM_TYPES = (
         source="N8.M1",
         required_keys=("player", "shot", "other_shot"),
         needs_range=True,
+        comparison=True,
     ),
     ClaimType(
         name="sr_vs_average",
@@ -57,12 +68,14 @@ CLAIM_TYPES = (
         source="N8.M1",
         required_keys=("player",),
         needs_range=True,
+        comparison=True,
     ),
     ClaimType(
         name="venue_first_innings_avg",
         provenance=Provenance.DESCRIPTIVE,
         source="N8.M2",
         required_keys=("venue", "match_format"),
+        unit="innings",
     ),
     ClaimType(
         name="workload_ratio_flag",
@@ -76,6 +89,7 @@ CLAIM_TYPES = (
         source="N8.M4",
         required_keys=(),
         required_any=("team", "dismissal_type"),
+        unit="reviews",
     ),
     # measured from the clip (N6); the clip itself is a Claim rule (Day 7)
     ClaimType(
@@ -98,6 +112,7 @@ CLAIM_TYPES = (
         source="N9.T2",
         required_keys=("player", "bowler", "other_bowler", "phase", "k"),
         needs_range=True,
+        comparison=True,
     ),
 )
 
