@@ -17,7 +17,7 @@ class Claim:
     metric: str  # "strike_rate"
     subject: Subject
     value: float
-    n: int | None = None  # balls behind a D claim
+    n: int | None = None  # sample size of a D claim: balls, innings or reviews
     interval: tuple[float, float] | None = None  # 95% range of a P claim
     clip_id: str | None = None  # the clip behind an M claim
 
@@ -28,19 +28,21 @@ class Claim:
 
         # rule 2: a count means nothing without its sample size
         if self.kind == Provenance.DESCRIPTIVE and (self.n is None or self.n < 1):
-            raise ClaimError(f"{self.id}: a descriptive claim needs n, the number of balls")
+            raise ClaimError(f"{self.id}: a descriptive claim needs n, its sample size")
 
         # rule 3: uncertainty travels with the claim (invariant I4)
-        if self.kind == Provenance.PREDICTIVE:
-            if self.interval is None:
-                raise ClaimError(f"{self.id}: a predictive claim needs a range")
+        if self.kind == Provenance.PREDICTIVE and self.interval is None:
+            raise ClaimError(f"{self.id}: a predictive claim needs a range")
+
+        # rule 4: any range, D or P, must hold its own value
+        if self.interval is not None:
             low, high = self.interval
             if not low <= self.value <= high:
                 raise ClaimError(
                     f"{self.id}: value {self.value} is outside its range {low} to {high}"
                 )
 
-        # rule 4: no measurement without a clip (invariant I5)
+        # rule 5: no measurement without a clip (invariant I5)
         if self.kind == Provenance.MEASURED and not self.clip_id:
             raise ClaimError(f"{self.id}: a measured claim needs the clip it came from")
 

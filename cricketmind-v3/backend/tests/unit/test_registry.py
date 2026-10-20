@@ -7,10 +7,12 @@ from cricketmind_v3.domain.registry import (
     CLAIM_TYPES,
     ClaimType,
     RegistryError,
+    check_registry,
     index_by_name,
     lookup,
     missing_keys,
 )
+from cricketmind_v3.domain.render import METRICS
 from cricketmind_v3.domain.subject import CricketSubject, Subject
 from tests.examples import c1, c2, c3
 
@@ -147,3 +149,75 @@ def test_the_document_claims_are_on_the_menu_and_complete():
         assert claim_type is not None, claim.metric
         assert claim_type.provenance == claim.kind, claim.id
         assert missing_keys(claim_type, claim.subject) == [], claim.id
+
+
+# The start-up check (Day 11)
+
+
+def every_source() -> set[str]:
+    sources = set()
+    for claim_type in CLAIM_TYPES:
+        sources.add(claim_type.source)
+    return sources
+
+
+def every_name() -> set[str]:
+    names = set()
+    for claim_type in CLAIM_TYPES:
+        names.add(claim_type.name)
+    return names
+
+
+GOOD_AGENTS = {"N11b": ["strike_rate", "sr_difference", "p_dismissal_within_k"]}
+
+
+def test_a_good_setup_has_no_problems():
+    assert check_registry(GOOD_AGENTS, every_source(), every_name()) == []
+
+
+def test_a_claim_type_not_on_the_menu_is_reported():
+    agents = {"N11f": ["pitch_holding_pace"]}  # v2's Stadium agent did this (E-002)
+    problems = check_registry(agents, every_source(), every_name())
+    assert problems == ["N11f: declares 'pitch_holding_pace', which is not on the menu"]
+
+
+def test_a_missing_engine_is_reported():
+    sources = every_source() - {"N8.M4"}
+    problems = check_registry(GOOD_AGENTS, sources, every_name())
+    assert problems == ["review_overturn_rate: no engine provides N8.M4"]
+
+
+def test_a_claim_type_with_no_words_is_reported():
+    names = every_name() - {"matchup_difference"}
+    problems = check_registry(GOOD_AGENTS, every_source(), names)
+    assert problems == ["matchup_difference: the renderer has no words for it"]
+
+
+def test_every_problem_is_reported_not_only_the_first():
+    agents = {"N11f": ["pitch_holding_pace"], "N11i": ["sponsor_value"]}
+    sources = every_source() - {"N6"}
+    problems = check_registry(agents, sources, every_name())
+    assert len(problems) == 3
+
+
+def test_the_real_renderer_has_words_for_every_claim_type():
+    assert check_registry(GOOD_AGENTS, every_source(), set(METRICS)) == []
+
+
+def test_comparisons_and_predictions_need_a_range():
+    names = []
+    for claim_type in CLAIM_TYPES:
+        if claim_type.needs_range:
+            names.append(claim_type.name)
+    assert sorted(names) == [
+        "matchup_difference",
+        "p_dismissal_within_k",
+        "sr_difference",
+        "sr_vs_average",
+    ]
+
+
+def test_a_prediction_without_a_range_is_refused_on_the_menu():
+    p_type = lookup("p_dismissal_within_k")
+    with pytest.raises(RegistryError):
+        dataclasses.replace(p_type, needs_range=False)

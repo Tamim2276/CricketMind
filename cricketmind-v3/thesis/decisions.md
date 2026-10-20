@@ -94,10 +94,12 @@ Template:
 - Why: four v2 agents (Stadium, Compliance, Injury, Sponsorship) assert claims no engine
   computes, and pass the gate because the number they cite is correct (E-002).
 - Alternatives considered: catching these at run time with an LLM judge (not auditable).
-- Status: partly built. Day 10: the registry (`domain/registry.py`), 10 claim types, each
-  with its engine and the Subject fields it needs; `lookup()` and `missing_keys()`; a name
-  listed twice, or keys written without the tuple comma, are refused. The build-time check
-  itself comes on Day 11.
+- Status: built. Day 10: the registry (`domain/registry.py`), 10 claim types, each with its
+  engine and the Subject fields it needs; `lookup()` and `missing_keys()`; a name listed
+  twice, or keys written without the tuple comma, are refused. Day 11: `check_registry()`
+  reports every problem at once: an agent's claim type not on the menu, a menu row with no
+  engine, and (added 2026-10-21) a menu row with no words in the renderer, since on Day 10
+  only 4 of the 10 had them (E-023). Runs on the real graph from Day 71.
 - Paper section: Method (registry)
 
 ## D-008 — Roster changes
@@ -349,3 +351,47 @@ Template:
   our adapter only, never compared (a reviewer may ask).
 - Status: designed (Days 57–59)
 - Paper section: Implementation (only if the scores differ enough to matter; numbers.md row first)
+
+## D-025 — Every shown number says what it counts, which way it points, and how sure it is
+- Date: 2026-10-21
+- Decision: each renderer phrase names the unit of its sample size (`[D, 38 innings]`,
+  `[D, 120 reviews]`, `[D, 50 balls]`); a difference shows its sign ("+30.0"), and zero has
+  none; a gap between two chances is given in percentage points, not percent; a counted
+  comparison shows its range like a prediction does (`[D, 100 balls, range -16.0 to +76.0]`).
+  `ClaimType.needs_range` marks the claim types that must carry a range (`sr_difference`,
+  `sr_vs_average`, and every prediction); C1 enforces it on Day 18. Any range, counted or
+  predicted, must hold its own value (Claim rule 4).
+- Why: found while writing the six missing phrases on Day 11. Every tag said "balls", so a
+  venue average over 38 innings would have read "[D, 38 balls]". "12% more" and "12 points
+  more" are different claims (20% × 1.12 = 22.4%, not 32%). And invariant I4 says
+  comparisons carry their uncertainty: "+30.0" alone reads as solid, but its range -16 to
+  +76 includes zero, which C4 (Day 22) and C7 (Day 25) need to see.
+- Alternatives considered: one unit for every claim (wrong for venue and review claims);
+  showing ranges only for predictions (a comparison would hide its uncertainty); leaving
+  "which claims need a range" to each check (a second list that could drift from the menu).
+- Status: built (a phrase removed: 4 tests and the start-up check failed; the range rule
+  limited to predictions again: the counted-comparison test failed)
+- Paper section: Method (claim contract); Implementation (rendering)
+
+## D-026 — Novelty claims narrowed after the literature search
+- Date: 2026-10-21
+- Decision: the paper's headline contributions are (1) a subject-keyed re-query for
+  statistics whose subject has several filters at once, with the prose's names checked
+  against it; (2) uncertainty wording gated against an external engine's interval; and
+  (3) tone words and question premises gated by a checked comparison pointing the same way;
+  all backed by the journal-grade evaluation. The start-up registry and honest, measured
+  coverage are presented as parts of the method, not as new ideas. The slots-and-renderer
+  design (PCN), receipts (tool receipts; Thucy) and the fix-retry-withhold loop (GSAR) are
+  cited, not claimed.
+- Why: the Day 13 search (16 fixed queries, `related_work.md`) found subject binding partly
+  done (VeriFin binds operands to period, unit and line item; RAGShield links numbers to
+  entities), a tool registry checked at call time (Closed-World Resolution), and a large
+  abstention literature. It found the two other problems measured but not gated: models pick
+  miscalibrated words for external predictions (Cerda-Mardini et al. 2026), and human
+  annotators mark "strong" as an incorrect word in sports summaries (Thomson and Reiter
+  2020). Claiming less, and exactly, is safer with reviewers than claiming five things.
+- Alternatives considered: keeping the five claims of the v4 document (two are partly done,
+  one is minor); dropping subject binding entirely (the multi-filter re-query is still not
+  found).
+- Status: designed (verdicts at abstract level; confirmed after reading the full texts)
+- Paper section: Introduction (contributions); Related work

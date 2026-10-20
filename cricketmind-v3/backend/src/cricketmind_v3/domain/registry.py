@@ -17,6 +17,7 @@ class ClaimType:
     source: str  # "N8.M1", the engine that computes it
     required_keys: tuple[str, ...]  # Subject fields that must be filled
     required_any: tuple[str, ...] = ()  # at least one of these must be filled
+    needs_range: bool = False  # comparisons and predictions carry their range (I4)
 
     def __post_init__(self):
         # ("player") is plain text; ("player",) is a tuple
@@ -24,6 +25,8 @@ class ClaimType:
             raise RegistryError(f"{self.name}: required_keys must be a tuple")
         if not isinstance(self.required_any, tuple):
             raise RegistryError(f"{self.name}: required_any must be a tuple")
+        if self.provenance == Provenance.PREDICTIVE and not self.needs_range:
+            raise RegistryError(f"{self.name}: a prediction always needs its range")
 
 
 # the menu: every kind of claim CricketMind may make (invariant I2)
@@ -46,12 +49,14 @@ CLAIM_TYPES = (
         provenance=Provenance.DESCRIPTIVE,
         source="N8.M1",
         required_keys=("player", "shot", "other_shot"),
+        needs_range=True,
     ),
     ClaimType(
         name="sr_vs_average",
         provenance=Provenance.DESCRIPTIVE,
         source="N8.M1",
         required_keys=("player",),
+        needs_range=True,
     ),
     ClaimType(
         name="venue_first_innings_avg",
@@ -85,12 +90,14 @@ CLAIM_TYPES = (
         provenance=Provenance.PREDICTIVE,
         source="N9.T1",
         required_keys=("player", "shot", "phase", "bowler_type", "k"),
+        needs_range=True,
     ),
     ClaimType(
         name="matchup_difference",
         provenance=Provenance.PREDICTIVE,
         source="N9.T2",
         required_keys=("player", "bowler", "other_bowler", "phase", "k"),
+        needs_range=True,
     ),
 )
 
@@ -134,3 +141,32 @@ def missing_keys(claim_type: ClaimType, subject: Subject) -> list[str]:
 def is_empty(value) -> bool:
     # None, or "" from a model that left a box blank
     return value is None or value == ""
+
+
+def check_registry(
+    agent_types: dict[str, list[str]],
+    engine_sources: set[str],
+    renderer_metrics: set[str],
+) -> list[str]:
+    """Every problem with the menu, one sentence each. Empty list: all is well."""
+    problems = []
+
+    # 1. an agent wants a claim type that is not on the menu
+    for agent, names in agent_types.items():
+        for name in names:
+            if lookup(name) is None:
+                problems.append(f"{agent}: declares '{name}', which is not on the menu")
+
+    # 2. a menu row with no engine to compute it
+    for claim_type in CLAIM_TYPES:
+        if claim_type.source not in engine_sources:
+            problems.append(
+                f"{claim_type.name}: no engine provides {claim_type.source}"
+            )
+
+    # 3. a menu row with no words to show it
+    for claim_type in CLAIM_TYPES:
+        if claim_type.name not in renderer_metrics:
+            problems.append(f"{claim_type.name}: the renderer has no words for it")
+
+    return problems

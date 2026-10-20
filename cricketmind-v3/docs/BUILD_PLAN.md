@@ -1413,7 +1413,7 @@ research days for the paper, with no code.
 | 8 | Finding `{c1}` in text with plain string methods; tuples | `domain/findings.py`: `Finding` (agent, claims, template); list its references | Tests: references found; a reference to a missing claim is rejected |
 | 9 | Formatting numbers for people | `domain/render.py`: claim → "a strike rate of 142.0 [D, 50 balls]"; a finding → its finished sentence | One test per provenance, including a range |
 | 10 | A registry: one place that lists what is allowed | `domain/registry.py`: `ClaimType`, the 9 types of Table 4 and `sr_vs_average`; `Subject` becomes a shared base and `CricketSubject` gains the keys they need | Tests: lookup works; an unknown type returns nothing; missing subject keys are listed |
-| 11 | Failing when the system is built, not while it runs | `check_registry()`: every claim type an agent declares exists and has an engine | Test: a hollow claim type ("the pitch is holding pace") fails |
+| 11 | Failing when the system is built, not while it runs | `check_registry()`: every claim type an agent declares exists, has an engine and has renderer words; the 6 missing phrases | Test: a hollow claim type ("the pitch is holding pace") fails; all 10 render |
 | 12 | Review day | Tidy; a rough draft of the claim-contract part of the Method; read one paper | All tests green; you can explain Claim, Finding and Registry to a friend |
 | 13 | Searching the literature properly | Search Google Scholar, Semantic Scholar, the ACL Anthology and arXiv with fixed keywords; log every search (date, words, hits); read the closest papers | A search log and a "closest work vs CricketMind" table in `related_work.md`; the novelty claims re-checked |
 | 14 | How journals judge a paper | With your supervisor: 2–3 candidate journals; read 2 recent papers from the first choice; note its scope, length and how its papers evaluate. Ask whether the human study (Days 172–174) needs ethics approval; if so, apply now. Email the CricBench authors for early access to their questions | Venue chosen and written in `outline.md`; ethics request sent if needed |
@@ -1639,22 +1639,40 @@ user costs their trust.
 **Build** (`domain/registry.py`)
 
 ```python
-def check_registry(agent_types: dict[str, list[str]], engine_metrics: set[str]) -> list[str]:
+def check_registry(
+    agent_types: dict[str, list[str]],
+    engine_sources: set[str],  # "N8.M1", ... what the engines provide
+    renderer_metrics: set[str],
+) -> list[str]:
     # every problem as one sentence; an empty list means all is well
 ```
 
-It reports two kinds of problem: an agent declares a claim type that is not in the registry,
-and a registry entry names a source no engine provides. Agents and engines do not exist yet,
-so the tests pass them in by hand; Phase 5 runs it on the real ones every time the graph is
-built (Day 71).
+It reports three kinds of problem: an agent declares a claim type that is not in the
+registry; a registry entry names a source no engine provides; and a registry entry has no
+words in the renderer (`METRICS` in `domain/render.py`), so its claims could be checked but
+never shown (found on Day 10: only 4 of the 10 had words). Agents and engines do not exist
+yet, so the tests pass them in by hand; the renderer's are real (`set(METRICS)`). Phase 5
+runs it on the real ones every time the graph is built (Day 71).
+
+Then add the 6 missing renderer phrases (`sr_difference`, `sr_vs_average`,
+`venue_first_innings_avg`, `workload_ratio_flag`, `review_overturn_rate`,
+`matchup_difference`), each with its rounding; a difference shows its sign ("+30.0"). The
+real registry then passes the renderer part of the check.
 
 **Tests:** a good setup has no problems; `pitch_holding_pace` is reported; an entry pointing
-at a missing engine is reported; two problems are both reported, not only the first.
+at a missing engine is reported; an entry with no renderer words is reported; two problems
+are both reported, not only the first; every one of the 10 real claim types renders.
 
-**For the paper:** a new row in `thesis/evidence.md`: a hollow claim type fails at build time,
-proved by this test.
+**For the paper:** a new row in `thesis/evidence.md`: a hollow claim type, or one that cannot
+be shown, fails at build time, proved by this test.
 
-**Commit:** `day 11: start-up check for hollow claim types`
+**Also built** (found while writing the phrases): each phrase names what its sample counts
+(`[D, 38 innings]`, `[D, 120 reviews]`); a gap between two chances is in percentage points;
+a counted comparison shows its range (`[D, 100 balls, range -16.0 to +76.0]`); `ClaimType`
+gains `needs_range` (the two comparisons and both predictions); and any range, D or P, must
+hold its own value (Claim rule 4). See D-025.
+
+**Commit:** `day 11: start-up check for hollow or unshowable claim types`
 
 #### Day 12 — Review day
 
@@ -1785,9 +1803,9 @@ agent with that reason.
 |---|---|---|---|
 | 16 | Words for probability (Kent's scale) | `domain/wording.py`: the five bands, `band_for(p)`, the hedge rule | Tests at the edges: 0.13, 0.40, 0.60, 0.87 |
 | 17 | A pipeline of checks | `domain/faith/gate.py`: `Failure` (agent, claim, check, reason); `run_checks()` runs C1→C7 and collects failures | Test with two dummy checks |
-| 18 | — | C1: schema, registry, agent permission | Tests: unknown type; agent not allowed; no source |
+| 18 | — | C1: schema, registry, agent permission; a claim whose type needs a range (`needs_range`, Day 11) but carries none, so a comparison cannot hide its uncertainty from C4 | Tests: unknown type; agent not allowed; no source; a comparison with no range |
 | 19 | Ports again: ask an engine without knowing which engine | `application/ports.py`: `FactSource`; `FakeFactSource`; C2 re-query with rounding tolerance | Tests: wrong value (F1) and wrong subject (F2) rejected |
-| 20 | Why small samples lie: flip a coin 6 times | C3: evidence floor (30 balls), small-sample qualifier, generalising words ("struggles", "always") | Test: "struggles against spin" on 6 balls rejected; with "on only 6 balls" accepted |
+| 20 | Why small samples lie: flip a coin 6 times | C3: evidence floor (30 balls; a floor for innings and for reviews too, since Day 11's tags count them), small-sample qualifier, generalising words ("struggles", "always") | Test: "struggles against spin" on 6 balls rejected; with "on only 6 balls" accepted |
 | 21 | What an interval means, in one picture | C4 part 1: wording must fit the band; a hedge is needed if the interval crosses bands | Test: p = 0.405 with "will probably get him out" rejected |
 | 22 | "No detectable difference" | C4 part 2: a comparison whose interval contains 0 must say so | Test: 142 vs 112 with interval [−16, +76] |
 | 23 | Scanning text for digits | C5: no orphan numbers (allowlist: T20, U-19) | Test: "about 150" in a template rejected |

@@ -46,12 +46,19 @@ def test_rule_3_a_predictive_claim_needs_a_range():
         dataclasses.replace(c2(), interval=None)
 
 
-def test_rule_3_the_value_must_sit_inside_its_range():
+def test_rule_4_the_value_must_sit_inside_its_range():
     with pytest.raises(ClaimError):
         dataclasses.replace(c2(), value=0.9)
 
 
-def test_rule_4_a_measured_claim_needs_its_clip():
+def test_rule_4_holds_for_a_counted_comparison_too():
+    # +30.0 with range -16 to +76 is fine; a range of 40 to 76 is not
+    dataclasses.replace(c1(), value=30.0, interval=(-16.0, 76.0))
+    with pytest.raises(ClaimError):
+        dataclasses.replace(c1(), value=30.0, interval=(40.0, 76.0))
+
+
+def test_rule_5_a_measured_claim_needs_its_clip():
     with pytest.raises(ClaimError):
         dataclasses.replace(c3(), clip_id=None)
 

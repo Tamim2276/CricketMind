@@ -448,9 +448,72 @@ now carries k=6 ("within the next 6 balls"). Written by Claude and explained, pi
 Broke it on purpose: with the "at least one of" rule switched off, the review-overturn test
 failed; restored, all pass.
 **Surprise:** the renderer has words for only 4 of the 10 claim types, so a claim of one of
-the other 6 would fail at the very end, in front of a user. Raised with the user as a
-candidate for Day 11's start-up check.
+the other 6 would fail at the very end, in front of a user. Agreed with the user: Day 11's
+start-up check now also reports a claim type with no renderer words, and Day 11 adds the 6
+missing phrases (plan updated; still 202 days).
 
 **For the paper:**
 - Decisions: D-007 (registry) and D-020 (sport-neutral Subject) now partly built
 - Section it feeds: Method (claim contract, registry); Results (generality, later)
+
+---
+
+## Day 11 — 2026-10-21 — Fail at start-up, not in front of a user
+
+**Learned:** fail fast: a mistake found before the system starts costs a minute; the same
+mistake found by a user costs their trust. Report every problem at once, not only the first,
+so one restart is enough. A difference needs its sign to say which way it points, and a gap
+between two chances is in percentage points (20% to 32% is 12 points, not 12%).
+**Built:** `check_registry()` in `domain/registry.py`: three loops, one per rule (an agent's
+claim type not on the menu; a menu row with no engine; a menu row with no renderer words).
+The parameter the plan called `engine_metrics` is `engine_sources` (it holds names like
+"N8.M1"; plan updated). In `domain/render.py`: the six missing phrases, `signed()` and
+`signed_points()`, a unit per phrase (balls, innings, reviews; "1 innings", "1 review"), a
+counted comparison's range in its tag, and an unknown number style is an error. `ClaimType`
+gains `needs_range`; a prediction without it is refused on the menu. Claim rule 4 now holds
+for any range, D or P. Written by Claude and explained, piece by piece.
+**Tests:** 83 passed (21 new); ruff clean. Broke it on purpose twice: removing the venue
+phrase failed 4 tests including the start-up check; limiting the range rule to predictions
+failed the counted-comparison test. Restored, all pass.
+**Surprise:** every tag said "balls", so a venue average would have shown "[D, 38 balls]"
+for 38 innings; and a counted comparison like +30.0 never showed its range (-16 to +76),
+so it looked solid when it may be no difference at all. Plan notes added for C1 (Day 18:
+a comparison with no range) and C3 (Day 20: floors for innings and reviews too).
+
+**For the paper:**
+- Evidence: E-023 (verified, unit test)
+- Decisions: D-007 now built; D-025 (units, signs, percentage points, comparison ranges)
+- Section it feeds: Method (registry, claim contract); Implementation (rendering)
+
+---
+
+## Day 13 — 2026-10-21 — The literature search
+
+**Learned:** a systematic search fixes its words and databases first and logs every run, so
+a reviewer could repeat it. "Already done" is not a disaster: it tells you what to cite and
+how to say exactly what is yours.
+**Did:** 16 fixed queries over arXiv, the ACL Anthology, Semantic Scholar and the open web
+(Google Scholar cannot be searched by the tool), plus 6 targeted look-ups; about 30 papers
+kept; abstract pages of the closest 16 read (Thomson and Reiter Sections 1–4 in full). Run
+by Claude with the web-search tool at the user's request; the user reads the closest five
+in full. Wrote the search log, a table of what each close paper checks, and a verdict for
+each novelty claim of the v4 document, in `thesis/related_work.md`. Added 17 BibTeX
+entries. Updated §13 of the v4 document and rebuilt the PDF; filled in EG-VAR's author
+(Junyu Ren) and VeriFin's title and authors (Hall, Shome, Eiers).
+**Verdicts:** uncertainty wording against an external interval: still new as a gate (the
+problem is measured by Cerda-Mardini et al. 2026). Tone words as checked comparisons: still
+new (Thomson and Reiter mark "strong" as an incorrect word, by hand). Subject binding:
+partly done (VeriFin, RAGShield); what stays ours is the multi-filter re-query. Start-up
+registry: new in this form but minor. Honest coverage: partly done (abstention). Slots and
+renderer: already in PCN. Receipts: already in tool receipts and Thucy.
+**Surprise:** PCN puts its verifier in the renderer, the same idea as our Day 9 renderer; and
+Thomson and Reiter's own example of a wrong word is "strong", exactly the C7 case.
+**Limits:** the hit counts are what the tool showed, not database totals, and verdicts rest
+on abstracts. The user re-runs four queries on the sites' own pages and reads five papers in
+full (checklist at the end of `related_work.md`).
+
+**For the paper:**
+- Evidence: E-024 (verified at abstract level)
+- Numbers: N-009 (Thomson and Reiter's error counts)
+- Decisions: D-026 (novelty claims narrowed to three headline contributions)
+- Section it feeds: Introduction (contributions); Related work

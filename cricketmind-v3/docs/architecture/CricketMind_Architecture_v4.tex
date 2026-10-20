@@ -121,9 +121,10 @@
 \begin{center}
 \fbox{\parbox{0.92\textwidth}{\small
 \textbf{Status.} This is a design whose first part is built. Built and tested
-so far (days 1--9 of a 202-day plan): the claim language, that is, provenance
+so far (days 1--13 of a 202-day plan): the claim language, that is, provenance
 classes, subjects, claims that check their own rules when they are created,
-findings with slots, and the renderer, with 43 unit tests. Nothing else has
+findings with slots, the renderer, and the registry with its start-up check,
+with 83 unit tests; and a first literature search. Nothing else has
 been built or measured. Every number in this document is a design parameter,
 a figure cited from the literature, or an illustrative computation on the
 synthetic corpus of the v2 reference implementation, and is labelled as such.
@@ -1203,7 +1204,7 @@ evidence map that each experiment will verify.}
 \textbf{Phase} & \textbf{Work} & \textbf{Days} & \textbf{Milestone} \\
 \midrule
 0 & Foundations: environment, the five layers, an architecture test & 1--5 & built \\
-1 & Claims: provenance, subjects, claims, findings, renderer, registry; the literature search, the journal choice and the locked exam & 6--15 & days 6--9 built \\
+1 & Claims: provenance, subjects, claims, findings, renderer, registry; the literature search, the journal choice and the locked exam & 6--15 & days 6--11, 13 done \\
 2 & Faith Check C1--C7 and the fabrication harness & 16--27 & M1, day 27 \\
 3 & Real cricket data: every Cricsheet competition into DuckDB & 28--37 & \\
 4 & Engines: N8 (any filters $\times$ measures, receipts) and N9 & 38--54 & M2, day 54 \\
@@ -1258,34 +1259,50 @@ Ethics approval for the human study is slow & the study is delayed & ask on day 
 \section{Positioning against Related Work}
 
 Checking a language model's numbers against a trusted source is an active area,
-and it moved quickly in 2026. Proof-Carrying Numbers \cite{pcn} requires each
-displayed number to link to a verified structured claim or be marked unverified.
-Tool receipts \cite{receipts} check an agent's claims against signed records of
-the tool calls it actually made. EG-VAR \cite{egvar} lets a proof kernel mark a
-claim verified only when it is traceable to a tool call, and VeriFin
-\cite{verifin} grounds numerical financial claims in filed facts and checks the
-calculations with a solver. Work on collective hallucination \cite{collective}
-decomposes multi-agent outputs into atomic claims. CricketMind belongs to this
-family. As far as a limited search found, five elements of Version~4 are not
-covered there:
+and it moved quickly in 2026. A first systematic search (day 13: sixteen fixed
+queries over arXiv, the ACL Anthology, Semantic Scholar and the open web) found
+the following closest work. Proof-Carrying Numbers \cite{pcn} binds each
+displayed number to a structured claim and verifies it in the renderer, so an
+unchecked number defaults to unverified; CricketMind's slots and renderer (I3)
+share this idea and do not claim it. Tool receipts \cite{receipts} check an
+agent's claims against signed records of its tool calls, and Thucy
+\cite{thucy} reports the SQL behind each verdict; CricketMind's receipts (I8)
+serve reproducibility, not forgery detection, and are not claimed either. EG-VAR
+\cite{egvar} lets a proof kernel mark a claim verified only when it descends from
+an attested tool call, and abstains otherwise. VeriFin \cite{verifin} grounds
+the operands of financial claims in filed facts, so a wrong period, unit or line
+item is caught, and checks the calculation with a solver. RAGShield
+\cite{ragshield} links numbers in government text to their entity. GSAR
+\cite{gsar} scores the groundedness of claims in multi-agent reports and decides
+to proceed, regenerate or replan, close to the Faith Check's containment loop,
+and work on collective hallucination \cite{collective} studies how errors spread
+between agents. Against this work, Version~4 states its contributions narrowly:
 
 \begin{enumerate}[nosep,leftmargin=1.6em]
-\item \textbf{Subject binding.} Claims are re-queried against the engine for
-  their subject (C2), and the prose's named entities must agree with them (C6).
-\item \textbf{Uncertainty faithfulness.} The wording of predictive and
-  comparative claims is checked against an \emph{external} engine's interval,
-  one that includes estimation uncertainty (C4). Research on verbalised
-  confidence \cite{lin2022,wang2024} studies how well a model states its
-  \emph{own} confidence, a different question.
-\item \textbf{Judgments as checked comparisons.} Tone words and the premises of
-  questions must be backed by a comparison whose interval points the same way
-  (C7, I7).
-\item \textbf{A static registry of claim types} that refuses, at build time,
-  kinds of claims that no engine computes (I2).
-\item \textbf{Honest, measured coverage.} Every question is proved, explained or
-  declined, its reading is shown, and the shares of each are measured on a locked
-  exam with paraphrases (I9).
+\item \textbf{A subject-keyed re-query for multi-filter statistics.} Binding a
+  number to what it is about is not new in itself (VeriFin, RAGShield, and the
+  named-entity errors of sports summaries \cite{thomson}). What remains is
+  re-querying every claim for a subject defined by several filters at once
+  (player, shot, phase, bowler type, \ldots), with the prose's names checked
+  against it (C2, C6).
+\item \textbf{Uncertainty wording gated against an external interval.} Work on
+  faithful uncertainty \cite{lin2022,wang2024,yona2024} concerns a model's
+  \emph{own} confidence. Cerda-Mardini et al.\ \cite{riskcomm} measured that
+  models choose miscalibrated words for external probabilistic predictions; no
+  system found enforces the fit before release (C4).
+\item \textbf{Judgments as checked comparisons.} Unsupported evaluative words
+  are a known error type: annotators marked ``strong'' as an incorrect word in a
+  generated basketball summary \cite{thomson}, and the tone of language-model
+  statistical reports drifts from the data \cite{tonal}. No system found requires
+  each tone word, and each premise of a question, to be backed by a comparison
+  whose interval points the same way (C7, I7).
 \end{enumerate}
+
+\noindent Two further elements are parts of the method rather than headline
+claims: a registry of claim types checked at start-up (I2), whose nearest
+relative checks tool calls against a registry at call time \cite{closedworld};
+and honest, measured coverage (I9), which builds on the abstention literature
+\cite{abstention}.
 
 \noindent The evaluation also compares the deterministic gate with
 language-model checkers, an AI judge \cite{llmjudge} and Chain-of-Verification
@@ -1295,15 +1312,17 @@ for fantasy team selection, and CricBench \cite{cricbench} found that most SQL
 generated by language models for cricket analytics questions executes while far
 less returns the right answer: direct evidence that cricket numbers produced by
 language models must be verified. Sports question answering more broadly has
-benchmarks for knowledge and numeric reasoning \cite{sportqa,sportsmetrics}.
-Before any novelty claim is submitted, this positioning needs the systematic
-literature search planned for day 13.
+benchmarks for knowledge and numeric reasoning \cite{sportqa,sportsmetrics}, and
+a 2026 survey of large models in sports \cite{sportsurvey} names hallucination as
+a barrier to trust. These verdicts rest on abstracts (and, for \cite{thomson}, the
+full text); they are re-checked against full texts and a repeated search before
+submission.
 
 % =====================================================================
 \section{What This Document Does Not Claim}
 
 \begin{itemize}[nosep,leftmargin=1.6em]
-\item Only the claim language (days 6--9) is built; no other Version~4
+\item Only the claim language and the registry (days 6--11) are built; no other Version~4
   component has been built, and no Version~4 result has been measured.
 \item The worked examples use the synthetic corpus and say nothing about real
   players; examples marked as invented are illustrations only.
@@ -1315,7 +1334,8 @@ literature search planned for day 13.
   checked.
 \item Explanations of rules are not checked against any source.
 \item Generality is shown by one case study, not proven for every sport.
-\item The novelty claims above await a systematic literature search.
+\item The contributions above were checked by one systematic search, at abstract
+  level; the search is repeated before submission.
 \end{itemize}
 
 % =====================================================================
@@ -1399,16 +1419,58 @@ numeric answers from LLMs via claim verification,'' arXiv:2509.06902, 2025.
 A. Basu, ``Tool receipts, not zero-knowledge proofs: Practical hallucination
 detection for AI agents,'' arXiv:2603.10060, 2026.
 
-% Authors to be added after the day-13 search.
 \bibitem{egvar}
-``Evidence-grounded verified agentic reasoning: A path toward eliminating LLM
-hallucination in empirical inference via tool-attested kernel proofs,''
-arXiv:2607.12650, 2026.
+J. Ren, ``Evidence-grounded verified agentic reasoning: A path toward eliminating
+LLM hallucination in empirical inference via tool-attested kernel proofs,''
+arXiv:2607.12650, 2026 (ICML 2026 TAIGR workshop).
 
-% Title and authors to be completed after the day-13 search.
 \bibitem{verifin}
-VeriFin: numerical financial claims grounded in XBRL facts and checked with a
-solver, arXiv:2608.10213, 2026.
+B. Hall, S. Shome, and W. Eiers, ``VeriFin: A neurosymbolic framework for
+verifying LLM-generated financial claims,'' arXiv:2608.10213, 2026.
+
+\bibitem{ragshield}
+K. Patil, ``RAGShield: Detecting numerical claim manipulation in government RAG
+systems,'' arXiv:2604.00387, 2026.
+
+\bibitem{thucy}
+M. Theologitis and D. Suciu, ``Thucy: An LLM-based multi-agent system for claim
+verification across relational databases,'' AAAI 2026 Workshop on LLM-based
+Multi-Agent Systems, arXiv:2512.03278.
+
+\bibitem{gsar}
+F. A. Kamelhar, ``GSAR: Typed grounding for hallucination detection and recovery
+in multi-agent LLMs,'' arXiv:2604.23366, 2026.
+
+\bibitem{closedworld}
+L. G. Iyer, ``Closed-world resolution against tool hallucination in LLM
+agents,'' arXiv:2609.19425, 2026.
+
+\bibitem{riskcomm}
+D. Cerda-Mardini, S. Chandar, and S. Madathil, ``Consistent but miscalibrated:
+Evaluating LLM limitations for risk communication in natural language,''
+arXiv:2607.03882, 2026.
+
+\bibitem{tonal}
+P. Balani and S. Panda, ``Reporting under pressure: Separating factual and tonal
+sycophancy in LLM statistical analysis,'' arXiv:2609.27756, 2026.
+
+\bibitem{thomson}
+C. Thomson and E. Reiter, ``A gold standard methodology for evaluating accuracy
+in data-to-text systems,'' in \emph{Proc. 13th International Conference on
+Natural Language Generation (INLG)}, 2020.
+
+\bibitem{yona2024}
+G. Yona \emph{et al.}, ``Can large language models faithfully express their
+intrinsic uncertainty in words?'' in \emph{Proc. EMNLP}, 2024.
+
+\bibitem{abstention}
+B. Wen \emph{et al.}, ``Know your limits: A survey of abstention in large
+language models,'' \emph{Transactions of the Association for Computational
+Linguistics}, vol.~13, pp.~529--556, 2025.
+
+\bibitem{sportsurvey}
+Y. Xu \emph{et al.}, ``A survey of large models in sports,'' in \emph{Findings of
+ACL}, 2026, arXiv:2608.14377.
 
 \bibitem{collective}
 S. Jamshidi, ``Collective hallucination in multi-agent LLMs: Modeling and
