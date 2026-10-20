@@ -3444,3 +3444,19 @@ None of the crop differences were in Day 7's sweep, so "every cause
 eliminated" was true only of the causes we thought of. The ruler (their
 model on our frames, 43%) can now test the real recipe on a few hundred
 clips. The training notebook itself is plain and inflates nothing.
+
+Built the replica (7.6): tools/replica.py makes 300 author-val clips the
+way their notebooks do, in two versions, crop only and crop plus their
+ultralytics overlay. Looking at one Hook side by side with ours made the
+difference obvious: their batter fills the whole frame, slightly widened by
+the stretch; ours stands small in the middle of the pitch. And their bat is
+cyan. The only part I can't copy is their striker detector, so the striker
+box comes from our own tracker.
+
+A small trap on the way: on the CPU, the 896 px detector segfaulted on
+batches of four frames while a training run held most of the RAM (4.3 GB
+free). One frame at a time works, 40 s a clip. On the GPU it will be fast,
+so the plan is to pause Family B for half an hour, build and score on the
+GPU, and resume; the resume is exact now, so the pause costs nothing but
+time. The user also wants our own best models scored on the replica, so
+`--score` runs B01 and B03 on box, replica_crop and replica.

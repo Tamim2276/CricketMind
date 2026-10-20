@@ -210,9 +210,16 @@ def score(truth, units, mapping):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--variant", default="box", choices=("box", "seg"))
+    ap.add_argument("--variant", default="box",
+                    help="a folder under data/processed: box, seg, "
+                         "replica_crop, replica (7.6)")
     ap.add_argument("--fit_clips", type=int, default=450,
                     help="train clips used to fit the class permutation")
+    ap.add_argument("--mapping_from",
+                    help="reuse the permutation saved in this report instead "
+                         "of fitting one; box and seg found the same one")
+    ap.add_argument("--score_csv",
+                    help="the clips to score; default the whole test split")
     ap.add_argument("--test_clips", type=int, default=0,
                     help="0 means the whole test split")
     ap.add_argument("--splits", default=SPLITS)
@@ -237,27 +244,41 @@ def main(argv=None):
         print(err)
         return 2
 
-    print(f"\nfitting the class permutation on {args.fit_clips} train clips "
-          f"(variant={args.variant})", flush=True)
-    train = balanced_sample(read_split(os.path.join(args.splits, "train.csv")),
-                            args.fit_clips)
-    t_truth, t_units = predict(model, train, args.variant, args.processed,
-                               classes)
-    mapping, counts = fit_permutation(t_truth, t_units)
-    fit_acc, _ = score(t_truth, t_units, mapping)
-    print(f"  agreement on the fitting sample: {fit_acc:.2%}")
+    if args.mapping_from:
+        # their output order is fixed by their training; box and seg, fitted
+        # separately on 441 clips each, found the identical permutation
+        with open(args.mapping_from, encoding="utf-8") as fh:
+            saved = json.load(fh)["mapping"]
+        mapping = {}
+        for unit, label in saved.items():
+            mapping[int(unit)] = int(label)
+        t_truth = []
+        fit_acc = None
+        print(f"\nclass permutation from {args.mapping_from}", flush=True)
+    else:
+        print(f"\nfitting the class permutation on {args.fit_clips} train "
+              f"clips (variant={args.variant})", flush=True)
+        train = balanced_sample(
+            read_split(os.path.join(args.splits, "train.csv")), args.fit_clips)
+        t_truth, t_units = predict(model, train, args.variant, args.processed,
+                                   classes)
+        mapping, counts = fit_permutation(t_truth, t_units)
+        fit_acc, _ = score(t_truth, t_units, mapping)
+        print(f"  agreement on the fitting sample: {fit_acc:.2%}")
 
-    test = read_split(os.path.join(args.splits, "test.csv"))
+    test_csv = args.score_csv or os.path.join(args.splits, "test.csv")
+    test = read_split(test_csv)
     if args.test_clips:
         test = balanced_sample(test, args.test_clips, seed=1)
-    print(f"\nscoring {len(test)} test clips", flush=True)
+    print(f"\nscoring {len(test)} clips from {test_csv}", flush=True)
     truth, units = predict(model, test, args.variant, args.processed, classes)
     acc, mapped = score(truth, units, mapping)
 
     print()
     print("=" * 62)
     print(f"  authors' model on OUR {args.variant} crops")
-    print(f"  test top-1  {acc:.2%}   over {len(truth)} clips")
+    print(f"  top-1  {acc:.2%}   over {len(truth)} clips of "
+          f"{os.path.basename(test_csv)}")
     print("=" * 62)
     print()
     print("  for reference")
@@ -282,6 +303,8 @@ def main(argv=None):
 
     report = {
         "variant": args.variant,
+        "scored_csv": test_csv,
+        "mapping_from": args.mapping_from,
         "fit_clips": len(t_truth),
         "fit_agreement": fit_acc,
         "test_clips": len(truth),

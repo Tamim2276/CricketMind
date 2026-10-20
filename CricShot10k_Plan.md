@@ -2124,6 +2124,45 @@ own model on them with `tools/authors_model.py` (one caveat: their training
 set overlaps any clips we pick, so the ruler compares preprocessing
 variants, not generalisation).
 
+### 7.6 The replica test (added 2026-10-21)
+
+**Why.** If their model reads frames made their way far better than ours,
+the 7.4 gap was preprocessing all along, and we know what to build.
+
+**Built.** `tools/replica.py` rebuilds 300 author-val clips (20 a class) as
+their notebooks do: crop every frame to striker ∪ bat, 10% sideways
+padding, stretch to 224, drop frames with no striker, MJPG after each step,
+15 even frames, ultralytics overlay at imgsz 256. Two variants:
+`replica_crop` (their crop only) and `replica` (crop and overlay), so crop
+and colour can be told apart. The one substitute is the striker box: theirs
+came from a detector they never released, ours from `detect.py` plus our
+tracker. `tools/authors_model.py` gained `--variant` for any folder,
+`--score_csv`, and `--mapping_from` (box and seg found the same class
+permutation independently, so it is reused rather than refitted on train
+clips the replica does not have). 10 tests; on the CPU, one clip takes 40 s,
+and four 896 px frames at once segfaulted with a training run holding the
+RAM, so the CPU detects one frame at a time.
+
+**Run** (pause the Family B queue; it resumes exactly):
+
+```bash
+python -m tools.replica --build       # ~20-30 min on the GPU
+python -m tools.replica --score       # B01 and B03 on box, replica_crop, replica
+python -m src.experiments.run --family B
+```
+
+Their model, in a Keras 3.8.0 venv on the CPU, on the same clips:
+`--variant box`, `seg`, `replica_crop`, `replica`, each with
+`--score_csv data/splits_replica/val.csv --mapping_from
+experiments/authors_model_seg.json`.
+
+**Read.** Their model: box against seg against replica_crop against replica,
+on identical clips. A big jump on `replica` means the recipe is theirs, and
+the next question is whether our models train better on it. Ours were
+trained on box crops and have never seen an overlay, so a drop on `replica`
+is expected and says nothing against the recipe; `replica_crop` shows how
+they take the crop alone.
+
 ---
 
 # PHASE 2 — Make 92 runs affordable (Days 8–9)
