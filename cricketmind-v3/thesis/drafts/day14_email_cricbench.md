@@ -1,14 +1,29 @@
 # Email to the CricBench authors (draft)
 
-*Send from your university address after your supervisor agrees, and copy your supervisor.
-Find the corresponding author's address on the first page of the paper (arXiv:2512.21877,
-v3). Fill in the [brackets].*
+*Send from your university address after your supervisor agrees. Fill in the [brackets].*
+
+*Who to write to (checked 2026-10-21): the v3 paper (11 Apr 2026, "Under Review") has 10
+authors, nine at BITS Pilani and one at KIIT Bhubaneswar. It prints one email address and
+marks no corresponding author.*
+
+- **To:** Parth Agarwal (first author), `f20240726@pilani.bits-pilani.ac.in`, the only
+  address printed in the paper.
+- **CC:** Prof. Jagat Sesh Challa, Associate Professor, CSIS, BITS Pilani (a senior author on
+  every version), `jagatsesh@pilani.bits-pilani.ac.in`, from his BITS profile page
+  (bits-pilani.ac.in/pilani/jagat-sesh-challa).
+- **CC:** your supervisor, `[supervisor's MIST email]`.
+- **If no reply in two weeks:** one polite follow-up. Then try Vaibhav Devraj, the first
+  author of v1, through the "[view email]" link on arxiv.org/abs/2512.21877.
 
 ---
 
+**To:** `f20240726@pilani.bits-pilani.ac.in`
+
+**CC:** `jagatsesh@pilani.bits-pilani.ac.in`, `[supervisor's MIST email]`
+
 **Subject:** Request for early access to CricBench questions, for a thesis evaluation
 
-Dear Dr [corresponding author's surname],
+Dear Mr Agarwal and Prof. Challa,
 
 I am a [final-year undergraduate] student in Computer Science and Engineering at the Military Institute of
 Science and Technology (MIST), Bangladesh, working on my thesis under the supervision of
