@@ -230,6 +230,7 @@ cricketmind-v3`, never `git add -A`, on this branch (see the branch rules in Sec
 | **Pydantic v2** | Checks that data has the right shape ("is `value` really a number?"). |
 | **pydantic-settings** | Reads settings from a `.env` file. |
 | **LangGraph** | Runs the flowchart of nodes, with loops and branches. |
+| **LangChain** (`langchain-ollama`) | A second way to call the model, compared with our own adapter on Day 59; the better one stays. |
 | **DuckDB** | A database in one file that is very fast at "count and group" questions. It holds the ball-by-ball evidence. |
 | **SQLite + SQLModel** | A small database for the website's own data (saved reports, history). |
 | **Ollama + qwen2.5:7b** | The local language model, already installed. Behind a "port", so a cloud model can replace it later without touching the rest. |
@@ -1879,8 +1880,8 @@ writes the report → N13 shows it.
 | 55 | LangGraph basics: state, nodes, edges, reducers | `application/graph/state.py`; the full skeleton with every node as a stub (node name = function name) | Test: the graph compiles and runs end to end |
 | 56 | Conditional edges: a branch in the flowchart | The entry branch (clip or text only); N3 with a simple rule-based parser first | Tests for both paths |
 | 57 | What a local LLM is; JSON-schema output | `LLM` port, `OllamaLLM` adapter, `FakeLLM` | Test with `FakeLLM`; a manual run with qwen2.5:7b |
-| 58 | — | N3 for real: structured parse → Pydantic; an unknown player gets a clear status | Tests with the fake; 5 manual queries |
-| 59 | Sorting questions by kind | N3 also sorts each question: stats, prediction, video, rules, or can't-check. Every answer starts with "I read this as: …" so a user can see a misunderstanding. A can't-check question (injuries, salaries) gets an honest answer that says what CricketMind can answer instead | Tests on 30 example questions, 6 of each kind, each asked 3 ways |
+| 58 | — | N3 for real: structured parse → Pydantic; an unknown player gets a clear status. A second adapter, `LangChainLLM` (you install `langchain-ollama`), behind the same `LLM` port: nothing else changes (D-024) | Tests with the fake; 5 manual queries with each adapter |
+| 59 | Sorting questions by kind; a fair comparison | N3 also sorts each question: stats, prediction, video, rules, or can't-check. Every answer starts with "I read this as: …" so a user can see a misunderstanding. A can't-check question (injuries, salaries) gets an honest answer that says what CricketMind can answer instead. Then both adapters read the same questions with the same model, prompt and schema | Tests on 30 example questions, 6 of each kind, each asked 3 ways; both adapters scored on them, the better one stays (a tie keeps `OllamaLLM`, the simpler one); D-024 updated with the numbers |
 | 60 | — | N6 Shot DNA (stub perception); N7a subject-keyed retrieval; N7b context | Tests |
 | 61 | — | N8 and N9 as graph nodes; the sanctioned fact surface | Tests |
 | 62 | Capabilities: what can this question support? | Capability filter: posture needs a clip, matchups need two bowlers, venue claims need a venue | Tests |

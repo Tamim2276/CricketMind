@@ -94,7 +94,10 @@ Template:
 - Why: four v2 agents (Stadium, Compliance, Injury, Sponsorship) assert claims no engine
   computes, and pass the gate because the number they cite is correct (E-002).
 - Alternatives considered: catching these at run time with an LLM judge (not auditable).
-- Status: designed
+- Status: partly built. Day 10: the registry (`domain/registry.py`), 10 claim types, each
+  with its engine and the Subject fields it needs; `lookup()` and `missing_keys()`; a name
+  listed twice, or keys written without the tuple comma, are refused. The build-time check
+  itself comes on Day 11.
 - Paper section: Method (registry)
 
 ## D-008 — Roster changes
@@ -284,7 +287,9 @@ Template:
 - Alternatives considered: cricket only (weaker generality claim); a generic `Subject` as a
   dictionary of filters (loses the keyword-only, typo-crashes-at-once safety of Day 6); a full
   second product (beyond a thesis).
-- Status: designed
+- Status: partly built. Day 10: `Subject` is an empty base and `CricketSubject(Subject)` has
+  13 fields; `Claim` and `missing_keys()` only see a `Subject`, and a subject without a field
+  counts that field as missing (tested with a plain `Subject`). `FootballSubject` on Day 145.
 - Paper section: Method; Results (generality)
 
 ## D-021 — A receipt for every number
@@ -327,3 +332,20 @@ Template:
   self-written questions (author bias, L-009).
 - Status: designed (Days 152–154, 166–171)
 - Paper section: Evaluation; Results
+
+## D-024 — The language model sits behind our own port; LangChain is compared, not assumed
+- Date: 2026-10-21
+- Decision: N3 and every other LLM call go through our own `LLM` port. Day 57 builds the
+  `OllamaLLM` adapter (about 30 lines: question plus JSON schema in, JSON out). Day 58 adds a
+  second adapter, `LangChainLLM` (`langchain-ollama`), behind the same port. Day 59 runs both
+  on the same questions with the same model, prompt and schema; the better score stays, and
+  a tie keeps `OllamaLLM` because it is simpler.
+- Why: LangChain does not change the model; both adapters send Ollama the same kind of
+  request, so any difference should be small. Accuracy comes from the schema, allowed
+  values, the checks after the model, a retry with the error, and the read-back. Measuring
+  both settles it with numbers instead of opinion. The port keeps the inner layers free of
+  LLM libraries and makes the three-model experiment (D-023) one adapter per model.
+- Alternatives considered: LangChain only (more layers to understand and fake in tests);
+  our adapter only, never compared (a reviewer may ask).
+- Status: designed (Days 57–59)
+- Paper section: Implementation (only if the scores differ enough to matter; numbers.md row first)

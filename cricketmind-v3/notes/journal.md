@@ -417,3 +417,40 @@ cited, or synthetic.
 
 To confirm before citing: the ICCIT paper's final title, authors and year; EG-VAR's
 authors; VeriFin's exact title (all marked in the .tex source).
+
+---
+
+## Plan note — 2026-10-21 — LangChain, compared on Day 59
+
+Asked whether LangChain would read questions better. It would not make the model smarter:
+the model is the same, only the wrapper changes. But because the LLM sits behind a port, a
+`LangChainLLM` adapter costs nothing to add. Day 58 now builds it next to `OllamaLLM`, and
+Day 59 scores both on the same 30 questions (each asked 3 ways); the better one stays (D-024).
+No change to the number of days (202).
+
+---
+
+## Day 10 — 2026-10-21 — The registry: the menu of allowed claims
+
+**Learned:** a registry is one list of every kind of claim the system may make, with the
+engine behind each one; a dictionary from name to row makes it fast to look up. `("player")`
+is plain text and `("player",)` is a tuple: the comma makes the tuple, not the brackets. A
+child class (`CricketSubject(Subject)`) is a kind of its parent, so code written for the
+parent accepts it, the way a car is a kind of vehicle.
+**Built:** `domain/subject.py`: `Subject` is now an empty shared base; `CricketSubject` has the
+4 old fields and 9 new ones (other_shot, bowler, other_bowler, venue, match_format, team,
+dismissal_type, date, k). `domain/registry.py`: `ClaimType` (name, provenance, engine,
+required fields, "at least one of" fields), the 10 rows, `index_by_name()` (a name listed
+twice is refused), `lookup()` (None for a name not on the menu) and `missing_keys()` (lists
+what the subject leaves empty; None or "" both count as empty). The document's c2 subject
+now carries k=6 ("within the next 6 balls"). Written by Claude and explained, piece by piece.
+**Tests:** 62 passed (19 new: 1 in test_subject.py, 18 in test_registry.py); ruff clean.
+Broke it on purpose: with the "at least one of" rule switched off, the review-overturn test
+failed; restored, all pass.
+**Surprise:** the renderer has words for only 4 of the 10 claim types, so a claim of one of
+the other 6 would fail at the very end, in front of a user. Raised with the user as a
+candidate for Day 11's start-up check.
+
+**For the paper:**
+- Decisions: D-007 (registry) and D-020 (sport-neutral Subject) now partly built
+- Section it feeds: Method (claim contract, registry); Results (generality, later)

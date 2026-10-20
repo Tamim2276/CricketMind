@@ -2,12 +2,14 @@
 
 from cricketmind_v3.domain.claims import Claim
 from cricketmind_v3.domain.provenance import Provenance
-from cricketmind_v3.domain.subject import Subject
+from cricketmind_v3.domain.subject import CricketSubject
 
-KOHLI_COVER_DRIVE = Subject(
+KOHLI_COVER_DRIVE = CricketSubject(
     player="V Kohli", shot="Cover Drive", phase="powerplay", bowler_type="pace"
 )
-KOHLI_PULL = Subject(player="V Kohli", shot="Pull", phase="powerplay", bowler_type="pace")
+KOHLI_PULL = CricketSubject(
+    player="V Kohli", shot="Pull", phase="powerplay", bowler_type="pace", k=6
+)
 
 DOCUMENT_TEMPLATE = (
     "Against pace in the powerplay, Kohli's cover drive returns {c1}. "
@@ -45,7 +47,7 @@ def c3() -> Claim:
         id="c3",
         kind=Provenance.MEASURED,
         metric="weight_transfer",
-        subject=Subject(player="V Kohli", shot="Cover Drive"),
+        subject=CricketSubject(player="V Kohli", shot="Cover Drive"),
         value=0.31,
         clip_id="vid1_0",
     )
