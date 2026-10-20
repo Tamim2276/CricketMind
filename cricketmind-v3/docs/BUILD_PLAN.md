@@ -4,6 +4,11 @@ This plan builds **CricketMind v3** (the design in `CricketMind_Architecture_v4.
 updates `CricketMind_Architecture_v3.pdf`; its LaTeX source is in `docs/architecture/`) as a
 real website, from an empty folder, one small piece at a time.
 
+**Names, so they never get mixed up:** **v2** is the old system of the ICCIT paper.
+**CricketMind v3** is the system built here (the code; the name never changes).
+**Architecture v4** is the fourth version of the design document that v3 follows. "The v3
+design" means the older document, with checks C1–C6 only.
+
 **It is part of the thesis.** A paper is written at the end (Phase 12), and everything it
 needs is recorded as you go, in `thesis/` and `notes/journal.md` (Section 9).
 
@@ -116,7 +121,7 @@ review day.
 |---|---|---|---|
 | 0 | Foundations: setup, Python types, Pydantic, clean architecture, the real skeleton | 5 | 5 |
 | 1 | Claims, plus the literature search, the journal choice and the locked final exam | 8 | 10 |
-| 2 | Faith Check v3: the editor (checks C1–C7) | 9 | 12 |
+| 2 | Faith Check (v4 design): the editor (checks C1–C7) | 9 | 12 |
 | 3 | Real cricket data: Cricsheet into a database | 6 | 10 |
 | 4 | Engines: N8 (past, any filters, with receipts) and N9 (future, with uncertainty) | 12 | 17 |
 | 5 | The graph: all nodes, 12 agents and the Explainer, working in the terminal | 18 | 25 |
@@ -1777,7 +1782,7 @@ Phase 2 builds the Faith Check on top of these pieces.
 
 ---
 
-### Phase 2 — Faith Check v3 (Days 16–27)
+### Phase 2 — Faith Check, v4 design (Days 16–27)
 
 **In simple words:** the Faith Check is the editor. It runs seven checks, and each check asks
 one question:
@@ -1792,8 +1797,8 @@ one question:
 | C6 | Does the sentence talk about the same player and shot as the claim? |
 | C7 | Does every tone word ("strong", "struggles") have a checked comparison pointing the same way? |
 
-C1–C6 come from the v3 architecture document. C7 is new in this build (D-017): a tone word is
-a hidden comparison, so it must be backed by one.
+C1–C6 come from the v3 architecture document. C7 is new in the v4 document (D-017): a tone
+word is a hidden comparison, so it must be backed by one.
 
 **Example:** an agent writes *"Rohit's cover drive returns {c1}"*, but `c1` is about Kohli. C6
 says: *"the sentence names Rohit, the claim is about Kohli"*. The finding goes back to the
@@ -1811,7 +1816,7 @@ agent with that reason.
 | 23 | Scanning text for digits | C5: no orphan numbers (allowlist: T20, U-19) | Test: "about 150" in a template rejected |
 | 24 | A gazetteer: a list of known names | C6: names in a sentence must match the claim's subject | Test: the Rohit/Kohli swap rejected |
 | 25 | Tone words are hidden comparisons | C7: a word list with a direction ("strong", "dominates" up; "struggles", "weak" down); a tone word about a player needs a comparison claim (`sr_vs_average` or `sr_difference`) in the same sentence whose whole range is on that side of 0 | Tests: "struggles" with +22 [+8, +36] rejected; "strong" with it passes; "strong" with a range that includes 0 rejected; a tone word with no comparison rejected |
-| 26 | Testing by breaking things on purpose; the results ledger | Fabrication harness: build the F1–F8 versions of a correct finding (F8: a tone word the numbers do not support); a "v2 mode" gate that checks values only. Results go to `thesis/results/`, with one row per run in `ledger.jsonl` | Table: v2 mode catches F1 only; v3 catches F1–F8 (on fake data); E-004 verified |
+| 26 | Testing by breaking things on purpose; the results ledger | Fabrication harness: build the F1–F8 versions of a correct finding (F8: a tone word the numbers do not support); a "v2 mode" gate that checks values only, and a "v3-design mode" with C7 switched off. Results go to `thesis/results/`, with one row per run in `ledger.jsonl` | Table, on fake data: v2 mode catches F1 only; v3-design mode (C1–C6) catches F1–F7 and misses F8; the full gate (C1–C7, v4 design) catches F1–F8; E-004 verified |
 | 27 | Review day — **M1** | Tidy, then a journal teach-back | **M1:** the editor works on fake data |
 
 ---
@@ -2105,7 +2110,7 @@ models, tested on someone else's questions (CricBench), and rated by people.
 | Day | Learn | Build | Done when |
 |---|---|---|---|
 | 150 | Designing experiments | The evaluation plan: question, method, pass rule for each, including the baselines, the ablation, the AI checkers, the three models, CricBench and the human study. Every result gets a confidence range, every comparison a significance test, and anything random is run several times | Written |
-| 151 | — | Fabrication containment F1–F8: v2 mode, v3, and v3 with each check turned off in turn (ablation) | Catch-rate table; which lies get through with each check off; E-016 verified |
+| 151 | — | Fabrication containment F1–F8: v2 mode, v3-design mode (no C7), the full gate, and the full gate with each check turned off in turn (ablation) | Catch-rate table; which lies get through with each check off; E-016 verified |
 | 152 | Can an AI check an AI? | AI checker 1, an AI judge: the language model reads a finding and the facts and says pass or fail, on the same 8-lie test | Its catch rate per lie type |
 | 153 | — | AI checker 2, Chain-of-Verification: the model writes its own check questions and answers them | Its catch rate per lie type |
 | 154 | — | Compare the three gates (Faith Check, AI judge, Chain-of-Verification): lies caught, correct findings wrongly stopped, time and cost | `results/ai_checkers.csv`; E-017 verified |

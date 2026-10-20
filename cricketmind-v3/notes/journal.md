@@ -539,3 +539,14 @@ Day 14 is done when the journal is in `outline.md` and the ethics request is sen
 
 **For the paper:**
 - Section it feeds: all (the journal sets length and evaluation style)
+
+---
+
+## Plan note — 2026-10-21 — v3 or v4?
+
+Asked whether the build follows v3 or v4. Both, in different senses: **CricketMind v3** is the
+system (the code), and it follows **Architecture v4**, the fourth version of the design
+document; **v2** is the ICCIT system. The plan now says so at the top. Phase 2 is renamed
+"Faith Check, v4 design", and Day 26's table gains a middle row: the v3 design (C1–C6,
+no C7) should catch F1–F7 and miss F8, which shows exactly what C7 adds. E-004, E-005,
+Day 151 and the outline use the same three names. No change to the number of days (202).
