@@ -9,8 +9,8 @@ the shot bridge and the website are new. That keeps it clear of duplicate public
 | § | Section | What it argues | Fed by (plan phases, thesis files) | Draft written on |
 |---|---|---|---|---|
 | — | Abstract | Problem, method, three headline results | Written last | Day 197 |
-| 1 | Introduction | LLM agents state numbers they never verify; v2 closed part of the gap; four gaps remain | v4 doc §1 (and v3 doc §1); E-001–E-003; N-007 | Day 197 |
-| 2 | Related work | Numeric verification (PCN, receipts), verbalised uncertainty, cricket MAS | `related_work.md` (systematic search on Day 13), `references.bib` | Day 196 |
+| 1 | Introduction | LLM agents state numbers they never verify; v2 closed part of the gap; five gaps remain; three contributions (D-026) | v4 doc §1 (and v3 doc §1); E-001–E-003; N-007 | Day 197 |
+| 2 | Related work | Numeric verification (PCN, receipts, EG-VAR, VeriFin), faithful uncertainty, tone and framing, abstention, cricket and sports MAS; what stays ours (D-026) | `related_work.md` (systematic search on Day 13), `references.bib` | Day 196 |
 | 3 | Architecture and method | Provenance classes, claim contract, registry, Faith Check C1–C7, engines with honest uncertainty, the evidence pipeline, perception (no accuracy) | Phases 1, 2, 4, 5, 8, 9; `decisions.md` | Days 12, 27, 54, 79, 127, 140 (drafts) → 190–191 |
 | 4 | Implementation | Clean architecture, the API, the website, the deployment | Phases 6, 7, 11; D-001, D-003, D-013 | Days 91, 110 (drafts) → 192 |
 | 5 | Evaluation setup | Questions (the locked exam of Day 15), data, metrics, pass rules, baselines, AI checkers, the three models, CricBench, the human study | Day 150 | 193 |
@@ -23,3 +23,20 @@ the shot bridge and the website are new. That keeps it clear of duplicate public
 1. …
 2. …
 3. …
+
+## Target journal (Day 14)
+
+**Status:** shortlist ready, waiting for the supervisor meeting.
+Shortlist and reasons: `drafts/day14_journal_shortlist.md`. Suggested order: Information
+Processing & Management, then Expert Systems with Applications, then Knowledge-Based Systems
+or Engineering Applications of AI.
+
+| Item | Value |
+|---|---|
+| Journal (first choice) | … (decided with the supervisor) |
+| Backups | … |
+| Length limit | … (from the Guide for Authors) |
+| How its papers evaluate | … (from two recent papers: baselines, significance tests, user studies, ablation, code and data) |
+| New paper or extended ICCIT version | … |
+| Ethics approval for the human study | … (needed? applied on …) |
+| CricBench early access | … (email sent on …) |

@@ -517,3 +517,25 @@ full (checklist at the end of `related_work.md`).
 - Numbers: N-009 (Thomson and Reiter's error counts)
 - Decisions: D-026 (novelty claims narrowed to three headline contributions)
 - Section it feeds: Introduction (contributions); Related work
+
+---
+
+## Day 14 (part 1) — 2026-10-21 — Getting ready to choose the journal
+
+**Learned:** a journal is chosen early so that every test from now on is the kind its
+reviewers expect. Quartiles and impact factors change every year and third-party sites
+copy them loosely, so they are checked at the source (SCImago, JCR).
+**Did:** prepared for the supervisor meeting, written by Claude: a one-page brief
+(`thesis/drafts/day14_supervisor_brief.md`) with the project, its status, the three
+contributions (D-026), the evaluation, and five decisions needed; a journal shortlist
+(`drafts/day14_journal_shortlist.md`: IP&M, ESWA, KBS, with EAAI as backup; scope and article
+types from the Elsevier pages, metrics third-party, length limits and fees to check in a
+browser since ScienceDirect refused automated reading); and a draft email asking the
+CricBench authors for early access (`drafts/day14_email_cricbench.md`). `outline.md` has a
+"Target journal" table to fill after the meeting.
+**Still to do (user):** meet the supervisor; choose the journal; read two recent papers from
+the first choice; ask about ethics approval and apply if needed; send the CricBench email.
+Day 14 is done when the journal is in `outline.md` and the ethics request is sent if needed.
+
+**For the paper:**
+- Section it feeds: all (the journal sets length and evaluation style)
