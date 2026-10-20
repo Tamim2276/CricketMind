@@ -2099,6 +2099,31 @@ Pull↔Hook.
   preprocessing their paper describes**. That is a defensible finding, backed
   by an unusually complete elimination, and it belongs in the write-up.
 
+**Reopened 2026-10-21: their notebooks were in the GitHub clone all along.**
+6.4 looked in the two zip archives; `CricShot10kAuthorsCode/Codes/`
+(github.com/Dihan69/CricShot10k, up to date at `dd53796`) holds the
+cropping, segmentation and training notebooks. Their code differs from
+their paper, and from ours, in checkable ways:
+
+| step | their code | our pipeline |
+| --- | --- | --- |
+| crop box | **recomputed every frame**: striker box ∪ bat box (`Bat_Detection_Model`, max_det 1) | one tracked, smoothed box per clip |
+| shape | **stretched** to 224 × 224 with `cv2.resize`, aspect not kept | square |
+| padding | 10% of the width, **sideways only**, none vertically | 25%, all sides |
+| no striker found | **frame dropped** | interpolated |
+| striker detector | their 8-class player-type model on broadcast frames | the segmentation model at 896, plus our tracker |
+| overlay | ultralytics `results[0].plot(boxes=False)`, imgsz 256, max_det 2: **striker (4, 42, 255) blue, bat (11, 219, 235) cyan**, ultralytics' own blending | paper text: striker (0, 0, 255), bat **(0, 255, 0) green**, alpha 0.5 |
+| early stop, lr drops | on **val loss**, patience 10 / 4, best-loss weights restored | on val top-1 |
+
+And **their real striker detector was never released**:
+`Player_Type_Detection_Model.pt` is byte-identical to
+`Striker_Bat_Segmentation_Model.pt` (same MD5). None of the first five rows
+was in 7.4's sweep, so the 43% ruler reading does not rule them out. The
+next test is cheap: rebuild a few hundred clips their way and score their
+own model on them with `tools/authors_model.py` (one caveat: their training
+set overlaps any clips we pick, so the ruler compares preprocessing
+variants, not generalisation).
+
 ---
 
 # PHASE 2 — Make 92 runs affordable (Days 8–9)

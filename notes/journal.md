@@ -3419,3 +3419,28 @@ While in there: set_seed(deterministic=False) used to leave the mode as
 the last run left it, so a run asking for "off" after one that turned it on
 would quietly have run deterministic anyway. Fixed, tested, for the day
 anyone does switch it off.
+
+## 2026-10-21 — The authors' notebooks were here all along
+
+Asked to find their GitHub: it's github.com/Dihan69/CricShot10k, and
+CricShot10kAuthorsCode/ is a clone of it, up to date. In Phase 1 I wrote
+"neither archive contains the notebook" -- true of the zips, but the clone
+has Codes/ with the cropping, segmentation and training notebooks. I never
+looked there. That's the biggest miss of the project so far.
+
+What their code actually does, against what the paper says and what we built:
+
+- The crop box is recomputed for every frame (striker ∪ bat), stretched to
+  224x224 without keeping the aspect ratio, padded 10% sideways only, and
+  frames without a striker are dropped. Ours: one smoothed square box per
+  clip, 25% padding all round, gaps interpolated.
+- The overlay is ultralytics' results.plot(): striker blue (4, 42, 255),
+  bat CYAN (11, 219, 235). The paper says green; we painted (0, 255, 0).
+- Early stopping and the lr schedule watch val loss, not accuracy.
+- Player_Type_Detection_Model.pt is a byte copy of the segmentation model,
+  so the striker detector their cropping used was never released.
+
+None of the crop differences were in Day 7's sweep, so "every cause
+eliminated" was true only of the causes we thought of. The ruler (their
+model on our frames, 43%) can now test the real recipe on a few hundred
+clips. The training notebook itself is plain and inflates nothing.
