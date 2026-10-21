@@ -1952,7 +1952,7 @@ writes the report → N13 shows it.
 | 68 | — | N11a Club Operations, N11c Personal Performance, N11d Global Scouting | Tests |
 | 69 | — | N11e Fan Concierge, N11f Stadium Operations (uses M2), N11g Bowling Performance (new, uses T2) | Tests |
 | 70 | — | N11h Content Production, N11i Match Officials (uses M4), N11j Talent Development | Tests |
-| 71 | — | N11k Injury Management (M3 flag), N11l Player Representation | The registry check passes for all 12 |
+| 71 | — | N11k Injury Management (M3 flag), N11l Player Representation. N11k's words about load follow the flag ("overworked" only with a spike), always show the four weeks' balls, and never state an injury chance (L-036) | The registry check passes for all 12 |
 | 72 | Explaining without numbers | The Explainer (N11m) for rules and general questions ("What is LBW?"): words only, labelled "general explanation, not checked against data"; no digits (C5) and no named players | Tests: a digit or a player's name in an explanation is rejected; the label is always shown |
 | 73 | Fan-out and collecting results | Dispatch to the chosen agents; collect their findings | Tests |
 | 74 | A bounded loop | The Faith gate node; regenerate only the failing agents, with reasons; budget of 2 | Tests: lie-once is fixed; lie-always is withheld; the loop never runs a third time |

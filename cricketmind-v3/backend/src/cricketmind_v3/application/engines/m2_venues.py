@@ -1,11 +1,9 @@
 """N8 M2: what a ground is like in one format (Day 40)."""
 
-import dataclasses
-
 from cricketmind_v3.application.ports import VenueRepository
 from cricketmind_v3.domain import venues
 from cricketmind_v3.domain.facts import Fact
-from cricketmind_v3.domain.registry import is_empty, lookup, missing_keys
+from cricketmind_v3.domain.registry import extra_keys, lookup, missing_keys
 from cricketmind_v3.domain.subject import Subject
 
 
@@ -35,11 +33,4 @@ def _asks_only_its_menu_row(subject: Subject, metric: str) -> bool:
     # every field the menu row needs, and nothing else: "India's first innings at
     # Mirpur" is a different question, and gets no answer rather than the ground's
     claim_type = lookup(metric)
-    if missing_keys(claim_type, subject):
-        return False
-    for field in dataclasses.fields(subject):
-        if field.name in claim_type.required_keys:
-            continue
-        if not is_empty(getattr(subject, field.name)):
-            return False
-    return True
+    return not missing_keys(claim_type, subject) and not extra_keys(claim_type, subject)

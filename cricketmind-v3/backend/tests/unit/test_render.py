@@ -129,7 +129,18 @@ def test_one_innings_stays_innings():
 
 def test_a_workload_ratio():
     claim = dataclasses.replace(c1(), metric="workload_ratio_flag", value=1.6, n=312)
-    assert render_claim(claim) == "a workload ratio of 1.60 [D, 312 balls]"
+    # the flag's words come from the number, never an injury chance (Day 41)
+    assert render_claim(claim) == (
+        "a workload ratio of 1.60, a spike above his usual week [D, 312 balls]"
+    )
+    usual = dataclasses.replace(claim, value=1.5)
+    assert render_claim(usual) == (
+        "a workload ratio of 1.50, close to his usual week [D, 312 balls]"
+    )
+    low = dataclasses.replace(claim, value=0.5)
+    assert render_claim(low) == (
+        "a workload ratio of 0.50, well below his usual week [D, 312 balls]"
+    )
 
 
 def test_a_review_overturn_rate_counts_reviews():

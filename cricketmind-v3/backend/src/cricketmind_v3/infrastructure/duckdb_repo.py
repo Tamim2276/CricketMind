@@ -21,6 +21,19 @@ PEOPLE = {
 }
 
 
+def find_person(db, name: str) -> str | None:
+    """The register id of the player called this; None if nobody is.
+
+    Raises FilterError when several players share the name (Day 38: five Imran Khans).
+    """
+    rows = db.execute("SELECT person_id FROM players WHERE name = ?", [name]).fetchall()
+    if not rows:
+        return None
+    if len(rows) > 1:
+        raise FilterError(f"{len(rows)} players are called {name}: say which one")
+    return rows[0][0]
+
+
 def ball_columns() -> list[str]:
     """The view's columns that make a Ball: named as its fields, so the two stay in step."""
     names = []
@@ -98,7 +111,7 @@ class DuckDBDeliveryRepository:
             if is_empty(value):
                 continue
             if field.name in PEOPLE:
-                person_id = self.person_id(value)
+                person_id = find_person(self.db, value)
                 if person_id is None:
                     return None, []
                 test = player_is if field.name == "player" else "="
@@ -110,14 +123,3 @@ class DuckDBDeliveryRepository:
             else:
                 raise FilterError(f"cannot pick balls by {field.name} yet")
         return where, values
-
-    def person_id(self, name: str) -> str | None:
-        """The register id of the player called this; None if nobody is."""
-        rows = self.db.execute(
-            "SELECT person_id FROM players WHERE name = ?", [name]
-        ).fetchall()
-        if not rows:
-            return None
-        if len(rows) > 1:
-            raise FilterError(f"{len(rows)} players are called {name}: say which one")
-        return rows[0][0]

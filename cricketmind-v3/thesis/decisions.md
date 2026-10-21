@@ -130,7 +130,8 @@ Template:
 ## D-010 — Design parameters (to revisit with data)
 - Date: 2026-10-16
 - Decision: evidence floor n_min = 30 balls (10 innings and 20 reviews added on Day 20,
-  D-030; 30 wickets, and bowler types known for 80% of the wickets in a share, on Day 40, D-043); bridge acceptance κ ≥ 0.61 ("substantial", Landis
+  D-030; 30 wickets, and bowler types known for 80% of the wickets in a share, on Day 40, D-043; workload cut-offs 1.5 and
+  0.8 on Day 41, D-044); bridge acceptance κ ≥ 0.61 ("substantial", Landis
   and Koch 1977); posture metric acceptance AUC ≥ 0.75; at most 4 active agents; at most 2
   retries and 2 regenerations.
 - Why: reasonable starting points. The paper must call them design parameters, not tuned values.
@@ -721,3 +722,31 @@ Template:
   design parameters (D-010).
 - Status: built (Day 40)
 - Paper section: Method (N8 M2)
+
+## D-044 — M3, a bowler's workload: what counts, and what the flag may say
+- Date: 2026-10-22
+- Decision: a bowler's load is every ball he bowled, wides, no-balls and super overs
+  included. A multi-day match's balls are spread over its days in the order they were
+  bowled (a fifth to each day of a five-day Test), because Cricsheet gives a match's dates,
+  not each ball's. This week is the 7 days up to and including the day asked about; his
+  usual week is a quarter of the 28 days up to and including it, as in Hulin et al. (2014).
+  The ratio is this week over his usual week, and n is the 28 days' balls. The flag words
+  come from the number, in the renderer: above 1.5 "a spike above his usual week", below 0.8
+  "well below his usual week", otherwise "close to his usual week" (design parameters,
+  D-010). No answer when he bowled nothing in the 28 days, when the data has no ball of his
+  before them (a newcomer's usual week is unknown, not zero), when the day is after the data
+  ends, when several players share the name, or when anything but a bowler and a date is
+  asked. Never an injury chance (L-003).
+- Why: on the real data, putting a Test's balls on its first day (as Day 36's `bowler_days`
+  does) hid Bumrah's 327 balls at Melbourne from the week before the Sydney Test: his ratio
+  on 4 January 2025, the day he broke down, came out 0.40, "an underload"; spread, it is
+  1.32 (N-018). The body bowls a wide, so it is load. A day after the snapshot ends would make
+  the week look empty. "A normal load" was dropped as words: the ratio compares him only
+  with himself (L-036).
+- Alternatives considered: all balls on a match's first day (wrong by up to four days in a
+  Test); legal balls only (a wide is still bowled); the uncoupled ratio (the four weeks before
+  this one: avoids counting this week twice, but leaves the studies' form); a weighted
+  average over the days (proposed in the critiques, not standard in cricket); an absolute-load
+  flag (no cut-off with evidence behind it yet).
+- Status: built (Day 41). M3 reads the deliveries, not `bowler_days`.
+- Paper section: Method (N8 M3); Limitations (L-003, L-036, L-037)

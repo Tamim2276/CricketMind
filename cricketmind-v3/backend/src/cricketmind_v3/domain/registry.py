@@ -1,3 +1,4 @@
+import dataclasses
 from dataclasses import dataclass
 
 from cricketmind_v3.domain.provenance import Provenance
@@ -165,6 +166,23 @@ def missing_keys(claim_type: ClaimType, subject: Subject) -> list[str]:
         if not found:
             missing.append(" or ".join(claim_type.required_any))
     return missing
+
+
+def extra_keys(claim_type: ClaimType, subject: Subject) -> list[str]:
+    """Filled fields the claim type does not ask for (Day 40). Empty list: none.
+
+    For measures with no filters: "India's first innings at Mirpur" is not the ground's
+    average, so the team is extra and the engine gives no answer.
+    """
+    extra = []
+    for field in dataclasses.fields(subject):
+        if field.name in claim_type.required_keys:
+            continue
+        if field.name in claim_type.required_any:
+            continue
+        if not is_empty(getattr(subject, field.name)):
+            extra.append(field.name)
+    return extra
 
 
 def is_empty(value) -> bool:

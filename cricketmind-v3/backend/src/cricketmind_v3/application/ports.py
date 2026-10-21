@@ -1,9 +1,11 @@
+from datetime import date
 from typing import Protocol
 
 from cricketmind_v3.domain.balls import Ball
 from cricketmind_v3.domain.facts import Fact
 from cricketmind_v3.domain.subject import Subject
 from cricketmind_v3.domain.venues import InningsScore, Wicket
+from cricketmind_v3.domain.workload import Spell
 
 
 class FilterError(ValueError):
@@ -115,3 +117,33 @@ class FakeVenueRepository:
 
     def wickets_at(self, venue: str, match_type: str) -> dict[Wicket, int]:
         return dict(self.wickets.get((venue, match_type), {}))
+
+
+class WorkloadRepository(Protocol):
+    """Anything that can tell when a bowler bowled: the database, or a fake (Day 41)."""
+
+    def spells(self, bowler: str) -> list[Spell]:
+        """His balls in every match he played, in date order.
+
+        Raises FilterError when several players share the name.
+        """
+
+    def data_until(self) -> date:
+        """The last match day in the data: a week after it would look empty."""
+
+
+class FakeWorkloadRepository:
+    """Spells written in by hand, for tests."""
+
+    def __init__(self, until: date) -> None:
+        self.until = until
+        self.bowlers: dict[str, list[Spell]] = {}
+
+    def add(self, bowler: str, spells: list[Spell]) -> None:
+        self.bowlers[bowler] = spells
+
+    def spells(self, bowler: str) -> list[Spell]:
+        return list(self.bowlers.get(bowler, []))
+
+    def data_until(self) -> date:
+        return self.until

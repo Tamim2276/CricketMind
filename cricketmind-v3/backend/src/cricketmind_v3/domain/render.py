@@ -4,6 +4,7 @@ from cricketmind_v3.domain.claims import Claim
 from cricketmind_v3.domain.findings import Finding
 from cricketmind_v3.domain.provenance import Provenance
 from cricketmind_v3.domain.registry import lookup
+from cricketmind_v3.domain.workload import flag
 
 
 class RenderError(ValueError):
@@ -118,6 +119,8 @@ def render_claim(claim: Claim) -> str:
         raise RenderError(f"{claim.id}: '{claim.metric}' is not on the menu")
     words, style, places = METRICS[claim.metric]
     text = words.format(_number(claim.value, style, places))
+    if claim.metric == "workload_ratio_flag":
+        text += ", " + flag(claim.value)  # the words come from the number (Day 41)
 
     if claim.kind == Provenance.DESCRIPTIVE:
         tag = "[D, " + counted(claim.n, claim_type.unit)

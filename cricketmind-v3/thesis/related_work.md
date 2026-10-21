@@ -183,6 +183,9 @@ future directions. Read only in part: check Section 4 before citing it for the g
 - "Chart-Supported or Model-Supplied?" (arXiv:2607.25021): numbers a model supplies that
   the chart does not hold.
 - Self-correction and verification loops: Reflexion; Self-Refine; CRITIC.
+- Gabbett (2016), "The training-injury prevention paradox" (British Journal of Sports
+  Medicine): the commonly quoted workload-ratio cut-offs (0.8 to 1.3; above 1.5). Check
+  the figures before citing them for D-044.
 - Tool-grounded and program-aided reasoning: PAL; Toolformer.
 - Fine-grained factuality: FActScore; RARR.
 - Multi-agent frameworks: AutoGen; CrewAI; LangGraph documentation.

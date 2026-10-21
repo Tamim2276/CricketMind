@@ -1149,3 +1149,40 @@ changes Mirpur's average little (149.5 to 149.6).
 - Limitations: L-028 updated (Chinnaswamy), L-035
 - Numbers: N-017
 - Section it feeds: Method (N8 M2)
+
+---
+
+## Day 41 — 2026-10-22 — M3: a bowler's workload, and what it may not say
+
+**Learned:** the workload ratio is this week's balls over his usual week (a quarter of the last
+four). It is disputed (it counts this week twice; a ratio hides the absolute load), and match
+data misses nets and training, so it is a flag, never an injury chance: the data has no
+injuries to learn a chance from, and nothing could check it.
+**Built:**
+- `domain/workload.py`: `Spell` (his balls in one match, and where each came), the balls
+  spread over a multi-day match's days, the 7- and 28-day counts, the ratio, and the flag's
+  words (D-044).
+- `application/ports.py`: `WorkloadRepository` and its fake (with the day the data ends).
+  `application/engines/m3_workload.py`. `infrastructure/duckdb_workload.py`: each of his balls
+  numbered in its match, every ball bowled counted.
+- The renderer writes the flag from the number: "a workload ratio of 1.91, a spike above his
+  usual week [D, 684 balls]".
+- `registry.extra_keys`: fields a measure does not ask for; M2 and M3 refuse them.
+  `find_person` moved out of the M1 adapter, for M1 and M3 alike.
+**Found on the real data:** every ball is stored with its match's first date. Bumrah bowled 327
+balls in the Melbourne Test (26–30 December 2024); on the first date alone, none of them fell in
+the week before the Sydney Test, and on 4 January 2025, the day he broke down, his ratio read
+0.40, "an underload". Spread over the match's days, it is 1.32 (N-018). Even so, 1.32 says
+"close to his usual week" after 626 balls in four weeks: the ratio compares him only with
+himself. "A normal load" was dropped as words (L-036).
+**Tested:** 20 new tests, 431 in all: the plan's made-up calendar (120 balls this week against
+240 in four weeks: 2.0, a spike), a Boxing Day Test spread over its days, the flag's edges, the
+engine's refusals, and Malinga on the fixtures (26 balls on 11 October 2026 and nothing else in
+four weeks: 4.0). Ten deliberate mistakes were each caught.
+
+**For the paper:**
+- Decisions: D-044; D-010 updated (the workload cut-offs)
+- Limitations: L-036, L-037
+- Numbers: N-018
+- Related work: Gabbett (2016), to check before citing
+- Section it feeds: Method (N8 M3); Limitations

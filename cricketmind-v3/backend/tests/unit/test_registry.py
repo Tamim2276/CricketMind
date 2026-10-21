@@ -8,6 +8,7 @@ from cricketmind_v3.domain.registry import (
     ClaimType,
     RegistryError,
     check_registry,
+    extra_keys,
     index_by_name,
     lookup,
     missing_keys,
@@ -261,3 +262,20 @@ def test_the_comparisons_on_the_menu():
 def test_a_comparison_without_a_range_is_refused_on_the_menu():
     with pytest.raises(RegistryError):
         dataclasses.replace(strike_rate_type(), comparison=True)
+
+
+# Fields a measure does not ask for (Day 40)
+
+
+def test_extra_keys_are_the_filled_fields_not_on_the_row():
+    venue_type = lookup("venue_first_innings_avg")
+    ground = CricketSubject(venue="Lord's", match_format="T20")
+    assert extra_keys(venue_type, ground) == []
+    india = dataclasses.replace(ground, team="India", phase="")
+    assert extra_keys(venue_type, india) == ["team"]  # an empty box is not extra
+
+
+def test_either_of_required_any_is_not_extra():
+    reviews = lookup("review_overturn_rate")
+    assert extra_keys(reviews, CricketSubject(team="India")) == []
+    assert extra_keys(reviews, CricketSubject(dismissal_type="lbw")) == []
