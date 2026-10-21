@@ -2169,6 +2169,55 @@ trained on box crops and have never seen an overlay, so a drop on `replica`
 is expected and says nothing against the recipe; `replica_crop` shows how
 they take the crop alone.
 
+### 7.7 Their method, ported from their notebook, on their frames (added 2026-10-21)
+
+**Why.** Days 1–7 rebuilt their method from a saved model file. With their
+training notebook in hand, it can be ported exactly, and trained on frames
+made their way: the closest anyone can get to their 89% from what they
+released.
+
+**Built.** `configs/authors_port.yaml`, every value traced to a notebook
+cell. What `mimic_author` had wrong or could not know:
+
+| | their notebook | `mimic_author` |
+| --- | --- | --- |
+| backbone weights | Keras EfficientNetV2S: Google's TensorFlow ImageNet-1k checkpoint, colours −1..1 → timm `tf_efficientnetv2_s.in1k` | torchvision's own retraining |
+| best epoch, lr drops, early stop | val **loss** (`monitor: loss`), lowest-loss weights kept | val top-1 |
+| lr drop after | 4 bad epochs (Keras `patience=4` = torch 3) | 5 (torch `patience=4`): **off by one since Phase 1** |
+| Adam epsilon | 1e-7 | 1e-8 |
+| Dense init | Glorot, zero bias (`keras_dense`) | torch default |
+
+New config keys, all off by default so nothing earlier changes: `monitor`,
+`adam_eps`, `keras_dense`. Not copied, with reasons in the yaml: their
+nearly-fixed shuffle order, their offline flip (ours is 0.5 online), their
+unpublished split.
+
+**Family R**, a 2 × 2 with B01, so any change can be put down to its cause:
+
+| | box crops | replica frames |
+| --- | --- | --- |
+| B01's protocol | B01 (done) | **R03** |
+| their notebook's protocol | **R02** | **R01** |
+
+`tools/replica.py --build --all` makes the replica for all 9,880 clips
+(`replica` only; 20.8 GB, checked against free disk before it starts).
+`video_gru.check` now counts the clips a variant really has against box's
+6,320 train clips: the 300-clip sample had made R03 read `ready`, and the
+dataset would have quietly trained on those alone.
+
+**Run** (after Family B, or whenever the GPU is free):
+
+```bash
+HF_HUB_OFFLINE=0 hf download timm/tf_efficientnetv2_s.in1k --include "*.json" --include "model.safetensors"
+python -m tools.replica --build --all        # ~9-11 GPU-hours, resumable
+python -m src.experiments.run --family R      # 6 runs, ~25-40 GPU-hours
+```
+
+**Read.** R01 against B01 is the whole recipe; R02 and R03 split it into
+protocol and frames. If R01 lands near 89%, their number reproduces and the
+gap was always preprocessing; if not, the gap is somewhere nobody can see
+from what they released, and that is the finding.
+
 ---
 
 # PHASE 2 — Make 92 runs affordable (Days 8–9)

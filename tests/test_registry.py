@@ -1,4 +1,4 @@
-"""The registry: 51 experiments as data, checked before anything runs."""
+"""The registry: 54 experiments as data, checked before anything runs."""
 import io
 import os
 
@@ -9,7 +9,7 @@ from src.experiments import registry as R
 from src.experiments import run as runner
 from src.train import DEFAULTS, LOOP_READS, load_config
 
-COUNTS = {"P": 5, "A": 14, "D": 6, "V": 10, "B": 8, "C": 8}
+COUNTS = {"P": 5, "A": 14, "D": 6, "V": 10, "B": 8, "C": 8, "R": 3}
 
 
 def test_every_delta_key_is_a_config_key():
@@ -42,15 +42,15 @@ def test_every_entry_says_why():
 def test_every_family_has_its_count():
     for fam, n in COUNTS.items():
         assert len(R.entries(fam)) == n, fam
-    assert len(R.ENTRIES) == 51
+    assert len(R.ENTRIES) == 54
 
 
-def test_102_run_names_none_repeated():
+def test_108_run_names_none_repeated():
     names = set()
     for entry in R.ENTRIES:
         for split in R.SPLITS:
             names.add(R.run_name(entry["id"], split))
-    assert len(names) == 102
+    assert len(names) == 108
 
 
 def test_the_harness_owns_name_and_split():
@@ -162,10 +162,10 @@ def test_list_prints_every_id():
     out = io.StringIO()
     shown = runner.print_list(out=out)
     text = out.getvalue()
-    assert shown == 51
+    assert shown == 54
     for entry in R.ENTRIES:
         assert entry["id"] in text
-    assert "51 IDs, 102 runs" in text
+    assert "54 IDs, 108 runs" in text
 
 
 def test_list_one_family():
@@ -188,7 +188,7 @@ def test_every_b_run_updates_on_four_clips():
 def test_every_training_run_uses_deterministic_kernels():
     """17.3: 1.5-1.7x the time end to end, kept anyway (2026-10-20), so a
     run repeats exactly and a resumed run equals an unbroken one."""
-    for family in ("P", "A", "V", "B", "C"):
+    for family in ("P", "A", "V", "B", "C", "R"):
         for entry in R.entries(family):
             assert R.resolve(entry, "author")["deterministic"] is True, \
                 entry["id"]
@@ -200,3 +200,47 @@ def test_deterministic_does_not_change_what_a_row_means():
     assert R.config_differences(old, new) == []
     new["lr"] = 3e-4
     assert R.config_differences(old, new) == ["lr"]
+
+
+def test_the_port_is_their_notebook_not_mimic_author():
+    """7.7: read from their training notebook, not inferred from the .keras."""
+    cfg = R.resolve(R.get("R02_port_box"), "author")
+    assert cfg["backbone"] == "tf_efficientnetv2_s.in1k"   # Google's weights
+    assert cfg["monitor"] == "loss"
+    assert cfg["lr_patience"] == 3                          # = Keras' 4
+    assert cfg["adam_eps"] == 1e-7
+    assert cfg["keras_dense"] is True
+    assert cfg["variant"] == "box"
+    assert R.resolve(R.get("R01_port_replica"), "author")["variant"] == "replica"
+    # R03 is B01 but for the frames
+    r03 = R.resolve(R.get("R03_mimic_replica"), "author")
+    b01 = R.resolve(R.get("B01_effnetv2s"), "author")
+    for key in b01:
+        if key in ("name", "variant"):
+            continue
+        assert r03[key] == b01[key], key
+
+
+def test_a_replica_run_waits_for_the_replica_clips(tmp_path):
+    told = R.status(R.get("R03_mimic_replica"),
+                    overrides={"processed": str(tmp_path)})
+    assert told == "needs the replica clips: python -m tools.replica --build --all"
+
+
+def test_a_few_replica_clips_are_not_a_dataset(tmp_path):
+    """Found 2026-10-21: the 300-clip replica sample made R03 read 'ready',
+    and the dataset would have trained on just those clips."""
+    import shutil
+
+    # box has two train clips, replica one of them
+    for variant, clips in (("box", ("vid100_41", "vid100_60")),
+                           ("replica", ("vid100_41",))):
+        os.makedirs(tmp_path / variant / "Cover Drive")
+        for clip in clips:
+            shutil.copy(os.path.join("data", "processed", "box", "Cover Drive",
+                                     clip + ".npy"),
+                        tmp_path / variant / "Cover Drive")
+    told = R.status(R.get("R03_mimic_replica"),
+                    overrides={"processed": str(tmp_path)})
+    assert told.startswith("needs the replica clips (1 of 2 train clips)")
+    assert "--build --all" in told

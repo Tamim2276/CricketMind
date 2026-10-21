@@ -25,6 +25,7 @@ own tracked pick from detect.py. Everything after that follows their code.
 
     python -m tools.replica --build        # 300 author val clips, resumable
     python -m tools.replica --score        # B01 and B03 on box, crop, replica
+    python -m tools.replica --build --all  # every clip, replica only (7.7)
 
 Their model is scored by tools/authors_model.py, under Keras 3.8.0.
 """
@@ -250,21 +251,54 @@ def write_split(rows, done, out=OUT_SPLIT):
     return path, len(kept)
 
 
-def build(n=CLIPS, device=None, manifest=MANIFEST):
+def every_clip(splits=os.path.dirname(SOURCE)):
+    """All the clips our experiments use: the author split's three parts."""
+    rows = []
+    for part in ("train", "val", "test"):
+        rows.extend(read_split(os.path.join(splits, f"{part}.csv")))
+    return rows
+
+
+def room_for(clips, folder=PROCESSED, spare_gb=3.0):
+    """None if the disk holds `clips` more replica files with room to spare,
+    else what is missing. A full disk mid-build corrupts nothing (the saves
+    are atomic) but stops the build, and starves any training running."""
+    need = clips * FRAMES * SIZE * SIZE * 3 / 1024 ** 3
+    free = shutil.disk_usage(os.path.abspath(folder)).free / 1024 ** 3
+    if free - need >= spare_gb:
+        return None
+    return (f"{clips} clips need {need:.1f} GB, the disk has {free:.1f} GB "
+            f"free, and {spare_gb:.0f} GB should stay spare")
+
+
+def build(n=CLIPS, device=None, manifest=MANIFEST, every=False):
+    """The 300-clip sample in both variants, or with every=True all clips in
+    `replica` only (the crop-only variant is a diagnostic; 22 GB more of it
+    would not fit)."""
     from src.utils.device import get_device
 
     device = device or str(get_device())
-    rows = balanced_sample(read_split(SOURCE), n, seed=0)
+    if every:
+        rows = every_clip()
+        variants = ("replica",)
+    else:
+        rows = balanced_sample(read_split(SOURCE), n, seed=0)
+        variants = ("replica_crop", "replica")
     done = set()
     for row in read_results(manifest):
         if row.get("ok"):
             done.add(row["clip"])
+    wanted = set()
     todo = []
     for row in rows:
+        wanted.add(row["clip"])
         if row["clip"] not in done:
             todo.append(row)
-    print(f"replica: {len(rows)} author-val clips, {len(done)} done, "
+    print(f"replica: {len(rows)} clips, {len(done & wanted)} done, "
           f"{len(todo)} to go, on {device}", flush=True)
+    short = room_for(len(todo) * len(variants))
+    if short:
+        raise SystemExit(f"not enough disk: {short}")
 
     models = load_models() if todo else None
     started = time.time()
@@ -279,7 +313,8 @@ def build(n=CLIPS, device=None, manifest=MANIFEST):
             failed += 1
             append_result({"clip": rel, "ok": False, "reason": note}, manifest)
         else:
-            _save(plain, npy_path("replica_crop", rel))
+            if "replica_crop" in variants:
+                _save(plain, npy_path("replica_crop", rel))
             _save(tinted, npy_path("replica", rel))
             append_result({"clip": rel, "ok": True, "note": note}, manifest)
             done.add(rel)
@@ -293,6 +328,10 @@ def build(n=CLIPS, device=None, manifest=MANIFEST):
             sys.stdout.write("\n")
         sys.stdout.flush()
 
+    if every:
+        kept = len(done & wanted)
+        print(f"\n{kept} of {len(rows)} clips ready, {failed} failed this run")
+        return kept
     path, kept = write_split(rows, done)
     print(f"\n{kept} clips ready, {failed} failed this run -> {path}")
     return kept
@@ -327,13 +366,15 @@ def main(argv=None):
                     help="make replica_crop/ and replica/ for the sample")
     ap.add_argument("--score", action="store_true",
                     help="score B01 and B03 on box, replica_crop, replica")
+    ap.add_argument("--all", action="store_true",
+                    help="with --build: every clip, replica only (7.7)")
     ap.add_argument("--clips", type=int, default=CLIPS)
     ap.add_argument("--device", help="default: the GPU if there is one")
     args = ap.parse_args(argv)
     if not args.build and not args.score:
         ap.error("give --build, --score or both")
     if args.build:
-        build(args.clips, args.device)
+        build(args.clips, args.device, every=args.all)
     if args.score:
         score(device=args.device)
 

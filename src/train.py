@@ -53,6 +53,7 @@ DEFAULTS = {
     "hidden": 128,
     "dense": 1024,
     "dropout": 0.0,
+    "keras_dense": False,     # Keras' Dense init in the GRU head (7.7)
     "head": "gru",            # the head on cached features; Families A, D, V
     "bidirectional": False,
     "layers": 1,
@@ -66,6 +67,8 @@ DEFAULTS = {
     "weight_decay": 0.0,
     "clip_grad": 0.0,         # 0 is off; when on, the epoch line says how often
     "scheduler": "none",      # or "plateau"
+    "monitor": "top1",        # or "loss": the authors' callbacks watch val loss (7.7)
+    "adam_eps": None,         # None is torch's 1e-8; Keras' Adam uses 1e-7
     "lr_factor": 0.1,
     "lr_patience": 4,
     "min_lr": 0.0,
@@ -87,6 +90,7 @@ DEFAULTS = {
 # or changing it changes nothing but the ledger row.
 LOOP_READS = ("name", "method", "split", "seed", "optimizer", "lr",
               "backbone_lr", "weight_decay", "clip_grad", "scheduler",
+              "monitor", "adam_eps",
               "lr_factor", "lr_patience", "min_lr", "batch_size", "accum",
               "epochs", "patience", "workers", "deterministic", "limit_clips",
               "max_train_batches", "max_val_batches", "out", "figures")
@@ -213,7 +217,10 @@ def _make_optimizer(cfg, model):
     name = cfg["optimizer"].lower()
     groups = _param_groups(cfg, model)
     if name == "adam":
-        return torch.optim.Adam(groups, lr=cfg["lr"],
+        if cfg.get("adam_eps") is None:
+            return torch.optim.Adam(groups, lr=cfg["lr"],
+                                    weight_decay=cfg["weight_decay"])
+        return torch.optim.Adam(groups, lr=cfg["lr"], eps=cfg["adam_eps"],
                                 weight_decay=cfg["weight_decay"])
     if name == "adamw":
         return torch.optim.AdamW(groups, lr=cfg["lr"],
@@ -258,10 +265,24 @@ def _make_scheduler(cfg, optimizer):
     if name in ("none", "", "null"):
         return None
     if name == "plateau":
+        if _watch(cfg) == "loss":
+            # Keras' ReduceLROnPlateau: lower is better, by 1e-4 absolute
+            return torch.optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer, mode="min", factor=cfg["lr_factor"],
+                patience=cfg["lr_patience"], min_lr=cfg["min_lr"],
+                threshold=1e-4, threshold_mode="abs")
         return torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode="max", factor=cfg["lr_factor"],
             patience=cfg["lr_patience"], min_lr=cfg["min_lr"])
     raise ValueError(f"unknown scheduler: {cfg['scheduler']}")
+
+
+def _watch(cfg):
+    """What decides the best epoch, the lr drops and the early stop."""
+    monitor = str(cfg.get("monitor", "top1")).lower()
+    if monitor not in ("top1", "loss"):
+        raise ValueError(f"monitor must be top1 or loss, got {monitor!r}")
+    return monitor
 
 
 def _ticker(label: str, quiet: bool):
@@ -315,7 +336,9 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
     criterion = nn.CrossEntropyLoss()
 
     history = []
-    best_top1 = 0.0
+    best_top1 = 0.0                 # of the epoch kept as best.pt
+    best_loss = float("inf")        # what monitor: loss compares against
+    monitor = _watch(cfg)
     no_improve = 0
     start_epoch = 1
     resumed = False
@@ -332,6 +355,7 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
         start_epoch = state["epoch"] + 1
         history = state.get("history") or []
         best_top1 = state.get("best_val_top1", 0.0)
+        best_loss = state.get("best_val_loss", float("inf"))
         no_improve = state.get("no_improve", 0)
         resumed = True
 
@@ -370,17 +394,24 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
                         optimizer=optimizer, scheduler=scheduler, scaler=scaler,
                         history=history, best_val_top1=best_top1,
                         no_improve=no_improve, cfg=cfg,
-                        loader_rng=epoch_start_rng)
+                        loader_rng=epoch_start_rng, best_val_loss=best_loss)
             raise
 
         pinned, dead = _saturation(model)
 
+        if monitor == "loss":
+            metric = va.loss
+            # Keras' EarlyStopping: any drop counts, min_delta 0
+            improved = va.loss < best_loss
+        else:
+            metric = va.top1
+            improved = va.top1 > best_top1
         if scheduler is not None:
-            scheduler.step(va.top1)
+            scheduler.step(metric)
 
-        improved = va.top1 > best_top1
         if improved:
             best_top1 = va.top1
+            best_loss = va.loss
             no_improve = 0
             atomic_save({"model_state": model.state_dict(), "cfg": cfg,
                          "epoch": epoch, "val_top1": va.top1,
@@ -403,7 +434,8 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
                     optimizer=optimizer, scheduler=scheduler, scaler=scaler,
                     history=history, best_val_top1=best_top1,
                     no_improve=no_improve, cfg=cfg,
-                    loader_rng=train_loader.generator.get_state())
+                    loader_rng=train_loader.generator.get_state(),
+                    best_val_loss=best_loss)
         # and every epoch, not just at the end: a run killed at epoch 13 used
         # to leave its twelve finished epochs only in the terminal scrollback
         atomic_write_json(history, history_path)
@@ -445,7 +477,8 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
            "variant": cfg["variant"],
            "features": cfg["features"], "view": cfg["view"],
            "backbone": _row_backbone(cfg), "frozen": cfg["freeze"],
-           "best_val_top1": best_top1, "epochs_run": epoch,
+           "best_val_top1": best_top1, "best_val_loss": best_loss,
+           "monitor": monitor, "epochs_run": epoch,
            "stopped": stopped, "minutes": epoch_secs / 60,
            "resumed": resumed,
            "deterministic": torch.are_deterministic_algorithms_enabled(),
@@ -464,7 +497,10 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
         os.remove(resume_path)
 
     if not quiet:
-        print(f"\n  {stopped}; best val top-1 {best_top1:.2%} "
+        kept = ""
+        if monitor == "loss":
+            kept = f" (the epoch with the lowest val loss, {best_loss:.4f})"
+        print(f"\n  {stopped}; best val top-1 {best_top1:.2%}{kept} "
               f"in {row['minutes']:.1f} min")
     return row
 

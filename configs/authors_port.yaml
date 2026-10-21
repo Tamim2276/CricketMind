@@ -1,0 +1,65 @@
+# The authors' method, from their own notebook this time (7.7).
+#
+# mimic_author was rebuilt in Phase 1 from their saved .keras file, because
+# the notebooks were never opened (they sat in CricShot10kAuthorsCode/Codes
+# all along). This is Model_Layer_CNN_RNN_Training_Testing.ipynb, line by
+# line, in PyTorch:
+#
+#   cell 4   batch_size 4, input 224, 15 frames
+#   cell 5   EarlyStopping(val_loss, patience 10, restore_best_weights)
+#            ReduceLROnPlateau(val_loss, factor 0.1, patience 4)
+#   cell 7   EfficientNetV2S(weights='imagenet', include_top=False): Google's
+#            TensorFlow checkpoint, ImageNet-1k, colours scaled to -1..1.
+#            timm's tf_efficientnetv2_s.in1k is that checkpoint; torchvision's
+#            efficientnet_v2_s (mimic_author) is torchvision's own retraining
+#   cell 8   TimeDistributed(backbone) -> Flatten -> GRU(128)
+#            -> BatchNormalization -> Dense(1024, relu) -> Dense(15, softmax)
+#            Adam(1e-4), sparse categorical cross-entropy
+#   cell 9   epochs 100
+#
+# Keras defaults that PyTorch does not share, matched here:
+#   Adam epsilon 1e-7 (torch 1e-8); Dense glorot uniform with zero bias;
+#   ReduceLROnPlateau(patience=4) drops after 4 bad epochs, torch's
+#   patience=4 after 5, so torch gets 3. GRU init and BatchNorm eps/momentum
+#   already match (head.py).
+#
+# Not copied, deliberately:
+#   - their shuffle: a buffer of 32 over a dataframe shuffled once, so every
+#     epoch sees nearly the same order. A quirk of their tf.data pipeline
+#   - flip: their notebook has none; the paper says flipping was done after
+#     the split, and their folder is called combined_train, so the flipped
+#     copies were most likely made offline. flip 0.5 online is the same in
+#     expectation
+#   - their split: hand-made and not published. Ours, both of them
+
+name: authors_port
+method: video_gru
+split: data/splits_author
+variant: box                       # R01 swaps in replica, their preprocessing
+pool: flatten
+backbone: tf_efficientnetv2_s.in1k
+pretrained: true
+freeze: false
+hidden: 128
+dense: 1024
+dropout: 0.0
+keras_dense: true
+
+optimizer: adam
+lr: 1.0e-4
+adam_eps: 1.0e-7
+weight_decay: 0.0
+scheduler: plateau
+monitor: loss
+lr_factor: 0.1
+lr_patience: 3                     # = Keras patience 4
+min_lr: 0.0
+
+batch_size: 4
+accum: 1
+epochs: 100
+patience: 10
+flip: 0.5
+
+workers: 0
+seed: 42

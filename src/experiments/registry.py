@@ -30,6 +30,8 @@ FAMILIES = {
     "V": ("video- and image-pretrained features, frozen", "14-15"),
     "B": ("CNN backbones, end to end", "17-22"),
     "C": ("3D and video models, end to end", "23-27"),
+    "R": ("the authors' own method, from their notebooks, on their "
+          "preprocessing", "7.7"),
 }
 
 MAX_DELTA = 3
@@ -71,6 +73,11 @@ BASES = {
     "video3d": {
         "config": os.path.join("configs", "mimic_author.yaml"),
         "set": {"method": "video3d"},
+    },
+    # their training notebook, read line by line (7.7)
+    "authors_port": {
+        "config": os.path.join("configs", "authors_port.yaml"),
+        "set": {},
     },
 }
 
@@ -240,6 +247,20 @@ ENTRIES = [
      "cfg": {"backbone": "videomae_base"},
      "why": "self-supervised video pretraining: the strongest candidate "
             "to pass 89%"},
+
+    # ---- R: the authors' method as their notebooks run it (7.7) ----
+    # a 2 x 2 with B01: protocol (B01's or theirs) x frames (box or theirs)
+    {"id": "R01_port_replica", "base": "authors_port",
+     "cfg": {"variant": "replica"},
+     "why": "their notebook's method on frames made their way: the closest "
+            "anyone can get to their 89%"},
+    {"id": "R02_port_box", "base": "authors_port", "cfg": {},
+     "why": "their notebook's method on our crops: what the protocol alone "
+            "changes against B01"},
+    {"id": "R03_mimic_replica", "base": "mimic_author",
+     "cfg": {"variant": "replica"},
+     "why": "B01's protocol on frames made their way: what the "
+            "preprocessing alone changes"},
 ]
 
 _ID = re.compile(r"^([A-Z])\d\d_[a-z0-9_]+$")

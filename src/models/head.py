@@ -99,7 +99,7 @@ class GRUHead(nn.Module):
                  hidden: int = HIDDEN, dense: int = DENSE,
                  dropout: float = 0.0, keras_init: bool = True,
                  bn_eps: float = BN_EPS, bn_momentum: float = BN_MOMENTUM,
-                 bidirectional: bool = False):
+                 bidirectional: bool = False, keras_dense: bool = False):
         super().__init__()
         self.in_dim = in_dim
         self.num_classes = num_classes
@@ -124,6 +124,12 @@ class GRUHead(nn.Module):
         else:
             self.drop = nn.Identity()
         self.fc2 = nn.Linear(dense, num_classes)
+        if keras_dense:
+            # Keras' Dense: glorot uniform, zero bias. Opt-in, so every
+            # earlier config still draws the weights it always drew
+            for layer in (self.fc1, self.fc2):
+                nn.init.xavier_uniform_(layer.weight)
+                nn.init.zeros_(layer.bias)
 
     def pinned_fraction(self):
         """How much of the GRU is stuck at tanh's rail. Free to read.

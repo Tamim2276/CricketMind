@@ -84,3 +84,28 @@ def test_the_split_keeps_only_clips_that_came_out(tmp_path):
         got = list(csv.DictReader(fh))
     assert [r["clip"] for r in got] == ["Hook/vid2_3.avi"]
     assert os.path.exists(os.path.join(str(tmp_path), "classes.json"))
+
+
+def test_a_full_build_refuses_a_disk_that_cannot_hold_it(monkeypatch):
+    import shutil as sh
+
+    from tools import replica
+
+    class Usage:
+        free = 10 * 1024 ** 3                     # 10 GB free
+
+    monkeypatch.setattr(sh, "disk_usage", lambda path: Usage())
+    assert replica.room_for(100) is None          # 0.2 GB: fine
+    told = replica.room_for(9880)                 # 20.8 GiB: no
+    assert "need 20.8 GB" in told and "10.0 GB free" in told
+
+
+def test_every_clip_is_the_author_split_whole():
+    from tools.replica import every_clip
+
+    rows = every_clip()
+    names = set()
+    for row in rows:
+        names.add(row["clip"])
+    assert len(names) == len(rows)                # no clip twice
+    assert len(rows) > 9000

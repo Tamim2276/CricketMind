@@ -3474,3 +3474,36 @@ If it keeps happening: a newer Arc driver, or a longer Windows GPU timeout
 (TdrDelay), the usual fix for long compute jobs on a card that also drives
 the screen. It may also be part of the story behind Day 14's DINOv2 NaNs,
 though the SDPA test reproduced those with no timeout in sight.
+
+## 2026-10-21 — Porting their notebook, properly this time (7.7)
+
+The user wants their method converted to PyTorch from their actual code and
+trained on frames made their way, as Days 1–7 did from the .keras file. Most
+of mimic_author already matched (GRU init, BatchNorm settings), but reading
+the notebook turned up four things it got wrong or couldn't have known:
+
+- Their backbone is Keras' EfficientNetV2S: Google's own TF checkpoint,
+  expecting colours in -1..1. timm ships exactly that as
+  tf_efficientnetv2_s.in1k; torchvision's efficientnet_v2_s is a different
+  set of weights. The Day 17 encoder already converts colours by itself.
+- Early stopping and lr drops watch val loss, keeping the lowest-loss
+  weights. New config key `monitor`.
+- An off-by-one I made in Phase 1: Keras' ReduceLROnPlateau(patience=4)
+  drops the rate after 4 bad epochs, PyTorch's after 5. mimic_author has
+  been dropping it one epoch late all along. The port uses 3.
+- Adam's epsilon (1e-7) and Glorot init on the dense layers: small, but the
+  port is meant to be exact. Both opt-in keys, so no old config changes.
+
+Family R is a 2x2 with B01 (protocol x frames), so whatever happens can be
+pinned on a cause. R needs the replica for all 9,880 clips: 20.8 GB, which
+fits in the 34 GB free.
+
+Two bugs caught while building it, both mine, both before anything ran:
+a variable called `watch` that the epoch printout also uses, which would
+have quietly turned a loss-watching run back into an accuracy-watching one
+after epoch 1; and a readiness check that only asked whether the replica
+folder existed. The 300-clip sample already in it made R03 look ready, and
+the dataset skips missing clips without complaint, so R03 would have trained
+on 300 clips. The check now counts clips against box's 6,320. Its first
+version counted against the split's 6,466 and declared all of Family B not
+ready; box is the yardstick, because 146 clips never survived Day 4.

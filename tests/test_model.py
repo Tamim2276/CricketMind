@@ -92,3 +92,22 @@ def test_train_and_eval_reach_both_halves(model):
     assert model.encoder.backbone.training and model.head.training
     model.eval()
     assert not model.encoder.backbone.training and not model.head.training
+
+
+def test_keras_dense_init_is_opt_in():
+    """Glorot weights and zero bias, as Keras' Dense; off by default so every
+    earlier config draws the weights it always drew."""
+    from src.models.head import GRUHead
+
+    torch.manual_seed(0)
+    plain = GRUHead(16, 15)
+    assert plain.fc1.bias.abs().sum() > 0              # torch's default
+    torch.manual_seed(0)
+    keras = GRUHead(16, 15, keras_dense=True)
+    for layer in (keras.fc1, keras.fc2):
+        assert torch.count_nonzero(layer.bias) == 0
+        fan_in, fan_out = layer.weight.shape[1], layer.weight.shape[0]
+        bound = (6.0 / (fan_in + fan_out)) ** 0.5
+        assert layer.weight.abs().max() <= bound
+    # the GRU is built before the dense layers, so it is the same either way
+    assert torch.equal(plain.gru.weight_ih_l0, keras.gru.weight_ih_l0)

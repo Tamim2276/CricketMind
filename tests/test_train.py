@@ -504,3 +504,43 @@ def test_the_seg_config_changes_exactly_one_variable():
 
     assert differ == ["name", "variant"], differ
     assert seg["variant"] == "seg"
+
+
+# ---- 7.7: the authors' callbacks watch val loss ------------------------------
+
+def test_watching_loss_keeps_the_lowest_loss_epoch(workspace):
+    cfg = base_cfg(workspace, name="loss", epochs=4, monitor="loss",
+                   scheduler="plateau")
+    row = T.train(cfg, quiet=True)
+    history = json.load(open(os.path.join(T.run_dir(cfg), "history.json")))
+    best = history[0]
+    for h in history:
+        if h["val_loss"] < best["val_loss"]:
+            best = h
+    assert row["monitor"] == "loss"
+    assert row["best_val_loss"] == best["val_loss"]
+    assert row["best_val_top1"] == best["val_top1"]
+    saved = torch.load(os.path.join(T.run_dir(cfg), "best.pt"),
+                       map_location="cpu", weights_only=False)
+    assert saved["epoch"] == best["epoch"]
+
+
+def test_the_lr_schedule_follows_the_monitor():
+    model = torch.nn.Linear(2, 2)
+    opt = torch.optim.Adam(model.parameters())
+    cfg = dict(T.DEFAULTS, scheduler="plateau")
+    assert T._make_scheduler(cfg, opt).mode == "max"
+    cfg["monitor"] = "loss"
+    sched = T._make_scheduler(cfg, opt)
+    assert sched.mode == "min"
+    assert sched.threshold_mode == "abs"       # Keras' min_delta 1e-4
+    with pytest.raises(ValueError, match="monitor"):
+        T._make_scheduler(dict(cfg, monitor="f1"), opt)
+
+
+def test_adam_takes_keras_epsilon_when_asked():
+    model = torch.nn.Linear(2, 2)
+    cfg = dict(T.DEFAULTS)
+    assert T._make_optimizer(cfg, model).defaults["eps"] == 1e-8
+    cfg["adam_eps"] = 1e-7
+    assert T._make_optimizer(cfg, model).defaults["eps"] == 1e-7
