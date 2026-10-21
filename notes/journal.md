@@ -3460,3 +3460,17 @@ so the plan is to pause Family B for half an hour, build and score on the
 GPU, and resume; the resume is exact now, so the pause costs nothing but
 time. The user also wants our own best models scored on the replica, so
 `--score` runs B01 and B03 on box, replica_crop and replica.
+
+## 2026-10-21 — B04 grouped killed by a GPU timeout, not a bug
+
+B03 grouped 80.82, B04 (ConvNeXt-T) author 80.24: the two best rows of
+Family B so far. Then B04 grouped died in epoch 1 with "Segmentation fault".
+Windows' application log has the cause: LiveKernelEvent 141, a GPU engine
+timeout that the driver recovers from by resetting the engine. The log
+shows dozens of them since 14 October, several a day, mostly while runs
+carried on fine; this one took the training process with it. Driver
+32.0.101.9034 (30 Sep). Cost: six minutes, since epoch 1 had not saved.
+If it keeps happening: a newer Arc driver, or a longer Windows GPU timeout
+(TdrDelay), the usual fix for long compute jobs on a card that also drives
+the screen. It may also be part of the story behind Day 14's DINOv2 NaNs,
+though the SDPA test reproduced those with no timeout in sight.

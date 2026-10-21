@@ -2143,7 +2143,13 @@ clips the replica does not have). 10 tests; on the CPU, one clip takes 40 s,
 and four 896 px frames at once segfaulted with a training run holding the
 RAM, so the CPU detects one frame at a time.
 
-**Run** (pause the Family B queue; it resumes exactly):
+**When.** After Family B finishes, or at a power cut before restarting it,
+when the GPU is idle anyway (decided 2026-10-21). **Whatever it shows,
+Phase 3 stays on the box crops**, because the families are only comparable
+while every one of them sees the same frames. A better recipe enters Phase 4
+as a change to the winner.
+
+**Run** (if the Family B queue is running, pause it; it resumes exactly):
 
 ```bash
 python -m tools.replica --build       # ~20-30 min on the GPU
