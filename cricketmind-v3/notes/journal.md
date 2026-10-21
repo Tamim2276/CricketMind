@@ -811,3 +811,34 @@ v4 document's hedge example at its next revision.
 **For the paper:**
 - Decisions: D-027 (fail closed)
 - Section it feeds: Method (Faith Check); Implementation
+---
+
+## Day 28 — 2026-10-21 — Reading Cricsheet by hand
+
+**Learned:** a Cricsheet match is three parts: `meta` (the format version), `info` (who, where,
+when, the result) and `innings` (overs, each a list of balls). Overs count from 0. A wide or a
+no-ball is bowled again under the same number ("9.4" twice), so a ball's position in the list,
+not its number, identifies it. A wide is not a ball faced; a no-ball is, and the batter can
+score off it. A review names its own batter, who need not be the striker.
+**Did:** the user downloaded `all_json.zip` (23,132 matches, 148 MB; checked: no corrupt entry;
+SHA-256 recorded in D-032). Claude picked five recent matches, each with a wide, a no-ball, a
+wicket and a review (a men's T20I, an IPL game, a men's ODI, a men's Test, a women's T20I),
+read the zip as data only, and walked through one ball of each kind. Notes in
+`notes/cricsheet.md`.
+**The diagram of one ball** (the wide at 9.4, Pakistan v Sri Lanka, 2026-10-11):
+
+```
+ E Malinga ──bowls──► Maaz Sadaqat (on strike)        Sahibzada Farhan (other end)
+ "actual_delivery": "9.4"     over 9 = the 10th over, ball 4
+ "extras": {"wides": 1}       a wide: bowled again, also numbered 9.4
+ "runs": batter 0 + extras 1 = total 1
+```
+
+**Surprise:** two format versions (1.2.0 and 1.3.0) in one zip; a T20 over with eight
+entries; and Cricsheet withholds 380 matches (Afghanistan men, the Afghanistan Premier League).
+
+**For the paper:**
+- Decision: D-032 (one pinned snapshot)
+- Limitation: L-024 (withheld matches)
+- Number: N-011
+- Section it feeds: Data

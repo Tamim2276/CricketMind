@@ -490,3 +490,15 @@ Template:
   class (it would hide that C6 is needed when the claim is right but the prose is wrong).
 - Status: built (Days 20, 23–26)
 - Paper section: Method (C5–C7); Results (containment, E-004)
+## D-032 — One pinned Cricsheet snapshot
+- Date: 2026-10-21
+- Decision: all real data comes from one Cricsheet download, `all_json.zip`, fetched on
+  2026-10-21 (23,132 matches; SHA-256 `2c0b9c7d4f86da1d1ba939539d40bb435917c360ecf71661daf6f0a2bd5f8573`),
+  kept unchanged in `data/raw/` (git-ignored). Every engine number and every receipt (D-021)
+  refers to this snapshot; a newer download would be a new, recorded snapshot.
+- Why: the same question must give the same number months later, and a reviewer must be able
+  to fetch the same data. Cricsheet updates the zip weekly.
+- Alternatives considered: downloading on every run (numbers would drift); the CSV or YAML
+  files (JSON is the format Cricsheet documents most fully).
+- Status: designed (downloaded Day 28; the ingest records the same checksum on Day 31)
+- Paper section: Data; Reproducibility
