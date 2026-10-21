@@ -611,3 +611,45 @@ Template:
   ground list (does not scale; may come later for the grounds N3 is asked about).
 - Status: built (Day 36)
 - Paper section: Data; Method (engines M2–M4)
+
+## D-039 — How M1 counts a strike rate and a dismissal rate
+- Date: 2026-10-22
+- Decision: a ball faced is every ball to the batter except a wide; a no-ball counts (the
+  batter could hit it). Strike rate = 100 × runs off the bat ÷ balls faced. Dismissal rate =
+  the batter's own dismissals ÷ balls faced, where any wicket of the striker counts except
+  "retired hurt" and "retired not out"; an out on a wide (stumped, run out) counts; a run out
+  at the non-striker's end is not on a ball the batter faced, so it is not in the rate. n is
+  the balls faced. Super overs are left out. No ball faced: no answer. The engine does not
+  hide a small sample: it gives n, and C3's floor decides.
+- Why: these are the scorers' conventions, so a number can be set against published records:
+  Kohli's Test runs come out at exactly 9,230, and his dismissals at 197 (196 as striker, one
+  run out as non-striker). The rules are pure functions (`domain/balls.py`,
+  `domain/measures.py`), so Day 39's bootstrap can re-use them on resampled balls.
+- Alternatives considered: counting non-striker run outs (that is the batting average's
+  count, a different measure, and it would add outs on balls the batter did not face);
+  dropping small samples inside the engine (C3 does it once, for every claim).
+- Status: built (Day 38)
+- Paper section: Method (N8 M1)
+
+## D-040 — The delivery repository: SQL picks the balls, Python counts them
+- Date: 2026-10-22
+- Decision: the engines ask a `DeliveryRepository` port for the balls a subject is about.
+  The DuckDB adapter picks them with SQL on `deliveries_full`; the engine counts them in
+  plain Python. People are matched on the register id, never on the name. A name that two or
+  more players share is refused, not guessed. A subject field the adapter cannot filter by is
+  refused, never left out (today it filters by player, bowler, phase and bowler type; shots
+  wait for the bridge). Every value goes into the SQL as a `?`. Balls come back in match
+  order (date, match, innings, over, ball), so one question always gives one list. Raw SQL,
+  not an ORM.
+- Why: every counting rule sits in one place and is tested without a database (a fake with
+  five balls). On the real data a player's question takes 0.06–0.4 s (Kohli: 42,341 balls).
+  A left-out filter would answer a different question with a true-looking number. 161 names
+  belong to more than one player (five "Imran Khan"s). Day 39's seeded bootstrap needs the
+  same balls in the same order. An ORM is built for editing one row at a time, adds a layer
+  over DuckDB, and hides the exact query, which Day 47's receipt must show.
+- Alternatives considered: counting in SQL (fast, but the rules would live in SQL, out of
+  reach of the fake and the unit tests); matching on names (one player under two names is
+  split, two players with one name are merged); an ORM such as SQLAlchemy.
+- Status: built (Day 38). The average batter of Day 39 is millions of balls: counted in SQL,
+  decided then.
+- Paper section: Method (N8; architecture)

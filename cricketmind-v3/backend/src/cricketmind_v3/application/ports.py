@@ -1,7 +1,34 @@
 from typing import Protocol
 
+from cricketmind_v3.domain.balls import Ball
 from cricketmind_v3.domain.facts import Fact
 from cricketmind_v3.domain.subject import Subject
+
+
+class FilterError(ValueError):
+    """A subject asks for something the repository cannot pick balls by."""
+
+
+class DeliveryRepository(Protocol):
+    """Anything that can give the balls a subject is about: the database, or a fake."""
+
+    def deliveries(self, subject: Subject) -> list[Ball]:
+        """Every ball that fits all of the subject's filled fields, in match order.
+
+        Raises FilterError rather than leave out a filter it cannot apply.
+        """
+
+
+class FakeDeliveryRepository:
+    """Balls written in by hand, for tests: the same balls whatever is asked."""
+
+    def __init__(self, balls: list[Ball]) -> None:
+        self.balls = balls
+        self.asked: list[Subject] = []  # what the engine asked for, to check in tests
+
+    def deliveries(self, subject: Subject) -> list[Ball]:
+        self.asked.append(subject)
+        return list(self.balls)
 
 
 class FactSource(Protocol):

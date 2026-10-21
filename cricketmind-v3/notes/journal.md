@@ -1000,6 +1000,7 @@ journal.
 - Limitations: L-026 to L-029
 - Evidence: E-025 (planned: the full build)
 - Section it feeds: Data; Method (N3 names, engines M2–M4)
+
 ---
 
 ## Day 37 (part 2) — 2026-10-21 — The full build, and what it found
@@ -1027,3 +1028,47 @@ reports themselves. `ledger.py` now leaves the results folder out of that check.
 - Limitation: L-030; L-025 updated with the real counts
 - Decisions: D-035 and D-037 statuses
 - Section it feeds: Data
+
+---
+
+## Day 38 — 2026-10-22 — The first engine: strike rate and dismissal rate
+
+**Learned: why 2 balls tell you nothing.** A six and a dot ball make a strike rate of 300; one
+more dot ball moves it by 100. At 140 over 500 balls, one more dot ball moves it by 0.3. On the
+real data (T20, every level), the 235 batters who faced exactly 2 balls have strike rates from
+0 to 300; the 1,425 who faced 500 or more lie between 50 and 219, nine in ten between 82 and
+148. A small sample is noise, not news: so every Fact carries its n, and C3 refuses fewer than
+30 balls.
+**Built:**
+- `domain/balls.py`: a `Ball` (only what the engine counts) and two rules: a wide is not a
+  ball faced; the striker is out unless retired hurt or retired not out (D-039).
+- `domain/measures.py`: strike rate and dismissal rate from a list of balls; no ball faced,
+  no answer.
+- `application/ports.py`: the `DeliveryRepository` port, `FilterError` and a fake.
+- `application/engines/m1_rates.py`: asks the menu what the measure needs (a player), asks
+  the repository for the balls, counts them.
+- `infrastructure/duckdb_repo.py`: the DuckDB adapter. Player and bowler matched on the
+  register id; phase and bowler type as columns; super overs out; anything else refused;
+  values as `?`; balls in match order (D-040).
+**Tested:** 27 new tests, 358 in all, on hand-made balls, on the fake, and on a tiny DuckDB
+made from the three fixtures, where every number was counted by hand from the JSON: Sahibzada
+Farhan's 73 off 44 (the no-ball in, the wide out), 24 off 20 in the powerplay, 28 off 17
+against pace and 27 off 12 against spin; MD Shanaka for two teams; one player under two names;
+a shared name; a super over. Eight deliberate mistakes were each caught by a test.
+**Real data (read-only):** a question takes 0.06–0.4 s. Kohli, all formats: a strike rate of
+88.6 on 42,341 balls. "Imran Khan" (five people) and a shot filter: no answer. Kohli's Tests:
+9,230 runs and 197 dismissals (196 as striker, one run out as non-striker), as published
+(cricket.com: 123 Tests, 9,230 runs, average 46.85, strike rate 55.57); 16,608 balls faced, 1
+to 3 fewer than that strike rate implies. His T20Is: only 118 of 125 matches are in Cricsheet
+(3,963 of 4,188 runs).
+**Found:** 161 names belong to more than one player (L-031; Day 58 asks which). Cricsheet's
+`T20` holds both T20Is and club T20s (noted for Day 43). The average batter of Day 39 is
+millions of balls: count it in SQL (noted for Day 39).
+**Asked:** "Could I have used an ORM instead of SQL?" Yes, behind the same port, but an ORM is
+made for editing one row at a time, and it hides the query that Day 47's receipt must show.
+
+**For the paper:**
+- Decisions: D-039, D-040
+- Limitations: L-031, L-032
+- Evidence: E-026 (planned, Day 54)
+- Section it feeds: Method (N8 M1); Data (coverage)
