@@ -2169,7 +2169,31 @@ trained on box crops and have never seen an overlay, so a drop on `replica`
 is expected and says nothing against the recipe; `replica_crop` shows how
 they take the crop alone.
 
-### 7.7 Their method, ported from their notebook, on their frames (added 2026-10-21)
+**Measured 2026-10-21**, the same 300 author-val clips (box and seg have 295
+of them; 5 never came out of our pipeline but did come out of theirs):
+
+| frames | their model | B01 | B03 |
+| --- | --- | --- | --- |
+| box (ours) | 36.27 | 75.93 | 76.61 |
+| seg (ours, the paper's words) | 44.75 | — | — |
+| replica_crop (their crop) | **50.00** | 61.67 | 63.00 |
+| replica (their crop + overlay) | **51.00** | 42.67 | 51.00 |
+
+1. **Their crop is worth about +6 to their model over our seg**, +15 over
+   box. Tight per-frame stretched crops are part of what it learned from.
+2. **Their colours are worth about nothing** (50.00 against 51.00; one
+   standard error on 300 clips is about 3 points).
+3. **51% is still nowhere near 89%**, and their model probably trained on
+   about two thirds of these clips, which should flatter it. The replica is
+   closer to their frames than ours, but it is not their frames.
+4. **What is still missing:** above all their striker detector (never
+   released), whose box *is* their crop; also the 15-frame sampling step
+   (one README line, no code) and whatever their folder name `15fs3it`
+   means. Asking the authors for the player-type weights, the sampling
+   script and their split lists is the only way to close it.
+5. Our models fall on frames they never trained on, as expected (B03, the
+   steadier, keeps 51.00). Whether training on their frames helps is R03's
+   question, not this table's. Their method, ported from their notebook, on their frames (added 2026-10-21)
 
 **Why.** Days 1–7 rebuilt their method from a saved model file. With their
 training notebook in hand, it can be ported exactly, and trained on frames

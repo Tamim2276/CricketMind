@@ -3507,3 +3507,20 @@ the dataset skips missing clips without complaint, so R03 would have trained
 on 300 clips. The check now counts clips against box's 6,320. Its first
 version counted against the split's 6,466 and declared all of Family B not
 ready; box is the yardstick, because 146 clips never survived Day 4.
+
+## 2026-10-21 — The replica test: closer, not there
+
+Their own model, same 300 val clips: our box 36.3, our seg 44.8, their crop
+50.0, their crop and colours 51.0. So the per-frame stretched crop is real
+and worth ~6 points to their model over our best guess, and the cyan bat is
+worth nothing. But 51% is not 89%, on clips it probably partly trained on.
+Whatever their frames look like, the replica isn't it yet.
+
+The biggest piece I couldn't copy is their striker detector, and in their
+code the striker box is the crop. Also missing: the 15-frame sampling script
+(one README line) and the meaning of their folder name, 15fs3it. The honest
+next step for those is an email to the authors, not more guessing.
+
+Our models: B01 75.9 / 61.7 / 42.7 and B03 76.6 / 63.0 / 51.0 on box /
+replica crop / replica. Expected drops on unfamiliar frames; Xception the
+steadier. Training on the replica (R03) is the real test of the recipe.
