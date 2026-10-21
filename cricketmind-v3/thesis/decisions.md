@@ -502,3 +502,22 @@ Template:
   files (JSON is the format Cricsheet documents most fully).
 - Status: designed (downloaded Day 28; the ingest records the same checksum on Day 31)
 - Paper section: Data; Reproducibility
+## D-033 — The deliveries table: one row per ball, keyed by position
+- Date: 2026-10-21
+- Decision: one table, `deliveries`, one row per ball as bowled (wides and no-balls included),
+  with the match's facts (format, gender, team type, competition, date, venue) repeated on
+  every row so a filter never needs a join. A ball is identified by match, innings, over and
+  its position in the over's list (`ball_index`), never by Cricsheet's "9.4", which repeats
+  when a ball is bowled again; the database refuses a second row with the same key. Overs
+  keep Cricsheet's count from 0. Phases come from a rule per format: T20 and IT20 overs 0–5
+  powerplay, 6–14 middle, 15 on death; ODI and ODM 0–9, 10–39, 40 on; Test and first-class
+  none. The Hundred (five-ball overs) and super overs get no phase. A ball with two wickets
+  keeps the count and the first wicket's details.
+- Why: the engines filter and count; repeated match facts cost little in a column store and
+  keep every query to one table. Day 28 showed "9.4" twice in one over. The survey of the
+  snapshot found 389 matches of The Hundred labelled T20 and 228 super-over innings.
+- Alternatives considered: a separate matches table (a join on every query); the ball number
+  as the key (not unique); the file's own `powerplays` ranges (not in every file; checked
+  against the rule on Day 32).
+- Status: built (Day 29: `pipeline/schema.py`); filled on Days 30–31
+- Paper section: Data

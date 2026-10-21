@@ -842,3 +842,29 @@ entries; and Cricsheet withholds 380 matches (Afghanistan men, the Afghanistan P
 - Limitation: L-024 (withheld matches)
 - Number: N-011
 - Section it feeds: Data
+---
+
+## Day 29 — 2026-10-21 — The deliveries table
+
+**Learned:** four SQL words: `CREATE` a table, `INSERT` a row, `SELECT` with a condition,
+`GROUP BY` to add things up per batter. A schema is the list of columns and their types. A
+primary key stops the same ball being stored twice.
+**Built:** the user installed DuckDB 1.5.6 (`uv add duckdb`). `pipeline/schema.py`: `phase()`
+(T20 and IT20: overs 0–5, 6–14, 15 on; ODI and ODM: 0–9, 10–39, 40 on; Test and first-class:
+none; The Hundred: none), `Match` (what every ball shares), `Place` (innings, team, super over,
+over, position), `Delivery` (31 columns), `make_delivery()`, the `CREATE TABLE` in SQL,
+`insert_sql()` and `row_values()`. Written by Claude and explained.
+**Tests:** 250 passed (18 new: 13 in `tests/unit/test_schema.py`, 5 in a new
+`tests/integration/test_deliveries_table.py` that uses a real DuckDB database in memory). The
+plan's test: the Day 28 wide at 9.4 becomes exactly the right row; the ball bowled again is a
+different row. Broke it twice: `<` for `<=` lost the last powerplay over (two tests failed);
+an extra SQL column failed the column-match test and every SQL test.
+**Surprise:** a survey of the whole snapshot found The Hundred (389 matches labelled T20 with
+five-ball overs: a T20 phase rule would be wrong there) and 228 super-over innings. DuckDB
+accepts `over` as a column name even though it is an SQL word.
+
+**For the paper:**
+- Decision: D-033
+- Limitation: L-025
+- Number: N-012
+- Section it feeds: Data
