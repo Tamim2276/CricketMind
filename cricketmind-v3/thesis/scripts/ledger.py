@@ -30,7 +30,10 @@ def add_to_ledger(entry: dict, output: Path, ledger: Path = LEDGER) -> None:
     line = {"run_at": datetime.now().isoformat(timespec="seconds")}
     line.update(entry)
     line["code_commit"] = git("rev-parse", "--short", "HEAD")
-    line["uncommitted_changes"] = git("status", "--porcelain", "--", ".") != ""
+    # was the code committed? The results folder is left out: the reports being
+    # written are not code (found on Day 37, when they made every line say "true")
+    changes = git("status", "--porcelain", "--", ".", ":(exclude)thesis/results")
+    line["uncommitted_changes"] = changes != ""
     line["output"] = relative(output)
     line["output_sha256"] = hashlib.sha256(output.read_bytes()).hexdigest()
     ledger.parent.mkdir(parents=True, exist_ok=True)

@@ -1000,3 +1000,30 @@ journal.
 - Limitations: L-026 to L-029
 - Evidence: E-025 (planned: the full build)
 - Section it feeds: Data; Method (N3 names, engines M2–M4)
+---
+
+## Day 37 (part 2) — 2026-10-21 — The full build, and what it found
+
+**Did:** the user downloaded `player_meta.csv`, committed the code (917739a), ran
+`build_data.py` and committed the three reports (adf2113). Claude read them.
+**The numbers:** 23,132 matches and 11,689,170 balls, 0 unreadable files; 13,741 players; 910
+venue names as 711 grounds; a 666 MB database. A bowler type for 96.4% of balls and a batting
+hand for 96.8% (lowest: women's one-day non-ODIs, 88.2%). The bowlers with no type and most
+balls are mostly domestic first-class players (the coverage report lists the top twenty, to
+hand-label if needed).
+**The checks:** the pipeline breaks no rule. Seven matches disagree with themselves: three
+targets (of 16,885 checked) and four winning margins (of 8,726), each by 1–3 runs, all in
+associate matches. Re-adding the runs straight from the raw zip gave the same sums, so the
+error is in the source, not the load: for example, Nigeria's balls add up to 63, yet Tanzania
+won by chasing exactly 63. Kept as published, listed, and recorded (L-030). Counted: 319 overs
+with seven legal balls, 2,901 innings with a shortened powerplay (7.6%), 17 two-wicket balls.
+**One fix:** the three ledger lines say "uncommitted changes: true", but the code was
+committed: the results commit holds only the four report files. The flag was tripped by the
+reports themselves. `ledger.py` now leaves the results folder out of that check.
+
+**For the paper:**
+- Numbers: N-013, N-014, N-015
+- Evidence: E-025 (verified)
+- Limitation: L-030; L-025 updated with the real counts
+- Decisions: D-035 and D-037 statuses
+- Section it feeds: Data

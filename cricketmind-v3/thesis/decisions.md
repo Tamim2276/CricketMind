@@ -557,7 +557,8 @@ Template:
   fewer overs is a rain target even when no rain rule is named).
 - Alternatives considered: trusting the source (a bug like the powerplay one would pass
   silently); an outside source of scorecards (licensing; a second pipeline to check).
-- Status: built (Day 32); the real report comes from the full build (Day 37)
+- Status: built (Day 32); on the full data (Day 37) the pipeline breaks no rule, and 7 of
+  25,611 target and margin checks find the source disagreeing with itself (N-015, L-030)
 - Paper section: Data (quality)
 
 ## D-036 — Finding a player from a name in a question
@@ -591,7 +592,8 @@ Template:
   plan's Route A needed R; the same table is published as a CSV.
 - Alternatives considered: installing R; scraping player pages ourselves (terms of use);
   guessing from names (no).
-- Status: built (Days 34–35); coverage on the real data after the user's download
+- Status: built (Days 34–35); on the full data a bowler type is known for 96.4% of balls
+  and a batting hand for 96.8% (N-014)
 - Paper section: Data
 
 ## D-038 — Derived tables, and one name per ground
