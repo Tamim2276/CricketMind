@@ -1871,6 +1871,21 @@ row:   match_id=1426279, innings=1, over=3, ball=2,
 | 36 | Derived tables | The venue table; balls bowled per bowler per date; the reviews table | Tests on fixtures |
 | 37 | Review day | Row counts and file size into the journal | The numbers are written down |
 
+**Built (2026-10-21), and what changed on the way.** `pipeline/` holds the reader
+(`parse_match.py`), the load (`ingest.py`), the data checks (`quality.py`), the players
+(`players.py`, with the name search in `domain/names.py`), the attributes and the joined
+view (`attributes.py`), the derived tables (`derived.py`) and a summary; one command,
+`thesis/scripts/build_data.py`, runs it all and writes three reports with ledger lines.
+331 tests. Run on 1,000 real matches before the full build, it found four things the
+fixtures could not: DuckDB dropping a first row it took for a header (D-034), an ODI's
+three powerplays (D-035), first-name players such as Shakib (D-036), and nine County
+Grounds merged into one (D-038).
+
+- Beside the balls, three small tables: each match's result, each innings' target and
+  opening powerplay, each person's register id (D-034).
+- Day 34's Route A needs no R: the same `player_meta` table is a CSV download (D-037).
+- The full build (about 6 minutes) is the user's to run, after downloading the player file.
+
 ---
 
 ### Phase 4 — Engines (Days 38–54)

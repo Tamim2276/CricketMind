@@ -1,0 +1,11 @@
+cricinfo_id,cricsheet_id,unique_name,full_name,name,country,dob,batting_style,bowling_style,birthplace,playing_role
+1,5750bcb4,E Malinga, Eshan Malinga,Eshan Malinga,Sri Lanka,,Right-hand bat,Right-arm fast-medium,,
+2,f24c6701,M Theekshana, Maheesh Theekshana,Maheesh Theekshana,Sri Lanka,,Right hand Bat,Right arm Offbreak,,
+3,08548b13,PHKD Mendis, Kamindu Mendis,Kamindu Mendis,Sri Lanka,,Left-hand bat,"Right arm Offbreak, Slow Left arm Orthodox",,
+4,abb7c76c,Abrar Ahmed, Abrar Ahmed,Abrar Ahmed,Pakistan,,Right hand Bat,Legbreak Googly,,
+5,1aba45cd,Sahibzada Farhan, Sahibzada Farhan,Sahibzada Farhan,Pakistan,,Right-hand bat,,,
+6,1777c020,Fakhar Zaman, Fakhar Zaman,Fakhar Zaman,Pakistan,,Left hand Bat,Slow Left arm Orthodox,,
+7,dabbd0ae,B Fernando, Binura Fernando,Binura Fernando,Sri Lanka,,Left-arm medium,Left arm Medium fast,,
+8,9de62878,Shadab Khan, Shadab Khan,Shadab Khan,Pakistan,,Right-hand bat,Legbreak googly,,
+9,5750bcb4,E Malinga, Someone Else,Someone Else,Nowhere,,Left-hand bat,Legbreak,,
+10,,No Id, No Id,No Id,Nowhere,,Right-hand bat,Right arm Fast,,

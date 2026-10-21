@@ -500,7 +500,8 @@ Template:
   to fetch the same data. Cricsheet updates the zip weekly.
 - Alternatives considered: downloading on every run (numbers would drift); the CSV or YAML
   files (JSON is the format Cricsheet documents most fully).
-- Status: designed (downloaded Day 28; the ingest records the same checksum on Day 31)
+- Status: built (downloaded Day 28; the ingest stores the zip's SHA-256 and refuses a
+  database built from another snapshot, Day 31)
 - Paper section: Data; Reproducibility
 ## D-033 — The deliveries table: one row per ball, keyed by position
 - Date: 2026-10-21
@@ -519,5 +520,92 @@ Template:
 - Alternatives considered: a separate matches table (a join on every query); the ball number
   as the key (not unique); the file's own `powerplays` ranges (not in every file; checked
   against the rule on Day 32).
-- Status: built (Day 29: `pipeline/schema.py`); filled on Days 30–31
+- Status: built (Day 29: `pipeline/schema.py`; filled by the reader and the load, Days 30–31)
 - Paper section: Data
+## D-034 — The load: from the zip, in batches, each batch all or nothing
+- Date: 2026-10-21
+- Decision: the load reads the match files straight from the zip (never unpacked), parses a
+  batch of 500, writes one CSV per table and copies them into DuckDB inside one transaction,
+  together with a `loaded` row per match and a `problems` row per unreadable file. A power
+  cut leaves no half-batch, and a rerun skips every match already loaded or recorded as a
+  problem. The CSV files declare `HEADER false`: left to guess, DuckDB took a first row of
+  names for a header and dropped it (a test found the missing player on Day 31). Next to the
+  balls, three small tables keep each match's result, each innings' target and opening
+  powerplay, and each person's register id.
+- Why: CLAUDE.md asks that every long job survive a power cut. One transaction per batch is
+  the simplest atomic write; COPY from CSV loads about 32,000 balls a second (about 6 minutes
+  for the snapshot) where row-by-row inserts would take far longer.
+- Alternatives considered: unpacking 23,132 files first (slow, untidy); one transaction for
+  everything (a power cut near the end loses it all); a manifest file beside the database
+  (two places that can disagree).
+- Status: built (Days 30–31)
+- Paper section: Data; Reproducibility
+
+## D-035 — The data is checked against itself, with two kinds of rule
+- Date: 2026-10-21
+- Decision: twelve checks, each a rule and a query for the rows that break it. Nine must
+  find nothing (a ball's total is its parts; extras add up; a chase's target is the first
+  innings plus one; "won by N runs" is the difference; every loaded match has all its balls
+  and a match row; no empty names; every batter and bowler has a register id; every file was
+  readable). Three only count real but unusual things for the paper (overs with more legal
+  balls than allowed, shortened powerplays, balls with two wickets). Every check is tested by
+  spoiling a copy of the fixtures.
+- Why: Cricsheet has no innings totals, so the data can only be checked against itself: the
+  target and the margin in each file are independent of the balls. Running the checks on
+  1,000 real matches found a bug in the reader (an ODI lists three "mandatory" powerplays;
+  the reader kept the last, not the opening one) and a gap in a rule (a target reset for
+  fewer overs is a rain target even when no rain rule is named).
+- Alternatives considered: trusting the source (a bug like the powerplay one would pass
+  silently); an outside source of scorecards (licensing; a second pipeline to check).
+- Status: built (Day 32); the real report comes from the full build (Day 37)
+- Paper section: Data (quality)
+
+## D-036 — Finding a player from a name in a question
+- Date: 2026-10-21
+- Decision: a name is matched in three steps, the closest kind found winning: the whole name
+  or an alias ("V. Kohli", "Virat Kohli"); a first name's initial with the surname
+  ("Rohit Sharma" -> "RG Sharma"); one part of the name, surname or first name, most-played
+  first ("Kohli"; "Mendis" gives both; "Babar" gives Babar Azam before Zulfiqar Babar).
+  Dots, case, hyphens and Cricsheet's "(1)" for same-named people are ignored. Full names
+  from the player file become aliases. Every candidate is returned in order; N3 shows its
+  choice in the read-back.
+- Why: on 1,000 real matches, "Shakib" first found nobody: many players are known by their
+  first name (Shakib Al Hasan, Tamim Iqbal, Mushfiqur Rahim), which matters for a
+  Bangladeshi user base. A strict surname-first order then put Zulfiqar Babar before Babar
+  Azam.
+- Alternatives considered: fuzzy string distance (unexplainable matches); surname only
+  (misses first-name players).
+- Status: built (Day 33)
+- Paper section: Method (N3, names)
+
+## D-037 — Batting hand and bowler type: from cricketdata, and by hand
+- Date: 2026-10-21
+- Decision: Route A without R: the cricketdata package's `player_meta` table (16,101
+  players, from ESPNcricinfo's player pages) is downloaded once as a CSV from r-universe and
+  joined on the Cricsheet id. Its style words are mapped to right or left hand and pace or
+  spin (pace words first, so "slow medium" is pace; of two styles, the first); unknown words
+  give no label. Route B: a short hand-made file fills gaps and wins over the download. A
+  view, `deliveries_full`, joins hand and type to every ball, and the coverage report lists
+  the unknown bowlers with the most balls, to label first.
+- Why: the engines' filters need bowler type and batting hand; Cricsheet has neither. The
+  plan's Route A needed R; the same table is published as a CSV.
+- Alternatives considered: installing R; scraping player pages ourselves (terms of use);
+  guessing from names (no).
+- Status: built (Days 34–35); coverage on the real data after the user's download
+- Paper section: Data
+
+## D-038 — Derived tables, and one name per ground
+- Date: 2026-10-21
+- Decision: four tables for the engines of Phase 4: `innings_scores` (runs with penalties,
+  wickets without "retired hurt" or "retired not out", legal balls, won, chasing; M2),
+  `venues` (M2), `bowler_days` (legal balls per bowler per match date; M3) and `reviews`
+  (who asked, upheld means overturned, the dismissal; M4). A ground is named by the part of
+  its name before the first comma, unless that part comes with several different places
+  after the comma, when the place is kept: "Lord's" and "Lord's, London" are one ground;
+  "County Ground, Bristol" and "County Ground, Taunton" are two.
+- Why: on 1,000 real matches, "the part before the comma" alone merged nine County Grounds
+  into one; the refined rule turns 208 names into 181 grounds without that error.
+- Alternatives considered: the raw venue strings (one ground counted twice); a hand-made
+  ground list (does not scale; may come later for the grounds N3 is asked about).
+- Status: built (Day 36)
+- Paper section: Data; Method (engines M2–M4)

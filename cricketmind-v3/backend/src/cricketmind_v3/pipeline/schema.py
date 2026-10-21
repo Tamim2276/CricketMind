@@ -195,17 +195,146 @@ CREATE TABLE IF NOT EXISTS deliveries (
 """
 
 
-def insert_sql() -> str:
-    """INSERT INTO deliveries VALUES (?, ?, ...), one ? per column."""
+# Three small tables beside the balls (Day 30): the result, each innings, the people
+
+
+@dataclass(frozen=True, kw_only=True)
+class MatchRow:
+    """One row of the matches table: the facts and the result of a match."""
+
+    match_id: str
+    data_version: str  # "1.2.0" or "1.3.0"
+    match_type: str
+    gender: str
+    team_type: str
+    competition: str | None
+    season: str  # "2026" or "2026/27"
+    date: str  # the first day
+    days: int  # how many dates it was played on
+    venue: str
+    city: str | None
+    team1: str
+    team2: str
+    toss_winner: str | None
+    toss_decision: str | None  # "bat" or "field"
+    winner: str | None
+    won_by_runs: int | None
+    won_by_wickets: int | None
+    won_by_innings: bool  # "won by an innings and 20 runs"
+    result: str | None  # "tie", "no result" or "draw"
+    method: str | None  # "D/L" for a rain rule
+    eliminator: str | None  # who won a super over or a bowl-out
+    overs: int | None  # per innings; None in long formats
+    balls_per_over: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class InningsRow:
+    """One row of the innings table."""
+
+    match_id: str
+    innings: int
+    team: str
+    super_over: bool
+    declared: bool
+    forfeited: bool  # no ball bowled
+    target_runs: int | None  # the runs needed to win, set before a chase
+    target_overs: float | None
+    powerplay_to: (
+        float | None
+    )  # where the mandatory powerplay ended: 5.6, or 5.7 with an extra
+    penalty_pre: int  # penalty runs awarded outside the balls
+    penalty_post: int
+    miscounted_overs: int  # overs Cricsheet marks as having the wrong number of balls
+
+
+@dataclass(frozen=True, kw_only=True)
+class PersonRow:
+    """One row of the people table: a name as used in one match, and its id."""
+
+    match_id: str
+    name: str  # "V Kohli"
+    person_id: str  # "ba607b88", the Cricsheet register id
+    team: str | None  # None for an umpire or a referee
+
+
+CREATE_MATCHES = """
+CREATE TABLE IF NOT EXISTS matches (
+    match_id VARCHAR PRIMARY KEY,
+    data_version VARCHAR NOT NULL,
+    match_type VARCHAR NOT NULL,
+    gender VARCHAR NOT NULL,
+    team_type VARCHAR NOT NULL,
+    competition VARCHAR,
+    season VARCHAR NOT NULL,
+    date DATE NOT NULL,
+    days INTEGER NOT NULL,
+    venue VARCHAR NOT NULL,
+    city VARCHAR,
+    team1 VARCHAR NOT NULL,
+    team2 VARCHAR NOT NULL,
+    toss_winner VARCHAR,
+    toss_decision VARCHAR,
+    winner VARCHAR,
+    won_by_runs INTEGER,
+    won_by_wickets INTEGER,
+    won_by_innings BOOLEAN NOT NULL,
+    result VARCHAR,
+    method VARCHAR,
+    eliminator VARCHAR,
+    overs INTEGER,
+    balls_per_over INTEGER NOT NULL
+)
+"""
+
+CREATE_INNINGS = """
+CREATE TABLE IF NOT EXISTS innings (
+    match_id VARCHAR NOT NULL,
+    innings INTEGER NOT NULL,
+    team VARCHAR NOT NULL,
+    super_over BOOLEAN NOT NULL,
+    declared BOOLEAN NOT NULL,
+    forfeited BOOLEAN NOT NULL,
+    target_runs INTEGER,
+    target_overs DOUBLE,
+    powerplay_to DOUBLE,
+    penalty_pre INTEGER NOT NULL,
+    penalty_post INTEGER NOT NULL,
+    miscounted_overs INTEGER NOT NULL,
+    PRIMARY KEY (match_id, innings)
+)
+"""
+
+CREATE_PEOPLE = """
+CREATE TABLE IF NOT EXISTS people (
+    match_id VARCHAR NOT NULL,
+    name VARCHAR NOT NULL,
+    person_id VARCHAR NOT NULL,
+    team VARCHAR,
+    PRIMARY KEY (match_id, name)
+)
+"""
+
+# every table the pipeline fills from the match files: name, SQL, row class
+TABLES = (
+    ("deliveries", CREATE_DELIVERIES, Delivery),
+    ("matches", CREATE_MATCHES, MatchRow),
+    ("innings", CREATE_INNINGS, InningsRow),
+    ("people", CREATE_PEOPLE, PersonRow),
+)
+
+
+def insert_sql(table: str, row_class: type) -> str:
+    """INSERT INTO table VALUES (?, ?, ...), one ? per column."""
     marks = []
-    for _ in dataclasses.fields(Delivery):
+    for _ in dataclasses.fields(row_class):
         marks.append("?")
-    return "INSERT INTO deliveries VALUES (" + ", ".join(marks) + ")"
+    return f"INSERT INTO {table} VALUES (" + ", ".join(marks) + ")"
 
 
-def row_values(delivery: Delivery) -> list:
-    """The row's values, in column order."""
+def row_values(row) -> list:
+    """Any row's values, in column order."""
     values = []
-    for field in dataclasses.fields(Delivery):
-        values.append(getattr(delivery, field.name))
+    for field in dataclasses.fields(row):
+        values.append(getattr(row, field.name))
     return values

@@ -868,3 +868,135 @@ accepts `over` as a column name even though it is an SQL word.
 - Limitation: L-025
 - Number: N-012
 - Section it feeds: Data
+---
+
+## Phase 3 note — 2026-10-21 — built and tested on real data; the full build is the user's
+
+At the user's request Claude built Days 30–37 in one go, testing each day (and breaking it on
+purpose) before the next. Each day was also tried on 1,000 real matches in a scratch
+database, which found four problems the fixtures could not. The full build (about six
+minutes) and the download of the player file are the user's to run (CLAUDE.md); Day 37's
+numbers are written in from its reports.
+
+---
+
+## Day 30 — 2026-10-21 — A whole match into rows
+
+**Learned:** a match file is read with three loops (innings, overs, balls); a ball's place is
+its position in the over's list. A reader must fail with a message that names the match.
+**Built:** `pipeline/parse_match.py` (`read_match`, `parse_match`, `ParsedMatch`); the schema
+gains three small tables: `matches` (the result), `innings` (target, opening powerplay,
+penalties) and `people` (each name's register id and team). Three real matches became test
+fixtures (both format versions, men's and women's; Cricsheet's licence noted beside them).
+**Tests:** 265 passed (15 new), checked against counts taken from the files independently:
+Pakistan 215 minus Sri Lanka 133 is the "won by 82 runs" in the file, and the target 216 is
+215 plus one. Broke it: the file's own ball number instead of the position, and the wrong
+powerplay; both caught.
+**Surprise:** a scan of all 11,689,170 balls (44 seconds) found 14 forfeited innings with no
+overs, 466 "retired hurt" entries that are not dismissals, 17 balls with two wickets, and a
+repeated `over` inside 3,068 balls.
+
+---
+
+## Day 31 — 2026-10-21 — Loading everything, safe from power cuts
+
+**Learned:** an atomic write: a transaction either saves all of a batch or none of it, so a
+power cut cannot leave half a batch. Copying a CSV file is far faster than inserting rows one
+by one.
+**Built:** `pipeline/ingest.py`: reads the zip directly, batches of 500, one transaction each
+(COPY per table, then the `loaded` rows), unreadable files written to `problems`, the zip's
+SHA-256 stored, and a database refuses a second snapshot.
+**Tests:** 274 passed (9 new): everything loaded; NULL and false survive; a second run adds
+nothing; stop after one match and restart; a simulated power cut inside a batch leaves
+nothing behind; a broken file is written down; another snapshot is refused.
+**Surprise, found by a test:** one player was missing. DuckDB, left to guess, took the first
+row of the people file ("A Capsey") for a header and dropped it; it would have dropped the
+first row of every batch. Fixed with `HEADER false`, and a test now guards it. On 1,000 real
+matches: 643,494 balls in 20 seconds, about 6 minutes for everything.
+
+---
+
+## Day 32 — 2026-10-21 — Checking the data against itself
+
+**Learned:** Cricsheet has no innings totals, but each file says who won by how much and what
+the target was, so the balls can be checked against those.
+**Built:** `pipeline/quality.py`: twelve checks, nine that must find nothing and three that
+count real oddities; a Markdown report.
+**Tests:** 283 passed (9 new): each rule caught on a spoiled copy (one wrong ball total is
+caught three ways: the ball, the target, the margin).
+**Surprise:** on 1,000 real matches the checks found a bug of mine: an ODI lists three
+"mandatory" powerplays and the reader kept the last (530 "odd" powerplays; 92 after the fix,
+all shortened matches). They also found a gap in a rule: two chases reset for rain to 20 and
+33 overs, in "no result" matches that name no rain rule. After both fixes every must-hold
+rule finds nothing.
+
+---
+
+## Day 33 — 2026-10-21 — Matching names
+
+**Learned:** the register id is the person; names are how a match wrote them.
+**Built:** `pipeline/players.py` (the players table: the name used most, matches played, and
+every other name) and `domain/names.py` (`find_players`: whole name or alias, then initial and
+surname, then surname or first name, most-played first).
+**Tests:** 302 passed (19 new). The plan's test: "Kohli" finds "V Kohli". Broke it: least-played
+first; caught.
+**Surprise:** on real data "Shakib" found nobody; many players are known by their first name
+(Shakib Al Hasan, Tamim Iqbal, Mushfiqur Rahim). Once first names were added, "Babar" gave
+Zulfiqar Babar before Babar Azam, so surname and first name became one level, most-played
+first.
+
+---
+
+## Day 34 — 2026-10-21 — Batting hand and bowler type
+
+**Learned:** the plan's Route A needed R, but the same table, cricketdata's `player_meta`
+(16,101 players), is published as a CSV.
+**Built:** `pipeline/attributes.py`: style words to hand (right, left) and type (pace, spin);
+reading the downloaded file and a hand-made one (Route B wins); full names become search
+aliases. A ten-row sample file with real ids and made-up styles covers every kind of mess.
+**Tests:** 311 passed (9 new). Broke it twice; the second time (reading both styles instead of
+the first) no test noticed, because no example told the two apart. Added "Right arm
+Offbreak, Right arm Medium" (spin first); now it is caught.
+
+---
+
+## Day 35 — 2026-10-21 — The attribute join
+
+**Built:** the `deliveries_full` view (every ball with the batter's and bowler's ids, hand and
+type, by LEFT JOINs) and the coverage report (share of balls with a type, by format, and the
+unknown bowlers with most balls, to hand-label first).
+**Tests:** 319 passed (8 new). The plan's test: the join keeps every delivery (734 of 734).
+Coverage is counted again from the files, not the database. Broke it: an inner join (four
+tests failed) and the download winning over a hand label (caught). The join over 643,494 real
+balls takes 0.09 seconds.
+
+---
+
+## Day 36 — 2026-10-21 — Derived tables
+
+**Built:** `pipeline/derived.py`: `innings_scores`, `venues` (with `match_venues`),
+`bowler_days` and `reviews`, for the engines M2, M3 and M4.
+**Tests:** 330 passed (11 new), checked against counts from the files (E Malinga's legal balls
+on each of his two match days; every review once; Wyatt's upheld review out caught).
+**Surprise:** "the name before the comma" merged nine different County Grounds (127 matches)
+into one. The rule now keeps the place when a ground name comes with several: 208 names
+become 181 grounds. Broke it twice (the greedy rule; retired hurt counted as out); caught.
+
+---
+
+## Day 37 — 2026-10-21 — Review day
+
+**Did:** one command for the whole build, `thesis/scripts/build_data.py` (load, check,
+players, attributes and coverage, derived tables, summary; three reports with ledger lines),
+tried end to end on the fixtures in a scratch folder. A shared `thesis/scripts/ledger.py`
+(the E-004 script now uses it and makes byte-for-byte the same CSV). `pipeline/summary.py`.
+331 tests, `ruff check` and `ruff format --check` clean, no comprehensions.
+**Still to do (user):** download `player_meta.csv`, run the build, commit; then the row
+counts, the check results and the coverage are written into `numbers.md`, E-025 and this
+journal.
+
+**For the paper (Days 30–37):**
+- Decisions: D-032 and D-033 now built; D-034 to D-038
+- Limitations: L-026 to L-029
+- Evidence: E-025 (planned: the full build)
+- Section it feeds: Data; Method (N3 names, engines M2–M4)
