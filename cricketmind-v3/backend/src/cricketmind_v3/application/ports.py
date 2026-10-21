@@ -18,17 +18,35 @@ class DeliveryRepository(Protocol):
         Raises FilterError rather than leave out a filter it cannot apply.
         """
 
+    def others(self, subject: Subject) -> dict[Ball, int]:
+        """Every other batter's balls under the same filters, as a tally (Day 39).
+
+        Millions of balls, so they come already counted, with THE_BATTER and
+        SOMEONE_ELSE in place of the names.
+        """
+
 
 class FakeDeliveryRepository:
-    """Balls written in by hand, for tests: the same balls whatever is asked."""
+    """Balls written in by hand for tests, filed under the subject they answer."""
 
-    def __init__(self, balls: list[Ball]) -> None:
-        self.balls = balls
+    def __init__(self) -> None:
+        self.balls: dict[Subject, list[Ball]] = {}
+        self.everyone_else: dict[Subject, dict[Ball, int]] = {}
         self.asked: list[Subject] = []  # what the engine asked for, to check in tests
+
+    def add(self, subject: Subject, balls: list[Ball]) -> None:
+        self.balls[subject] = balls
+
+    def add_others(self, subject: Subject, counts: dict[Ball, int]) -> None:
+        self.everyone_else[subject] = counts
 
     def deliveries(self, subject: Subject) -> list[Ball]:
         self.asked.append(subject)
-        return list(self.balls)
+        return list(self.balls.get(subject, []))
+
+    def others(self, subject: Subject) -> dict[Ball, int]:
+        self.asked.append(subject)
+        return dict(self.everyone_else.get(subject, {}))
 
 
 class FactSource(Protocol):

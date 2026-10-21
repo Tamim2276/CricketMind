@@ -1,5 +1,6 @@
 """Ready-made subjects and claims from the v3 document, shared by many tests."""
 
+from cricketmind_v3.domain.balls import Ball
 from cricketmind_v3.domain.claims import Claim
 from cricketmind_v3.domain.provenance import Provenance
 from cricketmind_v3.domain.subject import CricketSubject
@@ -77,3 +78,53 @@ def compared(
         interval=interval,
         source="N8.M1",
     )
+
+
+# SYNTHETIC: the v2 corpus's balls (N-001), rebuilt as v2's corpus.py built them. None of
+# this is real match data.
+
+
+def v2_runs(balls: int, runs: int) -> list[int]:
+    """v2's recipe: a repeating run pattern, nudged a run at a time until it adds up."""
+    pattern = [1, 0, 4, 1, 2, 0, 1, 1, 0, 2]
+    each = []
+    for i in range(balls):
+        each.append(pattern[i % len(pattern)])
+    missing = runs - sum(each)
+    i = 0
+    while missing != 0 and i < balls * 8:
+        j = i % balls
+        if missing > 0 and each[j] < 6:
+            each[j] += 1
+            missing -= 1
+        elif missing < 0 and each[j] > 0:
+            each[j] -= 1
+            missing += 1
+        i += 1
+    return each
+
+
+def v2_balls(runs: int, outs: int, balls: int = 50) -> list[Ball]:
+    """Kohli's balls of one shot; the first `outs` balls are outs (v2 gave no kind)."""
+    made = []
+    for i, scored in enumerate(v2_runs(balls, runs)):
+        out = None
+        kind = None
+        if i < outs:
+            out = "V Kohli"
+            kind = "caught"
+        made.append(
+            Ball(
+                match_type="T20",
+                batter="V Kohli",
+                runs_batter=scored,
+                wides=0,
+                player_out=out,
+                wicket_kind=kind,
+            )
+        )
+    return made
+
+
+V2_COVER_DRIVE = v2_balls(runs=71, outs=1)  # strike rate 142.0
+V2_PULL = v2_balls(runs=56, outs=4)  # strike rate 112.0

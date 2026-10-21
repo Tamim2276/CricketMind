@@ -1,13 +1,34 @@
 """Day 38: the counting rules, and strike rate and dismissal rate from hand-made balls."""
 
-from cricketmind_v3.domain.balls import Ball, batter_out, faced
+from cricketmind_v3.domain import measures
+from cricketmind_v3.domain.balls import (
+    SOMEONE_ELSE,
+    THE_BATTER,
+    Ball,
+    batter_out,
+    faced,
+    tally,
+)
 from cricketmind_v3.domain.facts import Fact
-from cricketmind_v3.domain.measures import dismissal_rate, strike_rate
+
+
+# the tests write balls as lists; the measures take a tally (Day 39)
+def strike_rate(balls: list[Ball]) -> Fact | None:
+    return measures.strike_rate(tally(balls))
+
+
+def dismissal_rate(balls: list[Ball]) -> Fact | None:
+    return measures.dismissal_rate(tally(balls))
 
 
 def ball(runs=0, wides=0, out=None, kind=None, batter="V Kohli") -> Ball:
     return Ball(
-        batter=batter, runs_batter=runs, wides=wides, player_out=out, wicket_kind=kind
+        match_type="T20",
+        batter=batter,
+        runs_batter=runs,
+        wides=wides,
+        player_out=out,
+        wicket_kind=kind,
     )
 
 
@@ -99,3 +120,20 @@ def test_stumped_off_a_wide_is_out_but_not_a_ball_faced():
 
 def test_no_dismissal_rate_without_a_ball_faced():
     assert dismissal_rate([ball(wides=1, out="V Kohli", kind="stumped")]) is None
+
+
+# The tally (Day 39)
+
+
+def test_a_tally_keeps_each_ball_once_with_its_count():
+    four = ball(runs=4)
+    counts = tally([four, ball(), four, ball(), four])
+    assert counts == {four: 3, ball(): 2}
+    assert list(counts) == [four, ball()]  # in the order first seen
+
+
+def test_the_names_given_way_still_count_outs():
+    out = ball(batter=THE_BATTER, out=THE_BATTER, kind="caught")
+    run_out = ball(batter=THE_BATTER, out=SOMEONE_ELSE, kind="run out")
+    assert batter_out(out)
+    assert not batter_out(run_out)

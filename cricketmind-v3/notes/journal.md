@@ -1072,3 +1072,44 @@ made for editing one row at a time, and it hides the query that Day 47's receipt
 - Limitations: L-031, L-032
 - Evidence: E-026 (planned, Day 54)
 - Section it feeds: Method (N8 M1); Data (coverage)
+
+---
+
+## Day 39 — 2026-10-22 — Is a difference real, or luck? The bootstrap
+
+**Learned:** a difference from few balls can be luck. The bootstrap replays the same balls many
+times (each picked at random, repeats allowed) and watches how much the answer moves. If the
+replays sometimes flip it (the middle 95% holds 0), CricketMind may not say one is better: C4
+makes the words "no detectable difference".
+**Built:**
+- `domain/balls.py`: `tally` (each different ball once, with its count: Kohli's 42,988 balls
+  are 48 kinds), `by_format`, and placeholder names for many batters counted together. A
+  `Ball` now carries its format.
+- `domain/measures.py`: the measures count tallies.
+- `domain/bootstrap.py`: `replay`, `middle_95`, `difference` (n is the thinner side) and
+  `versus_average` (like with like, the average fixed, 20 times the balls) (D-041, D-042).
+- `application/ports.py`: the port's second question, `others`; the fake files balls under
+  the subject they answer.
+- `application/engines/m1_rates.py`: `sr_difference` and `sr_vs_average`.
+- `infrastructure/duckdb_repo.py`: `others`, everyone else's balls counted by DuckDB.
+**Speed:** picking one ball at a time would take about 5 minutes for Kohli; drawing how many of
+each kind come up takes about a second, and gives the same replays.
+**The plan's test:** N-002 says [−16, +76]. Adding up every possible replay, with no luck at
+all, gives exactly that. Our 20,000 seeded replays give [−16, +78]: the top end sits on a
+knife edge (97.58% of replays at or below +76, against the 97.5% cut), so 20,000 random replays
+can land one run (2 points) higher. The test checks the exact range, that four seeds land
+within one run of it, and that 0 is inside: the verdict, "no detectable difference", holds.
+**Found on the real data:** Kohli against Bumrah first came out +77.8. Kohli faced Bumrah only in
+T20s, but everyone else's balls against Bumrah include 10,146 Test balls (44.1). Like with like
+it is +35.8, range [+4.2, +69.9] (D-042, N-016). Kohli against Anderson: −3.3 [−10.5, +4.2], no
+detectable difference. Tamim Iqbal against spin in the powerplay: −8.1 [−15.5, −0.4] on 1,417
+balls. A question takes 0.4–3 s.
+**Tested:** 386 tests (28 new). Thirteen deliberate mistakes were each caught.
+**For the next v4 revision:** `sr_vs_average` is "against everyone else's balls in the same
+formats", not "the average batter under the same filters".
+
+**For the paper:**
+- Decisions: D-041, D-042
+- Limitations: L-033, L-034
+- Numbers: N-002 (the exact range confirmed), N-016
+- Section it feeds: Method (N8 M1; C4, C7)

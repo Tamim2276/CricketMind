@@ -653,3 +653,45 @@ Template:
 - Status: built (Day 38). The average batter of Day 39 is millions of balls: counted in SQL,
   decided then.
 - Paper section: Method (N8; architecture)
+
+## D-041 — The bootstrap: how a range is made
+- Date: 2026-10-22
+- Decision: a difference's 95% range comes from 20,000 replays with seed 42. A replay has as
+  many balls as the sample, each picked at random, repeats allowed. It is drawn as how many of
+  each kind of ball come up (one binomial draw per kind, from what is left), which gives the
+  same replays as picking one ball at a time. The range keeps the middle 95%: the lowest and
+  highest 2.5% are dropped. The two sides are replayed separately, and n is the smaller side
+  (D-030). A replay with no ball faced, or a range that misses its own estimate, gives no
+  answer.
+- Why: the same balls must always give the same range (receipts, Day 47). Picking one ball at
+  a time would take about 5 minutes for Kohli's 42,988 balls; counting kinds (48 of them)
+  takes about a second. Adding up every possible replay of the v2 example gives exactly
+  N-002's [−16, +76]; 20,000 replays land within one run of it (seed 42: [−16, +78]).
+- Alternatives considered: one ball at a time (minutes); numpy (a new dependency, and still
+  random); a normal-curve range (wrong for small samples, the ones that matter); the BCa
+  bootstrap (better for lopsided samples, harder to explain; later, if Day 53's calibration
+  asks for it).
+- Status: built (Day 39)
+- Paper section: Method (N8 M1; C4)
+
+## D-042 — A player against everyone else, like with like
+- Date: 2026-10-22
+- Decision: `sr_vs_average` sets a player's strike rate against every other batter's under
+  the same filters; the player is left out, so the two sides share no ball. Like with like:
+  everyone else's strike rate is taken in each of the player's formats and mixed in his
+  shares (half his balls in T20s and half in ODIs: half of each). DuckDB counts everyone
+  else's balls, grouped by format and kind with the names replaced (`THE_BATTER`,
+  `SOMEONE_ELSE`), so the Python counting rules still apply. Their average is taken as fixed
+  and only the player's balls are replayed; that needs 20 times the player's balls in each
+  of his formats, or there is no answer.
+- Why: on the real data, Kohli faced Bumrah only in T20s (108 balls, 147.2), but everyone
+  else's balls against Bumrah include 10,146 Test balls (44.1). Pooled, the difference came
+  out +77.8; like with like it is +35.8 (N-016). With 20 times the balls, the average's own
+  wobble is about a twentieth of the player's (when the spread per ball is alike), so
+  leaving it out narrows the range by about 2.5%.
+- Alternatives considered: all balls pooled (sets T20 against Test); the same matches only
+  (too few balls for the 20 times rule); replaying everyone else's millions of balls as well
+  (slow, and changes almost nothing at 20 times the balls); relying on a format filter alone
+  (Day 43; a question that names no format would still mix).
+- Status: built (Day 39)
+- Paper section: Method (N8 M1; C7)

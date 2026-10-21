@@ -1908,7 +1908,7 @@ from 50 balls is wide; one from 5,000 balls is narrow.
 | 40 | — | M2: venue profile (first-innings average, chasing wins, pace and spin wicket share) | Tests |
 | 41 | The workload ratio, and why scientists argue about it | M3: balls bowled in 7 and 28 days, the ratio, a flag (never a probability) | Test with a made-up bowler calendar |
 | 42 | — | M4: DRS reviews, counts and overturn rate | Tests |
-| 43 | Filters times measures: one engine for many questions | Any stats question, part 1: the engine's query is a set of filters (player, bowler, opposition, venue, season, format, innings, phase, bowler type, batting hand) and one measure; every filter is a `Subject` field. Found on Day 38: Cricsheet's `T20` holds both T20 internationals and club T20s (told apart by `team_type`), and `IT20` holds 320 more internationals (regional qualifiers), so "T20I" needs a rule | Tests: the same measure under different filters, checked by hand on fixtures |
+| 43 | Filters times measures: one engine for many questions | Any stats question, part 1: the engine's query is a set of filters (player, bowler, opposition, venue, season, format, innings, phase, bowler type, batting hand) and one measure; every filter is a `Subject` field. Found on Day 38: Cricsheet's `T20` holds both T20 internationals and club T20s (told apart by `team_type`), and `IT20` holds 320 more internationals (regional qualifiers), so "T20I" needs a rule. `sr_vs_average` already compares like with like by format (D-042) | Tests: the same measure under different filters, checked by hand on fixtures |
 | 44 | — | Any stats question, part 2: more measures: batting (runs, average, boundary %, dot-ball %) and bowling (wickets, economy, bowling strike rate); each is a registry row, an engine function and renderer words | Tests on hand-computed fixtures; the registry check passes |
 | 45 | — | Any stats question, part 3: batter against bowler (head-to-head) and match results (winner, margin) | Tests on fixtures; the registry check passes |
 | 46 | Connecting the editor to the real engine | The real `FactSource`: registry metric → engine function | C2 test against the tiny DuckDB |
@@ -1919,7 +1919,7 @@ from 50 balls is wide; one from 5,000 balls is narrow.
 | 51 | — | N9.T2 part 1: head-to-head rates with shrinkage; baseline and counterfactual | Tests |
 | 52 | — | N9.T2 part 2: the simulated difference, its interval, "no detectable difference" | Tests |
 | 53 | Calibration (the weather-forecast example); the Brier score | Calibration run: fit on older seasons, test on the newest | Reliability plot and Brier score saved; journal: what "70% means 70%" means |
-| 54 | Review day — **M2** | The engine report, with M1 set against published career records for players whose matches are all in the data (E-026; Kohli's Tests matched on Day 38) | **M2:** engines on real data |
+| 54 | Review day — **M2** | The engine report, with M1 set against published career records for players whose matches are all in the data (E-026; Kohli's Tests matched on Day 38), and how many real ranges end within one replay step of 0 (L-034) | **M2:** engines on real data |
 
 ---
 

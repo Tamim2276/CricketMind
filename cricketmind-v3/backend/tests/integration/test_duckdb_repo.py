@@ -8,8 +8,14 @@ also had a wide (not a ball faced) and a no-ball (a ball faced), both from PHKD 
 import duckdb
 import pytest
 
-from cricketmind_v3.application.engines.m1_rates import dismissal_rate, strike_rate
+from cricketmind_v3.application.engines.m1_rates import (
+    dismissal_rate,
+    sr_vs_average,
+    strike_rate,
+)
 from cricketmind_v3.application.ports import FilterError
+from cricketmind_v3.domain import measures
+from cricketmind_v3.domain.balls import SOMEONE_ELSE, THE_BATTER, by_format, tally
 from cricketmind_v3.domain.facts import Fact
 from cricketmind_v3.domain.subject import CricketSubject
 from cricketmind_v3.infrastructure.duckdb_repo import DuckDBDeliveryRepository
@@ -149,3 +155,71 @@ def test_a_super_over_is_not_counted(db, repo):
 def test_the_same_question_gives_the_same_balls(repo):
     subject = CricketSubject(player="MD Shanaka")
     assert repo.deliveries(subject) == repo.deliveries(subject)
+
+
+# Day 39: everyone else, counted by DuckDB. All three matches, counted by hand from the
+# files: 705 balls faced, 1,034 runs off the bat, 35 batters out. Fakhar Zaman: 22 off
+# 17, out once.
+
+
+def test_everyone_else_comes_counted_with_the_names_given_way(repo):
+    others = repo.others(CricketSubject(player="Fakhar Zaman"))
+    assert measures.strike_rate(others) == Fact(value=100.0 * 1012 / 688, n=688)
+    assert measures.dismissal_rate(others) == Fact(value=34 / 688, n=688)
+    assert len(others) < 50  # alike balls counted together, not 700 rows
+    for ball in others:
+        assert ball.batter == THE_BATTER
+
+
+def test_a_non_strikers_run_out_is_not_the_batters(db, repo):
+    # the first ball of 1490709, AE Jones on strike: make it DN Wyatt's run out
+    db.execute(
+        "UPDATE deliveries SET player_out = non_striker, wicket_kind = 'run out', "
+        "wickets = 1 WHERE match_id = '1490709' AND innings = 1 AND over = 0 "
+        "AND ball_index = 1"
+    )
+    others = repo.others(CricketSubject(player="Fakhar Zaman"))
+    assert measures.dismissal_rate(others) == Fact(value=34 / 688, n=688)
+    run_outs = 0
+    for ball, times in others.items():
+        if ball.player_out == SOMEONE_ELSE:
+            run_outs += times
+    assert run_outs == 1
+
+
+def test_a_player_against_everyone_else(repo):
+    found = sr_vs_average(repo, CricketSubject(player="Fakhar Zaman"))
+    assert found.value == 100.0 * 22 / 17 - 100.0 * 1012 / 688  # 129.4 - 147.1
+    assert found.n == 17
+    low, high = found.interval
+    assert low < 0 < high  # 17 balls: not enough to call him slower
+
+
+def test_no_average_when_the_player_is_a_big_part_of_it(repo):
+    # Farhan's 44 balls against 661 of everyone else: 15 times, not 20
+    assert sr_vs_average(repo, CricketSubject(player=FARHAN)) is None
+
+
+def test_everyone_else_follows_the_filters(repo):
+    # his powerplay balls and everyone else's make all the powerplay balls
+    subject = CricketSubject(player="Fakhar Zaman", phase="powerplay")
+    his = measures.strike_rate(tally(repo.deliveries(subject))).n
+    theirs = measures.strike_rate(repo.others(subject)).n
+    all_of_them = repo.db.execute(
+        "SELECT COUNT(*) FROM deliveries WHERE phase = 'powerplay' AND wides = 0"
+    ).fetchone()[0]
+    assert his + theirs == all_of_them
+    assert repo.others(CricketSubject(player="DG Bradman")) == {}  # nobody of that name
+
+
+def test_everyone_else_is_split_by_format(db, repo):
+    # call the IPL match an ODI: Fakhar Zaman (T20 only) is set against T20 balls only.
+    # The IPL match: 238 balls faced, 417 runs. T20 balls of everyone else then:
+    # 705 - 238 - 17 = 450, runs 1,034 - 417 - 22 = 595
+    db.execute("UPDATE deliveries SET match_type = 'ODI' WHERE match_id = '1535463'")
+    subject = CricketSubject(player="Fakhar Zaman")
+    split = by_format(repo.others(subject))
+    assert measures.strike_rate(split["ODI"]) == Fact(value=100.0 * 417 / 238, n=238)
+    assert measures.strike_rate(split["T20"]) == Fact(value=100.0 * 595 / 450, n=450)
+    found = sr_vs_average(repo, subject)
+    assert found.value == 100.0 * 22 / 17 - 100.0 * 595 / 450
