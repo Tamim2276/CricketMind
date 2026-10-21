@@ -1113,3 +1113,39 @@ formats", not "the average batter under the same filters".
 - Limitations: L-033, L-034
 - Numbers: N-002 (the exact range confirmed), N-016
 - Section it feeds: Method (N8 M1; C4, C7)
+
+---
+
+## Day 40 — 2026-10-22 — M2: what a ground is like
+
+**Built:**
+- `domain/venues.py`: `InningsScore` and `Wicket`, and the rules: a standard match (the
+  format's usual length), a full innings (all out, every ball, or declared), the
+  first-innings average, the chasing share and pace or spin's share of the bowlers' wickets
+  (D-043).
+- Two new menu rows, `venue_chasing_win_share` and `venue_wicket_share`, with renderer words,
+  and a new unit, wickets (C3 floor 30, "1 wicket").
+- `application/ports.py`: `VenueRepository` and its fake. `application/engines/m2_venues.py`:
+  the three measures, each answering only its own menu row.
+- `infrastructure/duckdb_venues.py`: innings from `innings_scores`, wickets from
+  `deliveries_full`, counted by kind.
+**Found while building:** about 5% of T20 and 8% of ODI first innings were cut short (rain, or
+a match shortened before the start: Cricsheet keeps 20 scheduled overs, and only the balls
+show it). The Hundred is filed as "T20": at Lord's it is 61 of 127 first innings. Ties and
+no results have no winner, so they are not chases won or lost. Chinnaswamy is three grounds in
+the data (L-028).
+**Tested:** 25 new tests, 411 in all: the rules on hand-made innings, the engine on the fake,
+and the three fixture grounds counted by hand (Lord's 150 and the chase won; New Chandigarh
+243; Rawalpindi 215, and spin's 3 of 10 wickets once four bowlers are typed by hand; without
+them, 3 of 10 known is too few and there is no answer). Eleven deliberate mistakes were each
+caught.
+**Real data (read-only):** Mirpur T20: 149.6 (338 of 341 first innings), chasing won 55%,
+spin 41% of 3,987 wickets (N-017). Wankhede T20: 171.5, 57%, 32%. Galle Tests: spin 68%;
+Lord's Tests: 19%. Each ground takes about 0.2–0.3 s. Leaving out the cut-short innings
+changes Mirpur's average little (149.5 to 149.6).
+
+**For the paper:**
+- Decisions: D-043; D-010 updated (the new floor and the 80% rule)
+- Limitations: L-028 updated (Chinnaswamy), L-035
+- Numbers: N-017
+- Section it feeds: Method (N8 M2)

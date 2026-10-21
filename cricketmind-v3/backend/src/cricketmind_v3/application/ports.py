@@ -3,6 +3,7 @@ from typing import Protocol
 from cricketmind_v3.domain.balls import Ball
 from cricketmind_v3.domain.facts import Fact
 from cricketmind_v3.domain.subject import Subject
+from cricketmind_v3.domain.venues import InningsScore, Wicket
 
 
 class FilterError(ValueError):
@@ -80,3 +81,37 @@ class FakeFactSource:
         for fact in self.facts.values():
             found.append(fact.value)
         return tuple(found)
+
+
+class VenueRepository(Protocol):
+    """Anything that can tell what happened at a ground: the database, or a fake."""
+
+    def innings_at(self, venue: str, match_type: str) -> list[InningsScore]:
+        """Every innings played at the ground in that format, in match order."""
+
+    def wickets_at(self, venue: str, match_type: str) -> dict[Wicket, int]:
+        """Every wicket that fell at the ground in that format, counted by kind."""
+
+
+class FakeVenueRepository:
+    """Innings and wickets written in by hand, for tests, by ground and format."""
+
+    def __init__(self) -> None:
+        self.innings: dict[tuple[str, str], list[InningsScore]] = {}
+        self.wickets: dict[tuple[str, str], dict[Wicket, int]] = {}
+
+    def add_innings(
+        self, venue: str, match_type: str, scores: list[InningsScore]
+    ) -> None:
+        self.innings[(venue, match_type)] = scores
+
+    def add_wickets(
+        self, venue: str, match_type: str, counts: dict[Wicket, int]
+    ) -> None:
+        self.wickets[(venue, match_type)] = counts
+
+    def innings_at(self, venue: str, match_type: str) -> list[InningsScore]:
+        return list(self.innings.get((venue, match_type), []))
+
+    def wickets_at(self, venue: str, match_type: str) -> dict[Wicket, int]:
+        return dict(self.wickets.get((venue, match_type), {}))

@@ -130,7 +130,7 @@ Template:
 ## D-010 — Design parameters (to revisit with data)
 - Date: 2026-10-16
 - Decision: evidence floor n_min = 30 balls (10 innings and 20 reviews added on Day 20,
-  D-030); bridge acceptance κ ≥ 0.61 ("substantial", Landis
+  D-030; 30 wickets, and bowler types known for 80% of the wickets in a share, on Day 40, D-043); bridge acceptance κ ≥ 0.61 ("substantial", Landis
   and Koch 1977); posture metric acceptance AUC ≥ 0.75; at most 4 active agents; at most 2
   retries and 2 regenerations.
 - Why: reasonable starting points. The paper must call them design parameters, not tuned values.
@@ -695,3 +695,29 @@ Template:
   (Day 43; a question that names no format would still mix).
 - Status: built (Day 39)
 - Paper section: Method (N8 M1; C7)
+
+## D-043 — M2, a ground's profile: which matches, innings and wickets count
+- Date: 2026-10-22
+- Decision: M2 gives three numbers for a ground in one format, each a menu row:
+  `venue_first_innings_avg`, `venue_chasing_win_share` (new) and `venue_wicket_share`
+  (new; pace or spin). Only standard matches count: the format's usual length (120 balls an
+  innings in a T20, 300 in an ODI; any length in a Test), so The Hundred and matches cut
+  short before the start are left out. A first innings counts when it ran its course: all
+  out, every scheduled ball batted, or declared. The chasing share is over limited-overs
+  matches with a winner, rain-rule results included; ties and no results are left out, and
+  Tests have none. The wicket share is over the bowlers' wickets (bowled, caught, caught and
+  bowled, lbw, stumped, hit wicket) whose bowler type is known, and needs that type for 80%
+  of them. A new unit, wickets, has a C3 floor of 30. The ground is named by its key from
+  D-038 and the format by Cricsheet's match type, until Day 43; a subject with any other
+  field filled (a team, a player) gets no answer.
+- Why: at Lord's, 61 of 127 T20 first innings are The Hundred's 100 balls; across the data,
+  about 5% of T20 and 8% of ODI first innings were cut short (rain, reduced matches). At
+  Mirpur the bowler type is known for 99.7% of the wickets. On real grounds the numbers look
+  right: spin takes 68% of the Test wickets at Galle and 19% at Lord's.
+- Alternatives considered: every innings (rain pulls the average down); a separate rain
+  flag (Cricsheet does not mark a reduced match before the start; the length rule finds it);
+  a share over all wickets (run outs are nobody's bowling); unknown types counted as a third
+  group (the share would shrink as coverage falls). The 30-wicket floor and the 80% rule are
+  design parameters (D-010).
+- Status: built (Day 40)
+- Paper section: Method (N8 M2)

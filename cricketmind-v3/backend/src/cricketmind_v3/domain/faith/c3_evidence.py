@@ -6,7 +6,7 @@ from cricketmind_v3.domain.registry import lookup
 from cricketmind_v3.domain.render import counted
 
 # the smallest sample a count may stand on without a warning (design parameters, D-030)
-FLOORS = {"balls": 30, "innings": 10, "reviews": 20}
+FLOORS = {"balls": 30, "innings": 10, "reviews": 20, "wickets": 30}
 
 # ways to warn the reader; no digits, so they pass C5
 QUALIFIERS = (

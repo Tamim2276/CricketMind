@@ -21,6 +21,8 @@ METRICS = {
         1,
     ),
     "venue_first_innings_avg": ("a first-innings average of {} runs", "fixed", 0),
+    "venue_chasing_win_share": ("a chasing win rate of {}", "percent", 0),
+    "venue_wicket_share": ("{} of the wickets", "percent", 0),
     "workload_ratio_flag": ("a workload ratio of {}", "fixed", 2),
     "review_overturn_rate": ("a review overturn rate of {}", "percent", 0),
     "weight_transfer": ("a weight transfer of {}", "fixed", 2),
@@ -33,7 +35,7 @@ METRICS = {
 }
 
 # "1 ball", "1 review", but "1 innings"
-ONE = {"balls": "ball", "innings": "innings", "reviews": "review"}
+ONE = {"balls": "ball", "innings": "innings", "reviews": "review", "wickets": "wicket"}
 
 
 def counted(n: int, unit: str) -> str:

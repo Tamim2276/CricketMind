@@ -186,3 +186,4 @@ def test_counted():
     assert counted(1, "balls") == "1 ball"
     assert counted(1, "innings") == "1 innings"
     assert counted(1, "reviews") == "1 review"
+    assert counted(1, "wickets") == "1 wicket"  # Day 40

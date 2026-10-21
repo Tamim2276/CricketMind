@@ -63,7 +63,9 @@ def test_all_ten_claim_types_are_on_the_menu():
         "sr_difference",
         "sr_vs_average",
         "strike_rate",
+        "venue_chasing_win_share",
         "venue_first_innings_avg",
+        "venue_wicket_share",
         "weight_transfer",
         "workload_ratio_flag",
     ]
@@ -233,6 +235,11 @@ def test_most_counts_are_balls():
 def test_a_venue_average_counts_innings_and_overturns_count_reviews():
     assert lookup("venue_first_innings_avg").unit == "innings"
     assert lookup("review_overturn_rate").unit == "reviews"
+
+
+def test_a_wicket_share_counts_wickets():
+    assert lookup("venue_wicket_share").unit == "wickets"
+    assert lookup("venue_chasing_win_share").unit == "innings"
 
 
 def test_an_unknown_unit_is_refused():

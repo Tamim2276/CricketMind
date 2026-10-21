@@ -1,3 +1,5 @@
+import dataclasses
+
 from cricketmind_v3.domain.claims import Claim
 from cricketmind_v3.domain.faith.c3_evidence import check_c3
 from cricketmind_v3.domain.faith.gate import Context
@@ -85,6 +87,30 @@ def test_a_venue_average_needs_ten_innings():
         ),
     ]
     assert reasons(venue_average(10), "{c1}.") == []
+
+
+def test_a_wicket_share_needs_thirty_wickets():
+    # Day 40: spin's share of the wickets at a ground
+    share = Claim(
+        id="c1",
+        kind=Provenance.DESCRIPTIVE,
+        metric="venue_wicket_share",
+        subject=CricketSubject(
+            venue="Shere Bangla National Stadium",
+            match_format="T20",
+            bowler_type="spin",
+        ),
+        value=0.41,
+        n=29,
+        source="N8.M2",
+    )
+    assert reasons(share, "{c1}.") == [
+        (
+            "the number rests on only 29 wickets (the floor is 30); "
+            "say so, e.g. 'on only a few wickets'"
+        ),
+    ]
+    assert reasons(dataclasses.replace(share, n=30), "{c1}.") == []
 
 
 def test_reviews_need_twenty():

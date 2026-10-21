@@ -9,7 +9,7 @@ class RegistryError(ValueError):
 
 
 # what the sample size n of a count can count
-UNITS = ("balls", "innings", "reviews")
+UNITS = ("balls", "innings", "reviews", "wickets")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -76,6 +76,20 @@ CLAIM_TYPES = (
         source="N8.M2",
         required_keys=("venue", "match_format"),
         unit="innings",
+    ),
+    ClaimType(
+        name="venue_chasing_win_share",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M2",
+        required_keys=("venue", "match_format"),
+        unit="innings",  # the chases that ended with a winner
+    ),
+    ClaimType(
+        name="venue_wicket_share",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M2",
+        required_keys=("venue", "match_format", "bowler_type"),
+        unit="wickets",  # the bowlers' wickets whose bowler type is known
     ),
     ClaimType(
         name="workload_ratio_flag",
