@@ -72,7 +72,9 @@ def venue_average(n: int) -> Claim:
         id="c1",
         kind=Provenance.DESCRIPTIVE,
         metric="venue_first_innings_avg",
-        subject=CricketSubject(venue="Wankhede Stadium", match_format="T20"),
+        subject=CricketSubject(
+            venue="Wankhede Stadium", match_format="T20", gender="male"
+        ),
         value=167.0,
         n=n,
         source="N8.M2",
@@ -98,6 +100,7 @@ def test_a_wicket_share_needs_thirty_wickets():
         subject=CricketSubject(
             venue="Shere Bangla National Stadium",
             match_format="T20",
+            gender="male",
             bowler_type="spin",
         ),
         value=0.41,

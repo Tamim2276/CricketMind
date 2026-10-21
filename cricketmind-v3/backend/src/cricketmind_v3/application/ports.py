@@ -88,35 +88,40 @@ class FakeFactSource:
 class VenueRepository(Protocol):
     """Anything that can tell what happened at a ground: the database, or a fake."""
 
-    def innings_at(self, venue: str, match_type: str) -> list[InningsScore]:
+    def innings_at(
+        self, venue: str, match_type: str, gender: str
+    ) -> list[InningsScore]:
         """Every innings played at the ground in that format, in match order."""
 
-    def wickets_at(self, venue: str, match_type: str) -> dict[Wicket, int]:
+    def wickets_at(self, venue: str, match_type: str, gender: str) -> dict[Wicket, int]:
         """Every wicket that fell at the ground in that format, counted by kind."""
 
 
 class FakeVenueRepository:
-    """Innings and wickets written in by hand, for tests, by ground and format."""
+    """Innings and wickets written in by hand, for tests, by ground, format and
+    gender."""
 
     def __init__(self) -> None:
-        self.innings: dict[tuple[str, str], list[InningsScore]] = {}
-        self.wickets: dict[tuple[str, str], dict[Wicket, int]] = {}
+        self.innings: dict[tuple[str, str, str], list[InningsScore]] = {}
+        self.wickets: dict[tuple[str, str, str], dict[Wicket, int]] = {}
 
     def add_innings(
-        self, venue: str, match_type: str, scores: list[InningsScore]
+        self, venue: str, match_type: str, gender: str, scores: list[InningsScore]
     ) -> None:
-        self.innings[(venue, match_type)] = scores
+        self.innings[(venue, match_type, gender)] = scores
 
     def add_wickets(
-        self, venue: str, match_type: str, counts: dict[Wicket, int]
+        self, venue: str, match_type: str, gender: str, counts: dict[Wicket, int]
     ) -> None:
-        self.wickets[(venue, match_type)] = counts
+        self.wickets[(venue, match_type, gender)] = counts
 
-    def innings_at(self, venue: str, match_type: str) -> list[InningsScore]:
-        return list(self.innings.get((venue, match_type), []))
+    def innings_at(
+        self, venue: str, match_type: str, gender: str
+    ) -> list[InningsScore]:
+        return list(self.innings.get((venue, match_type, gender), []))
 
-    def wickets_at(self, venue: str, match_type: str) -> dict[Wicket, int]:
-        return dict(self.wickets.get((venue, match_type), {}))
+    def wickets_at(self, venue: str, match_type: str, gender: str) -> dict[Wicket, int]:
+        return dict(self.wickets.get((venue, match_type, gender), {}))
 
 
 class WorkloadRepository(Protocol):
@@ -147,3 +152,23 @@ class FakeWorkloadRepository:
 
     def data_until(self) -> date:
         return self.until
+
+
+class ReviewRepository(Protocol):
+    """Anything that can count a team's DRS reviews: the database, or a fake (Day 42)."""
+
+    def decisions(self, team: str, gender: str) -> dict[str, int]:
+        """How the team's reviews ended: "upheld" -> 81, "struck down" -> 219."""
+
+
+class FakeReviewRepository:
+    """Review counts written in by hand, for tests."""
+
+    def __init__(self) -> None:
+        self.teams: dict[tuple[str, str], dict[str, int]] = {}
+
+    def add(self, team: str, gender: str, decisions: dict[str, int]) -> None:
+        self.teams[(team, gender)] = decisions
+
+    def decisions(self, team: str, gender: str) -> dict[str, int]:
+        return dict(self.teams.get((team, gender), {}))

@@ -7,7 +7,7 @@ If the replays sometimes flip the answer (the range holds 0), C4 makes the words
 import random
 from collections.abc import Callable
 
-from cricketmind_v3.domain.balls import Ball, by_format
+from cricketmind_v3.domain.balls import Ball, by_format_and_gender
 from cricketmind_v3.domain.facts import Fact
 
 RESAMPLES = 20_000  # replays behind every range (as for N-002)
@@ -84,9 +84,10 @@ def versus_average(
 ) -> Fact | None:
     """The player's measure minus everyone else's, with its 95% range.
 
-    Like with like: the average is everyone else's measure in each format, mixed in the
-    player's own shares. Kohli faced Bumrah only in T20s, so he is set against other
-    batters' T20 balls, not their Test balls (found on Day 39).
+    Like with like: the average is everyone else's measure in each format, men's or
+    women's, mixed in the player's own shares. Kohli faced Bumrah only in T20s, so he is
+    set against other batters' T20 balls, not their Test balls (found on Day 39), and
+    against men's balls only (Day 42).
 
     Only the player's balls are replayed: the average is taken as a fixed number, which
     is fair only when it rests on many times more balls (FIXED_ENOUGH).
@@ -113,16 +114,18 @@ def average_on_his_mix(
 ) -> float | None:
     """Everyone else's measure in each of the player's formats, in his shares.
 
+    A format here is a format of men's or of women's cricket: ("T20", "male").
+
     None when a format of his has too few balls of everyone else's to count as fixed.
     """
     mine = measure(player)
-    theirs_by_format = by_format(everyone_else)
+    theirs_by_format = by_format_and_gender(everyone_else)
     average = 0.0
-    for match_type, his in by_format(player).items():
+    for kind, his in by_format_and_gender(player).items():
         his_part = measure(his)
         if his_part is None:
             continue  # only wides in this format: it carries no share
-        theirs = measure(theirs_by_format.get(match_type, {}))
+        theirs = measure(theirs_by_format.get(kind, {}))
         if theirs is None or theirs.n < FIXED_ENOUGH * his_part.n:
             return None  # the average is not much surer than the player here
         share = his_part.n / mine.n  # 1.0 when he played one format only

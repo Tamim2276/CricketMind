@@ -33,7 +33,7 @@ KOHLI_VS_PULL = dataclasses.replace(KOHLI, other_shot="Pull")
 KOHLI_PULL = dataclasses.replace(KOHLI, shot="Pull", k=6)
 KOHLI_SPIN = CricketSubject(player="V Kohli", phase="powerplay", bowler_type="spin")
 ROHIT = dataclasses.replace(KOHLI, player="RG Sharma")
-VENUE = CricketSubject(venue="Wankhede Stadium", match_format="T20")
+VENUE = CricketSubject(venue="Wankhede Stadium", match_format="T20", gender="male")
 
 ROSTER = {
     "N11b": ("strike_rate", "sr_vs_average", "sr_difference", "p_dismissal_within_k"),

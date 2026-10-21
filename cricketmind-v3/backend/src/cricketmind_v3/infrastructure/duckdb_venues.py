@@ -9,7 +9,9 @@ class DuckDBVenueRepository:
     def __init__(self, db) -> None:
         self.db = db
 
-    def innings_at(self, venue: str, match_type: str) -> list[InningsScore]:
+    def innings_at(
+        self, venue: str, match_type: str, gender: str
+    ) -> list[InningsScore]:
         rows = self.db.execute(
             """
             SELECT s.match_type, m.overs * m.balls_per_over, s.innings, s.runs,
@@ -17,10 +19,10 @@ class DuckDBVenueRepository:
             FROM innings_scores s
             JOIN matches m ON m.match_id = s.match_id
             JOIN innings i ON i.match_id = s.match_id AND i.innings = s.innings
-            WHERE s.venue_key = ? AND s.match_type = ?
+            WHERE s.venue_key = ? AND s.match_type = ? AND s.gender = ?
             ORDER BY s.date, s.match_id, s.innings
             """,
-            [venue, match_type],
+            [venue, match_type, gender],
         ).fetchall()
         scores = []
         for row in rows:
@@ -39,7 +41,7 @@ class DuckDBVenueRepository:
             )
         return scores
 
-    def wickets_at(self, venue: str, match_type: str) -> dict[Wicket, int]:
+    def wickets_at(self, venue: str, match_type: str, gender: str) -> dict[Wicket, int]:
         rows = self.db.execute(
             """
             SELECT d.match_type, m.overs * m.balls_per_over AS scheduled,
@@ -47,11 +49,11 @@ class DuckDBVenueRepository:
             FROM deliveries_full d
             JOIN match_venues v ON v.match_id = d.match_id
             JOIN matches m ON m.match_id = d.match_id
-            WHERE v.venue_key = ? AND d.match_type = ?
+            WHERE v.venue_key = ? AND d.match_type = ? AND d.gender = ?
               AND d.wicket_kind IS NOT NULL AND NOT d.super_over
             GROUP BY d.match_type, scheduled, d.bowler_type, d.wicket_kind
             """,
-            [venue, match_type],
+            [venue, match_type, gender],
         ).fetchall()
         counts = {}
         for kind, scheduled, bowler_type, wicket_kind, times in rows:

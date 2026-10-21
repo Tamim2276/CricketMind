@@ -116,6 +116,7 @@ def v2_balls(runs: int, outs: int, balls: int = 50) -> list[Ball]:
         made.append(
             Ball(
                 match_type="T20",
+                gender="male",
                 batter="V Kohli",
                 runs_batter=scored,
                 wides=0,

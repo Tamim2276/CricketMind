@@ -1186,3 +1186,43 @@ four weeks: 4.0). Ten deliberate mistakes were each caught.
 - Numbers: N-018
 - Related work: Gabbett (2016), to check before citing
 - Section it feeds: Method (N8 M3); Limitations
+
+---
+
+## Day 42 — 2026-10-22 — M4: DRS reviews; and men's and women's cricket kept apart
+
+**Built:**
+- `domain/reviews.py`: the overturn rate (the decision changed, over the reviews decided;
+  umpire's call stood; a technical failure left out). `application/engines/m4_reviews.py`,
+  the `ReviewRepository` port and fake, `infrastructure/duckdb_reviews.py` (D-045).
+- Gender, everywhere it matters (D-046): `CricketSubject.gender`; a `Ball` carries its
+  gender; like with like is by format and gender; M1 filters by gender; M2 and M4 need it.
+**Found:** a review in Cricsheet holds who asked, the umpire, the batter and the decision, but no
+appeal kind, and the dismissal is known only when the batter ended up out. So a rate by
+dismissal type would be lopsided (batters' reviews 0%, fielders' 100%); the menu row no longer
+offers it. The archive's 17,153 reviews: 4,704 upheld, 12,447 struck down (2,094 on umpire's
+call), 2 technical failures. Cricsheet's own article on review corrections sits behind a
+browser check (L-038).
+**Found, bigger:** "India" names the men's and the women's team alike, and Days 39–40 mixed them:
+Lord's men's T20 first-innings average is 171.1, women's 146.4, mixed 167.7; T20 strike rates
+are 125.8 for men and 96.9 for women, so Kohli against "everyone else" read +10.9 and is +8.6
+against other men. N-016 and N-017 are corrected.
+**Found, about the checks themselves:** two of today's deliberate mistakes kept a file the same
+length ("==" to "!=", "gender" to "'male'"). Python trusts its compiled copy of a file while the
+size and modification second match, so after the file was put back the broken copy kept
+running: later tests failed for the wrong reason, and a real-data run printed India's overturn
+rate as 72.7% instead of 27.3%. The source was right all along. Every deliberate mistake of Days
+38–42 (52 of them) was re-run with no compiled copies: all caught, and all tests pass after.
+**Tested:** 442 tests (11 new; the Day 39–40 tests updated for gender, with hand counts: the two
+men's fixture matches hold 479 balls faced and 756 runs).
+**Real data (read-only):** overturn rates, men: India 27.3% of 1,063 reviews, Bangladesh 27.7% of
+772, Pakistan 24.1% of 1,239 (N-019). Batters' reviews change the decision 35.0% of the time,
+fielders' 21.4% (L-039).
+**For the next v4 revision:** M4 is "by team", not "by team and dismissal type"; subjects carry a
+gender.
+
+**For the paper:**
+- Decisions: D-045, D-046; D-042 and D-043 statuses
+- Limitations: L-038, L-039; L-035 updated
+- Numbers: N-016 and N-017 corrected, N-019
+- Section it feeds: Method (N8 M4; subjects); Data

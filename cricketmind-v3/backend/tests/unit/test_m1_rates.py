@@ -27,6 +27,7 @@ COVER_DRIVE_VS_PULL = dataclasses.replace(COVER_DRIVE, other_shot="Pull")
 def ball(runs, out=None, kind=None, batter="V Kohli") -> Ball:
     return Ball(
         match_type="T20",
+        gender="male",
         batter=batter,
         runs_batter=runs,
         wides=0,

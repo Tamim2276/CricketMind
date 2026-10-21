@@ -15,7 +15,12 @@ from cricketmind_v3.application.engines.m1_rates import (
 )
 from cricketmind_v3.application.ports import FilterError
 from cricketmind_v3.domain import measures
-from cricketmind_v3.domain.balls import SOMEONE_ELSE, THE_BATTER, by_format, tally
+from cricketmind_v3.domain.balls import (
+    SOMEONE_ELSE,
+    THE_BATTER,
+    by_format_and_gender,
+    tally,
+)
 from cricketmind_v3.domain.facts import Fact
 from cricketmind_v3.domain.subject import CricketSubject
 from cricketmind_v3.infrastructure.duckdb_repo import DuckDBDeliveryRepository
@@ -159,7 +164,8 @@ def test_the_same_question_gives_the_same_balls(repo):
 
 # Day 39: everyone else, counted by DuckDB. All three matches, counted by hand from the
 # files: 705 balls faced, 1,034 runs off the bat, 35 batters out. Fakhar Zaman: 22 off
-# 17, out once.
+# 17, out once. The Lord's match is women's (226 balls faced, 278 runs): the two men's
+# matches hold 479 and 756 (Day 42).
 
 
 def test_everyone_else_comes_counted_with_the_names_given_way(repo):
@@ -188,15 +194,16 @@ def test_a_non_strikers_run_out_is_not_the_batters(db, repo):
 
 
 def test_a_player_against_everyone_else(repo):
+    # men only (Day 42): 479 - 17 = 462 balls, 756 - 22 = 734 runs
     found = sr_vs_average(repo, CricketSubject(player="Fakhar Zaman"))
-    assert found.value == 100.0 * 22 / 17 - 100.0 * 1012 / 688  # 129.4 - 147.1
+    assert found.value == 100.0 * 22 / 17 - 100.0 * 734 / 462  # 129.4 - 158.9
     assert found.n == 17
     low, high = found.interval
     assert low < 0 < high  # 17 balls: not enough to call him slower
 
 
 def test_no_average_when_the_player_is_a_big_part_of_it(repo):
-    # Farhan's 44 balls against 661 of everyone else: 15 times, not 20
+    # Farhan's 44 balls against 435 of the other men's: 10 times, not 20
     assert sr_vs_average(repo, CricketSubject(player=FARHAN)) is None
 
 
@@ -212,14 +219,22 @@ def test_everyone_else_follows_the_filters(repo):
     assert repo.others(CricketSubject(player="DG Bradman")) == {}  # nobody of that name
 
 
-def test_everyone_else_is_split_by_format(db, repo):
-    # call the IPL match an ODI: Fakhar Zaman (T20 only) is set against T20 balls only.
-    # The IPL match: 238 balls faced, 417 runs. T20 balls of everyone else then:
-    # 705 - 238 - 17 = 450, runs 1,034 - 417 - 22 = 595
+def test_everyone_else_is_split_by_format_and_gender(db, repo):
+    # call the IPL match an ODI. The IPL match: 238 balls faced, 417 runs; the women's
+    # match at Lord's: 226 and 278. Everyone else's men's T20 balls are then
+    # Rawalpindi's alone: 241 - 17 = 224 balls, 339 - 22 = 317 runs
     db.execute("UPDATE deliveries SET match_type = 'ODI' WHERE match_id = '1535463'")
-    subject = CricketSubject(player="Fakhar Zaman")
-    split = by_format(repo.others(subject))
-    assert measures.strike_rate(split["ODI"]) == Fact(value=100.0 * 417 / 238, n=238)
-    assert measures.strike_rate(split["T20"]) == Fact(value=100.0 * 595 / 450, n=450)
-    found = sr_vs_average(repo, subject)
-    assert found.value == 100.0 * 22 / 17 - 100.0 * 595 / 450
+    split = by_format_and_gender(repo.others(CricketSubject(player="Fakhar Zaman")))
+    assert measures.strike_rate(split[("ODI", "male")]) == Fact(
+        value=100.0 * 417 / 238, n=238
+    )
+    assert measures.strike_rate(split[("T20", "male")]) == Fact(
+        value=100.0 * 317 / 224, n=224
+    )
+    assert measures.strike_rate(split[("T20", "female")]) == Fact(
+        value=100.0 * 278 / 226, n=226
+    )
+    # Hassan Nawaz (19 off 9 at Rawalpindi) is set against the other men's T20 balls
+    # only: 241 - 9 = 232 balls, 339 - 19 = 320 runs
+    found = sr_vs_average(repo, CricketSubject(player="Hassan Nawaz"))
+    assert found.value == 100.0 * 19 / 9 - 100.0 * 320 / 232

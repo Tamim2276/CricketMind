@@ -75,21 +75,21 @@ CLAIM_TYPES = (
         name="venue_first_innings_avg",
         provenance=Provenance.DESCRIPTIVE,
         source="N8.M2",
-        required_keys=("venue", "match_format"),
+        required_keys=("venue", "match_format", "gender"),
         unit="innings",
     ),
     ClaimType(
         name="venue_chasing_win_share",
         provenance=Provenance.DESCRIPTIVE,
         source="N8.M2",
-        required_keys=("venue", "match_format"),
+        required_keys=("venue", "match_format", "gender"),
         unit="innings",  # the chases that ended with a winner
     ),
     ClaimType(
         name="venue_wicket_share",
         provenance=Provenance.DESCRIPTIVE,
         source="N8.M2",
-        required_keys=("venue", "match_format", "bowler_type"),
+        required_keys=("venue", "match_format", "gender", "bowler_type"),
         unit="wickets",  # the bowlers' wickets whose bowler type is known
     ),
     ClaimType(
@@ -102,8 +102,9 @@ CLAIM_TYPES = (
         name="review_overturn_rate",
         provenance=Provenance.DESCRIPTIVE,
         source="N8.M4",
-        required_keys=(),
-        required_any=("team", "dismissal_type"),
+        # by team only: Cricsheet keeps no appeal kind, and the dismissal is known only
+        # when the batter ended up out, so a rate by kind would be lopsided (Day 42)
+        required_keys=("team", "gender"),
         unit="reviews",
     ),
     # measured from the clip (N6); the clip itself is a Claim rule (Day 7)

@@ -15,9 +15,10 @@ from cricketmind_v3.domain.measures import strike_rate
 from tests.examples import V2_COVER_DRIVE, V2_PULL, v2_runs
 
 
-def ball(runs=0, wides=0, batter="V Kohli", match_type="T20") -> Ball:
+def ball(runs=0, wides=0, batter="V Kohli", match_type="T20", gender="male") -> Ball:
     return Ball(
         match_type=match_type,
+        gender=gender,
         batter=batter,
         runs_batter=runs,
         wides=wides,
@@ -240,3 +241,15 @@ def test_twenty_times_the_balls_in_each_format():
         ball(1, batter="x", match_type="ODI"): 399,  # under 20 x 20
     }
     assert average_on_his_mix(player, everyone_else, strike_rate) is None
+
+
+def test_a_mans_balls_are_set_against_mens_balls_only():
+    # Day 42: everyone else's T20 balls hold women's too (strike rate 96.9 against
+    # 125.8 in the real data); a man is set against men only
+    player = {ball(1): 20}  # 100.0
+    everyone_else = {
+        ball(1, batter="x"): 400,  # men: 100.0
+        ball(1, batter="x", gender="female"): 200,
+        ball(0, batter="x", gender="female"): 200,  # women: 50.0
+    }
+    assert average_on_his_mix(player, everyone_else, strike_rate) == 100.0

@@ -1610,9 +1610,9 @@ The 9 types of Table 4 in the v3 document, plus `sr_vs_average` for the tone che
 | `strike_rate` | D | N8.M1 | player |
 | `dismissal_rate` | D | N8.M1 | player |
 | `sr_difference` | D | N8.M1 | player, shot, other_shot |
-| `venue_first_innings_avg` | D | N8.M2 | venue, match_format |
+| `venue_first_innings_avg` | D | N8.M2 | venue, match_format (and gender since Day 42, D-046) |
 | `workload_ratio_flag` | D | N8.M3 | bowler, date |
-| `review_overturn_rate` | D | N8.M4 | team or dismissal_type |
+| `review_overturn_rate` | D | N8.M4 | team or dismissal_type (team and gender since Day 42, D-045) |
 | `weight_transfer` | M | N6 | a clip (the Day 7 rule) |
 | `p_dismissal_within_k` | P | N9.T1 | player, shot, phase, bowler_type, k |
 | `matchup_difference` | P | N9.T2 | player, bowler, other_bowler, phase, k |
@@ -1908,7 +1908,7 @@ from 50 balls is wide; one from 5,000 balls is narrow.
 | 40 | — | M2: venue profile (first-innings average, chasing wins, pace and spin wicket share) | Tests |
 | 41 | The workload ratio, and why scientists argue about it | M3: balls bowled in 7 and 28 days, the ratio, a flag (never a probability) | Test with a made-up bowler calendar |
 | 42 | — | M4: DRS reviews, counts and overturn rate | Tests |
-| 43 | Filters times measures: one engine for many questions | Any stats question, part 1: the engine's query is a set of filters (player, bowler, opposition, venue, season, format, innings, phase, bowler type, batting hand) and one measure; every filter is a `Subject` field. Found on Day 38: Cricsheet's `T20` holds both T20 internationals and club T20s (told apart by `team_type`), and `IT20` holds 320 more internationals (regional qualifiers), so "T20I" needs a rule. `sr_vs_average` already compares like with like by format (D-042). M2's ground profile takes the season filter too (L-035) | Tests: the same measure under different filters, checked by hand on fixtures |
+| 43 | Filters times measures: one engine for many questions | Any stats question, part 1: the engine's query is a set of filters (player, bowler, opposition, venue, season, format, innings, phase, bowler type, batting hand) and one measure; every filter is a `Subject` field. Found on Day 38: Cricsheet's `T20` holds both T20 internationals and club T20s (told apart by `team_type`), and `IT20` holds 320 more internationals (regional qualifiers), so "T20I" needs a rule. `sr_vs_average` already compares like with like by format (D-042). M2's ground profile takes the season filter too (L-035); M4 takes the side (batting or fielding, L-039); gender is a filter already (D-046) | Tests: the same measure under different filters, checked by hand on fixtures |
 | 44 | — | Any stats question, part 2: more measures: batting (runs, average, boundary %, dot-ball %) and bowling (wickets, economy, bowling strike rate); each is a registry row, an engine function and renderer words | Tests on hand-computed fixtures; the registry check passes |
 | 45 | — | Any stats question, part 3: batter against bowler (head-to-head) and match results (winner, margin) | Tests on fixtures; the registry check passes |
 | 46 | Connecting the editor to the real engine | The real `FactSource`: registry metric → engine function | C2 test against the tiny DuckDB |
@@ -1939,7 +1939,7 @@ writes the report → N13 shows it.
 | 55 | LangGraph basics: state, nodes, edges, reducers | `application/graph/state.py`; the full skeleton with every node as a stub (node name = function name) | Test: the graph compiles and runs end to end |
 | 56 | Conditional edges: a branch in the flowchart | The entry branch (clip or text only); N3 with a simple rule-based parser first | Tests for both paths |
 | 57 | What a local LLM is; JSON-schema output | `LLM` port, `OllamaLLM` adapter, `FakeLLM` | Test with `FakeLLM`; a manual run with qwen2.5:7b |
-| 58 | — | N3 for real: structured parse → Pydantic; an unknown player gets a clear status, and a name several players share (161 names, L-031) gets a question back, never a guess: the subject then carries the chosen register id. Grounds are found the same way ("Mirpur" → Shere Bangla National Stadium), with a ground's other names merged first (L-028: Chinnaswamy is three keys). A second adapter, `LangChainLLM` (you install `langchain-ollama`), behind the same `LLM` port: nothing else changes (D-024) | Tests with the fake; 5 manual queries with each adapter |
+| 58 | — | N3 for real: structured parse → Pydantic; an unknown player gets a clear status, and a name several players share (161 names, L-031) gets a question back, never a guess: the subject then carries the chosen register id. Grounds are found the same way ("Mirpur" → Shere Bangla National Stadium), with a ground's other names merged first (L-028: Chinnaswamy is three keys). A team or ground question that names no gender is read as men's, and the read-back says so (D-046). A second adapter, `LangChainLLM` (you install `langchain-ollama`), behind the same `LLM` port: nothing else changes (D-024) | Tests with the fake; 5 manual queries with each adapter |
 | 59 | Sorting questions by kind; a fair comparison | N3 also sorts each question: stats, prediction, video, rules, or can't-check. Every answer starts with "I read this as: …" so a user can see a misunderstanding. A can't-check question (injuries, salaries) gets an honest answer that says what CricketMind can answer instead. Then both adapters read the same questions with the same model, prompt and schema | Tests on 30 example questions, 6 of each kind, each asked 3 ways; both adapters scored on them, the better one stays (a tie keeps `OllamaLLM`, the simpler one); D-024 updated with the numbers |
 | 60 | — | N6 Shot DNA (stub perception); N7a subject-keyed retrieval; N7b context | Tests |
 | 61 | — | N8 and N9 as graph nodes; the sanctioned fact surface | Tests |

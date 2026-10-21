@@ -19,6 +19,7 @@ class CricketSubject(Subject):
     other_bowler: str | None = None  # "Rashid Khan", the other side of a comparison
     venue: str | None = None  # "Wankhede Stadium"
     match_format: str | None = None  # "T20"
+    gender: str | None = None  # "male" or "female", as Cricsheet writes it (Day 42)
     team: str | None = None  # "India"
     dismissal_type: str | None = None  # "lbw"
     date: str | None = None  # "2024-04-12"

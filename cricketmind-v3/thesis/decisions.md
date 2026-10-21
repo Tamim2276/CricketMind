@@ -694,7 +694,7 @@ Template:
   (too few balls for the 20 times rule); replaying everyone else's millions of balls as well
   (slow, and changes almost nothing at 20 times the balls); relying on a format filter alone
   (Day 43; a question that names no format would still mix).
-- Status: built (Day 39)
+- Status: built (Day 39); like with like is by format and gender since Day 42 (D-046)
 - Paper section: Method (N8 M1; C7)
 
 ## D-043 — M2, a ground's profile: which matches, innings and wickets count
@@ -720,7 +720,8 @@ Template:
   a share over all wickets (run outs are nobody's bowling); unknown types counted as a third
   group (the share would shrink as coverage falls). The 30-wicket floor and the 80% rule are
   design parameters (D-010).
-- Status: built (Day 40)
+- Status: built (Day 40); a ground's men's and women's matches kept apart since Day 42
+  (D-046): at Lord's the men's T20 first innings are 90, 29 of them The Hundred's
 - Paper section: Method (N8 M2)
 
 ## D-044 — M3, a bowler's workload: what counts, and what the flag may say
@@ -750,3 +751,44 @@ Template:
   flag (no cut-off with evidence behind it yet).
 - Status: built (Day 41). M3 reads the deliveries, not `bowler_days`.
 - Paper section: Method (N8 M3); Limitations (L-003, L-036, L-037)
+
+## D-045 — M4, DRS reviews: by team, and never by dismissal type
+- Date: 2026-10-22
+- Decision: M4 gives a team's review overturn rate, men's or women's: the reviews whose
+  decision was changed ("upheld") over those decided ("upheld" or "struck down"). Umpire's
+  call is a decision that stood. A technical failure decided nothing and is left out. A
+  team's batting and fielding reviews are counted together. There is no rate by dismissal
+  type: the menu row now needs a team and a gender, and a dismissal type is an extra field
+  that gets no answer.
+- Why: Cricsheet keeps no appeal kind with a review; the dismissal is known only when the
+  batter ended up out. A batting side's review that succeeded, and a fielding side's that
+  failed, leave no dismissal, so a rate by kind would see only the batters' failures and
+  the fielders' successes: 0% and 100%. The archive holds 17,153 reviews: 4,704 upheld,
+  12,447 struck down (2,094 of them on umpire's call) and 2 technical failures.
+- Alternatives considered: a rate by kind over the reviews whose kind is known (lopsided,
+  as above); umpire's call as its own outcome (Cricsheet records it as struck down); one rate
+  for each side (batters' reviews change the decision more often, 35.0% against 21.4% in
+  men's cricket; a filter for Day 43).
+- Status: built (Day 42). The load of Day 30 did not keep the review's umpire (recorded for
+  16,851 reviews) or its type; a rate by umpire, for N11i, needs a re-load.
+- Paper section: Method (N8 M4); Data
+- The v4 document's "overturn rates by team and by dismissal type" changes at its next
+  revision.
+
+## D-046 — Men's and women's cricket are never mixed
+- Date: 2026-10-22
+- Decision: a subject has a gender ("male" or "female", Cricsheet's words). A ground or a
+  team must name it: the M2 and M4 menu rows need it. A ball carries its gender, and "like
+  with like" (D-042) is by format and gender: a man is set against other men's balls only.
+  M1 takes gender as a filter. N3 reads a team or ground question that names no gender as
+  men's, and says so in its read-back (Day 58), so the engines never guess.
+- Why: Cricsheet names a country's men's and women's teams alike ("India"). At Lord's the
+  men's T20 first-innings average is 171.1 and the women's 146.4; mixed, it read 167.7. T20
+  strike rates are 125.8 for men and 96.9 for women, and women's balls (1.39 of the 11.69
+  million) pulled "everyone else" down: Kohli's +10.9 against everyone else is +8.6 against
+  other men (N-016).
+- Alternatives considered: a default to men's cricket inside the engines (a hidden choice
+  nobody sees); separate team names (Cricsheet uses one); a gender filter on Day 43 only
+  (the Day 39 and Day 40 numbers would have stayed mixed until then).
+- Status: built (Day 42); D-042 and D-043 corrected with it
+- Paper section: Method (subjects; N8)

@@ -17,6 +17,7 @@ class Ball:
     """Only what the engines count; the rest of the row stays in the database."""
 
     match_type: str  # "T20", "Test": like is set against like (Day 39)
+    gender: str  # "male" or "female": never mixed (Day 42)
     batter: str  # "V Kohli", as named in that match
     runs_batter: int  # off the bat
     wides: int  # runs from a wide; 0 when the ball was not a wide
@@ -47,11 +48,14 @@ def tally(balls: list[Ball]) -> dict[Ball, int]:
     return counts
 
 
-def by_format(counts: dict[Ball, int]) -> dict[str, dict[Ball, int]]:
-    """The tally split by format: "T20" -> its balls, "Test" -> its balls."""
+def by_format_and_gender(
+    counts: dict[Ball, int],
+) -> dict[tuple[str, str], dict[Ball, int]]:
+    """The tally split by kind of cricket: ("T20", "male") -> its balls, and so on."""
     split = {}
     for ball, times in counts.items():
-        if ball.match_type not in split:
-            split[ball.match_type] = {}
-        split[ball.match_type][ball] = times
+        kind = (ball.match_type, ball.gender)
+        if kind not in split:
+            split[kind] = {}
+        split[kind][ball] = times
     return split

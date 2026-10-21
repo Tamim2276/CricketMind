@@ -11,21 +11,21 @@ def venue_first_innings_avg(repo: VenueRepository, subject: Subject) -> Fact | N
     """The engine's answer, or None when it has none for this subject."""
     if not _asks_only_its_menu_row(subject, "venue_first_innings_avg"):
         return None
-    scores = repo.innings_at(subject.venue, subject.match_format)
+    scores = repo.innings_at(subject.venue, subject.match_format, subject.gender)
     return venues.first_innings_average(scores)
 
 
 def venue_chasing_win_share(repo: VenueRepository, subject: Subject) -> Fact | None:
     if not _asks_only_its_menu_row(subject, "venue_chasing_win_share"):
         return None
-    scores = repo.innings_at(subject.venue, subject.match_format)
+    scores = repo.innings_at(subject.venue, subject.match_format, subject.gender)
     return venues.chasing_win_share(scores)
 
 
 def venue_wicket_share(repo: VenueRepository, subject: Subject) -> Fact | None:
     if not _asks_only_its_menu_row(subject, "venue_wicket_share"):
         return None
-    wickets = repo.wickets_at(subject.venue, subject.match_format)
+    wickets = repo.wickets_at(subject.venue, subject.match_format, subject.gender)
     return venues.wicket_share(wickets, subject.bowler_type)
 
 

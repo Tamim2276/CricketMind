@@ -11,6 +11,7 @@ from cricketmind_v3.domain.subject import Subject
 COLUMNS = {
     "phase": "phase",
     "bowler_type": "bowler_type",
+    "gender": "gender",
 }
 
 # subject fields that name a person: matched on the register id, never on the name,
@@ -78,18 +79,20 @@ class DuckDBDeliveryRepository:
         if where is None:
             return {}
         sql = (
-            "SELECT match_type, runs_batter, wides, "
+            "SELECT match_type, gender, runs_batter, wides, "
             "CASE WHEN player_out IS NULL THEN NULL "
             "WHEN player_out = batter THEN ? ELSE ? END AS who_out, "
             "wicket_kind, COUNT(*) "
             f"FROM deliveries_full WHERE {' AND '.join(where)} "
-            "GROUP BY match_type, runs_batter, wides, who_out, wicket_kind"
+            "GROUP BY match_type, gender, runs_batter, wides, who_out, wicket_kind"
         )
         counts = {}
         rows = self.db.execute(sql, [THE_BATTER, SOMEONE_ELSE, *values]).fetchall()
-        for match_type, runs_batter, wides, player_out, wicket_kind, times in rows:
+        for row in rows:
+            match_type, gender, runs_batter, wides, player_out, wicket_kind, times = row
             ball = Ball(
                 match_type=match_type,
+                gender=gender,
                 batter=THE_BATTER,
                 runs_batter=runs_batter,
                 wides=wides,

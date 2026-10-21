@@ -134,11 +134,25 @@ def test_empty_text_counts_as_missing():
     assert missing_keys(lookup("strike_rate"), CricketSubject(player="")) == ["player"]
 
 
-def test_review_overturn_rate_needs_a_team_or_a_dismissal_type():
+def test_review_overturn_rate_needs_a_team_and_men_or_women():
+    # Day 42: by team only; "India" is a men's and a women's team
     review = lookup("review_overturn_rate")
-    assert missing_keys(review, CricketSubject(team="India")) == []
-    assert missing_keys(review, CricketSubject(dismissal_type="lbw")) == []
-    assert missing_keys(review, CricketSubject()) == ["team or dismissal_type"]
+    assert missing_keys(review, CricketSubject(team="India", gender="male")) == []
+    assert missing_keys(review, CricketSubject(team="India")) == ["gender"]
+    lbw = CricketSubject(team="India", gender="male", dismissal_type="lbw")
+    assert extra_keys(review, lbw) == ["dismissal_type"]  # not answerable
+
+
+def test_at_least_one_of_required_any():
+    either = ClaimType(
+        name="either",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M4",
+        required_keys=(),
+        required_any=("team", "venue"),
+    )
+    assert missing_keys(either, CricketSubject(venue="Lord's")) == []
+    assert missing_keys(either, CricketSubject()) == ["team or venue"]
 
 
 def test_a_subject_without_the_field_counts_as_missing():
@@ -269,13 +283,19 @@ def test_a_comparison_without_a_range_is_refused_on_the_menu():
 
 def test_extra_keys_are_the_filled_fields_not_on_the_row():
     venue_type = lookup("venue_first_innings_avg")
-    ground = CricketSubject(venue="Lord's", match_format="T20")
+    ground = CricketSubject(venue="Lord's", match_format="T20", gender="male")
     assert extra_keys(venue_type, ground) == []
     india = dataclasses.replace(ground, team="India", phase="")
     assert extra_keys(venue_type, india) == ["team"]  # an empty box is not extra
 
 
 def test_either_of_required_any_is_not_extra():
-    reviews = lookup("review_overturn_rate")
-    assert extra_keys(reviews, CricketSubject(team="India")) == []
-    assert extra_keys(reviews, CricketSubject(dismissal_type="lbw")) == []
+    either = ClaimType(
+        name="either",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M4",
+        required_keys=(),
+        required_any=("team", "venue"),
+    )
+    assert extra_keys(either, CricketSubject(team="India")) == []
+    assert extra_keys(either, CricketSubject(venue="Lord's")) == []
