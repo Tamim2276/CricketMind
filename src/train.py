@@ -54,6 +54,7 @@ DEFAULTS = {
     "dense": 1024,
     "dropout": 0.0,
     "keras_dense": False,     # Keras' Dense init in the GRU head (7.7)
+    "grad_checkpoint": False, # recompute backbone stages to save memory (B07)
     "head": "gru",            # the head on cached features; Families A, D, V
     "bidirectional": False,
     "layers": 1,
@@ -277,6 +278,19 @@ def _make_scheduler(cfg, optimizer):
     raise ValueError(f"unknown scheduler: {cfg['scheduler']}")
 
 
+def _resume_differs(saved, cfg):
+    """Keys where a resume file's config is not this run's. A key the file
+    predates counts as its default. Found 2026-10-22: B07's half-done batch-2
+    run would have carried on at batch 4 as if nothing had changed."""
+    differ = []
+    for key in sorted(cfg):
+        if key in ("name", "figures", "out", "deterministic"):
+            continue
+        if saved.get(key, DEFAULTS.get(key)) != cfg[key]:
+            differ.append(key)
+    return differ
+
+
 def _watch(cfg):
     """What decides the best epoch, the lr drops and the early stop."""
     monitor = str(cfg.get("monitor", "top1")).lower()
@@ -348,6 +362,12 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
     if os.path.exists(resume_path):
         state = load_resume(resume_path, model, optimizer, scheduler,
                             scaler=scaler)
+        changed = _resume_differs(state.get("cfg") or {}, cfg)
+        if changed:
+            raise SystemExit(
+                f"{resume_path} was saved with a different config "
+                f"({', '.join(changed)}). Continuing it would mix two runs; "
+                f"start over with --force.")
         # the shuffle order too, or epoch N+1 sees epoch 1's order again.
         # Resume files from before 2026-10-20 have none; they keep that
         if state.get("loader_rng") is not None:

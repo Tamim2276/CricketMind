@@ -17,7 +17,8 @@ NAME = "video_gru"
 
 # every config key this file acts on, beyond the loop's own
 READS = ("variant", "processed", "flip", "backbone", "pretrained", "freeze",
-         "hidden", "dense", "dropout", "pool", "keras_dense")
+         "hidden", "dense", "dropout", "pool", "keras_dense",
+         "grad_checkpoint")
 
 
 def check(cfg):
@@ -88,4 +89,5 @@ def model(cfg, train_set, num_classes):
                        pretrained=cfg["pretrained"], freeze=cfg["freeze"],
                        hidden=cfg["hidden"], dense=cfg["dense"],
                        dropout=cfg["dropout"], pool=cfg["pool"],
-                       keras_dense=cfg["keras_dense"])
+                       keras_dense=cfg["keras_dense"],
+                       grad_checkpoint=cfg["grad_checkpoint"])

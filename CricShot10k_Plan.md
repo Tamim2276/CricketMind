@@ -4673,11 +4673,19 @@ since its real epoch time is known.
 
 1. **B07 did not really fit.** It reserved 87% of the card, and with the
    desktop's share on top the Arc spilled into system memory: 7.0 s a clip
-   at batch 4, 0.17 s at batch 2 (40x). **B07 now trains at batch 2 ×
-   accumulation 2**, its registry delta, so it still updates on four clips.
-   One difference remains: the head's BatchNorm sees two clips at a time,
-   not four. The probe now calls "fits" on reserved memory under 80%, not
-   peak under 90%, which had called B07 a fit.
+   at batch 4, 0.17 s at batch 2 (40x). The probe now calls "fits" on
+   reserved memory under 80%, not peak under 90%, which had called B07 a fit.
+   ~~B07 trains at batch 2 × accumulation 2~~ — **wrong, corrected
+   2026-10-22**: the head's BatchNorm over two clips turns every feature
+   into ±1 (with two values, each is one standard deviation from their
+   mean), so the head learns from sign bits, and a clip's prediction
+   depends on its batch partner. B07 author went 32% val at epoch 2 to 16%
+   by epoch 4, gradient norms 2–4x everyone else's. **B07 now trains at
+   batch 4 like the rest, with `grad_checkpoint`**: the backbone keeps only
+   its stage boundaries for backward and recomputes the rest (same outputs,
+   gradients and BatchNorm statistics, tested; about a third more compute).
+   The half-done batch-2 run is thrown away with `--force`, and a resume
+   file from a different config is now refused instead of continued.
 2. **Deterministic mode costs about 1.6x end to end** (B01: 0.27 s/batch
    without it, 0.43 with it). B01 itself ran before 11.1 added the mode;
    B02–B08 run with it, like every Phase 3 run since. It changes which

@@ -174,14 +174,14 @@ def test_list_one_family():
     assert "A01_mean" not in out.getvalue()
 
 
-def test_every_b_run_updates_on_four_clips():
-    """B07 trains two clips at a time (17.2: batch 4 did not fit), so it adds
-    two halves before each step. The effective batch stays B01's."""
+def test_every_b_run_trains_four_clips_at_a_time():
+    """The head's BatchNorm needs the four: at batch 2 it turns every feature
+    into +-1, and B07 fell from 32% val to 16% (2026-10-22). B07 fits batch 4
+    by recomputing its backbone in backward instead."""
     for entry in R.entries("B"):
         cfg = R.resolve(entry, "author")
-        assert cfg["batch_size"] * cfg["accum"] == 4, entry["id"]
-    b07 = R.resolve(R.get("B07_regnety_16gf"), "author")
-    assert (b07["batch_size"], b07["accum"]) == (2, 2)
+        assert (cfg["batch_size"], cfg["accum"]) == (4, 1), entry["id"]
+    assert R.resolve(R.get("B07_regnety_16gf"), "author")["grad_checkpoint"]
     assert R.status(R.get("B07_regnety_16gf")) == "ready"
 
 

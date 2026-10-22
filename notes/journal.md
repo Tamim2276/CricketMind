@@ -3524,3 +3524,31 @@ next step for those is an email to the authors, not more guessing.
 Our models: B01 75.9 / 61.7 / 42.7 and B03 76.6 / 63.0 / 51.0 on box /
 replica crop / replica. Expected drops on unfamiliar frames; Xception the
 steadier. Training on the replica (R03) is the real test of the recipe.
+
+## 2026-10-22 — B07 at batch 2 was broken, and it was my call
+
+B04 grouped 81.52 (best in Family B on both splits now), B05 author 75.00.
+Then B07, RegNetY-16GF, at batch 2 x accum 2: 29% val after epoch 1,
+32% after 2, then 21, 16, 22, 22, with train accuracy falling too and
+gradient norms of 40 where the others sit at 10-20.
+
+The cause is simple once seen: the head ends GRU -> BatchNorm -> Dense,
+and BatchNorm in training normalises each feature over the batch. Over two
+clips, each of the two values sits exactly one standard deviation from
+their mean, so every feature comes out +1 or -1. The head trains on sign
+bits relative to whichever clip it happened to be paired with. Accumulation
+doesn't help; BatchNorm still sees two. In 17.2 I wrote that two-at-a-time
+BatchNorm was "the one real difference" and moved on. It was fatal.
+
+Fix: batch 4 like every other B run, with the memory found elsewhere.
+grad_checkpoint keeps only the boundaries between RegNet's four stages for
+backward and recomputes inside them. The recompute would update BatchNorm's
+running stats twice, so those layers get momentum 1 - sqrt(0.9), which makes
+two updates exactly one. Tested equal to the plain backbone: outputs,
+gradients, running stats, weight names (the last one caught a bug: wrapping
+the stages renamed block1..block4 to 0..3, and no saved weights would have
+loaded).
+
+Also: the half-finished batch-2 run left a resume file, and the runner would
+have continued it at batch 4 as if nothing had changed. Training now refuses
+a resume file whose config differs and says to use --force.

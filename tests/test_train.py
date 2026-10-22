@@ -544,3 +544,24 @@ def test_adam_takes_keras_epsilon_when_asked():
     assert T._make_optimizer(cfg, model).defaults["eps"] == 1e-8
     cfg["adam_eps"] = 1e-7
     assert T._make_optimizer(cfg, model).defaults["eps"] == 1e-7
+
+
+def test_a_resume_from_a_different_config_is_refused(workspace):
+    """B07's batch-2 run must not quietly continue at batch 4."""
+    cfg = base_cfg(workspace, name="changed", epochs=3, batch_size=3)
+    _cut_during_epoch_2(cfg)
+    with pytest.raises(SystemExit, match="batch_size"):
+        T.train(dict(cfg, batch_size=2), quiet=True)
+    row = T.train(dict(cfg, batch_size=2), fresh=True, quiet=True)
+    assert row["epochs_run"] == 3 and not row["resumed"]
+
+
+def test_a_resume_file_older_than_a_key_still_resumes(workspace):
+    """A file written before keras_dense existed counts it at its default."""
+    cfg = base_cfg(workspace, name="older", epochs=3)
+    _cut_during_epoch_2(cfg)
+    path = os.path.join(T.run_dir(cfg), "resume.pt")
+    state = torch.load(path, map_location="cpu", weights_only=False)
+    del state["cfg"]["keras_dense"]
+    torch.save(state, path)
+    assert T.train(cfg, quiet=True)["resumed"] is True

@@ -33,6 +33,8 @@ exactly what it built before. A timm model may want other colours than the
 ImageNet ones the dataset uses (Xception wants 0.5 / 0.5); the encoder
 converts, the 8.10 rule: colours come from the weights.
 """
+from collections import OrderedDict
+
 import torch
 import torch.nn as nn
 from torchvision.models import get_model, list_models
@@ -115,6 +117,50 @@ def _same(a, b) -> bool:
     return True
 
 
+class _Checkpointed(nn.Sequential):
+    """A backbone's stages, keeping only the boundaries between them for the
+    backward pass and recomputing the rest. Same maths, about a third more
+    compute, a fraction of the memory: how B07 trains at batch 4 (17.2).
+
+    The recompute runs every BatchNorm forward a second time, which would
+    update its running stats twice. Each stage but the last (torch does not
+    recompute the last) gets momentum 1 - sqrt(1 - m), so the two updates add
+    up to exactly one at m. Subclassing Sequential keeps the weight names, so
+    a checkpoint loads with or without it.
+    """
+
+    def __init__(self, stages):
+        super().__init__(stages)                    # an OrderedDict, by name
+        for stage in list(self)[:-1]:
+            for layer in stage.modules():
+                if isinstance(layer, nn.modules.batchnorm._BatchNorm):
+                    if layer.momentum is not None:
+                        layer.momentum = 1.0 - (1.0 - layer.momentum) ** 0.5
+
+    def forward(self, x):
+        if self.training and torch.is_grad_enabled():
+            from torch.utils.checkpoint import checkpoint_sequential
+            return checkpoint_sequential(self, len(self), x,
+                                         use_reentrant=False)
+        return super().forward(x)
+
+
+def _checkpoint_stages(model: nn.Module) -> None:
+    """Wrap the backbone's list of stages in _Checkpointed."""
+    for attr in ("trunk_output", "features"):
+        stages = getattr(model, attr, None)
+        if isinstance(stages, nn.Sequential) and len(stages) > 1:
+            # by name, or RegNet's block1..block4 would become 0..3 and no
+            # saved weights would load
+            named = OrderedDict()
+            for name, stage in stages.named_children():
+                named[name] = stage
+            setattr(model, attr, _Checkpointed(named))
+            return
+    raise ValueError(f"{type(model).__name__} has no list of stages to "
+                     f"checkpoint")
+
+
 def _find_linear(mod: nn.Module):
     """The Linear layer inside a torchvision head, or None."""
     if isinstance(mod, nn.Linear):
@@ -188,7 +234,7 @@ class FrameEncoder(nn.Module):
 
     def __init__(self, name: str = DEFAULT_BACKBONE, pretrained: bool = True,
                  freeze: bool = False, pool: str = "avg",
-                 size: int = DEFAULT_SIZE):
+                 size: int = DEFAULT_SIZE, grad_checkpoint: bool = False):
         super().__init__()
         if pool not in POOLS:
             raise ValueError(f"pool must be one of {POOLS}, got {pool!r}")
@@ -196,6 +242,8 @@ class FrameEncoder(nn.Module):
         self.pool = pool
         mean, std = IMAGENET_MEAN, IMAGENET_STD
         if is_timm(name):
+            if grad_checkpoint:
+                raise ValueError("grad_checkpoint is torchvision-only for now")
             self.backbone, mean, std = _timm_backbone(name, pretrained, pool)
         else:
             if pretrained:
@@ -206,6 +254,8 @@ class FrameEncoder(nn.Module):
             _strip_classifier(self.backbone)
             if pool == "flatten":
                 _strip_pooling(self.backbone)
+            if grad_checkpoint:
+                _checkpoint_stages(self.backbone)
         # the dataset hands over ImageNet colours; convert if the weights
         # were trained on others. Not saved: it follows from the name
         self.recolour = not (_same(mean, IMAGENET_MEAN)

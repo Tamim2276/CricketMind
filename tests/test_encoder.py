@@ -227,3 +227,39 @@ def test_backbone_problem_names_what_is_missing(monkeypatch):
     assert "HF_HUB_OFFLINE=0 hf download timm/tf_efficientnetv2_b3.in1k" in told
     assert encoder.backbone_problem("tf_efficientnetv2_b3.in1k",
                                     pretrained=False) is None
+
+
+# --- B07: the backbone's stages recomputed in backward -----------------------
+
+def test_checkpointing_changes_nothing_but_memory():
+    """Same outputs, same gradients, same BatchNorm running stats after a
+    training step (the momentum fix), and the same weight names."""
+    torch.manual_seed(0)
+    plain = FrameEncoder("regnet_y_400mf", pretrained=False, size=64)
+    ckpt = FrameEncoder("regnet_y_400mf", pretrained=False, size=64,
+                        grad_checkpoint=True)
+    ckpt.load_state_dict(plain.state_dict())        # strict: names match
+    plain.train()
+    ckpt.train()
+    x = torch.randn(2, 2, 3, 64, 64)
+
+    out_p = plain(x)
+    out_c = ckpt(x)
+    assert torch.allclose(out_p, out_c, atol=1e-5)
+    out_p.sum().backward()
+    out_c.sum().backward()
+    for (name, p), (_, c) in zip(plain.named_parameters(),
+                                 ckpt.named_parameters()):
+        assert torch.allclose(p.grad, c.grad, atol=1e-4, rtol=1e-4), name
+
+    stats_p = plain.state_dict()
+    stats_c = ckpt.state_dict()
+    for name in stats_p:
+        if name.endswith("running_mean") or name.endswith("running_var"):
+            assert torch.allclose(stats_p[name], stats_c[name],
+                                  atol=1e-6), name
+
+
+def test_checkpointing_needs_a_list_of_stages():
+    with pytest.raises(ValueError, match="no list of stages"):
+        FrameEncoder("resnet50", pretrained=False, grad_checkpoint=True)

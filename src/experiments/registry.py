@@ -215,10 +215,11 @@ ENTRIES = [
     {"id": "B06_resnet50", "base": "mimic_author",
      "cfg": {"backbone": "resnet50"},
      "why": "where does the baseline everyone knows land?"},
-    # batch 4 spilled out of the card's memory (17.2): 7.0 s a clip against
-    # 0.17 at batch 2. Same effective batch, two halves added up
+    # batch 4 spilled out of the card's memory (17.2), and batch 2 broke the
+    # head: BatchNorm over two clips turns every feature into +-1. So batch
+    # 4 like the rest, with the backbone's stages recomputed in backward
     {"id": "B07_regnety_16gf", "base": "mimic_author",
-     "cfg": {"backbone": "regnet_y_16gf", "batch_size": 2, "accum": 2},
+     "cfg": {"backbone": "regnet_y_16gf", "grad_checkpoint": True},
      "why": "does raw capacity (83M) help on 10k clips?"},
     {"id": "B08_swin_t", "base": "mimic_author",
      "cfg": {"backbone": "swin_t"},
