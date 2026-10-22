@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from cricketmind_v3.domain.balls import BOWLERS_WICKETS
 from cricketmind_v3.domain.facts import Fact
 from cricketmind_v3.domain.faith.gazetteer import BOWLER_TYPES
 
@@ -11,16 +12,6 @@ STANDARD_BALLS = {"T20": 120, "IT20": 120, "ODI": 300, "ODM": 300}
 LONG_FORMATS = ("Test", "MDM")  # no fixed length
 
 ALL_OUT = 10
-
-# the dismissals a bowler is credited with: not run outs, retirements or obstruction
-BOWLERS_WICKETS = (
-    "bowled",
-    "caught",
-    "caught and bowled",
-    "lbw",
-    "stumped",
-    "hit wicket",
-)
 
 # a pace-or-spin share needs the bowler's type for this much of the wickets
 # (a design parameter, D-043)

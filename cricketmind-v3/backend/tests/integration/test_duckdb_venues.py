@@ -9,6 +9,8 @@ Counted by hand from the files, one match per ground, all T20s of 20 overs:
   and Shadab Khan in the second.
 """
 
+import dataclasses
+
 import duckdb
 import pytest
 
@@ -132,9 +134,7 @@ def test_the_hundred_is_not_a_t20(db, repo):
 
 
 def test_every_wicket_comes_back_counted(repo):
-    wickets = repo.wickets_at(
-        "Maharaja Yadavindra Singh International Cricket Stadium", "T20", "male"
-    )
+    wickets = repo.wickets_at(CHANDIGARH)
     total = 0
     run_outs = 0
     for wicket, times in wickets.items():
@@ -181,13 +181,14 @@ def test_a_super_over_wicket_is_not_counted(db, repo):
         "FROM deliveries WHERE match_id = '1490709' AND wicket_kind IS NOT NULL LIMIT 1"
     )
     total = 0
-    for times in repo.wickets_at("Lord's", "T20", "female").values():
+    for times in repo.wickets_at(LORDS).values():
         total += times
     assert total == 7  # 4 + 3, as before
 
 
 def test_a_grounds_mens_and_womens_matches_are_kept_apart(repo):
     # the Lord's match is women's: no men's innings or wickets there
-    assert repo.innings_at("Lord's", "T20", "male") == []
-    assert repo.wickets_at("Lord's", "T20", "male") == {}
-    assert len(repo.innings_at("Lord's", "T20", "female")) == 2
+    men = dataclasses.replace(LORDS, gender="male")
+    assert repo.innings_at(men) == []
+    assert repo.wickets_at(men) == {}
+    assert len(repo.innings_at(LORDS)) == 2

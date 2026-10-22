@@ -25,6 +25,7 @@ from cricketmind_v3.domain.facts import Fact
 from cricketmind_v3.domain.subject import CricketSubject
 from cricketmind_v3.infrastructure.duckdb_repo import DuckDBDeliveryRepository
 from cricketmind_v3.pipeline.attributes import build_attributes, read_player_meta
+from cricketmind_v3.pipeline.derived import build_derived
 from cricketmind_v3.pipeline.ingest import ingest
 from cricketmind_v3.pipeline.players import build_players
 from tests.integration.test_attributes_join import SAMPLE
@@ -42,6 +43,7 @@ def build(folder, change=None):
         change(db)
     build_players(db)
     build_attributes(db, read_player_meta(SAMPLE), [])
+    build_derived(db)  # one name per ground, for the venue filter (Day 43)
     return db
 
 

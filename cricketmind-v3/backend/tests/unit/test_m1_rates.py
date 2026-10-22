@@ -31,6 +31,7 @@ def ball(runs, out=None, kind=None, batter="V Kohli") -> Ball:
         batter=batter,
         runs_batter=runs,
         wides=0,
+        noballs=0,
         player_out=out,
         wicket_kind=kind,
     )

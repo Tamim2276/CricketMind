@@ -146,3 +146,34 @@ def test_a_claim_type_not_on_the_menu_is_left_to_c1():
         n=3,
     )
     assert reasons(hollow, "{c1}.") == []
+
+
+def test_one_matchs_margin_needs_no_small_sample_warning():
+    # Day 45: a match result is a fact, not a sample
+    margin = Claim(
+        id="c1",
+        kind=Provenance.DESCRIPTIVE,
+        metric="match_won_by_runs",
+        subject=CricketSubject(
+            team="Pakistan", opposition="Sri Lanka", date="2026-10-11", gender="male"
+        ),
+        value=82.0,
+        n=1,
+        source="N8.M5",
+    )
+    assert reasons(margin, "{c1}.") == []
+    share = Claim(
+        id="c1",
+        kind=Provenance.DESCRIPTIVE,
+        metric="team_win_share",
+        subject=CricketSubject(team="Pakistan", gender="male"),
+        value=0.6,
+        n=5,
+        source="N8.M5",
+    )
+    assert reasons(share, "{c1}.") == [
+        (
+            "the number rests on only 5 matches (the floor is 10); "
+            "say so, e.g. 'on only a few matches'"
+        ),
+    ]

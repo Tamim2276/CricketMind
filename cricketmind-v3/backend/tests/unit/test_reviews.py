@@ -25,8 +25,10 @@ def test_no_reviews_no_answer():
 
 def test_the_engine_asks_for_the_team_men_or_women():
     repo = FakeReviewRepository()
-    repo.add("India", "male", {"upheld": 3, "struck down": 9})
-    repo.add("India", "female", {"upheld": 6, "struck down": 6})
+    repo.add(INDIA, {"upheld": 3, "struck down": 9})
+    repo.add(
+        CricketSubject(team="India", gender="female"), {"upheld": 6, "struck down": 6}
+    )
     assert review_overturn_rate(repo, INDIA) == Fact(value=0.25, n=12)
     women = CricketSubject(team="India", gender="female")
     assert review_overturn_rate(repo, women) == Fact(value=0.5, n=12)
@@ -35,7 +37,18 @@ def test_the_engine_asks_for_the_team_men_or_women():
 def test_by_dismissal_type_there_is_no_answer():
     # the data keeps no appeal kind, so "India's lbw reviews" cannot be counted fairly
     repo = FakeReviewRepository()
-    repo.add("India", "male", {"upheld": 3, "struck down": 9})
+    repo.add(INDIA, {"upheld": 3, "struck down": 9})
     lbw = CricketSubject(team="India", gender="male", dismissal_type="lbw")
     assert review_overturn_rate(repo, lbw) is None
     assert review_overturn_rate(repo, CricketSubject(team="India")) is None
+
+
+def test_the_engine_refuses_even_when_the_data_could_answer():
+    # Day 48: pins the engine's own check, whatever the repository would give
+    repo = FakeReviewRepository()
+    lbw = CricketSubject(team="India", gender="male", dismissal_type="lbw")
+    repo.add(lbw, {"upheld": 1, "struck down": 1})
+    assert review_overturn_rate(repo, lbw) is None
+    at_mirpur = CricketSubject(team="India", gender="male", venue="Mirpur")
+    repo.add(at_mirpur, {"upheld": 1, "struck down": 1})
+    assert review_overturn_rate(repo, at_mirpur) is None  # a ground is not M4's filter

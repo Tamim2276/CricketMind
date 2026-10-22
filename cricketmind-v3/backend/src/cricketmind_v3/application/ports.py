@@ -3,6 +3,7 @@ from typing import Protocol
 
 from cricketmind_v3.domain.balls import Ball
 from cricketmind_v3.domain.facts import Fact
+from cricketmind_v3.domain.results import Result
 from cricketmind_v3.domain.subject import Subject
 from cricketmind_v3.domain.venues import InningsScore, Wicket
 from cricketmind_v3.domain.workload import Spell
@@ -28,6 +29,10 @@ class DeliveryRepository(Protocol):
         SOMEONE_ELSE in place of the names.
         """
 
+    def outs_at_other_end(self, subject: Subject) -> int:
+        """How often the subject's player was out as the non-striker (a run out), on
+        balls that fit the other filters (Day 44). They count in his average."""
+
 
 class FakeDeliveryRepository:
     """Balls written in by hand for tests, filed under the subject they answer."""
@@ -35,6 +40,7 @@ class FakeDeliveryRepository:
     def __init__(self) -> None:
         self.balls: dict[Subject, list[Ball]] = {}
         self.everyone_else: dict[Subject, dict[Ball, int]] = {}
+        self.other_end: dict[Subject, int] = {}
         self.asked: list[Subject] = []  # what the engine asked for, to check in tests
 
     def add(self, subject: Subject, balls: list[Ball]) -> None:
@@ -43,6 +49,9 @@ class FakeDeliveryRepository:
     def add_others(self, subject: Subject, counts: dict[Ball, int]) -> None:
         self.everyone_else[subject] = counts
 
+    def add_outs_at_other_end(self, subject: Subject, outs: int) -> None:
+        self.other_end[subject] = outs
+
     def deliveries(self, subject: Subject) -> list[Ball]:
         self.asked.append(subject)
         return list(self.balls.get(subject, []))
@@ -50,6 +59,10 @@ class FakeDeliveryRepository:
     def others(self, subject: Subject) -> dict[Ball, int]:
         self.asked.append(subject)
         return dict(self.everyone_else.get(subject, {}))
+
+    def outs_at_other_end(self, subject: Subject) -> int:
+        self.asked.append(subject)
+        return self.other_end.get(subject, 0)
 
 
 class FactSource(Protocol):
@@ -88,40 +101,32 @@ class FakeFactSource:
 class VenueRepository(Protocol):
     """Anything that can tell what happened at a ground: the database, or a fake."""
 
-    def innings_at(
-        self, venue: str, match_type: str, gender: str
-    ) -> list[InningsScore]:
-        """Every innings played at the ground in that format, in match order."""
+    def innings_at(self, subject: Subject) -> list[InningsScore]:
+        """Every innings of the matches the subject picks (a ground, a format, men's or
+        women's, a season...), in match order."""
 
-    def wickets_at(self, venue: str, match_type: str, gender: str) -> dict[Wicket, int]:
-        """Every wicket that fell at the ground in that format, counted by kind."""
+    def wickets_at(self, subject: Subject) -> dict[Wicket, int]:
+        """Every wicket that fell in those matches, counted by kind."""
 
 
 class FakeVenueRepository:
-    """Innings and wickets written in by hand, for tests, by ground, format and
-    gender."""
+    """Innings and wickets written in by hand for tests, filed under a subject."""
 
     def __init__(self) -> None:
-        self.innings: dict[tuple[str, str, str], list[InningsScore]] = {}
-        self.wickets: dict[tuple[str, str, str], dict[Wicket, int]] = {}
+        self.innings: dict[Subject, list[InningsScore]] = {}
+        self.wickets: dict[Subject, dict[Wicket, int]] = {}
 
-    def add_innings(
-        self, venue: str, match_type: str, gender: str, scores: list[InningsScore]
-    ) -> None:
-        self.innings[(venue, match_type, gender)] = scores
+    def add_innings(self, subject: Subject, scores: list[InningsScore]) -> None:
+        self.innings[subject] = scores
 
-    def add_wickets(
-        self, venue: str, match_type: str, gender: str, counts: dict[Wicket, int]
-    ) -> None:
-        self.wickets[(venue, match_type, gender)] = counts
+    def add_wickets(self, subject: Subject, counts: dict[Wicket, int]) -> None:
+        self.wickets[subject] = counts
 
-    def innings_at(
-        self, venue: str, match_type: str, gender: str
-    ) -> list[InningsScore]:
-        return list(self.innings.get((venue, match_type, gender), []))
+    def innings_at(self, subject: Subject) -> list[InningsScore]:
+        return list(self.innings.get(subject, []))
 
-    def wickets_at(self, venue: str, match_type: str, gender: str) -> dict[Wicket, int]:
-        return dict(self.wickets.get((venue, match_type, gender), {}))
+    def wickets_at(self, subject: Subject) -> dict[Wicket, int]:
+        return dict(self.wickets.get(subject, {}))
 
 
 class WorkloadRepository(Protocol):
@@ -157,18 +162,39 @@ class FakeWorkloadRepository:
 class ReviewRepository(Protocol):
     """Anything that can count a team's DRS reviews: the database, or a fake (Day 42)."""
 
-    def decisions(self, team: str, gender: str) -> dict[str, int]:
-        """How the team's reviews ended: "upheld" -> 81, "struck down" -> 219."""
+    def decisions(self, subject: Subject) -> dict[str, int]:
+        """How the subject's team's reviews ended: "upheld" -> 81, "struck down" -> 219."""
 
 
 class FakeReviewRepository:
-    """Review counts written in by hand, for tests."""
+    """Review counts written in by hand for tests, filed under a subject."""
 
     def __init__(self) -> None:
-        self.teams: dict[tuple[str, str], dict[str, int]] = {}
+        self.teams: dict[Subject, dict[str, int]] = {}
 
-    def add(self, team: str, gender: str, decisions: dict[str, int]) -> None:
-        self.teams[(team, gender)] = decisions
+    def add(self, subject: Subject, decisions: dict[str, int]) -> None:
+        self.teams[subject] = decisions
 
-    def decisions(self, team: str, gender: str) -> dict[str, int]:
-        return dict(self.teams.get((team, gender), {}))
+    def decisions(self, subject: Subject) -> dict[str, int]:
+        return dict(self.teams.get(subject, {}))
+
+
+class ResultRepository(Protocol):
+    """Anything that can tell how matches ended: the database, or a fake (Day 45)."""
+
+    def results(self, subject: Subject) -> list[Result]:
+        """How every match the subject picks ended: the team's, against the opposition,
+        on the date, in the format... in match order."""
+
+
+class FakeResultRepository:
+    """Results written in by hand for tests, filed under a subject."""
+
+    def __init__(self) -> None:
+        self.matches: dict[Subject, list[Result]] = {}
+
+    def add(self, subject: Subject, results: list[Result]) -> None:
+        self.matches[subject] = results
+
+    def results(self, subject: Subject) -> list[Result]:
+        return list(self.matches.get(subject, []))

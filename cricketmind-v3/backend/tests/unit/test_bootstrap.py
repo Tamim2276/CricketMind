@@ -22,6 +22,7 @@ def ball(runs=0, wides=0, batter="V Kohli", match_type="T20", gender="male") -> 
         batter=batter,
         runs_batter=runs,
         wides=wides,
+        noballs=0,
         player_out=None,
         wicket_kind=None,
     )

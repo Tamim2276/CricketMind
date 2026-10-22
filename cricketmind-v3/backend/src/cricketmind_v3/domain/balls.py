@@ -6,6 +6,17 @@ from dataclasses import dataclass
 # "retired out" is a dismissal
 NOT_DISMISSALS = ("retired hurt", "retired not out")
 
+# the dismissals a bowler is credited with: not run outs, retirements or obstruction
+# (Day 40; shared with the bowling measures on Day 44)
+BOWLERS_WICKETS = (
+    "bowled",
+    "caught",
+    "caught and bowled",
+    "lbw",
+    "stumped",
+    "hit wicket",
+)
+
 # the names on balls of many batters counted together (Day 39): whoever faced the ball,
 # and anyone else who was out on it
 THE_BATTER = "(the batter)"
@@ -21,6 +32,7 @@ class Ball:
     batter: str  # "V Kohli", as named in that match
     runs_batter: int  # off the bat
     wides: int  # runs from a wide; 0 when the ball was not a wide
+    noballs: int  # the no-ball's extra run; 0 when it was not a no-ball (Day 43)
     player_out: str | None  # may be the non-striker
     wicket_kind: str | None  # "caught", "run out", "retired hurt", ...
 
@@ -28,6 +40,16 @@ class Ball:
 def faced(ball: Ball) -> bool:
     """A wide is not a ball faced; a no-ball is, because the batter could hit it."""
     return ball.wides == 0
+
+
+def legal(ball: Ball) -> bool:
+    """A ball that counts in the over: neither a wide nor a no-ball (Day 44)."""
+    return ball.wides == 0 and ball.noballs == 0
+
+
+def bowlers_wicket(ball: Ball) -> bool:
+    """A wicket the bowler is credited with: a run out is nobody's bowling."""
+    return ball.wicket_kind in BOWLERS_WICKETS
 
 
 def batter_out(ball: Ball) -> bool:

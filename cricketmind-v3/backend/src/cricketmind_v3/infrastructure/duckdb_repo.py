@@ -1,25 +1,40 @@
-"""The DuckDB adapter: SQL picks the balls a subject is about (Day 38)."""
+"""The DuckDB adapter: SQL picks the balls a subject is about (Days 38, 43)."""
 
 import dataclasses
 
 from cricketmind_v3.application.ports import FilterError
-from cricketmind_v3.domain.balls import SOMEONE_ELSE, THE_BATTER, Ball
+from cricketmind_v3.domain.balls import NOT_DISMISSALS, SOMEONE_ELSE, THE_BATTER, Ball
 from cricketmind_v3.domain.registry import is_empty
 from cricketmind_v3.domain.subject import Subject
+from cricketmind_v3.infrastructure.filters import MATCH_FILTERS, match_condition
 
-# subject field -> the column that picks balls by it (Day 43 adds the rest)
+# subject field -> the column of the ball that picks it
 COLUMNS = {
-    "phase": "phase",
-    "bowler_type": "bowler_type",
-    "gender": "gender",
+    "phase": "d.phase",
+    "bowler_type": "d.bowler_type",
+    "batting_hand": "d.batting_hand",
+    "innings": "d.innings",
 }
 
 # subject fields that name a person: matched on the register id, never on the name,
 # because one person can play under two names
 PEOPLE = {
-    "player": "batter_id",
-    "bowler": "bowler_id",
+    "player": "d.batter_id",
+    "bowler": "d.bowler_id",
 }
+
+# he was the one out, named as he was in that match, and someone else was on strike
+OUT_AT_OTHER_END = (
+    "(EXISTS (SELECT 1 FROM people o WHERE o.match_id = d.match_id "
+    "AND o.name = d.player_out AND o.person_id = ?) AND d.batter_id <> ?)"
+)
+
+# every ball, with its match and its ground, so a match filter can pick it
+BALLS = (
+    "deliveries_full d "
+    "JOIN matches m ON m.match_id = d.match_id "
+    "JOIN match_venues v ON v.match_id = d.match_id"
+)
 
 
 def find_person(db, name: str) -> str | None:
@@ -55,16 +70,18 @@ class DuckDBDeliveryRepository:
             return []  # nobody of that name has played
 
         # column names come from the lists above; every value goes in as a ?
-        columns = ball_columns()
+        columns = []
+        for name in ball_columns():
+            columns.append("d." + name)
         sql = (
-            f"SELECT {', '.join(columns)} FROM deliveries_full "
+            f"SELECT {', '.join(columns)} FROM {BALLS} "
             f"WHERE {' AND '.join(where)} "
-            "ORDER BY date, match_id, innings, over, ball_index"  # match order, always
+            "ORDER BY d.date, d.match_id, d.innings, d.over, d.ball_index"  # match order
         )
         balls = []
         for row in self.db.execute(sql, values).fetchall():
             fields = {}
-            for name, value in zip(columns, row, strict=True):
+            for name, value in zip(ball_columns(), row, strict=True):
                 fields[name] = value
             balls.append(Ball(**fields))
         return balls
@@ -79,50 +96,84 @@ class DuckDBDeliveryRepository:
         if where is None:
             return {}
         sql = (
-            "SELECT match_type, gender, runs_batter, wides, "
-            "CASE WHEN player_out IS NULL THEN NULL "
-            "WHEN player_out = batter THEN ? ELSE ? END AS who_out, "
-            "wicket_kind, COUNT(*) "
-            f"FROM deliveries_full WHERE {' AND '.join(where)} "
-            "GROUP BY match_type, gender, runs_batter, wides, who_out, wicket_kind"
+            "SELECT d.match_type, d.gender, d.runs_batter, d.wides, d.noballs, "
+            "CASE WHEN d.player_out IS NULL THEN NULL "
+            "WHEN d.player_out = d.batter THEN ? ELSE ? END AS who_out, "
+            "d.wicket_kind, COUNT(*) "
+            f"FROM {BALLS} WHERE {' AND '.join(where)} "
+            "GROUP BY d.match_type, d.gender, d.runs_batter, d.wides, d.noballs, "
+            "who_out, d.wicket_kind"
         )
         counts = {}
         rows = self.db.execute(sql, [THE_BATTER, SOMEONE_ELSE, *values]).fetchall()
         for row in rows:
-            match_type, gender, runs_batter, wides, player_out, wicket_kind, times = row
+            match_type, gender, runs, wides, noballs, player_out, kind, times = row
             ball = Ball(
                 match_type=match_type,
                 gender=gender,
                 batter=THE_BATTER,
-                runs_batter=runs_batter,
+                runs_batter=runs,
                 wides=wides,
+                noballs=noballs,
                 player_out=player_out,
-                wicket_kind=wicket_kind,
+                wicket_kind=kind,
             )
             counts[ball] = times
         return counts
 
-    def _where(self, subject: Subject, player_is: str) -> tuple[list | None, list]:
-        """The WHERE conditions and their values; None when the player is nobody.
+    def outs_at_other_end(self, subject: Subject) -> int:
+        """Balls on which the player, not on strike, was out (Day 44): matched on his
+        register id through the names of that match. Retiring is not out."""
+        where, values = self._where(subject, player_is="at the other end")
+        if where is None:
+            return 0
+        marks = ", ".join(["?"] * len(NOT_DISMISSALS))
+        sql = (
+            f"SELECT COUNT(*) FROM {BALLS} "
+            f"WHERE {' AND '.join(where)} AND d.wicket_kind NOT IN ({marks})"
+        )
+        return self.db.execute(sql, [*values, *NOT_DISMISSALS]).fetchone()[0]
 
-        player_is is "=" for the player's own balls, "<>" for everyone else's.
+    def _where(self, subject: Subject, player_is: str) -> tuple[list | None, list]:
+        """The WHERE conditions and their values; None when a person named is nobody.
+
+        player_is is "=" for the player's own balls, "<>" for everyone else's, and
+        "at the other end" for balls he was out on while the other batter faced.
         """
-        where = ["NOT super_over"]  # a tie-breaker is not part of the match
+        where = ["NOT d.super_over"]  # a tie-breaker is not part of the match
         values = []
+        # whose side "opposition" is seen from: the batter's, or else the bowler's
+        batting = not is_empty(getattr(subject, "player", None))
         for field in dataclasses.fields(subject):
-            value = getattr(subject, field.name)
+            name = field.name
+            value = getattr(subject, name)
             if is_empty(value):
                 continue
-            if field.name in PEOPLE:
+            if name in PEOPLE:
                 person_id = find_person(self.db, value)
                 if person_id is None:
                     return None, []
-                test = player_is if field.name == "player" else "="
-                where.append(f"{PEOPLE[field.name]} {test} ?")
+                if name == "player" and player_is == "at the other end":
+                    where.append(OUT_AT_OTHER_END)
+                    values.extend([person_id, person_id])
+                    continue
+                test = player_is if name == "player" else "="
+                where.append(f"{PEOPLE[name]} {test} ?")
                 values.append(person_id)
-            elif field.name in COLUMNS:
-                where.append(COLUMNS[field.name] + " = ?")
+            elif name in COLUMNS:
+                where.append(COLUMNS[name] + " = ?")
                 values.append(value)
+            elif name == "opposition" and batting:
+                # the batter's opponents bowled: the other side in his match
+                where.append("(d.batting_team <> ? AND (m.team1 = ? OR m.team2 = ?))")
+                values.extend([value, value, value])
+            elif name == "opposition":
+                where.append("d.batting_team = ?")  # the bowler's opponents batted
+                values.append(value)
+            elif name in MATCH_FILTERS:
+                condition, more = match_condition(name, value)
+                where.append(condition)
+                values.extend(more)
             else:
-                raise FilterError(f"cannot pick balls by {field.name} yet")
+                raise FilterError(f"cannot pick balls by {name} yet")
         return where, values

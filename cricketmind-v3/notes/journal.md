@@ -1226,3 +1226,106 @@ gender.
 - Limitations: L-038, L-039; L-035 updated
 - Numbers: N-016 and N-017 corrected, N-019
 - Section it feeds: Method (N8 M4; subjects); Data
+
+---
+
+## Day 43 — 2026-10-22 — Filters times measures
+
+**Built:** six new subject fields (opposition, season, since, innings, batting hand, review
+side); the format names (D-047: "T20I" is international T20s only, "T20" every twenty-over
+match); a `filters` list on each menu row, so a field a measure cannot narrow by gets no
+answer (D-048); one shared piece of SQL for the match filters (format, gender, season, since,
+ground), used by M1, M2 and M4; "opposition" seen from the batter's side or the bowler's.
+M2 now takes season and since (L-035), M4 the side (L-039).
+**Tested:** 32 new tests, 474 in all: Farhan's 44 balls under eleven filters that fit and
+eight that do not, Shanaka's two matches split by format, season, opponent and ground, Malinga
+by opponent, innings and batting hand, a ground by season, Australia's reviews by side. Eight
+deliberate mistakes were each caught.
+**Real data:** the v4 document's example works: Kohli against Australia since 2020, strike rate
+69.6 on 2,350 balls; in Tests 49.2 on 1,276; Kohli in T20Is 136.0 (N-020). A question takes
+0.06–0.5 s.
+
+---
+
+## Day 44 — 2026-10-22 — More measures
+
+**Built:** runs, batting average, boundary share and dot-ball share for batters; wickets,
+economy and bowling strike rate for bowlers (D-049), each a menu row, an engine function and
+renderer words. A ball now carries its no-ball runs. The average counts a run out at the
+non-striker's end: a new port question, matched on the register id.
+**Tested:** 13 new tests, 487 in all: Farhan's 73, 9 boundaries and 12 dots in 44 balls;
+Fakhar's average halved by a run out at the other end, and unchanged by retiring there;
+Malinga's 2 wickets, economy 10.13 and strike rate 24 on 48 legal balls, and his numbers at
+one ground, against one side and against right-handers. Eight deliberate mistakes were each
+caught.
+**Real data:** Kohli's Test average comes out at 46.85, exactly as published: 9,230 runs over
+196 outs on strike and one run out at the other end. Bumrah in Tests: 234 wickets at an
+economy of 2.77 (N-021).
+
+---
+
+## Day 45 — 2026-10-22 — Head to head, and match results
+
+**Built:** head to head needs nothing new: a batter's measures take a bowler, a bowler's take
+a batter. M5 (D-050): a team's win share, and one match's margin named by its winner. A new
+unit, matches; a menu row can say it is not a sample, and C3 then skips it.
+**Tested:** 13 new tests, 500 in all: Farhan against Theekshana from both sides (250.0 strike
+rate, 15.00 economy, the same 10 balls); who got whom; the three fixture results; a margin
+for the side that lost gets no answer; a tie leaves a win share. Six deliberate mistakes were
+each caught.
+**Real data:** Pakistan beat India by 10 wickets (2021), Bangladesh beat India by 7 wickets
+(2019), and the opposite claims get no answer; Anderson dismissed Kohli 7 times in Tests
+(N-021, N-022).
+
+---
+
+## Day 46 — 2026-10-22 — The editor meets the real engines
+
+**Built:** `EngineFactSource` (each menu metric to its engine and data) and `engines_on(db)`
+(D-051). The registry check, given the real engines, now names only what is left to build:
+weight_transfer (N6) and the two N9 rows.
+**Tested:** 10 new tests, 510 in all. The plan's test: C2 against the tiny DuckDB passes a
+true number and fails a wrong one, the right number for the wrong player, an inflated sample
+and a player nobody knows; one true and one false claim from each of the five engines
+(E-027). Five deliberate mistakes in the wiring were each caught.
+
+---
+
+## Day 47 — 2026-10-22 — A receipt for every number
+
+**Built:** `domain/receipts.py`: a receipt (the data's fingerprint, the engine and its
+version, the exact question as canonical JSON, the number, n and range), written and read as
+one line. The real FactSource stamps one on every answer; a fact's receipt is not part of the
+number. `infrastructure/snapshot.py`: the fingerprint, over the zip's SHA-256 and every
+player's batting hand and bowler type (D-052).
+**Tested:** 11 new tests, 521 in all: the same question twice gives the same receipt; a zip
+with one match fewer gives another; a hand label changes the fingerprint; every engine gives
+receipts; the receipt keeps the engine's number, never the agent's. Six deliberate mistakes
+were each caught.
+
+---
+
+## Day 48 — 2026-10-22 — The receipt checker
+
+**Built:** `application/receipt_checker.py` (re-ask, compare exactly) and
+`pipeline/check_receipts.py` (a receipts file in, one line per receipt out, exit 1 if any
+fails) (D-053).
+**Tested:** 11 new tests, 532 in all: a correct receipt passes; a tampered number, sample,
+range, engine name or question fails; a receipt from other data and one from an older engine
+say so; the script finds the tampered line and its exit code says so. Seven deliberate
+mistakes were each caught.
+**Real data:** nine receipts across the five engines, the bootstrap's range included, were
+confirmed on the full database; a tampered one (Kohli's Test average as 50) was caught
+(N-023).
+**Every deliberate mistake of Days 38–48 re-run on the final code (78 of them), with no
+compiled copies:** 76 caught at first. The 2 missed were the engines' own check in M2 and M4 (refuse a field the menu row does not list): since Day 43 the adapters refuse such fields too, so removing the engine's check changed nothing a test could see, and the review adapter would even have taken a ground, which M4's row does not offer. Three tests now pin the engines' own check with fakes that could answer the wider question; both mistakes are caught: 78 of 78, and 535 tests pass.
+
+**For the paper (Days 43–48):**
+- Decisions: D-047 to D-053
+- Limitations: L-040, L-041, L-042
+- Numbers: N-020 to N-023
+- Evidence: E-027 (verified); E-022 and E-026 updated
+- Section it feeds: Method (N8 filters, measures, M5; the Faith Check with real engines;
+  receipts); Evaluation (E-022)
+- For the next v4 revision: M5 joins M1-M4; format names; what a receipt's data
+  fingerprint covers

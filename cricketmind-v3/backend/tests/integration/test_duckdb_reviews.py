@@ -39,7 +39,10 @@ def team(name: str, gender: str) -> CricketSubject:
 
 
 def test_each_teams_reviews(repo):
-    assert repo.decisions("Australia", "female") == {"upheld": 2, "struck down": 1}
+    assert repo.decisions(team("Australia", "female")) == {
+        "upheld": 2,
+        "struck down": 1,
+    }
     assert review_overturn_rate(repo, team("Australia", "female")) == Fact(
         value=2 / 3, n=3
     )

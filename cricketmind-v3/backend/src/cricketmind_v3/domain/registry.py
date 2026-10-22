@@ -10,7 +10,36 @@ class RegistryError(ValueError):
 
 
 # what the sample size n of a count can count
-UNITS = ("balls", "innings", "reviews", "wickets")
+UNITS = ("balls", "innings", "reviews", "wickets", "matches")
+
+# what a bowler's numbers can be narrowed by (Day 44); "player" is the batter he
+# bowled to (head to head, Day 45)
+BOWLING_FILTERS = (
+    "player",
+    "opposition",
+    "venue",
+    "season",
+    "since",
+    "match_format",
+    "innings",
+    "phase",
+    "batting_hand",
+    "gender",
+)
+
+# what a batter's numbers can be narrowed by (Day 43): every one a Subject field
+BATTING_FILTERS = (
+    "bowler",
+    "opposition",
+    "venue",
+    "season",
+    "since",
+    "match_format",
+    "innings",
+    "phase",
+    "bowler_type",
+    "gender",
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -25,6 +54,9 @@ class ClaimType:
     needs_range: bool = False  # comparisons and predictions carry their range (I4)
     unit: str = "balls"  # what n counts (C3, the renderer's tag)
     comparison: bool = False  # a difference between two things: 0 means none (C4, C7)
+    filters: tuple[str, ...] = ()  # Subject fields it may also be narrowed by (Day 43)
+    sample: bool = True  # a count from a sample, so C3's floor applies; one match's
+    # result is a fact, not a sample (Day 45)
 
     def __post_init__(self):
         # ("player") is plain text; ("player",) is a tuple
@@ -32,6 +64,11 @@ class ClaimType:
             raise RegistryError(f"{self.name}: required_keys must be a tuple")
         if not isinstance(self.required_any, tuple):
             raise RegistryError(f"{self.name}: required_any must be a tuple")
+        if not isinstance(self.filters, tuple):
+            raise RegistryError(f"{self.name}: filters must be a tuple")
+        for key in self.filters:
+            if key in self.required_keys:
+                raise RegistryError(f"{self.name}: {key} is required, not a filter")
         if self.provenance == Provenance.PREDICTIVE and not self.needs_range:
             raise RegistryError(f"{self.name}: a prediction always needs its range")
         if self.unit not in UNITS:
@@ -48,12 +85,14 @@ CLAIM_TYPES = (
         provenance=Provenance.DESCRIPTIVE,
         source="N8.M1",
         required_keys=("player",),
+        filters=BATTING_FILTERS,
     ),
     ClaimType(
         name="dismissal_rate",
         provenance=Provenance.DESCRIPTIVE,
         source="N8.M1",
         required_keys=("player",),
+        filters=BATTING_FILTERS,
     ),
     ClaimType(
         name="sr_difference",
@@ -62,6 +101,7 @@ CLAIM_TYPES = (
         required_keys=("player", "shot", "other_shot"),
         needs_range=True,
         comparison=True,
+        filters=BATTING_FILTERS,
     ),
     ClaimType(
         name="sr_vs_average",
@@ -70,6 +110,57 @@ CLAIM_TYPES = (
         required_keys=("player",),
         needs_range=True,
         comparison=True,
+        filters=BATTING_FILTERS,
+    ),
+    # more measures, the same filters (Day 44)
+    ClaimType(
+        name="runs",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M1",
+        required_keys=("player",),
+        filters=BATTING_FILTERS,
+    ),
+    ClaimType(
+        name="batting_average",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M1",
+        required_keys=("player",),
+        filters=BATTING_FILTERS,
+    ),
+    ClaimType(
+        name="boundary_share",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M1",
+        required_keys=("player",),
+        filters=BATTING_FILTERS,
+    ),
+    ClaimType(
+        name="dot_ball_share",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M1",
+        required_keys=("player",),
+        filters=BATTING_FILTERS,
+    ),
+    ClaimType(
+        name="wickets",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M1",
+        required_keys=("bowler",),
+        filters=BOWLING_FILTERS,  # n is the legal balls bowled
+    ),
+    ClaimType(
+        name="economy",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M1",
+        required_keys=("bowler",),
+        filters=BOWLING_FILTERS,  # n is the legal balls bowled
+    ),
+    ClaimType(
+        name="bowling_strike_rate",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M1",
+        required_keys=("bowler",),
+        filters=BOWLING_FILTERS,  # n is the legal balls bowled
     ),
     ClaimType(
         name="venue_first_innings_avg",
@@ -77,6 +168,7 @@ CLAIM_TYPES = (
         source="N8.M2",
         required_keys=("venue", "match_format", "gender"),
         unit="innings",
+        filters=("season", "since"),
     ),
     ClaimType(
         name="venue_chasing_win_share",
@@ -84,6 +176,7 @@ CLAIM_TYPES = (
         source="N8.M2",
         required_keys=("venue", "match_format", "gender"),
         unit="innings",  # the chases that ended with a winner
+        filters=("season", "since"),
     ),
     ClaimType(
         name="venue_wicket_share",
@@ -91,6 +184,7 @@ CLAIM_TYPES = (
         source="N8.M2",
         required_keys=("venue", "match_format", "gender", "bowler_type"),
         unit="wickets",  # the bowlers' wickets whose bowler type is known
+        filters=("season", "since"),
     ),
     ClaimType(
         name="workload_ratio_flag",
@@ -106,6 +200,32 @@ CLAIM_TYPES = (
         # when the batter ended up out, so a rate by kind would be lopsided (Day 42)
         required_keys=("team", "gender"),
         unit="reviews",
+        filters=("match_format", "season", "since", "side"),
+    ),
+    # who won, and by how much (N8 M5, Day 45)
+    ClaimType(
+        name="team_win_share",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M5",
+        required_keys=("team", "gender"),
+        unit="matches",  # the matches someone won
+        filters=("opposition", "venue", "season", "since", "match_format"),
+    ),
+    ClaimType(
+        name="match_won_by_runs",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M5",
+        required_keys=("team", "opposition", "date", "gender"),  # team: the winner
+        unit="matches",
+        sample=False,
+    ),
+    ClaimType(
+        name="match_won_by_wickets",
+        provenance=Provenance.DESCRIPTIVE,
+        source="N8.M5",
+        required_keys=("team", "opposition", "date", "gender"),
+        unit="matches",
+        sample=False,
     ),
     # measured from the clip (N6); the clip itself is a Claim rule (Day 7)
     ClaimType(
@@ -170,7 +290,7 @@ def missing_keys(claim_type: ClaimType, subject: Subject) -> list[str]:
 
 
 def extra_keys(claim_type: ClaimType, subject: Subject) -> list[str]:
-    """Filled fields the claim type does not ask for (Day 40). Empty list: none.
+    """Filled fields the claim type neither needs nor can filter by (Days 40, 43).
 
     For measures with no filters: "India's first innings at Mirpur" is not the ground's
     average, so the team is extra and the engine gives no answer.
@@ -180,6 +300,8 @@ def extra_keys(claim_type: ClaimType, subject: Subject) -> list[str]:
         if field.name in claim_type.required_keys:
             continue
         if field.name in claim_type.required_any:
+            continue
+        if field.name in claim_type.filters:
             continue
         if not is_empty(getattr(subject, field.name)):
             extra.append(field.name)

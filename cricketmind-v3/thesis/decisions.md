@@ -792,3 +792,129 @@ Template:
   (the Day 39 and Day 40 numbers would have stayed mixed until then).
 - Status: built (Day 42); D-042 and D-043 corrected with it
 - Paper section: Method (subjects; N8)
+
+## D-047 — What a format's name means
+- Date: 2026-10-22
+- Decision: a subject's `match_format` is one of: "Test"; "ODI"; "T20I" (Cricsheet's T20
+  between international sides); "T20" (every twenty-over match, club and international,
+  with Cricsheet's "IT20" too); or Cricsheet's own codes "IT20", "ODM" (one-day, not ODIs)
+  and "MDM" (multi-day, not Tests). Any other name gets no answer.
+- Why: Cricsheet files a T20I and an IPL match alike as "T20" (team type tells them apart),
+  and keeps "IT20" for 320 other internationals (regional qualifiers). A reader's "T20I"
+  means internationals only: Kohli's T20 strike rate mixes in the IPL; his T20I one is
+  136.0 on 2,915 balls (N-020).
+- Alternatives considered: Cricsheet's codes alone (a reader's "T20I" is not one of them);
+  "T20I" with "IT20" in it (they are not the official internationals a reader means).
+- Status: built (Day 43). The Hundred's 100-ball matches are "T20" too: fine for rates per
+  ball, and M2 leaves them out by length (D-043).
+- Paper section: Data; Method (N8 filters)
+
+## D-048 — Filters times measures: one engine, many questions
+- Date: 2026-10-22
+- Decision: every filter is a Subject field. New fields: `opposition`, `season` ("2024" or
+  "2024/25", as Cricsheet writes it), `since` (a year or a day, that day included),
+  `innings`, `batting_hand` and `side` (who asked for a review). Each menu row lists the
+  fields it may be narrowed by (`filters`); a filled field it neither needs nor lists gets
+  no answer, never a quietly different question. A batter's measures take bowler,
+  opposition, ground, season, since, format, innings, phase, bowler type and gender; a
+  bowler's take the batter (head to head), opposition, ground, season, since, format,
+  innings, phase, batting hand and gender. "Opposition" is seen from the side the subject
+  is on: a batter's opponents bowled, a bowler's batted. The match filters (format,
+  gender, season, since, ground) are one shared piece of SQL for every engine; M2 takes
+  season and since, M4 format, season, since and side. Every value goes in as a ?.
+- Why: the v4 document's example, "Kohli's batting average against Australia since 2020",
+  needs four filters at once; a fixed list of questions would never be finished. A
+  question the engine cannot narrow must not be answered as if it had been.
+- Alternatives considered: one claim type per question (endless); filters in free text
+  (unchecked); language-model SQL (most such SQL runs and is wrong, CricBench).
+- Status: built (Day 43)
+- Paper section: Method (N8; the registry)
+
+## D-049 — The batting and bowling measures
+- Date: 2026-10-22
+- Decision: batting (n is the balls faced): runs off the bat; batting average, runs per
+  time out, where a run out at the non-striker's end counts as out (matched on the
+  player's register id through the names of that match) and a player never out has no
+  average; boundary share (balls faced hit for four or six); dot-ball share (balls faced
+  with nothing off the bat, so a ball with byes is a dot). Bowling (n is the legal balls):
+  wickets the bowler is credited with (bowled, caught, caught and bowled, lbw, stumped,
+  hit wicket); economy, runs off the bat plus wides plus no-balls per six legal balls
+  (byes, leg byes and penalty runs are not the bowler's); bowling strike rate, legal
+  balls per wicket, none without a wicket. Each is a menu row, an engine function and
+  renderer words.
+- Why: these are the scorers' conventions, so published records can check them: Kohli's
+  Test average comes out at 46.85 (9,230 runs, 196 outs on strike and one run out at the
+  other end), as published (N-021).
+- Alternatives considered: an average over the outs on strike only (misses the run outs a
+  batting average counts); economy per ball (cricket reads it per over).
+- Status: built (Day 44)
+- Paper section: Method (N8 M1)
+
+## D-050 — M5, match results
+- Date: 2026-10-22
+- Decision: a new engine, N8 M5, reads the matches table. `team_win_share`: of a team's
+  matches that someone won, the share it won (ties, draws and no results left out; a new
+  unit, matches, with a C3 floor of 10). `match_won_by_runs` and `match_won_by_wickets`:
+  the margin of one match, named by its winner, its opponent, its day and its gender. If
+  that team did not win it, there is no answer, so a false "X beat Y" fails C2. An
+  innings win is not a win "by runs". One match's result is a fact, not a sample: its
+  menu row says `sample=False`, and C3's floor skips it.
+- Why: the plan's "match results (winner, margin)"; a result names a winner, which is
+  text, so the winner goes in the subject and C2 checks it by asking. Real checks:
+  Pakistan beat India by 10 wickets on 24 October 2021, Bangladesh beat India by 7
+  wickets on 3 November 2019, and the opposite claims get no answer (N-022).
+- Alternatives considered: the winner as the claim's value (C2 compares numbers);
+  margins inside M1 (they are not counted from balls); a C3 floor of one match.
+- Status: built (Day 45). The v4 document lists M1-M4; M5 joins it at its next revision.
+- Paper section: Method (N8 M5; C3)
+
+## D-051 — The real FactSource
+- Date: 2026-10-22
+- Decision: `EngineFactSource` maps each menu metric to its engine function and the
+  repository it reads; `engines_on(db)` wires the five DuckDB adapters to one connection.
+  A metric with no engine yet, or a clip's number, gets no answer, so the Faith Check
+  fails closed on it. Its `sources()` feed the registry check, which now names only the
+  rows still to build: weight_transfer (N6) and the two N9 rows.
+- Why: the Faith Check had only spoken to a fake. Now C2 asks the real engines: on the
+  fixtures a true number passes, and a wrong number, the right number for the wrong
+  player, an inflated sample and a player the data does not know each fail (E-027).
+- Alternatives considered: each agent calling the engines itself (the gate's own
+  re-query is the point: I8); one adapter for all engines (five small ones are easier to
+  test).
+- Status: built (Day 46)
+- Paper section: Method (the Faith Check; N8)
+
+## D-052 — A receipt for every number
+- Date: 2026-10-22
+- Decision: the real FactSource stamps a receipt on every answer it gives the gate: the
+  data's fingerprint, the engine and its version, the exact question as one line of
+  canonical JSON (the metric, the subject's filled fields, the clip), and the number with
+  its n and range. The fingerprint is one SHA-256 over the Cricsheet zip's own SHA-256 and
+  every player's batting hand and bowler type (the inputs from outside the zip). An
+  engine's version is a number in `ENGINE_VERSIONS`, raised when one of its counting rules
+  changes. A receipt is not part of the number: two facts with the same number are equal
+  whatever their receipts. Receipts come from the gate's own re-query, never from an agent.
+- Why: invariant I8; anyone can re-make a number. On the real data the fingerprint takes
+  0.04 s, and the same question twice gives the same receipt.
+- Alternatives considered: a checksum of the DuckDB file (its bytes change when it is
+  opened and written, not only when the data does); the git commit as the engine's version
+  (the running app may have no git; a hand-raised version says what changed); the SQL text
+  in the receipt (an adapter's detail; the question plus the engine's version decide it).
+- Status: built (Day 47)
+- Paper section: Method (receipts, I8)
+
+## D-053 — The receipt checker
+- Date: 2026-10-22
+- Decision: `check_receipt` re-asks the engines the receipt's question and compares,
+  exactly: the number, n, the range and the engine's name. A receipt from other data is
+  not re-run ("other data"); a receipt from an older engine version is re-run and says so.
+  `python -m cricketmind_v3.pipeline.check_receipts <database> <receipts file>` reads one
+  receipt a line, opens the database read-only, says one line per receipt, and exits 1 if
+  any is not confirmed.
+- Why: exact comparison works because every engine is deterministic, the bootstrap
+  included (seed 42): on the real data, 9 receipts across the five engines were confirmed,
+  and a tampered one (Kohli's Test average as 50) was caught (N-023).
+- Alternatives considered: comparing within rounding (a tampered 46.86 would pass);
+  re-running receipts from other data (a different number would look like tampering).
+- Status: built (Day 48); the final exam's receipts are checked on Day 162 (E-022)
+- Paper section: Method (receipts); Evaluation

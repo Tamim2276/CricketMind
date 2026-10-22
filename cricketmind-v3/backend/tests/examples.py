@@ -120,6 +120,7 @@ def v2_balls(runs: int, outs: int, balls: int = 50) -> list[Ball]:
                 batter="V Kohli",
                 runs_batter=scored,
                 wides=0,
+                noballs=0,
                 player_out=out,
                 wicket_kind=kind,
             )

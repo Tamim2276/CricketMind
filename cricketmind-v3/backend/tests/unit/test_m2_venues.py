@@ -32,14 +32,11 @@ def score(runs, innings, won) -> InningsScore:
 def mirpur() -> FakeVenueRepository:
     repo = FakeVenueRepository()
     repo.add_innings(
-        MIRPUR,
-        "T20",
-        "male",
-        [score(140, 1, False), score(141, 2, True), score(160, 1, True)],
+        MIRPUR_T20, [score(140, 1, False), score(141, 2, True), score(160, 1, True)]
     )
     spin = Wicket(match_type="T20", scheduled_balls=120, bowler_type="spin", kind="lbw")
     pace = dataclasses.replace(spin, bowler_type="pace")
-    repo.add_wickets(MIRPUR, "T20", "male", {spin: 3, pace: 1})
+    repo.add_wickets(MIRPUR_T20, {spin: 3, pace: 1})  # the matches, not pace or spin
     return repo
 
 
@@ -70,3 +67,12 @@ def test_a_different_question_gets_no_answer():
     assert venue_first_innings_avg(mirpur(), bangladesh) is None
     shakib = dataclasses.replace(MIRPUR_T20, player="Shakib Al Hasan")
     assert venue_chasing_win_share(mirpur(), shakib) is None
+
+
+def test_the_engine_refuses_even_when_the_data_could_answer():
+    # Day 48: the adapter refuses a team too, so this pins the engine's own check:
+    # here the fake would hand over innings for the wider question
+    repo = mirpur()
+    bangladesh = dataclasses.replace(MIRPUR_T20, team="Bangladesh")
+    repo.add_innings(bangladesh, [score(180, 1, True)])
+    assert venue_first_innings_avg(repo, bangladesh) is None

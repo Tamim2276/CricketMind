@@ -21,13 +21,14 @@ def dismissal_rate(balls: list[Ball]) -> Fact | None:
     return measures.dismissal_rate(tally(balls))
 
 
-def ball(runs=0, wides=0, out=None, kind=None, batter="V Kohli") -> Ball:
+def ball(runs=0, wides=0, out=None, kind=None, batter="V Kohli", noballs=0) -> Ball:
     return Ball(
         match_type="T20",
         gender="male",
         batter=batter,
         runs_batter=runs,
         wides=wides,
+        noballs=noballs,
         player_out=out,
         wicket_kind=kind,
     )

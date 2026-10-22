@@ -1,4 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from cricketmind_v3.domain.receipts import Receipt
 
 
 class FactError(ValueError):
@@ -12,6 +14,9 @@ class Fact:
     value: float
     n: int | None = None  # balls, innings or reviews behind a count
     interval: tuple[float, float] | None = None  # 95% range, when the engine gives one
+    # where the number came from (Day 47); not part of the number, so two facts with
+    # the same number are equal whatever their receipts
+    receipt: Receipt | None = field(default=None, compare=False)
 
     def __post_init__(self):
         if self.interval is not None:

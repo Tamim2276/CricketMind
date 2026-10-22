@@ -52,22 +52,34 @@ def test_a_list_of_keys_is_refused():
         dataclasses.replace(strike_rate_type(), required_any=["team"])
 
 
-def test_all_ten_claim_types_are_on_the_menu():
+def test_every_claim_type_is_on_the_menu():
+    # the ten of Day 10, two of the ground's on Day 40, seven measures on Day 44,
+    # three results on Day 45
     names = []
     for claim_type in CLAIM_TYPES:
         names.append(claim_type.name)
     assert sorted(names) == [
+        "batting_average",
+        "boundary_share",
+        "bowling_strike_rate",
         "dismissal_rate",
+        "dot_ball_share",
+        "economy",
+        "match_won_by_runs",
+        "match_won_by_wickets",
         "matchup_difference",
         "p_dismissal_within_k",
         "review_overturn_rate",
+        "runs",
         "sr_difference",
         "sr_vs_average",
         "strike_rate",
+        "team_win_share",
         "venue_chasing_win_share",
         "venue_first_innings_avg",
         "venue_wicket_share",
         "weight_transfer",
+        "wickets",
         "workload_ratio_flag",
     ]
 
@@ -299,3 +311,26 @@ def test_either_of_required_any_is_not_extra():
     )
     assert extra_keys(either, CricketSubject(team="India")) == []
     assert extra_keys(either, CricketSubject(venue="Lord's")) == []
+
+
+# Filters (Day 43)
+
+
+def test_a_batting_measure_takes_the_batting_filters():
+    rate = lookup("strike_rate")
+    against = CricketSubject(player="V Kohli", opposition="Australia", since="2020")
+    assert extra_keys(rate, against) == []
+    on_a_date = CricketSubject(player="V Kohli", date="2024-04-12")
+    assert extra_keys(rate, on_a_date) == ["date"]  # not a filter of this measure
+
+
+def test_a_filter_cannot_also_be_required():
+    with pytest.raises(RegistryError):
+        dataclasses.replace(strike_rate_type(), filters=("player",))
+
+
+def test_one_matchs_result_is_not_a_sample():
+    # Day 45: a margin is a fact about one match; C3's floor does not apply
+    assert not lookup("match_won_by_runs").sample
+    assert lookup("team_win_share").sample
+    assert lookup("team_win_share").unit == "matches"

@@ -6,7 +6,7 @@ from cricketmind_v3.domain.registry import lookup
 from cricketmind_v3.domain.render import counted
 
 # the smallest sample a count may stand on without a warning (design parameters, D-030)
-FLOORS = {"balls": 30, "innings": 10, "reviews": 20, "wickets": 30}
+FLOORS = {"balls": 30, "innings": 10, "reviews": 20, "wickets": 30, "matches": 10}
 
 # ways to warn the reader; no digits, so they pass C5
 QUALIFIERS = (
@@ -30,6 +30,8 @@ def check_c3(finding: Finding, context: Context) -> list[Failure]:
         claim_type = lookup(claim.metric)
         if claim_type is None:
             continue  # C1 reports it
+        if not claim_type.sample:
+            continue  # one match's result is a fact, not a sample (Day 45)
         floor = FLOORS[claim_type.unit]
         if claim.n >= floor:
             continue
