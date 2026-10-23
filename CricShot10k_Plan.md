@@ -4686,6 +4686,8 @@ since its real epoch time is known.
    gradients and BatchNorm statistics, tested; about a third more compute).
    The half-done batch-2 run is thrown away with `--force`, and a resume
    file from a different config is now refused instead of continued.
+   Probed at batch 4 with it: peak 4.5 GB, reserved 5.8 of 11.6 (was 9.4 /
+   10.1), 0.70 s a batch, ~18.5 min an epoch, ~14 h a split.
 2. **Deterministic mode costs about 1.6x end to end** (B01: 0.27 s/batch
    without it, 0.43 with it). B01 itself ran before 11.1 added the mode;
    B02–B08 run with it, like every Phase 3 run since. It changes which
@@ -4764,6 +4766,38 @@ survive fine-tuning?
 
 **At the end, write down:** the best backbone by grouped val, and whether size
 helped (B05 at 5.4M against B07 at 83M).
+
+**Ran 2026-10-20 to 10-24, B02–B07** (B08 still to run). Val top-1 /
+macro-F1, same head and training as B01:
+
+| ID | params | author | grouped | mean | h (a + g) |
+| --- | --- | --- | --- | --- | --- |
+| B01 EfficientNetV2-S | 21M | 79.23 / 0.778 | 77.69 / 0.758 | 78.5 | 3.3 + 5.9 |
+| B02 EfficientNetV2-B3 | 13M | 77.02 / 0.747 | 78.84 / 0.767 | 77.9 | 7.3 + 5.5 |
+| B03 Xception | 21M | 79.92 / 0.783 | 80.82 / 0.805 | 80.4 | 6.4 + 4.7 |
+| **B04 ConvNeXt-T** | 28M | **80.24 / 0.785** | **81.52 / 0.808** | **80.9** | 5.1 + 4.0 |
+| B05 MobileNetV3-L | 5.4M | 75.00 / 0.734 | 77.76 / 0.764 | 76.4 | 4.8 + 3.7 |
+| B06 ResNet-50 | 26M | 77.53 / 0.747 | 80.18 / 0.792 | 78.9 | 6.2 + 4.1 |
+| B07 RegNetY-16GF | 83M | 77.90 / 0.765 | 79.67 / 0.784 | 78.8 | 10.2 + 13.0 |
+
+1. **Best backbone: B04 ConvNeXt-T, on both splits.** The frozen probe's
+   8–9 point lead over EfficientNet shrinks to 1.0 (author) and 3.8
+   (grouped) once fine-tuned; B03 Xception is level with it, within noise.
+2. **Size did not help.** B07 has 15x B05's parameters and gains 2.4
+   points on average, but loses 2.1 to B04, which is a third its size.
+   Past ~20M parameters the recipe, not the backbone, is the limit.
+3. **Every backbone except B01 overfits the same way:** 97–99% train
+   accuracy at the best val epoch, against B01's 77–84 (B01 alone predates
+   deterministic mode, and its train accuracy also ran lower). No dropout
+   (the authors' 0.0) is the shared cause; Tier 2 #13 in Phase 4.
+4. **Grouped is higher than author for six of seven**, by 0.9–2.8 points:
+   Day 16's own-match magnets make the author val split the harder one.
+5. **B07's fix held.** Batch 4 with `grad_checkpoint`: 58 / 66 / 71% val
+   over the first three epochs, against 29 / 32 / 21 at batch 2. It cost
+   23 GPU-hours, under the probe's ~28; the grouped half was resumed across
+   a power cut, which (17.3) leaves no trace.
+6. Family B so far: 75 GPU-hours for B02–B07 (plus the thrown-away batch-2
+   start), against ~95 re-costed.
 
 ---
 

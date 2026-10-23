@@ -3552,3 +3552,26 @@ loaded).
 Also: the half-finished batch-2 run left a resume file, and the runner would
 have continued it at batch 4 as if nothing had changed. Training now refuses
 a resume file whose config differs and says to use --force.
+
+## 2026-10-24 — Family B, seven of eight: the backbone matters less than hoped
+
+B07 at batch 4 with checkpointing came back healthy: 58, 66, 71% val over
+its first three epochs, where batch 2 had gone 29, 32, 21. It finished
+77.90 author and 79.67 grouped, after 23 GPU-hours (the grouped half
+resumed across a power cut).
+
+With B05, B06 and B07 done, the picture is clear enough:
+
+- ConvNeXt-T (B04) is best on both splits, 80.24 / 81.52, with Xception
+  (B03) level with it. The frozen probe gave ConvNeXt an 8-9 point lead
+  over EfficientNet; fine-tuning shrinks that to 1-4.
+- Size buys almost nothing. RegNetY-16GF is 83M parameters and lands
+  between B01 and B06. MobileNetV3 at 5.4M is last, but only 2.4 points
+  behind it on average.
+- Everything but B01 sits at 97-99% train accuracy at its best val epoch.
+  That's a 17-24 point gap with no dropout anywhere. The next points are
+  in regularisation (Phase 4), not in a bigger backbone.
+- Grouped beats author for six of seven, which fits Day 16: the author
+  val split is the harder one.
+
+B08 (Swin-T) is the last of the family.
