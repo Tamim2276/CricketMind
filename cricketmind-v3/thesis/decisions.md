@@ -943,3 +943,28 @@ Template:
   (unchecked).
 - Status: planned (Days 49, 51-52, 100, 108, 126; optional on Day 172)
 - Paper section: System (the report page); Evaluation (the human study, if chosen)
+
+## D-055 — Agentic retrieval, where it cannot touch a number
+- Date: 2026-10-25
+- Decision: agentic retrieval-augmented generation (an LLM that retrieves, judges what it
+  found, and retrieves again) is used in three places, none of which makes a number.
+  (1) A third baseline in the evaluation (Days 164-165): the same local model writes SQL on
+  the same DuckDB, grades the result, rewrites and retries, at most three rounds, with no
+  Faith Check; its numbers are scored like the other systems'. (2) N3's names and grounds
+  (Day 58): retrieve candidates from the registers, weigh the question's clues, keep one
+  register id or ask which one; at most three look-ups. (3) Optional: the Explainer's
+  rules answers (Day 72), with corrective retrieval over the Laws of Cricket and a check
+  that every cited clause exists, only if MCC permits storing the Laws. The engines, the
+  numbers, the Faith Check and the receipts stay as they are.
+- Why: a 2026 reviewer will ask why not agentic RAG; the fair answer is to run it on the
+  same exam. On CricBench, models write correct cricket SQL only about a third to a half of
+  the time (GPT-4o 33.7%, DeepSeek R1 50.6%). For names, the loop fixes known gaps (L-028,
+  L-029, L-031), and research on entity-linking agents and clarifying questions supports
+  asking only when candidates stay close. The Laws are words, where retrieval is the right
+  tool; MCC reserves their copyright.
+- Alternatives considered: agentic RAG at the core (the model would see raw data and make
+  numbers, and the cost would no longer be bounded); no agentic retrieval at all (the
+  obvious modern baseline missing from the paper); web search for "can't check" questions
+  (unverified text in a system built on checked facts).
+- Status: planned (Days 58, 72 optional, 164-165)
+- Paper section: Evaluation (Baseline 3); Method (N3; the Explainer)

@@ -176,6 +176,13 @@ future directions. Read only in part: check Section 4 before citing it for the g
 
 ## To read (verify that each exists, then add notes)
 
+- Agentic retrieval (D-055): Singh et al. (2025), "Agentic Retrieval-Augmented Generation:
+  A Survey" (arXiv 2501.09136); Self-RAG (Asai et al., ICLR 2024); corrective RAG; LangGraph's
+  agentic RAG tutorial (grade, rewrite, retry); SPORTSQL (arXiv 2508.17157), sports
+  questions answered by SQL; an entity-linking agent for question answering (arXiv
+  2508.03865); clarifying ambiguous entities (arXiv 2504.09665). Found by search on
+  2026-10-25; read before citing.
+
 - Uncertainty pictures (D-054): Kay et al. (CHI 2016), "When(ish) is my bus?", quantile
   dotplots; Hullman et al. (PLOS ONE 2015) and Kale et al. (TVCG 2019), hypothetical
   outcome plots; Padilla, Kay and Hullman (2020), a review of uncertainty visualization;

@@ -1343,3 +1343,18 @@ the sentence first, then 100 simulated overs as dots, a survival worm, and an an
 all drawn from a summary the engine keeps with its receipt; a 2D skeleton over the clip, 3D only
 as a stretch goal. **Plan notes added:** Days 49, 51, 52, 100, 108, 126, and an optional
 comparison in the human study (Day 172). Nothing is built yet.
+
+---
+
+## Plan change — 2026-10-25 — Agentic RAG, where it cannot touch a number
+
+**Asked:** should CricketMind use agentic RAG? **Answered:** not at the core: there the model
+would see raw data and make numbers, the opposite of the Faith Check. CricketMind's design is
+already tool-grounded generation with verification. **Found by search:** the agentic RAG survey
+(Singh et al. 2025) and LangGraph's own pattern (grade what was retrieved, rewrite, retry); on
+CricBench, models write correct cricket SQL only about a third to a half of the time; research
+on entity-linking agents and clarifying questions; MCC keeps the Laws' copyright. **Decided
+(D-055):** three places that never make a number: a third baseline (agentic RAG writing its own
+SQL, Days 164-165), N3's names and grounds (Day 58), and, only with MCC's permission, the
+Explainer's rules answers (Day 72). Limitation L-043; E-014 now names three baselines. Nothing is
+built yet.
