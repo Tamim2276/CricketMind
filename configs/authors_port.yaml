@@ -22,6 +22,10 @@
 #   ReduceLROnPlateau(patience=4) drops after 4 bad epochs, torch's
 #   patience=4 after 5, so torch gets 3. GRU init and BatchNorm eps/momentum
 #   already match (head.py).
+#   Stochastic depth: Keras' EfficientNetV2S skips residual blocks at random
+#   in training, rate 0.2 x block / 40 (their .keras has 34 such Dropout
+#   layers, 0.005 to 0.195). timm's default is none; drop_path 0.2 gives the
+#   same 34 rates exactly. torchvision's efficientnet_v2_s already has it.
 #
 # Not copied, deliberately:
 #   - their shuffle: a buffer of 32 over a dataframe shuffled once, so every
@@ -44,6 +48,7 @@ hidden: 128
 dense: 1024
 dropout: 0.0
 keras_dense: true
+drop_path: 0.2                     # Keras' drop_connect_rate
 
 optimizer: adam
 lr: 1.0e-4

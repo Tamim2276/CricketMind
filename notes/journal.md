@@ -3575,3 +3575,31 @@ With B05, B06 and B07 done, the picture is clear enough:
   val split is the harder one.
 
 B08 (Swin-T) is the last of the family.
+
+## 2026-10-24 — Family B done; a hidden regulariser, and a hole in the port
+
+B08 (Swin-T) finished at 78.41 author and 79.54 grouped: third, behind
+ConvNeXt-T and Xception. A vision transformer per frame is no better than
+a good CNN of the same size.
+
+Swin did one odd thing: 87-90% train accuracy at its best epoch, where
+B03-B07 all sit at 97-99. Asking why turned up something I hadn't
+looked at. torchvision builds stochastic depth into some backbones:
+during training, residual blocks are skipped at random, at a rate that
+rises through the network. EfficientNetV2-S (B01) and Swin-T (B08) get up
+to 0.2, ConvNeXt-T 0.1, the rest none. So "only the backbone changes" in
+Family B wasn't quite true: B01 and B08 carried an extra regulariser. It
+didn't win them val accuracy (both mid-table), and B02 overfits less
+without it, so it's a partial explanation at best. Phase 4 can test it
+directly.
+
+The bigger consequence was for the port. The authors' Keras EfficientNetV2S
+has the same thing (drop_connect_rate 0.2); their .keras file holds 34
+Dropout layers from 0.005 to 0.195. The timm model I ported to has none
+by default. So the "exact" port had less regularisation than their
+original, and less than B01. New config key drop_path, timm only, and the
+port sets 0.2. The 34 rates now match their file exactly, checked block by
+block and pinned in a test. Caught before any R run.
+
+Also fixed: the 7.7 heading in the plan had been glued onto the end of
+7.6's last line by an earlier edit of mine.

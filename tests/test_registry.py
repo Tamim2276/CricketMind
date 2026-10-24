@@ -210,6 +210,7 @@ def test_the_port_is_their_notebook_not_mimic_author():
     assert cfg["lr_patience"] == 3                          # = Keras' 4
     assert cfg["adam_eps"] == 1e-7
     assert cfg["keras_dense"] is True
+    assert cfg["drop_path"] == 0.2                          # Keras' default
     assert cfg["variant"] == "box"
     assert R.resolve(R.get("R01_port_replica"), "author")["variant"] == "replica"
     # R03 is B01 but for the frames

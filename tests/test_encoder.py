@@ -175,6 +175,35 @@ def test_the_timm_backbones_build_both_ways(name, avg, flat):
     assert FrameEncoder(name, pretrained=False, pool="flatten").out_dim == flat
 
 
+def _skip_rates(encoder):
+    found = []
+    for layer in encoder.modules():
+        drop = getattr(layer, "drop_path", None)
+        p = getattr(drop, "drop_prob", 0.0)
+        if getattr(layer, "has_skip", False) and p > 0:
+            found.append(round(p, 3))
+    return found
+
+
+def test_drop_path_gives_the_keras_rates():
+    """7.7: the 34 Dropout rates in their .keras, block by block. timm has
+    none by default; drop_path 0.2 must give exactly these."""
+    pytest.importorskip("timm")
+    keras = [0.005, 0.015, 0.02, 0.025, 0.035, 0.04, 0.045, 0.055, 0.06,
+             0.065, 0.07, 0.075, 0.085, 0.09, 0.095, 0.1, 0.105, 0.11, 0.115,
+             0.12, 0.13, 0.135, 0.14, 0.145, 0.15, 0.155, 0.16, 0.165, 0.17,
+             0.175, 0.18, 0.185, 0.19, 0.195]
+    name = "tf_efficientnetv2_s.in1k"
+    assert _skip_rates(FrameEncoder(name, pretrained=False)) == []
+    port = FrameEncoder(name, pretrained=False, pool="flatten", drop_path=0.2)
+    assert _skip_rates(port) == keras
+
+
+def test_drop_path_is_timm_only():
+    with pytest.raises(ValueError, match="timm-only"):
+        FrameEncoder("resnet50", pretrained=False, drop_path=0.2)
+
+
 def test_torchvision_wins_a_name_both_libraries_have():
     """resnet50 is in both. torchvision, or B06 would change under B01's
     protocol without anyone deciding it."""

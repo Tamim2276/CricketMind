@@ -92,20 +92,25 @@ def backbone_problem(name: str, pretrained: bool = True):
             f"{hosted[0]} --include \"*.json\" --include \"{hosted[1]}\"")
 
 
-def _timm_backbone(name: str, pretrained: bool, pool: str):
+def _timm_backbone(name: str, pretrained: bool, pool: str, drop_path=None):
     """A timm model without its classifier, and the colours it was trained on.
 
     num_classes=0 drops the classifier; global_pool="" also drops the pool,
     leaving the (N, C, 7, 7) grid, which a Flatten turns into one row.
+    drop_path None keeps timm's default, which is none.
     """
     import timm
+    extra = {}
+    if drop_path is not None:
+        extra["drop_path_rate"] = drop_path
     if pool == "flatten":
         model = timm.create_model(name, pretrained=pretrained, num_classes=0,
-                                  global_pool="")
+                                  global_pool="", **extra)
         mean = tuple(model.pretrained_cfg["mean"])
         std = tuple(model.pretrained_cfg["std"])
         return nn.Sequential(model, nn.Flatten(1)), mean, std
-    model = timm.create_model(name, pretrained=pretrained, num_classes=0)
+    model = timm.create_model(name, pretrained=pretrained, num_classes=0,
+                              **extra)
     return model, tuple(model.pretrained_cfg["mean"]), \
         tuple(model.pretrained_cfg["std"])
 
@@ -234,7 +239,8 @@ class FrameEncoder(nn.Module):
 
     def __init__(self, name: str = DEFAULT_BACKBONE, pretrained: bool = True,
                  freeze: bool = False, pool: str = "avg",
-                 size: int = DEFAULT_SIZE, grad_checkpoint: bool = False):
+                 size: int = DEFAULT_SIZE, grad_checkpoint: bool = False,
+                 drop_path=None):
         super().__init__()
         if pool not in POOLS:
             raise ValueError(f"pool must be one of {POOLS}, got {pool!r}")
@@ -244,8 +250,12 @@ class FrameEncoder(nn.Module):
         if is_timm(name):
             if grad_checkpoint:
                 raise ValueError("grad_checkpoint is torchvision-only for now")
-            self.backbone, mean, std = _timm_backbone(name, pretrained, pool)
+            self.backbone, mean, std = _timm_backbone(name, pretrained, pool,
+                                                      drop_path)
         else:
+            if drop_path is not None:
+                # torchvision bakes its own in (0.2 for EfficientNetV2-S)
+                raise ValueError("drop_path is timm-only for now")
             if pretrained:
                 weights = "DEFAULT"
             else:

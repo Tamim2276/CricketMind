@@ -55,6 +55,7 @@ DEFAULTS = {
     "dropout": 0.0,
     "keras_dense": False,     # Keras' Dense init in the GRU head (7.7)
     "grad_checkpoint": False, # recompute backbone stages to save memory (B07)
+    "drop_path": None,        # timm's stochastic depth; None keeps its default
     "head": "gru",            # the head on cached features; Families A, D, V
     "bidirectional": False,
     "layers": 1,

@@ -2193,7 +2193,9 @@ of them; 5 never came out of our pipeline but did come out of theirs):
    script and their split lists is the only way to close it.
 5. Our models fall on frames they never trained on, as expected (B03, the
    steadier, keeps 51.00). Whether training on their frames helps is R03's
-   question, not this table's. Their method, ported from their notebook, on their frames (added 2026-10-21)
+   question, not this table's.
+
+### 7.7 Their method, ported from their notebook, on their frames (added 2026-10-21)
 
 **Why.** Days 1–7 rebuilt their method from a saved model file. With their
 training notebook in hand, it can be ported exactly, and trained on frames
@@ -2210,11 +2212,21 @@ cell. What `mimic_author` had wrong or could not know:
 | lr drop after | 4 bad epochs (Keras `patience=4` = torch 3) | 5 (torch `patience=4`): **off by one since Phase 1** |
 | Adam epsilon | 1e-7 | 1e-8 |
 | Dense init | Glorot, zero bias (`keras_dense`) | torch default |
+| stochastic depth | residual blocks skipped at 0.2 × block / 40 (`drop_path: 0.2`) | the same: torchvision builds it in |
 
 New config keys, all off by default so nothing earlier changes: `monitor`,
-`adam_eps`, `keras_dense`. Not copied, with reasons in the yaml: their
-nearly-fixed shuffle order, their offline flip (ours is 0.5 online), their
-unpublished split.
+`adam_eps`, `keras_dense`, `drop_path`. Not copied, with reasons in the yaml:
+their nearly-fixed shuffle order, their offline flip (ours is 0.5 online),
+their unpublished split.
+
+**Fixed 2026-10-24, before any R run: the port was missing stochastic
+depth.** Keras' EfficientNetV2S skips residual blocks at random during
+training (`drop_connect_rate` 0.2); their `.keras` holds 34 such Dropout
+layers, 0.005 to 0.195. timm builds none unless asked, so the "exact" port
+had less regularisation than the original, and than B01, whose torchvision
+backbone has the same schedule built in. `drop_path: 0.2` now gives the
+same 34 rates exactly (tested against the list read from their file).
+Found while asking why Swin-T (B08) overfits less than the other backbones.
 
 **Family R**, a 2 × 2 with B01, so any change can be put down to its cause:
 
@@ -4767,18 +4779,20 @@ survive fine-tuning?
 **At the end, write down:** the best backbone by grouped val, and whether size
 helped (B05 at 5.4M against B07 at 83M).
 
-**Ran 2026-10-20 to 10-24, B02–B07** (B08 still to run). Val top-1 /
-macro-F1, same head and training as B01:
+**Ran 2026-10-20 to 10-24, B02–B08.** Val top-1 / macro-F1, same head and
+training as B01. "skip" is the stochastic depth each backbone brings with it
+(the largest per-block rate):
 
-| ID | params | author | grouped | mean | h (a + g) |
-| --- | --- | --- | --- | --- | --- |
-| B01 EfficientNetV2-S | 21M | 79.23 / 0.778 | 77.69 / 0.758 | 78.5 | 3.3 + 5.9 |
-| B02 EfficientNetV2-B3 | 13M | 77.02 / 0.747 | 78.84 / 0.767 | 77.9 | 7.3 + 5.5 |
-| B03 Xception | 21M | 79.92 / 0.783 | 80.82 / 0.805 | 80.4 | 6.4 + 4.7 |
-| **B04 ConvNeXt-T** | 28M | **80.24 / 0.785** | **81.52 / 0.808** | **80.9** | 5.1 + 4.0 |
-| B05 MobileNetV3-L | 5.4M | 75.00 / 0.734 | 77.76 / 0.764 | 76.4 | 4.8 + 3.7 |
-| B06 ResNet-50 | 26M | 77.53 / 0.747 | 80.18 / 0.792 | 78.9 | 6.2 + 4.1 |
-| B07 RegNetY-16GF | 83M | 77.90 / 0.765 | 79.67 / 0.784 | 78.8 | 10.2 + 13.0 |
+| ID | params | skip | author | grouped | mean | h (a + g) |
+| --- | --- | --- | --- | --- | --- | --- |
+| B01 EfficientNetV2-S | 21M | 0.2 | 79.23 / 0.778 | 77.69 / 0.758 | 78.5 | 3.3 + 5.9 |
+| B02 EfficientNetV2-B3 | 13M | – | 77.02 / 0.747 | 78.84 / 0.767 | 77.9 | 7.3 + 5.5 |
+| B03 Xception | 21M | – | 79.92 / 0.783 | 80.82 / 0.805 | 80.4 | 6.4 + 4.7 |
+| **B04 ConvNeXt-T** | 28M | 0.1 | **80.24 / 0.785** | **81.52 / 0.808** | **80.9** | 5.1 + 4.0 |
+| B05 MobileNetV3-L | 5.4M | – | 75.00 / 0.734 | 77.76 / 0.764 | 76.4 | 4.8 + 3.7 |
+| B06 ResNet-50 | 26M | – | 77.53 / 0.747 | 80.18 / 0.792 | 78.9 | 6.2 + 4.1 |
+| B07 RegNetY-16GF | 83M | – | 77.90 / 0.765 | 79.67 / 0.784 | 78.8 | 10.2 + 13.0 |
+| B08 Swin-T | 28M | 0.2 | 78.41 / 0.766 | 79.54 / 0.788 | 79.0 | 6.2 + 7.6 |
 
 1. **Best backbone: B04 ConvNeXt-T, on both splits.** The frozen probe's
    8–9 point lead over EfficientNet shrinks to 1.0 (author) and 3.8
@@ -4786,18 +4800,28 @@ macro-F1, same head and training as B01:
 2. **Size did not help.** B07 has 15x B05's parameters and gains 2.4
    points on average, but loses 2.1 to B04, which is a third its size.
    Past ~20M parameters the recipe, not the backbone, is the limit.
-3. **Every backbone except B01 overfits the same way:** 97–99% train
-   accuracy at the best val epoch, against B01's 77–84 (B01 alone predates
-   deterministic mode, and its train accuracy also ran lower). No dropout
-   (the authors' 0.0) is the shared cause; Tier 2 #13 in Phase 4.
-4. **Grouped is higher than author for six of seven**, by 0.9–2.8 points:
-   Day 16's own-match magnets make the author val split the harder one.
-5. **B07's fix held.** Batch 4 with `grad_checkpoint`: 58 / 66 / 71% val
+3. **A vision transformer per frame (B08 Swin-T) is no better than a
+   CNN:** third, 1.9 behind ConvNeXt-T at the same size.
+4. **Most backbones overfit hard:** train accuracy at the best val epoch
+   is 97–99% for B03–B07, against 77–84 for B01, 87–90 for B08 and 86–91
+   for B02. B01 and B08 are the two whose torchvision builds skip residual
+   blocks at random (rate up to 0.2), which is a regulariser the others
+   lack, and **a hidden second variable in this family**: "only the
+   backbone changes" was not quite true. It did not buy val accuracy here
+   (B01 and B08 sit mid-table), and B02 is low without it, so it is not the
+   whole story. Phase 4's regularisation (Tier 2 #13) tests it properly.
+5. **Grouped is higher than author for seven of eight**, by 0.9–2.8
+   points: Day 16's own-match magnets make the author val split the harder
+   one. B01 is the exception.
+6. **B07's fix held.** Batch 4 with `grad_checkpoint`: 58 / 66 / 71% val
    over the first three epochs, against 29 / 32 / 21 at batch 2. It cost
    23 GPU-hours, under the probe's ~28; the grouped half was resumed across
    a power cut, which (17.3) leaves no trace.
-6. Family B so far: 75 GPU-hours for B02–B07 (plus the thrown-away batch-2
+7. **Family B: 89 GPU-hours for B02–B08** (plus the thrown-away batch-2
    start), against ~95 re-costed.
+8. Asking why B08 overfit less found a gap in 7.7's port: it had no
+   stochastic depth, which their Keras backbone has. Fixed before any R
+   run (see 7.7).
 
 ---
 
