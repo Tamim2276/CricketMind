@@ -968,3 +968,23 @@ Template:
   (unverified text in a system built on checked facts).
 - Status: planned (Days 58, 72 optional, 164-165)
 - Paper section: Evaluation (Baseline 3); Method (N3; the Explainer)
+
+## D-056 — A stronger out-risk model only if the test says so
+- Date: 2026-10-25
+- Decision: N9.T1 starts simple (Day 49: one out-rate per ball from the batter's record,
+  with its Beta uncertainty). Day 50 adds shrinkage, and puts one extra on trial: the risk
+  per ball depends on how long the batter has been in (balls faced so far: 1-5, 6-15,
+  16-30, after 30), each stage shrunk toward the average the same way. Day 53 decides it:
+  fitted on older seasons and tested on the newest, the stages stay only if the Brier score
+  is better and the calibration no worse, a rule written down before the run. Other extras
+  (recent form, the match situation) are not tried now; line, length, speed, field and
+  pitch are not in the data and are never pretended.
+- Why: the user asked how to make the simple model stronger; "stronger" must mean "predicts
+  better when tested", not "more complicated". Being out early in an innings is a commonly
+  held cricket belief, and the balls faced so far can be counted from the data. A model that
+  fails calibration is weaker, however detailed.
+- Alternatives considered: a full ball-by-ball model with every feature (much more to build
+  and test; harder to explain; kept for future work); no extra at all (leaves an obvious,
+  testable improvement untried).
+- Status: planned (Days 50 and 53); the outcome, either way, goes in the journal and here
+- Paper section: Method (N9 T1); Evaluation (E-007)

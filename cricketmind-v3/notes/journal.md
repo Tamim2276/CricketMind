@@ -1358,3 +1358,15 @@ on entity-linking agents and clarifying questions; MCC keeps the Laws' copyright
 SQL, Days 164-165), N3's names and grounds (Day 58), and, only with MCC's permission, the
 Explainer's rules answers (Day 72). Limitation L-043; E-014 now names three baselines. Nothing is
 built yet.
+
+---
+
+## Plan change — 2026-10-25 — A stronger out-risk model, on trial
+
+**Asked:** Day 49's model is weak: the computer only rolls a weighted dice from a batter's past
+out-rate. Can it be stronger? **Answered:** yes, with what the data has: shrinkage (Day 50), the
+bowler (Days 51-52), and a fair test on the newest season (Day 53). **Decided (D-056):** one extra
+on trial, the risk changing with how long the batter has been in (balls 1-5, 6-15, 16-30, after
+30); Day 53 keeps it only if it predicts better (Brier score) without worse calibration, a rule
+set before the run. What the data cannot see (line, length, speed, field, pitch) is never
+pretended (L-044). Nothing is built yet.
