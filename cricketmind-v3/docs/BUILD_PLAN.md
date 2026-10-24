@@ -1914,10 +1914,10 @@ from 50 balls is wide; one from 5,000 balls is narrow.
 | 46 | Connecting the editor to the real engine | The real `FactSource`: registry metric → engine function | C2 test against the tiny DuckDB |
 | 47 | A receipt for every number | Every claim from an engine carries a receipt: the data snapshot's checksum, the exact engine query and the engine's version | Tests: the same question twice gives the same receipt; a changed data file gives a different one |
 | 48 | — | The receipt checker: a small script that re-runs any receipt on the saved data snapshot and confirms the number | Tests: a correct receipt passes; a tampered number fails |
-| 49 | Monte Carlo, and the Beta distribution | N9.T1: chance of being out within k balls, with estimation uncertainty | Test: median ≈ 0.405, interval ≈ [0.155, 0.697] (seeded); journal: the curve for 4 outs in 50 balls |
+| 49 | Monte Carlo, and the Beta distribution | N9.T1: chance of being out within k balls, with estimation uncertainty. The engine also keeps a small summary for Day 100's pictures: 100 representative simulated overs (where the wicket fell, if it did) and the chance of still batting after each ball, with its band; the summary carries the receipt (D-054) | Test: median ≈ 0.405, interval ≈ [0.155, 0.697] (seeded); journal: the curve for 4 outs in 50 balls |
 | 50 | Shrinkage: pulling small samples toward the average | A population prior from the data | Test: 1 out in 2 balls is not a 50% risk |
-| 51 | — | N9.T2 part 1: head-to-head rates with shrinkage; baseline and counterfactual | Tests |
-| 52 | — | N9.T2 part 2: the simulated difference, its interval, "no detectable difference" | Tests |
+| 51 | — | N9.T2 part 1: head-to-head rates with shrinkage; baseline and counterfactual. Each side keeps the same simulation summary as Day 49 (D-054) | Tests |
+| 52 | — | N9.T2 part 2: the simulated difference, its interval, "no detectable difference". The two sides' simulated overs, paired, feed Day 100's animated matchup (D-054) | Tests |
 | 53 | Calibration (the weather-forecast example); the Brier score | Calibration run: fit on older seasons, test on the newest | Reliability plot and Brier score saved; journal: what "70% means 70%" means |
 | 54 | Review day — **M2** | The engine report, with M1 set against published career records for players whose matches are all in the data (E-026; Kohli's Tests matched on Day 38), and how many real ranges end within one replay step of 0 (L-034). Every number in the report carries a receipt, and the checker confirms them all (D-052, D-053) | **M2:** engines on real data |
 
@@ -2022,7 +2022,7 @@ export function ProvenanceBadge({ kind }: Props) {
 | 97 | Uploads with progress | Ask page part 2: optional clip upload | The progress bar moves |
 | 98 | — | Submit → job id → the Live page | It navigates with the id |
 | 99 | EventSource (the browser side of SSE) | The Live page: a node timeline showing retries and regenerations | The timeline fills in live |
-| 100 | — | Report page part 1: findings per agent; claims with M/D/P badges, sample size, intervals | A saved report renders |
+| 100 | — | Report page part 1: findings per agent; claims with M/D/P badges, sample size, intervals. The what-if pictures, drawn only from the engine's summary and never computed in the browser: the sentence first; 100 simulated overs as dots, with the range (a quantile dotplot); the survival worm with its band; for a matchup, the two sides' simulated overs animated side by side (hypothetical outcome plots). Labelled "simulated"; shown only once Day 53's calibration passes, otherwise labelled "not calibrated". visx for the SVG, Motion for the animation; Day 111 is spare if this runs over (D-054) | A saved report renders |
 | 101 | — | Report page part 2: withheld findings, and which check failed; an explanation shows its "not checked" label; a declined question shows what can be asked instead | "Why?" expands |
 | 102 | — | The History page | The list opens a report |
 | 103 | — | The How-it-works page: the v3 diagram, explained simply | It renders |
@@ -2030,7 +2030,7 @@ export function ProvenanceBadge({ kind }: Props) {
 | 105 | Testing components: Vitest + Testing Library | Tests for the badge, the form and the report | Green |
 | 106 | Mocking | A Live-timeline test with a fake EventSource | Green |
 | 107 | End-to-end tests with Playwright | Ask → report, against the backend in fake mode | Green |
-| 108 | Accessibility and small screens | Labels, keyboard use, contrast, phone layout | Checklist done |
+| 108 | Accessibility and small screens | Labels, keyboard use, contrast, phone layout. The what-if pictures: a wicket is marked W, not by colour alone; each picture has a text alternative; each reads on a phone (D-054) | Checklist done |
 | 109 | — | Polish; production build | `npm run build` works |
 | 110 | Review day — **M4** | Give yourself a demo | **M4:** the website answers text questions |
 | 111 | — | A spillover day for frontend learning | — |
@@ -2064,7 +2064,7 @@ its final model will be ready. Until it is, a stub stands in for it, and nothing
 | 123 | — | Posture validation run on the CricShot10k test clips, resumable | All clips done |
 | 124 | ROC-AUC, in simple words | AUC per metric; keep a metric only if AUC ≥ 0.75 | Report written; registry updated |
 | 125 | — | Measured posture into N6; N11c and N11j cite it | Tests |
-| 126 | — | The website shows the clip, the predicted shot, its confidence and the posture | Tests |
+| 126 | — | The website shows the clip, the predicted shot, its confidence and the posture. The measured skeleton is drawn over the real frames (2D), only for metrics that passed Day 124's AUC gate. A 3D skeleton (MediaPipe's world landmarks, drawn with React Three Fiber) is a stretch goal only, labelled "estimated from video": one camera gives unreliable depth (D-054) | Tests |
 | 127 | Review day — **M5** | Journal | **M5:** the video path works |
 
 **Which frames is part of the contract.** Never assume "15 evenly spaced frames from the raw
@@ -2167,7 +2167,7 @@ models, tested on someone else's questions (CricBench), and rated by people.
 | 169 | Testing on someone else's questions | CricBench, part 1: load its released English questions (check the licence and their Cricsheet snapshot) and sort each into the five kinds. If it is still unreleased, the paper says so (L-016) and these three days are buffer | Questions loaded, or the gap recorded |
 | 170 | — | CricBench, part 2: CricketMind answers every question, resumable | All answers saved |
 | 171 | — | CricBench, part 3: compare with their correct answers, beside their published model results | `results/cricbench.csv`; E-020 verified |
-| 172 | Designing a fair human study | 20 questions from the locked set; the three systems' answers shown blind and in random order; raters score trust and usefulness; a consent form; the ethics approval asked for on Day 14 in hand | Study pack ready |
+| 172 | Designing a fair human study | 20 questions from the locked set; the three systems' answers shown blind and in random order; raters score trust and usefulness; a consent form; the ethics approval asked for on Day 14 in hand. Optional, decided here: also compare the sentence alone with the sentence plus the dotplot (Kay et al. 2016; "In Dice We Trust", CHI 2024). If not, every system's answers are shown with the same display, so a picture cannot sway the trust ratings (D-054) | Study pack ready |
 | 173 | — | Run the study with at least 10 raters (cricket fans, players or coaches); save every rating as it comes in | All ratings saved |
 | 174 | Comparing ratings fairly | Mean rating per system, agreement between raters, a significance test | `results/human_study.csv`; E-015 verified |
 | 175 | — | Engine validation: calibration plots and spot checks | Figures |

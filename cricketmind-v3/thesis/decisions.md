@@ -918,3 +918,28 @@ Template:
   re-running receipts from other data (a different number would look like tampering).
 - Status: built (Day 48); the final exam's receipts are checked on Day 162 (E-022)
 - Paper section: Method (receipts); Evaluation
+
+## D-054 — What-if pictures: drawn from the engine, in forms people read correctly
+- Date: 2026-10-25
+- Decision: a prediction is shown as its sentence first, then pictures drawn only from a
+  small summary the engine keeps (with the receipt), never computed in the browser and
+  never by the language model: 100 simulated overs as dots, with the range (a quantile
+  dotplot in cricket form); the chance of still batting after each ball, with its band (a
+  survival "worm"); and for a matchup, the two sides' simulated overs animated side by
+  side (hypothetical outcome plots). Labelled "simulated"; shown only once Day 53's
+  calibration passes. Built with visx (SVG) and Motion (animation). For a clip, the
+  measured skeleton is drawn over the real frames in 2D; a 3D skeleton is a stretch goal
+  only. Ball tracking, pitch maps and wagon wheels are never drawn: the data has no line,
+  length or direction. Whether the human study compares sentence alone with sentence plus
+  dotplot is decided on Day 172.
+- Why: people read chances more accurately from discrete outcomes than from curves (Kay
+  et al. 2016); text and quantile dotplots kept trust highest over time ("In Dice We
+  Trust", CHI 2024); FiveThirtyEight showed 100 dots drawn from 40,000 simulations;
+  hypothetical outcome plots beat error bars when comparing two things (Hullman et al.
+  2015; Kale et al. 2019). Cricket fans already read CricViz's win-probability worm.
+- Alternatives considered: a density curve (harder to read correctly); 3D ball paths
+  (would be invented data); a general chart library such as Recharts (too rigid for the
+  overs grid) or ECharts (built for large data); pictures drawn by the language model
+  (unchecked).
+- Status: planned (Days 49, 51-52, 100, 108, 126; optional on Day 172)
+- Paper section: System (the report page); Evaluation (the human study, if chosen)

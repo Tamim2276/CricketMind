@@ -1329,3 +1329,17 @@ compiled copies:** 76 caught at first. The 2 missed were the engines' own check 
   receipts); Evaluation (E-022)
 - For the next v4 revision: M5 joins M1-M4; format names; what a receipt's data
   fingerprint covers
+
+---
+
+## Plan change — 2026-10-25 — What-if pictures
+
+**Asked:** can a what-if answer be shown as a simulation, professionally and in a cricket way,
+even in 3D? **Found by search:** people read chances better from dots than curves (quantile
+dotplots, Kay et al. 2016); text plus dotplots kept trust highest (CHI 2024); FiveThirtyEight
+drew 100 dots from 40,000 simulations; animated outcomes beat error bars for comparisons
+(HOPs). 3D ball paths would be invented: the data has no line or length. **Decided (D-054):**
+the sentence first, then 100 simulated overs as dots, a survival worm, and an animated matchup,
+all drawn from a summary the engine keeps with its receipt; a 2D skeleton over the clip, 3D only
+as a stretch goal. **Plan notes added:** Days 49, 51, 52, 100, 108, 126, and an optional
+comparison in the human study (Day 172). Nothing is built yet.

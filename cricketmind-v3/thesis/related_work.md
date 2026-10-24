@@ -176,6 +176,12 @@ future directions. Read only in part: check Section 4 before citing it for the g
 
 ## To read (verify that each exists, then add notes)
 
+- Uncertainty pictures (D-054): Kay et al. (CHI 2016), "When(ish) is my bus?", quantile
+  dotplots; Hullman et al. (PLOS ONE 2015) and Kale et al. (TVCG 2019), hypothetical
+  outcome plots; Padilla, Kay and Hullman (2020), a review of uncertainty visualization;
+  "In Dice We Trust" (CHI 2024), trust in forecast displays over time. Found by search on
+  2026-10-25; read before citing.
+
 - Cricket player profiling from text commentary (arXiv:2311.06818) and fine-grain annotation
   of cricket videos from commentary (arXiv:1511.07607): leads for the commentary bridge.
 - MARCH (arXiv:2603.24579), MACE (arXiv:2604.17225): multi-agent self-checking against
