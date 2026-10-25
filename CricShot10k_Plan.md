@@ -2228,6 +2228,17 @@ backbone has the same schedule built in. `drop_path: 0.2` now gives the
 same 34 rates exactly (tested against the list read from their file).
 Found while asking why Swin-T (B08) overfits less than the other backbones.
 
+**Replica built 2026-10-25:** 10,089 of 10,091 clips, ~6 h at 0.47 clips/s.
+The 2 failures ("no striker in any frame") are clips box never made either.
+**But the replica has clips box does not:** 144 train, 30 val, 35 test on
+the author split (120 / 43 / 46 grouped). The authors' detector finds a
+batter in ~2% of the clips our Day 4 pipeline dropped. Left alone, R01 and
+R03 would be scored on a different val and test set from B01's, and the
+2 × 2 would mix "other frames" with "other clips". **`same_clips_as: box`**
+(a new dataset option, off by default) keeps only the clips box also has;
+R01 and R03 set it, so all of family R trains and scores on exactly B01's
+6,320 / 1,584 (author) and 6,341 / 1,569 (grouped). Caught before any R run.
+
 **Family R**, a 2 × 2 with B01, so any change can be put down to its cause:
 
 | | box crops | replica frames |

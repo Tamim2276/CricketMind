@@ -252,14 +252,14 @@ ENTRIES = [
     # ---- R: the authors' method as their notebooks run it (7.7) ----
     # a 2 x 2 with B01: protocol (B01's or theirs) x frames (box or theirs)
     {"id": "R01_port_replica", "base": "authors_port",
-     "cfg": {"variant": "replica"},
+     "cfg": {"variant": "replica", "same_clips_as": "box"},
      "why": "their notebook's method on frames made their way: the closest "
             "anyone can get to their 89%"},
     {"id": "R02_port_box", "base": "authors_port", "cfg": {},
      "why": "their notebook's method on our crops: what the protocol alone "
             "changes against B01"},
     {"id": "R03_mimic_replica", "base": "mimic_author",
-     "cfg": {"variant": "replica"},
+     "cfg": {"variant": "replica", "same_clips_as": "box"},
      "why": "B01's protocol on frames made their way: what the "
             "preprocessing alone changes"},
 ]

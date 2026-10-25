@@ -96,6 +96,29 @@ def test_the_two_variants_hold_the_same_clips(split):
     assert box[0][1] == seg[0][1]
 
 
+def test_same_clips_as_drops_what_the_other_variant_lacks(split):
+    """7.7: the replica has clips box never made; R01 and R03 must be scored
+    on B01's clips, or the comparison mixes in a different test set."""
+    csv_path, proc = split
+    # a fourth variant that also has vid9_0, which box does not
+    extra = os.path.join(proc, "replica", "Sweep", "vid9_0.npy")
+    os.makedirs(os.path.dirname(extra))
+    np.save(extra, np.zeros((15, 224, 224, 3), np.uint8))
+    for clip in ("Cover Drive/vid1_0", "Sweep/vid2_0", "Pull/vid3_0"):
+        path = os.path.join(proc, "replica", clip.replace("/", os.sep) + ".npy")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        np.save(path, np.zeros((15, 224, 224, 3), np.uint8))
+
+    assert len(CricShotDataset(csv_path, processed=proc,
+                               variant="replica")) == 4
+    same = CricShotDataset(csv_path, processed=proc, variant="replica",
+                           same_clips_as="box")
+    assert len(same) == 3
+    assert same.skipped == ["Sweep/vid9_0.avi"]
+    assert same.missing == []
+    assert "1 skipped" in repr(same)
+
+
 def test_an_unknown_variant_is_not_silently_empty(split):
     csv_path, proc = split
     with pytest.raises(RuntimeError):

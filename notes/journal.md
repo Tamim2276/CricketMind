@@ -3603,3 +3603,21 @@ block and pinned in a test. Caught before any R run.
 
 Also fixed: the 7.7 heading in the plan had been glued onto the end of
 7.6's last line by an earlier edit of mine.
+
+## 2026-10-25 — The replica is built, and it has more clips than box
+
+tools.replica --build --all finished: 10,089 of 10,091 clips, about six
+hours. The two failures had no striker in any frame, and box never made
+them either.
+
+Checking coverage before launching R turned up the opposite problem: the
+replica has clips box doesn't. 144 train, 30 val and 35 test on the author
+split. The authors' detector (their segmentation model doing a detector's
+job) finds a batter in about 2% of the clips our Day 4 pipeline gave up on.
+
+That would have quietly broken family R's whole point. R01 and R03 would
+have been scored on a different val and test set from B01, so any
+difference would have mixed "their frames" with "a few more, probably
+harder, clips". New dataset option same_clips_as: keep only the clips
+another variant also has. R01 and R03 set it to box, and all three R runs
+now see exactly B01's clips. Tested, and counted on the real data.

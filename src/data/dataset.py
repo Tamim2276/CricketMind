@@ -37,11 +37,16 @@ class CricShotDataset(Dataset):
     `variant` picks which preprocessing to read: "box" for the plain crop,
     "seg" for the background-removed one. Same clips, same labels, so the two
     are directly comparable.
+
+    `same_clips_as` keeps only the clips another variant also has. The
+    replica keeps ~2% more clips than box (their detector finds a batter
+    where ours did not), and a comparison with B01 needs the same clips.
     """
 
     def __init__(self, split_csv: str, variant: str = "box",
                  processed: str = PROCESSED, classes: Optional[Sequence[str]] = None,
-                 transform=None, strict: bool = False):
+                 transform=None, strict: bool = False,
+                 same_clips_as: Optional[str] = None):
         self.variant = variant
         self.processed = processed
         self.transform = transform
@@ -54,13 +59,17 @@ class CricShotDataset(Dataset):
 
         self.items: List[tuple] = []
         self.missing: List[str] = []
+        self.skipped: List[str] = []    # here, but not in same_clips_as
         with open(split_csv, newline="", encoding="utf-8") as fh:
             for row in csv.DictReader(fh):
                 path = self._path(row["clip"])
-                if os.path.exists(path):
-                    self.items.append((path, int(row["label"]), row["clip"]))
-                else:
+                if not os.path.exists(path):
                     self.missing.append(row["clip"])
+                elif same_clips_as and not os.path.exists(
+                        self._path(row["clip"], same_clips_as)):
+                    self.skipped.append(row["clip"])
+                else:
+                    self.items.append((path, int(row["label"]), row["clip"]))
 
         if self.missing and strict:
             raise FileNotFoundError(
@@ -69,8 +78,10 @@ class CricShotDataset(Dataset):
         if not self.items:
             raise RuntimeError(f"no usable clips in {split_csv} for '{variant}'")
 
-    def _path(self, clip: str) -> str:
-        return os.path.join(self.processed, self.variant,
+    def _path(self, clip: str, variant: Optional[str] = None) -> str:
+        if variant is None:
+            variant = self.variant
+        return os.path.join(self.processed, variant,
                             clip.replace("/", os.sep)[:-4] + ".npy")
 
     def __len__(self) -> int:
@@ -98,6 +109,8 @@ class CricShotDataset(Dataset):
         miss = ""
         if self.missing:
             miss = f", {len(self.missing)} missing"
+        if self.skipped:
+            miss += f", {len(self.skipped)} skipped"
         return (f"CricShotDataset({len(self.items)} clips, "
                 f"variant={self.variant!r}, {len(self.classes)} classes{miss})")
 

@@ -18,7 +18,7 @@ NAME = "video_gru"
 # every config key this file acts on, beyond the loop's own
 READS = ("variant", "processed", "flip", "backbone", "pretrained", "freeze",
          "hidden", "dense", "dropout", "pool", "keras_dense",
-         "grad_checkpoint", "drop_path")
+         "grad_checkpoint", "drop_path", "same_clips_as")
 
 
 def check(cfg):
@@ -74,14 +74,16 @@ def datasets(cfg):
     train_set = CricShotDataset(os.path.join(cfg["split"], "train.csv"),
                                 variant=cfg["variant"],
                                 processed=cfg["processed"],
-                                transform=build_transform(cfg["flip"]))
+                                transform=build_transform(cfg["flip"]),
+                                same_clips_as=cfg["same_clips_as"])
     val_set = eval_set(cfg, os.path.join(cfg["split"], "val.csv"))
     return train_set, val_set
 
 
 def eval_set(cfg, split_csv, classes=None):
     return CricShotDataset(split_csv, variant=cfg["variant"],
-                           processed=cfg["processed"], classes=classes)
+                           processed=cfg["processed"], classes=classes,
+                           same_clips_as=cfg["same_clips_as"])
 
 
 def model(cfg, train_set, num_classes):

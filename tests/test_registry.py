@@ -212,12 +212,16 @@ def test_the_port_is_their_notebook_not_mimic_author():
     assert cfg["keras_dense"] is True
     assert cfg["drop_path"] == 0.2                          # Keras' default
     assert cfg["variant"] == "box"
-    assert R.resolve(R.get("R01_port_replica"), "author")["variant"] == "replica"
+    r01 = R.resolve(R.get("R01_port_replica"), "author")
+    assert r01["variant"] == "replica"
+    # the replica keeps clips box lost; B01's clips, or the test set differs
+    assert r01["same_clips_as"] == "box"
     # R03 is B01 but for the frames
     r03 = R.resolve(R.get("R03_mimic_replica"), "author")
+    assert r03["same_clips_as"] == "box"
     b01 = R.resolve(R.get("B01_effnetv2s"), "author")
     for key in b01:
-        if key in ("name", "variant"):
+        if key in ("name", "variant", "same_clips_as"):
             continue
         assert r03[key] == b01[key], key
 
