@@ -4,6 +4,7 @@ from typing import Protocol
 from cricketmind_v3.domain.balls import Ball
 from cricketmind_v3.domain.facts import Fact
 from cricketmind_v3.domain.results import Result
+from cricketmind_v3.domain.stages import Record
 from cricketmind_v3.domain.subject import Subject
 from cricketmind_v3.domain.venues import InningsScore, Wicket
 from cricketmind_v3.domain.workload import Spell
@@ -33,6 +34,14 @@ class DeliveryRepository(Protocol):
         """How often the subject's player was out as the non-striker (a run out), on
         balls that fit the other filters (Day 44). They count in his average."""
 
+    def records(self, subject: Subject) -> list[Record]:
+        """The player's times out and balls faced under the subject's filters, one
+        record for each stage of his innings (Day 50)."""
+
+    def others_records(self, subject: Subject) -> list[Record]:
+        """Every other batter's, one record per batter and stage: what is normal, the
+        average he is pulled toward (Day 50)."""
+
 
 class FakeDeliveryRepository:
     """Balls written in by hand for tests, filed under the subject they answer."""
@@ -41,6 +50,8 @@ class FakeDeliveryRepository:
         self.balls: dict[Subject, list[Ball]] = {}
         self.everyone_else: dict[Subject, dict[Ball, int]] = {}
         self.other_end: dict[Subject, int] = {}
+        self.his_records: dict[Subject, list[Record]] = {}
+        self.their_records: dict[Subject, list[Record]] = {}
         self.asked: list[Subject] = []  # what the engine asked for, to check in tests
 
     def add(self, subject: Subject, balls: list[Ball]) -> None:
@@ -51,6 +62,12 @@ class FakeDeliveryRepository:
 
     def add_outs_at_other_end(self, subject: Subject, outs: int) -> None:
         self.other_end[subject] = outs
+
+    def add_records(self, subject: Subject, records: list[Record]) -> None:
+        self.his_records[subject] = records
+
+    def add_others_records(self, subject: Subject, records: list[Record]) -> None:
+        self.their_records[subject] = records
 
     def deliveries(self, subject: Subject) -> list[Ball]:
         self.asked.append(subject)
@@ -63,6 +80,14 @@ class FakeDeliveryRepository:
     def outs_at_other_end(self, subject: Subject) -> int:
         self.asked.append(subject)
         return self.other_end.get(subject, 0)
+
+    def records(self, subject: Subject) -> list[Record]:
+        self.asked.append(subject)
+        return list(self.his_records.get(subject, []))
+
+    def others_records(self, subject: Subject) -> list[Record]:
+        self.asked.append(subject)
+        return list(self.their_records.get(subject, []))
 
 
 class FactSource(Protocol):

@@ -11,6 +11,20 @@ import duckdb
 # kinds of "wicket" that are not dismissals: the batter can come back
 NOT_OUT = "('retired hurt', 'retired not out')"
 
+# how long the batter had been in at each ball: the balls he had faced in the innings
+# before it (N9, Day 50). A wide is not a ball faced; a no-ball is. Worked out on the
+# whole innings, so a filter (the middle overs) does not start him again
+BALL_STAGES = """
+CREATE OR REPLACE TABLE ball_stages AS
+SELECT match_id, innings, over, ball_index,
+       COALESCE(SUM(CASE WHEN wides = 0 THEN 1 ELSE 0 END) OVER (
+           PARTITION BY match_id, innings, batter
+           ORDER BY over, ball_index
+           ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING), 0) AS faced_before
+FROM deliveries
+WHERE NOT super_over
+"""
+
 BUILD = (
     # One name per ground. The part before the first comma names the ground, and
     # "Lord's" and "Lord's, London" are one ground. But when that name comes with
@@ -90,9 +104,17 @@ BUILD = (
     FROM deliveries
     WHERE review_by IS NOT NULL
     """,
+    BALL_STAGES,
 )
 
-TABLES = ("match_venues", "venues", "innings_scores", "bowler_days", "reviews")
+TABLES = (
+    "match_venues",
+    "venues",
+    "innings_scores",
+    "bowler_days",
+    "reviews",
+    "ball_stages",
+)
 
 
 def build_derived(db) -> dict[str, int]:

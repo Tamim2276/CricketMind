@@ -5,14 +5,23 @@ SYNTHETIC: the v2 running example, the pull's 4 outs in 50 balls (N-003, N-004).
 
 import math
 
-from cricketmind_v3.domain.out_within import middle, out_within, representative
+from cricketmind_v3.domain.out_within import (
+    Stage,
+    middle,
+    out_within,
+    out_within_stages,
+    representative,
+)
+from cricketmind_v3.domain.shrinkage import JEFFREYS, Prior
 
 
-def exact_chances(outs: int, balls: int, k: int) -> tuple[float, float, float]:
+def exact_chances(
+    outs: int, balls: int, k: int, prior: Prior = JEFFREYS
+) -> tuple[float, float, float]:
     """The answer with no luck in it: the Beta curve's own 2.5%, 50% and 97.5% points,
     found by adding up the curve, then turned into chances of being out within k."""
-    a = 0.5 + outs
-    b = 0.5 + balls - outs
+    a = prior.outs + outs
+    b = prior.survived + balls - outs
     log_beta = math.lgamma(a) + math.lgamma(b) - math.lgamma(a + b)
     steps = 40_000
     area = [0.0]
@@ -128,3 +137,54 @@ def test_no_answer_without_a_question_or_balls():
     assert out_within(0, 0, 6) is None  # no balls faced
     assert out_within(4, 50, 0) is None  # within no balls
     assert out_within(60, 50, 6) is None  # more outs than balls
+
+
+# How long he has been in (Day 50, on trial)
+
+# SYNTHETIC: so many balls that each stage's rate is all but known: 10% a ball in his
+# first five, 2% after
+NEW = Stage(first=1, outs=10_000, faced=100_000, prior=JEFFREYS)
+SET = Stage(first=6, outs=2_000, faced=100_000, prior=JEFFREYS)
+
+
+def test_one_stage_is_the_day_49_answer():
+    whole = Stage(first=1, outs=4, faced=50, prior=JEFFREYS)
+    assert out_within_stages([whole], 6, 0) == out_within(4, 50, 6)
+
+
+def test_each_ball_has_the_risk_of_its_stage():
+    # he has faced 3: balls 4 and 5 are in his first stage, 6 and 7 in the next
+    found = out_within_stages([NEW, SET], 4, 3)
+    still = 0.9 * 0.9 * 0.98 * 0.98  # 0.7779: by hand
+    assert abs(found.chance - (1 - still)) < 0.002
+    assert abs(found.survival[2][0] - 0.81) < 0.002  # after his two risky balls
+    assert abs(found.survival[4][0] - still) < 0.002
+
+
+def test_once_he_is_in_only_the_later_risk_counts():
+    found = out_within_stages([NEW, SET], 4, 5)  # balls 6 to 9: all in the next stage
+    assert abs(found.chance - (1 - 0.98**4)) < 0.002
+
+
+def test_the_pictured_overs_show_the_early_danger():
+    # out on ball 1 or 2 (10% each) far more often than on ball 3 or 4 (2% each)
+    found = out_within_stages([NEW, SET], 4, 3)
+    early = 0
+    late = 0
+    for fell in found.overs:
+        if fell in (1, 2):
+            early += 1
+        if fell in (3, 4):
+            late += 1
+    assert early > 3 * late
+
+
+def test_stages_that_do_not_fit_give_no_answer():
+    assert out_within_stages([SET, NEW], 4, 3) is None  # out of order
+    assert out_within_stages([SET], 4, 3) is None  # nothing for balls 4 and 5
+    assert out_within_stages([NEW, SET], 4, -1) is None  # faced -1 balls
+    assert out_within_stages([NEW, SET], 0, 3) is None  # within no balls
+    nothing = Stage(first=1, outs=0, faced=0, prior=JEFFREYS)
+    assert out_within_stages([nothing], 6, 0) is None  # no balls of his own
+    impossible = Stage(first=1, outs=3, faced=2, prior=JEFFREYS)
+    assert out_within_stages([impossible], 6, 0) is None

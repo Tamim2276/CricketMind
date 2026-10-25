@@ -9,7 +9,12 @@ KOHLI_COVER_DRIVE = CricketSubject(
     player="V Kohli", shot="Cover Drive", phase="powerplay", bowler_type="pace"
 )
 KOHLI_PULL = CricketSubject(
-    player="V Kohli", shot="Pull", phase="powerplay", bowler_type="pace", k=6
+    player="V Kohli",
+    shot="Pull",
+    phase="powerplay",
+    bowler_type="pace",
+    k=6,
+    match_format="T20",  # a prediction names its format (Day 50)
 )
 
 DOCUMENT_TEMPLATE = (

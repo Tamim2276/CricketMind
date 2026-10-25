@@ -30,7 +30,8 @@ KOHLI = CricketSubject(
     player="V Kohli", shot="Cover Drive", phase="powerplay", bowler_type="pace"
 )
 KOHLI_VS_PULL = dataclasses.replace(KOHLI, other_shot="Pull")
-KOHLI_PULL = dataclasses.replace(KOHLI, shot="Pull", k=6)
+# a prediction names its format (Day 50)
+KOHLI_PULL = dataclasses.replace(KOHLI, shot="Pull", k=6, match_format="T20")
 KOHLI_SPIN = CricketSubject(player="V Kohli", phase="powerplay", bowler_type="spin")
 ROHIT = dataclasses.replace(KOHLI, player="RG Sharma")
 VENUE = CricketSubject(venue="Wankhede Stadium", match_format="T20", gender="male")

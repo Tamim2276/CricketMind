@@ -32,7 +32,7 @@ ENGINE_VERSIONS = {
     "N8.M3": "1",
     "N8.M4": "1",
     "N8.M5": "1",
-    "N9.T1": "1",
+    "N9.T1": "2",  # Day 50: pulled toward normal
 }
 
 

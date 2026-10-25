@@ -95,11 +95,12 @@ def test_a_claim_must_say_whose_number_it_is():
 
 
 def test_every_missing_field_is_named():
-    # since Day 49 the prediction needs only the batter and k; the rest are filters
+    # since Day 49 the prediction needs the batter and k, and since Day 50 the
+    # format; the rest are filters
     thin = dataclasses.replace(c2(), subject=CricketSubject(phase="powerplay"))
     failures = check_c1(finding_with(thin), ROSTER)
     assert reasons(failures) == [
-        "p_dismissal_within_k needs to know: player, k",
+        "p_dismissal_within_k needs to know: player, k, match_format",
     ]
 
 

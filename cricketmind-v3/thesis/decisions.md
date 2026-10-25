@@ -986,7 +986,8 @@ Template:
 - Alternatives considered: a full ball-by-ball model with every feature (much more to build
   and test; harder to explain; kept for future work); no extra at all (leaves an obvious,
   testable improvement untried).
-- Status: planned (Days 50 and 53); the outcome, either way, goes in the journal and here
+- Status: built on Day 50 (D-058); decided on Day 53; the outcome, either way, goes in the
+  journal and here
 - Paper section: Method (N9 T1); Evaluation (E-007)
 
 ## D-057 — N9 T1: the chance of being out within k balls, with an honest range
@@ -1012,4 +1013,35 @@ Template:
   (pulls tiny samples harder); playing balls inside each draw for the answer too (adds luck
   without adding anything); pulling small samples toward other batters (Day 50).
 - Status: built (Day 49)
+- Paper section: Method (N9 T1)
+
+## D-058 — N9 T1 pulled toward normal (shrinkage); how long he has been in, on trial
+- Date: 2026-10-26
+- Decision: the prior for a batter's out-rate comes from the other batters under the
+  question's filters, in his format and his gender: their normal rate, and how much they
+  really differ, found by the method of moments (the spread of their rates, less the share
+  luck alone would make). It is a Beta curve worth so many balls, Beta(normal x worth,
+  (1 - normal) x worth), and it takes the place of Day 49's Jeffreys prior. Fewer than 30
+  other batters (FEW_BATTERS, a design parameter), or no real difference seen between them,
+  gives no answer. The menu row now needs the format as well as the batter and k: normal is
+  for one kind of cricket (like with like, D-042). On trial (D-056): a question may say how
+  many balls he has faced (faced_so_far); then each of his next k balls takes the risk of its
+  stage (balls 1-5, 6-15, 16-30, after 30), each stage with its own prior from the others in
+  that stage. The stage of a ball is counted on the whole innings (a new derived table,
+  ball_stages), so a filter such as the middle overs does not start him again. N9.T1 is
+  version 2 (D-052).
+- Why: on his own record, 1 out in 2 balls is a 50% risk a ball. Pulled toward normal, a real
+  batter out once in his two balls in men's T20s gets 5.9% (2.8-10.5%) for his next ball.
+  Big records barely move: Kohli in the T20 powerplay against pace goes from 16.4% to 16.8%
+  for his next 6 balls (2,855 balls). Small ones move a lot: Bumrah batting in T20s, from 51%
+  to 39% (107 balls; see L-045). The stages matter in the data: the risk a ball falls as the
+  batter settles in Tests (2.3% to 1.4%) but rises in T20s (5.0% to 6.4%).
+- Alternatives considered: a maximum-likelihood fit of the same curve (harder to explain,
+  and it fails in the same cases); a fixed worth (a guess); a wider group of batters when the
+  narrow one is too small (a second path that mixes situations); the format left open and
+  his own mix of formats used (D-042's way for strike rates; a prediction is about the next
+  balls, which are in one format); a stage's prior set relative to his own level in the other
+  stages (borrows strength; more to build and explain; future work, not a second try if the
+  trial fails, since D-056's rule is fixed before the run).
+- Status: built (Day 50); the stages are decided on Day 53
 - Paper section: Method (N9 T1)

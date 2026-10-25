@@ -31,3 +31,4 @@ class CricketSubject(Subject):
     innings: int | None = None  # 1: batted first
     batting_hand: str | None = None  # "left" or "right"
     side: str | None = None  # "batting" or "fielding": who asked for a review
+    faced_so_far: int | None = None  # 3: he has faced 3 balls of this innings (Day 50)

@@ -1,10 +1,11 @@
-"""The DuckDB adapter: SQL picks the balls a subject is about (Days 38, 43)."""
+"""The DuckDB adapter: SQL picks the balls a subject is about (Days 38, 43, 50)."""
 
 import dataclasses
 
 from cricketmind_v3.application.ports import FilterError
 from cricketmind_v3.domain.balls import NOT_DISMISSALS, SOMEONE_ELSE, THE_BATTER, Ball
 from cricketmind_v3.domain.registry import is_empty
+from cricketmind_v3.domain.stages import STARTS, Record
 from cricketmind_v3.domain.subject import Subject
 from cricketmind_v3.infrastructure.filters import MATCH_FILTERS, match_condition
 
@@ -35,6 +36,22 @@ BALLS = (
     "JOIN matches m ON m.match_id = d.match_id "
     "JOIN match_venues v ON v.match_id = d.match_id"
 )
+
+
+# each ball with how long its batter had been in (Day 50)
+STAGED = BALLS + (
+    " JOIN ball_stages s ON s.match_id = d.match_id AND s.innings = d.innings"
+    " AND s.over = d.over AND s.ball_index = d.ball_index"
+)
+
+
+def stage_case(faced_before: str) -> str:
+    """The SQL for a ball's stage (stages.STARTS), from the balls faced before it: the
+    ball is his ball number faced_before + 1."""
+    parts = []
+    for number in range(1, len(STARTS)):
+        parts.append(f"WHEN {faced_before} + 1 < {STARTS[number]} THEN {number}")
+    return "CASE " + " ".join(parts) + f" ELSE {len(STARTS)} END"
 
 
 def find_person(db, name: str) -> str | None:
@@ -133,6 +150,38 @@ class DuckDBDeliveryRepository:
             f"WHERE {' AND '.join(where)} AND d.wicket_kind NOT IN ({marks})"
         )
         return self.db.execute(sql, [*values, *NOT_DISMISSALS]).fetchone()[0]
+
+    def records(self, subject: Subject) -> list[Record]:
+        """The player's times out and balls faced, by stage of his innings (Day 50)."""
+        return self._records(subject, player_is="=")
+
+    def others_records(self, subject: Subject) -> list[Record]:
+        """Every other batter's, one record per batter and stage (Day 50)."""
+        return self._records(subject, player_is="<>")
+
+    def _records(self, subject: Subject, player_is: str) -> list[Record]:
+        # millions of balls, so DuckDB counts, by the rules of balls.py: out when the
+        # one out was on strike and did not retire; faced unless a wide. A test holds
+        # the two together. A batter with no register id goes by his name
+        where, values = self._where(subject, player_is=player_is)
+        if where is None:
+            return []
+        marks = ", ".join(["?"] * len(NOT_DISMISSALS))
+        sql = (
+            "SELECT COALESCE(d.batter_id, d.batter) AS who, "
+            f"{stage_case('s.faced_before')} AS stage, "
+            "SUM(CASE WHEN d.player_out = d.batter "
+            f"AND COALESCE(d.wicket_kind, '') NOT IN ({marks}) THEN 1 ELSE 0 END), "
+            "SUM(CASE WHEN d.wides = 0 THEN 1 ELSE 0 END) "
+            f"FROM {STAGED} WHERE {' AND '.join(where)} "
+            "GROUP BY who, stage ORDER BY who, stage"
+        )
+        found = []
+        for who, stage, outs, faced in self.db.execute(
+            sql, [*NOT_DISMISSALS, *values]
+        ).fetchall():
+            found.append(Record(batter=who, stage=stage, outs=outs, faced=faced))
+        return found
 
     def _where(self, subject: Subject, player_is: str) -> tuple[list | None, list]:
         """The WHERE conditions and their values; None when a person named is nobody.

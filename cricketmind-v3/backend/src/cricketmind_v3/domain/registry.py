@@ -42,6 +42,15 @@ BATTING_FILTERS = (
 )
 
 
+def without(keys: tuple[str, ...], key: str) -> tuple[str, ...]:
+    """The keys, but not this one."""
+    kept = []
+    for each in keys:
+        if each != key:
+            kept.append(each)
+    return tuple(kept)
+
+
 @dataclass(frozen=True, kw_only=True)
 class ClaimType:
     """One item on the menu: a kind of claim, and the engine behind it."""
@@ -239,11 +248,13 @@ CLAIM_TYPES = (
         name="p_dismissal_within_k",
         provenance=Provenance.PREDICTIVE,
         source="N9.T1",
-        # the batter and how many balls ahead; the rest narrows his past (Day 49): a
-        # shot gets no answer until the bridge, so the shot is a filter, not a need
-        required_keys=("player", "k"),
+        # the batter, how many balls ahead, and the format: he is pulled toward
+        # normal for that kind of cricket (Day 50). The rest narrows his past (Day 49):
+        # a shot gets no answer until the bridge, so the shot is a filter, not a need.
+        # faced_so_far is how long he has been in, on trial (D-056)
+        required_keys=("player", "k", "match_format"),
         needs_range=True,
-        filters=(*BATTING_FILTERS, "shot"),
+        filters=(*without(BATTING_FILTERS, "match_format"), "shot", "faced_so_far"),
     ),
     ClaimType(
         name="matchup_difference",

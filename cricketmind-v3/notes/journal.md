@@ -1414,3 +1414,56 @@ against 0.013), not twenty; and the prediction's menu row needs only the batter 
 - Numbers: N-004 reproduced, N-024
 - Evidence: E-028 (verified)
 - Section it feeds: Method (N9 T1)
+
+---
+
+## Day 50 — 2026-10-26 — Pulled toward normal
+
+**Learned:** shrinkage. A small record says little, so it starts from what is normal and
+moves only as far as its balls allow: (his outs + the prior's) over (his balls + the
+prior's). The prior comes from the other batters: their normal rate, and how much they
+really differ. Their rates spread partly because they differ and partly by luck; take luck's
+share away (the method of moments) and what is left says how hard to pull. Few balls: near
+normal. Many balls: his own number.
+
+```
+ men's T20s, out-rate a ball      his own   pulled   (normal 5.5%, worth 138 balls)
+ 1 out in 2 balls (A Faletar)     50.0%     6.1%
+ Bumrah batting, 12 in 107        11.2%     8.0%
+ Kohli, powerplay v pace,         2.9%      3.0%     (normal there 4.5%, worth 168)
+   84 in 2,855
+```
+
+**Built:** `domain/shrinkage.py` (the prior and the pull); `domain/stages.py` (four stages by
+balls faced so far); `out_within` takes a prior, and `out_within_stages` gives each ball the
+risk of its stage (one stage is Day 49's answer exactly); a derived table `ball_stages` (the
+balls faced before each ball, on the whole innings); the repository's `records` and
+`others_records`; the engine pulls toward the other batters in his format and gender, and by
+stage when the question says how many balls he has faced. The menu row now needs the format.
+**Tested:** 33 new tests, 585 in all. The plan's tests: 1 out in 2 balls comes out near 6.5%
+on made-up batters, not 50%; on hand-made innings each ball's count is as counted (a wide
+does not count, a no-ball does, a second innings starts again, a super over is left out);
+Farhan's 44 balls by stage, by hand from the file (5, 10, 15, then 14 with the out), and his
+middle overs start at stage 3, not 1. DuckDB's counts match balls.py's for every batter in
+the fixtures. The fit finds a prior it was not told: made from 5% and worth 100 on 2,000 made-up
+batters, it finds 4.93% and 96.8. Twenty-three deliberate mistakes were each caught. The first
+run missed one, a non-striker's run out counted as the striker's out: the fixtures hold no
+such ball, so a test now makes one, and a batter retiring hurt on strike.
+**Real data** (a copy of the database, so yours is untouched until you rebuild it): normal is
+5.48% a ball in men's T20s, worth 139 balls; 1.66% in Tests, worth 200. Kohli barely moves
+(16.4% to 16.8%); Bumrah batting moves a lot (51% to 39%): he is pulled toward top-order
+batters (L-045). A batter out once in his two balls gets 5.9% (2.8–10.5%). Each question
+takes 1-2 seconds. Your database needs the new table: rebuild the derived tables once.
+**The surprise, for the trial:** "most at risk early" is true in Tests (2.32% a ball in the
+first five, 1.38% after 30) but not in T20s, where the risk rises (5.04% to 6.42%): set
+batters attack. Kohli in T20s: 14.2% just in, 24.3% after 30 balls, 17.6% with one risk.
+Day 53 decides whether the stages predict better; the rule was written before (D-056).
+**For the next v4 revision:** the prediction names its format; N9's range starts from a
+prior fitted on the other batters (not Jeffreys); the stages on trial.
+
+**For the paper:**
+- Decisions: D-058
+- Numbers: N-025, N-026, N-027
+- Evidence: E-029 (verified)
+- Limitations: L-045, L-046, L-047
+- Section it feeds: Method (N9 T1)
