@@ -8,6 +8,17 @@ class FactError(ValueError):
 
 
 @dataclass(frozen=True, kw_only=True)
+class Replays:
+    """A prediction's simulation, kept small for the pictures (Day 49, D-054)."""
+
+    # after each ball, from now (ball 0) to ball k: the chance he is still batting,
+    # as (middle, low, high)
+    survival: tuple[tuple[float, float, float], ...]
+    # 100 overs that stand for all the replays: the ball he was out on, or 0
+    overs: tuple[int, ...]
+
+
+@dataclass(frozen=True, kw_only=True)
 class Fact:
     """What an engine says about one subject: the number, its sample, its range."""
 
@@ -17,6 +28,8 @@ class Fact:
     # where the number came from (Day 47); not part of the number, so two facts with
     # the same number are equal whatever their receipts
     receipt: Receipt | None = field(default=None, compare=False)
+    # a prediction's replays, for the pictures (Day 49); not part of the number either
+    replays: Replays | None = field(default=None, compare=False)
 
     def __post_init__(self):
         if self.interval is not None:

@@ -239,8 +239,11 @@ CLAIM_TYPES = (
         name="p_dismissal_within_k",
         provenance=Provenance.PREDICTIVE,
         source="N9.T1",
-        required_keys=("player", "shot", "phase", "bowler_type", "k"),
+        # the batter and how many balls ahead; the rest narrows his past (Day 49): a
+        # shot gets no answer until the bridge, so the shot is a filter, not a need
+        required_keys=("player", "k"),
         needs_range=True,
+        filters=(*BATTING_FILTERS, "shot"),
     ),
     ClaimType(
         name="matchup_difference",

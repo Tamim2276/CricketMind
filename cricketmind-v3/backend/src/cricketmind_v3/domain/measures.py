@@ -22,16 +22,23 @@ def dismissal_rate(counts: dict[Ball, int]) -> Fact | None:
 
     An out on a wide (stumped, run out) still counts, as it does in a batting average.
     """
-    balls_faced = 0
+    outs, balls_faced = outs_and_faced(counts)
+    if balls_faced == 0:
+        return None
+    return Fact(value=outs / balls_faced, n=balls_faced)
+
+
+def outs_and_faced(counts: dict[Ball, int]) -> tuple[int, int]:
+    """His times out, and his balls faced: what the dismissal rate and the chance of
+    being out (N9, Day 49) are both made from."""
     outs = 0
+    balls_faced = 0
     for ball, times in counts.items():
         if batter_out(ball):
             outs += times
         if faced(ball):
             balls_faced += times
-    if balls_faced == 0:
-        return None
-    return Fact(value=outs / balls_faced, n=balls_faced)
+    return outs, balls_faced
 
 
 # More batting measures (Day 44): n is always the balls faced

@@ -1370,3 +1370,47 @@ on trial, the risk changing with how long the batter has been in (balls 1-5, 6-1
 30); Day 53 keeps it only if it predicts better (Brier score) without worse calibration, a rule
 set before the run. What the data cannot see (line, length, speed, field, pitch) is never
 pretended (L-044). Nothing is built yet.
+
+---
+
+## Day 49 — 2026-10-25 — The chance of being out soon
+
+**Learned:** Monte Carlo is answering "what's the chance?" by playing it many times and
+counting. The Beta curve says how believable each out-rate is after 4 outs in 50 balls. Each
+replay draws a rate from the curve, so the spread of the answers carries the doubt about the
+rate as well as the luck. The curve for 4 outs in 50 balls, beside the same rate on 5,000:
+
+```
+ 50 balls                          5,000 balls
+  2% |####                          2% |
+  4% |#################             4% |
+  6% |###########################   6% |
+  8% |###########################   8% |############################
+ 10% |######################       10% |
+ 12% |###############              12% |
+ 14% |#########                    14% |
+ 16% |#####                        16% |
+ 18% |##                           18% |
+```
+
+**Built:** `domain/out_within.py` (believable rates, the chance within k, its range, the
+still-batting band and 100 representative overs); `Replays` on a fact, for the pictures;
+`measures.outs_and_faced`, shared with the dismissal rate; `application/engines/n9_t1.py`;
+N9 T1 wired into the real FactSource, so the registry check now names only N6 and N9 T2. The
+menu row needs only the batter and k (D-057).
+**Tested:** 17 new tests, 552 in all. The plan's test: 0.4056 [0.1568, 0.6917], seeded, near
+N-004's 0.405 [0.155, 0.697], and within 0.01 of the exact 0.4049 [0.1546, 0.6939]; v2's
+plug-in 0.394; a hundred times the balls gives a narrow range; the pictured overs hold 41
+wickets in 100. On the fixtures: Farhan (1 out in 44) through the Faith Check (a wrong chance
+and a too-narrow range both fail) and the receipt checker. Seven deliberate mistakes were
+each caught (the scratch runner was re-made: the scratchpad had been cleared).
+**Real data:** Kohli, T20 powerplay against pace, next 6 balls: 16% (13–20%) on 2,855 balls;
+Bumrah batting: 51% (32–70%) on 107; a pull gets no answer until the bridge (N-024).
+**For the next v4 revision:** the honest range is about forty times wider than v2's (0.542
+against 0.013), not twenty; and the prediction's menu row needs only the batter and k.
+
+**For the paper:**
+- Decisions: D-057
+- Numbers: N-004 reproduced, N-024
+- Evidence: E-028 (verified)
+- Section it feeds: Method (N9 T1)

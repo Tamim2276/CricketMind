@@ -10,6 +10,7 @@ from cricketmind_v3.application.engines import (
     m3_workload,
     m4_reviews,
     m5_results,
+    n9_t1,
 )
 from cricketmind_v3.application.ports import (
     DeliveryRepository,
@@ -31,6 +32,7 @@ ENGINE_VERSIONS = {
     "N8.M3": "1",
     "N8.M4": "1",
     "N8.M5": "1",
+    "N9.T1": "1",
 }
 
 
@@ -81,6 +83,8 @@ class EngineFactSource:
             "team_win_share": (m5_results.team_win_share, repos.results),
             "match_won_by_runs": (m5_results.match_won_by_runs, repos.results),
             "match_won_by_wickets": (m5_results.match_won_by_wickets, repos.results),
+            # N9 T1: the chance of being out soon (Day 49)
+            "p_dismissal_within_k": (n9_t1.p_dismissal_within_k, repos.deliveries),
         }
 
     def fact(
@@ -91,7 +95,7 @@ class EngineFactSource:
             return None  # a clip's numbers are measured by N6, not counted here
         found = self.engines.get(metric)
         if found is None:
-            return None  # not on the menu, or its engine is not built yet (N9)
+            return None  # not on the menu, or its engine is not built yet
         engine, repository = found
         answer = engine(repository, subject)
         if answer is None:

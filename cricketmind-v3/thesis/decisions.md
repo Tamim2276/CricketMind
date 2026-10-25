@@ -988,3 +988,28 @@ Template:
   testable improvement untried).
 - Status: planned (Days 50 and 53); the outcome, either way, goes in the journal and here
 - Paper section: Method (N9 T1); Evaluation (E-007)
+
+## D-057 — N9 T1: the chance of being out within k balls, with an honest range
+- Date: 2026-10-25
+- Decision: the batter's outs and balls faced under the question's filters (counted as the
+  dismissal rate counts them, D-039) give a Beta curve of believable out-rates per ball,
+  Beta(0.5 + outs, 0.5 + balls not out on): the Jeffreys prior. 20,000 rates are drawn
+  (seed 42); at each, the chance of being out within his next k balls faced is
+  1 - (1 - p)^k, what endless replays at that rate would give. The answer is the middle of
+  those chances, the range their middle 95%, and n the balls faced. The menu row needs only
+  the batter and k; shot, phase, bowler type and the batting filters narrow his past; a shot
+  gets no answer until the bridge. The fact keeps a summary for the pictures (D-054): the
+  chance of still batting after each ball with its band, and 100 overs played ball by ball
+  that stand for the replays; like a receipt, it is not part of the number.
+- Why: v2 gave 0.394 with a range of 0.387-0.400, luck only (E-003). The rate itself is
+  uncertain: on the same 4 outs in 50 balls the honest answer is 0.405 with a range of
+  0.155-0.697 (N-004), about forty times wider, and the replays land within 0.01 of the exact
+  answer found by adding up the curve. On real data, Kohli's T20 powerplay against pace
+  (2,855 balls) gives 16% (13-20%), Bumrah batting in T20s (107 balls) 51% (32-70%): little
+  evidence, wide range. The shot, required before, has no data until Day 128, and Day 53's
+  calibration needs real questions.
+- Alternatives considered: the point estimate alone (v2's mistake); a flat prior, Beta(1, 1)
+  (pulls tiny samples harder); playing balls inside each draw for the answer too (adds luck
+  without adding anything); pulling small samples toward other batters (Day 50).
+- Status: built (Day 49)
+- Paper section: Method (N9 T1)

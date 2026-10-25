@@ -42,7 +42,6 @@ def test_the_registry_check_names_only_the_engines_still_to_build():
     problems = check_registry({}, source().sources(), set(METRICS))
     assert problems == [
         "weight_transfer: no engine provides N6",
-        "p_dismissal_within_k: no engine provides N9.T1",
         "matchup_difference: no engine provides N9.T2",
     ]
 
@@ -56,6 +55,6 @@ def test_a_metric_goes_to_its_engine():
 
 def test_no_engine_no_answer():
     kohli = CricketSubject(player="V Kohli")
-    assert source().fact("p_dismissal_within_k", kohli) is None  # N9: Day 49
+    assert source().fact("matchup_difference", kohli) is None  # N9 T2: Days 51-52
     assert source().fact("weight_transfer", kohli, clip_id="vid1_0") is None  # N6
     assert source().fact("sponsor_value", kohli) is None  # not on the menu
