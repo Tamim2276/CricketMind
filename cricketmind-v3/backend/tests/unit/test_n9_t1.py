@@ -83,7 +83,7 @@ def test_the_engine_pulls_his_record_toward_normal():
     assert abs(found.interval[0] - low) < 0.01
     assert abs(found.interval[1] - high) < 0.01
     assert found.interval[1] - found.interval[0] < 0.6917 - 0.1568
-    assert round(found.value, 4) == 0.3156  # seed 42: pinned
+    assert round(found.value, 4) == 0.3183  # seed 42: pinned
 
 
 def test_one_out_in_two_balls_is_not_a_50_percent_risk():
@@ -224,7 +224,7 @@ def test_through_the_real_source_it_has_a_receipt_and_keeps_its_replays():
     engines = source(pull_balls())
     found = engines.fact("p_dismissal_within_k", KOHLI_PULL)
     assert found.receipt.engine == "N9.T1"
-    assert found.receipt.version == "2"  # pulled toward normal since Day 50
+    assert found.receipt.version == "3"  # pulled toward normal (50), by likelihood (51)
     assert found.receipt.interval == found.interval
     assert found.replays is not None  # stamping the receipt keeps the pictures' summary
     other = CricketSubject(player="RG Sharma", k=6, match_format="T20")

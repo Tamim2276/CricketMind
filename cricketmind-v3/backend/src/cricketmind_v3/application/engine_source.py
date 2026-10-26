@@ -11,6 +11,7 @@ from cricketmind_v3.application.engines import (
     m4_reviews,
     m5_results,
     n9_t1,
+    n9_t2,
 )
 from cricketmind_v3.application.ports import (
     DeliveryRepository,
@@ -32,7 +33,8 @@ ENGINE_VERSIONS = {
     "N8.M3": "1",
     "N8.M4": "1",
     "N8.M5": "1",
-    "N9.T1": "2",  # Day 50: pulled toward normal
+    "N9.T1": "3",  # Day 50: pulled toward normal; Day 51: fitted by likelihood
+    "N9.T2": "1",
 }
 
 
@@ -85,6 +87,7 @@ class EngineFactSource:
             "match_won_by_wickets": (m5_results.match_won_by_wickets, repos.results),
             # N9 T1: the chance of being out soon (Day 49)
             "p_dismissal_within_k": (n9_t1.p_dismissal_within_k, repos.deliveries),
+            "matchup_difference": (n9_t2.matchup_difference, repos.deliveries),
         }
 
     def fact(

@@ -16,6 +16,9 @@ class Replays:
     survival: tuple[tuple[float, float, float], ...]
     # 100 overs that stand for all the replays: the ball he was out on, or 0
     overs: tuple[int, ...]
+    # a matchup's other side (Day 52): its overs paired with these, over for over, the
+    # same batter and the same luck, only the bowler changed
+    versus: "Replays | None" = None
 
 
 @dataclass(frozen=True, kw_only=True)

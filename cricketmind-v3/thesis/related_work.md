@@ -173,6 +173,11 @@ future directions. Read only in part: check Section 4 before citing it for the g
 - Cohen (1960); Landis and Koch (1977): agreement, κ, and the "substantial" threshold.
 - Ratner et al. (2017), Snorkel: weak supervision.
 - Hulin et al. (2014); Impellizzeri et al. (2021): the workload ratio, and its critique.
+- James (1981), log5: the odds rule for one player against another (D-061).
+- Tango, Lichtman and Dolphin (2007), The Book: batter against pitcher adds little beyond
+  the two players' records (E-033). Verify the chapter before citing.
+- The beta-binomial fitted by maximum likelihood (Griffiths, 1973), and the likelihood
+  principle (Berger and Wolpert, 1988): why batting until out does not bias it (D-060).
 
 ## To read (verify that each exists, then add notes)
 

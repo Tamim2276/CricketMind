@@ -1,9 +1,10 @@
-"""The DuckDB adapter: SQL picks the balls a subject is about (Days 38, 43, 50)."""
+"""The DuckDB adapter: SQL picks the balls a subject is about (Days 38, 43, 50, 51)."""
 
 import dataclasses
 
 from cricketmind_v3.application.ports import FilterError
 from cricketmind_v3.domain.balls import NOT_DISMISSALS, SOMEONE_ELSE, THE_BATTER, Ball
+from cricketmind_v3.domain.matchups import Pair
 from cricketmind_v3.domain.registry import is_empty
 from cricketmind_v3.domain.stages import ORDERS, STARTS, Record
 from cricketmind_v3.domain.subject import Subject
@@ -38,13 +39,25 @@ BALLS = (
 )
 
 
-# each ball with how long its batter had been in, and where he batted (Day 50)
-STAGED = BALLS + (
-    " JOIN ball_stages s ON s.match_id = d.match_id AND s.innings = d.innings"
-    " AND s.over = d.over AND s.ball_index = d.ball_index"
+# each ball with where its batter batted (Day 50)
+ORDERED = BALLS + (
     " JOIN batting_slots b ON b.match_id = d.match_id AND b.innings = d.innings"
     " AND b.batter = d.batter"
 )
+
+# and with how long he had been in
+STAGED = ORDERED + (
+    " JOIN ball_stages s ON s.match_id = d.match_id AND s.innings = d.innings"
+    " AND s.over = d.over AND s.ball_index = d.ball_index"
+)
+
+# the counting rules of balls.py, for DuckDB to count by: out when the one out was on
+# strike and did not retire (one ? per kind of retiring); faced unless a wide
+OUT = (
+    "SUM(CASE WHEN d.player_out = d.batter "
+    "AND COALESCE(d.wicket_kind, '') NOT IN ({marks}) THEN 1 ELSE 0 END)"
+)
+FACED = "SUM(CASE WHEN d.wides = 0 THEN 1 ELSE 0 END)"
 
 
 def stage_case(faced_before: str) -> str:
@@ -173,9 +186,34 @@ class DuckDBDeliveryRepository:
         """Every other batter's, one record per batter, stage and part of the order."""
         return self._records(subject, player_is="<>")
 
+    def pairs(self, subject: Subject) -> list[Pair]:
+        """Every batter against every bowler under the subject's filters (Day 51)."""
+        where, values = self._where(subject, player_is="=")
+        if where is None:
+            return []
+        marks = ", ".join(["?"] * len(NOT_DISMISSALS))
+        sql = (
+            "SELECT COALESCE(d.batter_id, d.batter) AS who, "
+            "COALESCE(d.bowler_id, d.bowler) AS whom, "
+            f"{order_case('b.slot')} AS batting_order, "
+            f"{OUT.format(marks=marks)}, {FACED} "
+            f"FROM {ORDERED} WHERE {' AND '.join(where)} "
+            "GROUP BY who, whom, batting_order"
+        )
+        found = []
+        rows = self.db.execute(sql, [*NOT_DISMISSALS, *values]).fetchall()
+        for who, whom, order, outs, faced in rows:
+            found.append(
+                Pair(batter=who, bowler=whom, order=order, outs=outs, faced=faced)
+            )
+        return found
+
+    def person(self, name: str) -> str | None:
+        """The register id of the player called this (Day 51)."""
+        return find_person(self.db, name)
+
     def _records(self, subject: Subject, player_is: str) -> list[Record]:
-        # millions of balls, so DuckDB counts, by the rules of balls.py: out when the
-        # one out was on strike and did not retire; faced unless a wide. A test holds
+        # millions of balls, so DuckDB counts, by the rules of balls.py; a test holds
         # the two together. A batter with no register id goes by his name
         where, values = self._where(subject, player_is=player_is)
         if where is None:
@@ -185,9 +223,7 @@ class DuckDBDeliveryRepository:
             "SELECT COALESCE(d.batter_id, d.batter) AS who, "
             f"{stage_case('s.faced_before')} AS stage, "
             f"{order_case('b.slot')} AS batting_order, "
-            "SUM(CASE WHEN d.player_out = d.batter "
-            f"AND COALESCE(d.wicket_kind, '') NOT IN ({marks}) THEN 1 ELSE 0 END), "
-            "SUM(CASE WHEN d.wides = 0 THEN 1 ELSE 0 END) "
+            f"{OUT.format(marks=marks)}, {FACED} "
             f"FROM {STAGED} WHERE {' AND '.join(where)} "
             "GROUP BY who, stage, batting_order ORDER BY who, stage, batting_order"
         )

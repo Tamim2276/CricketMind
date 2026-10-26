@@ -139,7 +139,7 @@ def test_a_missing_player_is_listed():
 def test_every_missing_field_is_listed_in_order():
     subject = CricketSubject(player="V Kohli")
     missing = missing_keys(lookup("matchup_difference"), subject)
-    assert missing == ["bowler", "other_bowler", "phase", "k"]
+    assert missing == ["bowler", "other_bowler", "k", "match_format"]  # Day 51
 
 
 def test_empty_text_counts_as_missing():

@@ -1485,3 +1485,57 @@ batting-place prior on trial.
 - Evidence: E-029, E-030 (verified)
 - Limitations: L-045 (found and fixed), L-046, L-047
 - Section it feeds: Method (N9 T1)
+
+---
+
+## Days 51-52 — 2026-10-26 — What if another bowler bowled?
+
+**Learned:** a what-if is a difference against a baseline: the chance he is out within his
+next balls if Bumrah bowled, minus the chance if Shami did. Three records decide each side:
+
+```
+Kohli against everyone   (pulled toward top-order batters)  -┐
+Bumrah against top-order batters (pulled toward bowlers)    -┼─ the odds rule: what to expect
+their meetings (102 balls, 5 outs)  ── nudge it, as much as meetings matter ─┘
+```
+
+The odds rule (log5): Kohli's odds of being out are about 0.6 of normal, Bumrah's about 0.9,
+so together about 0.54 of normal. Each replay draws one Kohli and both bowlers, so the difference is the
+bowler alone, not luck; both overs are played with the same balls, for the pictures.
+**Found on the way, and fixed (D-060):** how much do meetings matter? Day 50's method (the
+spread, less luck's share) said meetings were everything: worth 7 balls. It was fooled. A
+batter bats until he is out, so his balls depend on his outs, and that method assumes they
+did not. Tested on made-up innings with a known truth: when meetings add nothing, it said 7;
+maximum likelihood said 1,167. It also set Day 50's normal too low (1.47% for a true 1.7% in
+Tests: good batters face more balls). So the prior is now fitted by maximum likelihood too:
+top-order men in T20s are 5.22% a ball, worth 683 balls (Day 50 said 4.82%, 277). And a fit
+that sees no difference at all now gives no answer: on the 11 batters of the fixtures it
+would have pulled Farhan to a range of 27.6-28.0%, falsely sure.
+**Built:** `domain/matchups.py` (the odds rule; how much meetings matter; 20,000 paired
+replays; paired overs); `n9_t2.py`, the engine, on the real FactSource; the repository's
+`pairs` (every batter against every bowler, by part of the order) and `person`; a fact's
+pictures keep the other side (`versus`); the shrinkage fit by likelihood.
+**Tested:** 27 new tests, 621 in all. By hand: the odds rule (10% against 8% at 5% normal is 15.5%; I first
+wrote 14.8%, taking the odds of 10% as 0.1053, and the test caught me); a sharp bowler (8%)
+against a mild one (2%) for a normal batter: 39.4% against 11.4%. Farhan's 44 balls bowler by
+bowler, from the file; Shanaka's 17 balls to the top three (I guessed 18). DuckDB's pairs
+count as balls.py does, for every batter and every bowler. Made-up meetings worth 50 are
+found near 50; a field where meetings matter makes the engine listen (30 outs in 100 moved
+the chance by more than 20 points). The Faith Check on the real engine: a wrong difference
+fails, a range made surer fails, a range across zero must say "no detectable difference".
+Nineteen deliberate mistakes were each caught in the end; one was missed at first (the two named bowlers left in the bowlers' own normal: too small to change an answer), so a test now checks who each prior is fitted on.
+**Real data** (your database, read-only): meetings in men's T20s are worth a million balls,
+the ceiling (they add nothing); in Tests 8,000 to 25,000. Kohli in T20s: Bumrah instead of
+Shami, +0.0 points (-2.5 to +2.5); in the death overs, Bumrah instead of Chahal, -5.7 (-13.8
+to +2.5); Smith in Tests, Anderson instead of Root, +5.0 (-1.9 to +11.7). Every range includes
+zero: for one batter, the data can rarely tell two bowlers apart. Each takes 2-5 seconds. With
+the new fit, Day 49-50's answers moved a little: Kohli 17.9%, Bumrah 46.0% (N-026).
+**For the next v4 revision:** the matchup row (format needed, phase a filter); the odds rule
+and meetings fitted by likelihood; the priors by likelihood.
+
+**For the paper:**
+- Decisions: D-060, D-061
+- Numbers: N-025 (superseded), N-026 to N-028 updated, N-029 to N-031
+- Evidence: E-031, E-032, E-033 (verified)
+- Limitations: L-048 to L-051
+- Section it feeds: Method (N9 T2); Results (matchups)

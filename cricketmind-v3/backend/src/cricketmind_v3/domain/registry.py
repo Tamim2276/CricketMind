@@ -260,9 +260,13 @@ CLAIM_TYPES = (
         name="matchup_difference",
         provenance=Provenance.PREDICTIVE,
         source="N9.T2",
-        required_keys=("player", "bowler", "other_bowler", "phase", "k"),
+        # the batter, the bowler of the what-if and the one he would replace, how many
+        # balls, and the format (Day 51): the chance against the bowler minus against
+        # the other. The phase narrows it; a bowler type or an opposition would not
+        required_keys=("player", "bowler", "other_bowler", "k", "match_format"),
         needs_range=True,
         comparison=True,
+        filters=("venue", "season", "since", "innings", "phase", "gender"),
     ),
 )
 

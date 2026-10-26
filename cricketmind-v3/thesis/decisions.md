@@ -1069,3 +1069,61 @@ Template:
   explain); leaving it as a limitation (a known, large bias, and the data to fix it exists).
 - Status: built (Day 50); decided on Day 53 with the stages
 - Paper section: Method (N9 T1)
+
+## D-060 — The prior is fitted by maximum likelihood, not the method of moments
+- Date: 2026-10-26
+- Decision: the prior of D-058 is fitted by maximum likelihood: the normal rate and the
+  worth under which the other batters' records were the most likely (a Beta curve behind
+  each batter's rate, the beta-binomial), found by golden-section search, the worth then
+  the normal rate, five times over. No prior, so no answer, when there are fewer than 30
+  others, when every one faced a single ball, or when the fit finds no sign at all that
+  batters differ (the worth at its ceiling of a million balls): pulled all the way to
+  normal, the range would be falsely sure. N9.T1 is version 3 (D-052).
+- Why: found on Day 51, while fitting how much meetings matter. A batter bats until he is
+  out, so his balls depend on his outs; the method of moments assumes the balls were fixed
+  beforehand, the likelihood does not mind (the likelihood principle). On made-up innings
+  with a known truth, the moments found 5.26% and worth 163 for 5.5% and 200, and 1.47% for
+  a Test-like 1.7% (too low: the good batters last longest, so a balls-weighted rate leans
+  to them); the likelihood found 5.51% and 182, and 1.70%. For meetings the moments were far
+  off: worth 7 when meetings add nothing, 6 when they are worth 50; the likelihood found
+  1,167 and 53. On real data, top-order men in T20s: 5.22% and worth 683, where the moments
+  said 4.82% and 277. In the fixtures, 11 batters showed no difference, and the fit would
+  have pulled Farhan to a range of 27.6-28.0%: hence the refusal at the ceiling.
+- Alternatives considered: keeping the moments (biased, and badly so for meetings); a full
+  Bayesian fit that also carries the doubt in the normal rate and the worth (more honest for
+  small groups; slower; future work, L-049); a fixed worth (a guess).
+- Status: built (Day 51)
+- Paper section: Method (N9)
+
+## D-061 — N9 T2: what if this bowler bowled instead of that one?
+- Date: 2026-10-26
+- Decision: the question names the batter, the bowler of the what-if, the bowler he would
+  replace, k and the format; the phase, venue, season, since, innings and gender narrow it
+  (a bowler type or an opposition does not apply to two named bowlers). Every ball under
+  the filters, in his kind of cricket and his part of the order (D-059), gives three
+  records: his against every bowler, pulled toward batters like him; each bowler's against
+  batters in that part of the order, pulled toward normal for bowlers; and their meetings.
+  What to expect when they meet is the odds rule (Bill James's log5): his odds of being out
+  times the bowler's, over the normal odds (every ball's rate). The meetings nudge that
+  only as far as meetings are worth, fitted by maximum likelihood over every pair (D-060).
+  Each of 20,000 replays draws one batter and one of each bowler, so the difference is the
+  bowler alone, not luck: the answer is the chance against the bowler minus the chance
+  against the other, with the middle 95% of the differences; a range across zero is "no
+  detectable difference" (C4). n is the thinnest record the answer rests on (his balls,
+  each bowler's balls to batters like him), not the meetings, which may be none. For the
+  pictures (D-054), both sides keep their 100 overs, paired over for over with the same
+  luck. N9.T2 is version 1. The menu row changes: the phase is a filter, not a need, and the
+  format is needed (D-058).
+- Why: meetings are few (Kohli and Bumrah: 5 outs in 102 balls in T20s) and, the data
+  shows, add almost nothing beyond the two records: in men's T20s the fit puts them at its
+  ceiling, in Tests at about 8,000 to 25,000 balls. Baseball found the same for batter
+  against pitcher (Tango, Lichtman and Dolphin, 2007). So most real what-ifs come out as
+  "no detectable difference": Kohli in T20s, Bumrah instead of Shami, +0.0 points (-2.5 to
+  +2.5). A made-up field where meetings do matter shows the engine then listens to them.
+- Alternatives considered: the meetings alone, pulled toward normal (5 in 102 is mostly
+  luck, and it ignores who they are); T1 with the bowler as a filter (pulls toward other
+  batters against that bowler, ignoring the batter); his record alone (ignores the bowler);
+  two independent simulations (the difference would carry his doubt twice); n as the
+  meetings (would refuse most what-ifs that the two records answer well).
+- Status: built (Days 51-52); calibrated on Day 53
+- Paper section: Method (N9 T2)

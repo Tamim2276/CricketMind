@@ -2,15 +2,17 @@
 
 Counted by hand (Day 38): Sahibzada Farhan faced 44 balls and was out once, opening.
 The other 11 men who batted 1 to 3 in the fixtures were out 11 times in 208 balls (Day 50).
+Too few to fit a prior (that is tested on its own), so here the fit is replaced by a
+fixed prior, and the test checks what the engine hands it.
 """
 
 import dataclasses
 
 import pytest
 
+from cricketmind_v3.application.engines import n9_t1
 from cricketmind_v3.application.faith_check import faith_check
 from cricketmind_v3.application.receipt_checker import check_receipt
-from cricketmind_v3.domain import shrinkage
 from cricketmind_v3.domain.claims import Claim
 from cricketmind_v3.domain.faith.c2_values import check_c2
 from cricketmind_v3.domain.faith.gate import Context
@@ -25,11 +27,21 @@ from tests.unit.test_out_within import exact_chances
 FARHAN_SIX = CricketSubject(player="Sahibzada Farhan", k=6, match_format="T20")
 
 
+FIXED = Prior(outs=2.5, survived=47.5)  # 5%, worth 50 balls
+HANDED = []  # what the engine asked the fit for
+
+
+def fixed_prior(records):
+    HANDED.append(list(records))
+    if not records:
+        return None
+    return FIXED
+
+
 @pytest.fixture
 def engines(tmp_path, monkeypatch):
-    # three matches hold only 11 other top-order men, fewer than the 30 a prior needs:
-    # here the floor is 5, so the engine has an answer to check (the real floor below)
-    monkeypatch.setattr(shrinkage, "FEW_BATTERS", 5)
+    HANDED.clear()
+    monkeypatch.setattr(n9_t1, "population_prior", fixed_prior)
     db = build(tmp_path)
     yield engines_on(db)
     db.close()
@@ -42,12 +54,17 @@ def test_with_the_real_floor_there_is_no_answer(tmp_path):
 
 
 def test_his_chance_from_one_out_in_44_balls(engines):
-    # the other top-order men: 11 outs in 208 balls, worth 43.1 of his balls:
-    # Beta(2.28 + 1, 40.85 + 43)
+    # the engine hands the fit the other 11 top-order men: 11 outs in 208 balls
     found = engines.fact("p_dismissal_within_k", FARHAN_SIX)
-    prior = Prior(outs=2.2812, survived=40.8539)
-    assert abs(prior.normal() - 11 / 208) < 0.0001
-    mid, low, high = exact_chances(1, 44, 6, prior)
+    assert len(HANDED[0]) == 11
+    outs = 0
+    faced = 0
+    for out, balls in HANDED[0]:
+        outs += out
+        faced += balls
+    assert (outs, faced) == (11, 208)
+    # and his 1 out in 44 is pulled toward the fixed prior: Beta(2.5 + 1, 47.5 + 43)
+    mid, low, high = exact_chances(1, 44, 6, FIXED)
     assert found.n == 44
     assert abs(found.value - mid) < 0.01
     assert abs(found.interval[0] - low) < 0.01
@@ -63,6 +80,7 @@ def test_just_come_in(engines):
     # his first five balls: stage 1, where all 11 other top-order men have balls
     new = dataclasses.replace(FARHAN_SIX, k=5, faced_so_far=0)
     found = engines.fact("p_dismissal_within_k", new)
+    assert len(HANDED[0]) == 11
     assert found.n == 5  # his own balls 1 to 5
     assert found.receipt.query.count('"faced_so_far":0') == 1
 

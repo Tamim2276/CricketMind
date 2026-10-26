@@ -3,6 +3,7 @@ from typing import Protocol
 
 from cricketmind_v3.domain.balls import Ball
 from cricketmind_v3.domain.facts import Fact
+from cricketmind_v3.domain.matchups import Pair
 from cricketmind_v3.domain.results import Result
 from cricketmind_v3.domain.stages import Record
 from cricketmind_v3.domain.subject import Subject
@@ -42,6 +43,16 @@ class DeliveryRepository(Protocol):
         """Every other batter's, one record per batter, stage and part of the order:
         what is normal, the average he is pulled toward (Day 50)."""
 
+    def pairs(self, subject: Subject) -> list[Pair]:
+        """Every batter against every bowler under the subject's filters, one pair per
+        batter, bowler and part of the order (Day 51)."""
+
+    def person(self, name: str) -> str | None:
+        """The register id of the player called this; None if nobody is (Day 51).
+
+        Raises FilterError when several players share the name.
+        """
+
 
 class FakeDeliveryRepository:
     """Balls written in by hand for tests, filed under the subject they answer."""
@@ -52,6 +63,7 @@ class FakeDeliveryRepository:
         self.other_end: dict[Subject, int] = {}
         self.his_records: dict[Subject, list[Record]] = {}
         self.their_records: dict[Subject, list[Record]] = {}
+        self.every_pair: dict[Subject, list[Pair]] = {}
         self.asked: list[Subject] = []  # what the engine asked for, to check in tests
 
     def add(self, subject: Subject, balls: list[Ball]) -> None:
@@ -68,6 +80,9 @@ class FakeDeliveryRepository:
 
     def add_others_records(self, subject: Subject, records: list[Record]) -> None:
         self.their_records[subject] = records
+
+    def add_pairs(self, subject: Subject, pairs: list[Pair]) -> None:
+        self.every_pair[subject] = pairs
 
     def deliveries(self, subject: Subject) -> list[Ball]:
         self.asked.append(subject)
@@ -88,6 +103,13 @@ class FakeDeliveryRepository:
     def others_records(self, subject: Subject) -> list[Record]:
         self.asked.append(subject)
         return list(self.their_records.get(subject, []))
+
+    def pairs(self, subject: Subject) -> list[Pair]:
+        self.asked.append(subject)
+        return list(self.every_pair.get(subject, []))
+
+    def person(self, name: str) -> str | None:
+        return name  # the fake knows players by their names
 
 
 class FactSource(Protocol):

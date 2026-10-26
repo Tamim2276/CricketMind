@@ -92,16 +92,7 @@ def out_within_stages(
     for ball in range(faced_so_far + 1, faced_so_far + k + 1):
         ahead.append(_stage_at(stages, ball))
 
-    # still batting after each ball: the product of surviving every ball so far
-    survival = []
-    alive = []
-    for upto in range(k + 1):
-        alive = _still_batting(rates, ahead[:upto], draws)
-        alive_low, alive_high = middle_95(alive)
-        survival.append((middle(alive), alive_low, alive_high))
-    chances = []
-    for still in alive:  # after all k balls
-        chances.append(1 - still)
+    survival, chances = survival_and_chances(rates, ahead, draws)
     low, high = middle_95(chances)
 
     # the picture's overs, played ball by ball: each replay's rates, one over
@@ -115,9 +106,29 @@ def out_within_stages(
         chance=middle(chances),
         low=low,
         high=high,
-        survival=tuple(survival),
+        survival=survival,
         overs=representative(played, PICTURED),
     )
+
+
+def survival_and_chances(
+    rates: list[list[float]], ahead: list[int], draws: int
+) -> tuple[tuple[tuple[float, float, float], ...], list[float]]:
+    """Still batting after each of the balls ahead, as (middle, low, high), and each
+    replay's chance of being out by the last of them. rates holds one rate per replay
+    for each stage; ahead says which stage each ball is in (a matchup, Day 51, has one
+    stage)."""
+    survival = []
+    alive = []
+    for upto in range(len(ahead) + 1):
+        # the product of surviving every ball so far
+        alive = _still_batting(rates, ahead[:upto], draws)
+        alive_low, alive_high = middle_95(alive)
+        survival.append((middle(alive), alive_low, alive_high))
+    chances = []
+    for still in alive:  # after all the balls
+        chances.append(1 - still)
+    return tuple(survival), chances
 
 
 def middle(values: list[float]) -> float:
