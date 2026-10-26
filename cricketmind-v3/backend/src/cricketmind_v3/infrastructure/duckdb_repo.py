@@ -144,7 +144,8 @@ class DuckDBDeliveryRepository:
             "d.wicket_kind, COUNT(*) "
             f"FROM {BALLS} WHERE {' AND '.join(where)} "
             "GROUP BY d.match_type, d.gender, d.runs_batter, d.wides, d.noballs, "
-            "who_out, d.wicket_kind"
+            "who_out, d.wicket_kind "
+            "ORDER BY 1, 2, 3, 4, 5, 6, 7"  # the same order every time (Day 54)
         )
         counts = {}
         rows = self.db.execute(sql, [THE_BATTER, SOMEONE_ELSE, *values]).fetchall()
@@ -197,7 +198,10 @@ class DuckDBDeliveryRepository:
             f"{order_case('b.slot')} AS batting_order, "
             f"{OUT.format(marks=marks)}, {FACED} "
             f"FROM {ORDERED} WHERE {' AND '.join(where)} "
-            "GROUP BY who, whom, batting_order"
+            "GROUP BY who, whom, batting_order "
+            # the same order every time: summed in another order, the fitted prior moved
+            # in its eighth digit and two receipts failed (found on Day 54)
+            "ORDER BY who, whom, batting_order"
         )
         found = []
         rows = self.db.execute(sql, [*NOT_DISMISSALS, *values]).fetchall()

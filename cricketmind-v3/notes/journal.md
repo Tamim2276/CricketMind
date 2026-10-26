@@ -1688,3 +1688,56 @@ is off the prediction's menu, and the engine has one risk for the whole innings 
 staged maths stays in `domain/` for Day 157's comparison, and the field stays so that old
 questions can still be read back. The run script's engine check now asks the one-risk engine
 when the menu has no stages (checked: 30 moments, largest gap 0.015 points). 649 tests pass.
+
+---
+
+## Day 54 — 2026-10-26 — Review day, M2: the engines on real data
+
+**Learned:** two ML models in plain words. Logistic regression: each input gets a weight,
+and the weighted sum is turned into a chance. Boosted trees: many small yes/no trees, each
+fixing the last one's mistakes. Leakage, and how not to: a train ball's records come only
+from matches before it, a test ball's from the train years only, and the score is the score
+before the ball. Early stopping on a held-out year: grow trees until the validation year
+stops getting better (78 rounds). And receipts must hold to the last digit.
+**Built:** `infrastructure/ml_features.py` (6,285,863 balls with only what was known before
+each, in 17 seconds; the rows are Day 53's, to the ball); `thesis/scripts/ml_baseline_day54.py`
+(pre-registered, resumable, its models cached in `data/ml_cache/`); an exploratory script,
+labelled so; `thesis/scripts/engine_report_day54.py`, the report M2 asks for.
+**Tested:** 7 new tests, 656 in all; by hand, from the files: Pakistan 143 for 1 after 88
+balls before Farhan's last ball; Shanaka's IPL record, 1 out in 3 balls, carried into his T20I
+and nowhere earlier; Sri Lanka needing 216 off 120. Eight deliberate mistakes were each caught
+in the end; two needed sharper tests first (a bowler's own match was only checked where the
+test year hid it; a record's outs were never checked, only its balls).
+**The ML baseline (pre-registered):**
+
+```
+per ball, 487,381 test balls   Brier      gap       the rule says
+N9 (B), the engine             0.045882   0.00106
+logistic regression            0.045729   0.00202   a baseline: calibration clearly worse
+boosted trees                  0.045590   0.00151   parts 1 and 2 passed; part 3 to run
+trees, question only (explor.) 0.045752   0.00166   decides nothing
+```
+
+The trees win partly because they see the match (score, wickets, balls left, the bowler),
+which no question to the engine carries; given only the question, they still win, by about
+half. **Decided (D-067):** the menu's questions stay N9's; the trees are the bar for the ball
+model (Phase 9c), where a menu that can carry the match, and receipts for a learned engine,
+are taken up; Day 157 pre-registers the question-only trees.
+**The engine report:** M1 against published records: Cook's, Warner's and Kohli's Tests exact
+(12,472 runs and 275 dismissals; 8,786 and 197; 9,230 and 197); Cook's ODIs one dismissal
+short, and runs equal, so a duck is missing from the data; Smith's ODIs 132 runs and two
+dismissals short, 151 innings with a ball faced against 154 published: gaps in the data, not
+the counting (L-061). L-034: 1 of 150 real ranges ends within one step of zero. The receipts:
+the first run confirmed 192 of 194. T2's two answers were off in their eighth digit, because
+DuckDB returned the pairs in a different order each run and the sums came out in another
+order. Ordered now, with a test: 194 of 194 (D-068).
+**M2 reached:** the engines answer from real data, with honest ranges, receipts for every
+number, calibration on a year they never saw, and a fair ML comparison.
+**Still to run (yours):** the trees' honest range, 20 refits (about 15 minutes, resumable).
+
+**For the paper:**
+- Decisions: D-067, D-068
+- Numbers: N-038 to N-042
+- Evidence: E-026 and E-034 (verified), E-046 (verified)
+- Limitations: L-034 updated, L-061 to L-063
+- Section it feeds: Results (the engines); Evaluation (N9 against ML); Method (receipts)

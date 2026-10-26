@@ -173,6 +173,8 @@ future directions. Read only in part: check Section 4 before citing it for the g
 - Cohen (1960); Landis and Koch (1977): agreement, κ, and the "substantial" threshold.
 - Ratner et al. (2017), Snorkel: weak supervision.
 - Hulin et al. (2014); Impellizzeri et al. (2021): the workload ratio, and its critique.
+- Pedregosa et al. (2011), scikit-learn; Ke et al. (2017), LightGBM, the histogram trees
+  scikit-learn's boosted trees follow: Day 54's ML baseline (D-062, D-067).
 - James (1981), log5: the odds rule for one player against another (D-061).
 - Tango, Lichtman and Dolphin (2007), The Book: batter against pitcher adds little beyond
   the two players' records (E-033). Verify the chapter before citing.

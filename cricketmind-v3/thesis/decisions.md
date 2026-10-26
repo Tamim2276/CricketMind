@@ -1276,3 +1276,49 @@ Template:
 - Status: decided (Day 53); the stages left the engine and the menu in the commit after
   033b4b7, Day 53's own
 - Paper section: Evaluation (calibration; the two trials)
+
+## D-067 — Day 54's ML verdict, and what "taking N9's place" can mean today
+- Date: 2026-10-26
+- Decision: by the pre-registered rule (section 7): logistic regression is a baseline (its
+  Brier score is lower by more than luck, but its calibration is clearly worse); the
+  gradient-boosted trees pass the rule's first two parts (Brier lower by more than luck,
+  calibration not clearly worse), and its third, an honest range from 20 refits on
+  resampled training matches, is run as its own resumable step (`--ranges`). But the trees
+  learn from the match itself (the score, the wickets, the balls left, the bowler), and a
+  question to the engine carries none of it. An exploratory run, not pre-registered and
+  deciding nothing, gave the same trees only what a question carries: they still beat N9,
+  by about half as much. So the menu's questions stay N9's for now: the pre-registered trees
+  cannot answer a question that does not state the match, and the question-only trees were
+  not pre-registered. The trees become the bar Phase 9c's ball model (which reads the match
+  too) must clear; a menu that can carry the match situation, with receipts for a learned
+  engine, is taken up there (Days 156, 159); and the question-only trees join Day 157's
+  table, pre-registered before it runs.
+- Why: on 487,381 test balls the trees score a Brier of 0.045590 against N9's 0.045882 (95%
+  range of the difference -0.00032 to -0.00026), and on men's Tests they are calibrated (gap
+  8% of the mean) where N9 is not (13%). A model is only as useful as the questions it can
+  be asked: filling a missing match situation with an average would be an invented input.
+- Alternatives considered: replacing N9 with the trees now, guessing the match situation when
+  a question lacks it (invented inputs); calling the trees a baseline whatever the rule said
+  (ignores the result); counting the exploratory run as a verdict (fitted after seeing the
+  pre-registered result).
+- Status: decided (Day 54); the honest-range step is a long run for the user; Phase 9c
+  takes the rest up
+- Paper section: Evaluation (N9 against ML baselines)
+
+## D-068 — The engine report, and receipts that hold to the last digit
+- Date: 2026-10-26
+- Decision: the engine report (M2) is a script: it asks the real engines 29 questions from
+  Days 39 to 52, sets M1 against five published career records, counts L-034's near-zero
+  ranges over 150 real ranges, and copies in the calibration and the ML baseline; every
+  engine number carries a receipt, and all are checked again on the same data before the
+  report is written. Every query whose rows an engine sums over is ordered: the pairs
+  (T2), and the others' tally (M1), with a test pinning the pairs' order.
+- Why: the first run confirmed 192 of 194 receipts. The two failures were T2's: DuckDB's
+  GROUP BY handed the pairs back in a different order each run, the sums came out in
+  another order, and the fitted prior moved in its eighth digit. Receipts are checked to the
+  last digit, so the engine must give the very same number every time. After the fix: 194
+  of 194, and T2 the same on two runs.
+- Alternatives considered: checking receipts to a tolerance (a tolerance hides real changes
+  too); rounding engine answers (the same, earlier).
+- Status: built (Day 54)
+- Paper section: Method (receipts); Evaluation (the engine report)

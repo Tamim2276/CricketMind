@@ -108,6 +108,15 @@ def test_duckdb_counts_as_python_does_for_batters_and_bowlers(repo):
     assert checked > 70
 
 
+def test_the_pairs_come_in_the_same_order_every_time(repo):
+    # a receipt is checked to the last digit, so even the order of a sum must not move
+    found = repo.pairs(MEN)
+    keys = []
+    for pair in found:
+        keys.append((pair.batter, pair.bowler, pair.order))
+    assert keys == sorted(keys)
+
+
 # The engine, end to end
 
 
