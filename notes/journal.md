@@ -3621,3 +3621,63 @@ difference would have mixed "their frames" with "a few more, probably
 harder, clips". New dataset option same_clips_as: keep only the clips
 another variant also has. R01 and R03 set it to box, and all three R runs
 now see exactly B01's clips. Tested, and counted on the real data.
+
+Later the same day: family R switched to non-deterministic kernels, for
+speed (~1.6x). Fair for the comparison that matters, since B01 itself ran
+before deterministic mode existed. Everything else in Phase 3 stays
+deterministic.
+
+## 2026-10-27 — Family R done: their method is ours, their frames don't help
+
+All four cells of the 2x2 are in (val, author / grouped):
+
+    B01  our protocol,   our crops     79.23 / 77.69
+    R02  their protocol, our crops     79.17 / 78.65
+    R03  our protocol,   their frames  75.44 / 78.14
+    R01  their protocol, their frames  76.77 / 77.44
+
+Their training recipe, ported cell by cell from the notebook, ties ours.
+Their preprocessing, copied as closely as their code allows, is a little
+worse: clearly on the author split, a wash on grouped. The full
+reproduction lands at 77%, nowhere near 89.
+
+So from everything the authors released, the 89% does not come back. What
+they didn't release is the striker detector (and in their code the striker
+box is the crop), the frame-sampling script, and their clips and split.
+That is where the gap has to be, and it's what the email asks for.
+
+R03 ran 79 and 78 epochs, twice the others, because B01's early stop
+counts a one-clip improvement as a gain. With the lr at 1e-7, BatchNorm's
+running stats still nudge val accuracy around, and every lucky nudge reset
+the countdown. Left alone here so R03 stays B01's protocol; it goes on
+Phase 4's list.
+
+## 2026-10-27 — Day 23: the video3d method
+
+Family C needed one new piece: a way to train a whole video model on our
+clips. VideoClassifier wraps any of the eight. It takes the model as
+published, swaps only the last Linear (400 Kinetics classes to our 15),
+and converts our clips to what the weights were trained on: frame count,
+size, colours.
+
+The conversion is the part I tested hardest. Family V's frozen features
+were made by extract.py on the CPU; C does the same on the GPU, in the
+other order (recolour, then resize). The two are equal in maths because
+both steps are linear, and the test checks they are equal in numbers too,
+to 1e-4. Without that, C02 against V01 would not be "fine-tuned against
+frozen" alone.
+
+Smoke test on the Arc with the real weights: one training step each for
+the five models that can run today, all finite. MViT turned out to have
+one operation (max_pool3d's backward) with no deterministic version, so
+its runs won't repeat exactly. Noted, not fixable from here.
+
+pytorchvideo (I3D, SlowFast, X3D) isn't installed; the code is written and
+waits for the install and its tests. And the batch-2 fallback that broke
+B07 is safe for the heavy C models: they use LayerNorm, so two clips twice
+is exactly four clips once.
+
+Later: deterministic kernels are now off by default, for Family C and
+everything after it. C goes from ~5-7 days to ~3-4. Finished runs are
+untouched: their rows say how they ran, and the runner still treats them
+as done.

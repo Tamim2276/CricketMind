@@ -21,9 +21,9 @@ def set_seed(seed: int = DEFAULT_SEED, deterministic: bool = False) -> int:
 
     `deterministic=True` also forces deterministic kernels; an op with no
     deterministic version warns instead of failing. Without it the flat GRU
-    gave three different losses from one seed on the Arc (11.1), and on the
-    cached heads it costs nothing. End to end it costs 1.5-1.7x (17.3), so
-    those bases turn it off.
+    gave three different losses from one seed on the Arc (11.1). End to end
+    it costs 1.5-1.7x (17.3); Families A-B kept it, and from Family C on it
+    is off by default for speed (2026-10-27).
 
     `False` switches it off, rather than leaving it alone: one process
     trains many runs, and one run's choice must not leak into the next.

@@ -23,12 +23,18 @@ READS = ("variant", "processed", "flip", "backbone", "pretrained", "freeze",
 
 def check(cfg):
     """Why this config cannot start yet, or None."""
-    import os
-
     from src.models.encoder import backbone_problem
     problem = backbone_problem(cfg["backbone"], cfg["pretrained"])
     if problem:
         return problem
+    return data_problem(cfg)
+
+
+def data_problem(cfg):
+    """Why the clips this config reads are not all there yet, or None.
+    video3d asks the same question."""
+    import os
+
     folder = os.path.join(cfg["processed"], cfg["variant"])
     if not os.path.isdir(folder):
         if cfg["variant"] == "replica":

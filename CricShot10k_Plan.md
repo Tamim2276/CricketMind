@@ -2239,6 +2239,43 @@ R03 would be scored on a different val and test set from B01's, and the
 R01 and R03 set it, so all of family R trains and scores on exactly B01's
 6,320 / 1,584 (author) and 6,341 / 1,569 (grouped). Caught before any R run.
 
+**Decided 2026-10-25: family R runs with deterministic kernels off**, the one
+exception to 17.3's rule. About 1.6x faster (~1.3 days instead of ~2). It
+changes how the sums are ordered, not what is learned, and B01, R's yardstick,
+ran without them too. The cost: an R run does not repeat to the last digit,
+and a resume after a power cut is close rather than exact. Each row records
+its own mode.
+
+**Ran 2026-10-25 to 10-27, 34.9 GPU-hours.** Val top-1 / macro-F1, all on
+B01's clips:
+
+| | box crops | replica frames |
+| --- | --- | --- |
+| B01's protocol | B01 79.23 / 0.778 · 77.69 / 0.758 | R03 75.44 / 0.736 · 78.14 / 0.765 |
+| their notebook's protocol | R02 79.17 / 0.777 · 78.65 / 0.780 | R01 76.77 / 0.747 · 77.44 / 0.757 |
+
+(author · grouped in each cell)
+
+1. **Their protocol is ours.** R02 − B01: −0.06 author, +0.96 grouped,
+   both noise. Their val-loss monitor, Keras defaults, Glorot dense and
+   stochastic depth add nothing measurable.
+2. **Their frames do not help, and mostly hurt.** Replica − box: −2.40 and
+   −1.21 with their protocol (R01 − R02), −3.79 and +0.45 with B01's
+   (R03 − B01). Worse on the author split both ways, a wash on grouped;
+   about −1.7 on average.
+3. **89% does not reproduce from what they released.** The closest
+   reproduction of their method and preprocessing scores 76.8 / 77.4, and
+   the best of the four cells is 79.2 / 78.7. What is left is what was not
+   released: the striker detector (the crop itself), the 15-frame sampling
+   step, their clips and their split. That is the email
+   (`notes/email_to_authors.md`).
+4. **R03 took 19 of the 35 hours,** 79 and 78 epochs, against ~35 for the
+   rest. B01's early stop counts any new best, even one clip (0.06
+   points), and BatchNorm's running stats keep val accuracy wobbling by
+   ±0.6 after the learning rate is ~0, so lucky one-clip "gains" kept
+   resetting the countdown. Kept as it is here (R03 must be B01's
+   protocol); a fix is on Phase 4's list.
+
 **Family R**, a 2 × 2 with B01, so any change can be put down to its cause:
 
 | | box crops | replica frames |
@@ -4873,6 +4910,48 @@ As 17.2. MViT, Swin3D and VideoMAE fine-tuned are the heavy ones; the same batch
 
 **Check.** `--list --family C` shows which are `ready`, and why the rest are not.
 
+**Built 2026-10-27.** `src/models/video_classifier.py` (`VideoClassifier`)
+and `src/methods/video3d.py`; nothing in `train.py` changed.
+1. **One wrapper for all eight.** The published model, with only its last
+   Linear swapped for 15 classes (`_swap_linear`); anything before it stays,
+   e.g. MViT's dropout. Tested: same seed, every other weight identical to
+   the plain torchvision model.
+2. **The clip is converted on the GPU exactly as Family V's extraction
+   did on the CPU** (`prepare`): evenly spaced frames when the weights
+   insist on a count (MViT and VideoMAE 16, I3D 8, X3D 16, SlowFast 32 + 8),
+   antialiased resize to the weights' size (the ResNet3Ds 112), their
+   colours. Tested equal to `extract._Clips` to 1e-4, so C02 against V01
+   differs only in fine-tuning.
+3. **Same clips as B.** `datasets` and `eval_set` are video_gru's, so C
+   and B runs read identical clip lists (tested on both real splits).
+   `video_gru.check`'s data half became `data_problem`, shared.
+4. **VideoMAE runs eager attention**, as DINOv2 does (14.2): SDPA in bf16
+   on the Arc was not repeatable and gave NaNs.
+5. **Smoke-tested on the Arc** with the real pretrained weights: one bf16
+   training step each for C01, C02, C06, C07, C08, all finite. **MViT has
+   one op with no deterministic version** (`max_pool3d` backward, in its
+   attention pooling), so C06 will not repeat bit for bit even with
+   deterministic mode on; it warns rather than fails.
+6. **pytorchvideo is not installed**, so C03–C05 read `needs pytorchvideo`
+   in `--list`. Their code is written (head `blocks[-1].proj` swapped, its
+   softmax removed, SlowFast's two paths made from one clip, the last
+   tested with a stand-in model); its tests skip until 23.2's install.
+7. **The batch fallback is safe here, unlike B07's.** MViT, Swin3D and
+   VideoMAE have no BatchNorm (LayerNorm only), so batch 2 × accumulation
+   2 gives exactly batch 4's gradient. The BatchNorm models (the
+   ResNet3Ds, I3D, SlowFast, X3D) normalise over every frame and pixel of
+   the batch, not over clips alone, so B07's ±1 collapse cannot happen;
+   two clips would still give noisier statistics, so it is recorded if
+   used.
+
+**Decided 2026-10-27: deterministic kernels off for every run from here
+on** (Family C, E, W, F and Phase 4), the default in `train.py` now.
+Family C drops from ~5–7 days to ~3–4. Accuracy is the same on average;
+what goes is the bit-for-bit repeat and the exact resume. A and B ran with
+them, R without; every row records its own mode, and `config_differences`
+ignores the key, so finished runs still count as done. A config that
+truly needs an exact repeat can still set `deterministic: true`.
+
 ---
 
 ## Days 24–27 — Family C, part 2: the queue
@@ -5141,6 +5220,11 @@ seeds** and report mean ± std.
 - backbone LR multiplier: 0.1, 0.5, 1.0
 - label smoothing: 0.0, 0.05, 0.1
 - class-balanced loss (see Appendix B — your minority classes are 4× smaller)
+- regularisation, for the 97–99% train accuracy every B run reached: head
+  dropout, and stochastic depth where the backbone lacks it (Family B
+  note 4)
+- early stopping that needs a real gain (e.g. 0.2 points) or stops at an lr
+  floor: R03 author spent 27 epochs at lr ≤ 1e-6 on one-clip "gains" (7.7)
 
 **Check:** every tuning run is also a ledger row.
 

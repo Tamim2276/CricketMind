@@ -81,7 +81,7 @@ DEFAULTS = {
     "patience": 8,
     "workers": 0,
     "seed": 42,
-    "deterministic": True,    # same seed, same run, bit for bit; off end to end (17.3)
+    "deterministic": False,   # ~1.6x faster; True repeats a run bit for bit (2026-10-27)
     "limit_clips": None,      # a smoke-test subset, taken across all classes
     "max_train_batches": None,
     "max_val_batches": None,
@@ -334,7 +334,7 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
     if config:
         cfg.update(config)
 
-    # deterministic kernels: the same seed gives the same run, bit for bit
+    # deterministic kernels, when asked: the same seed gives the same run
     set_seed(cfg["seed"], deterministic=cfg["deterministic"])
     device = get_device()
     out = run_dir(cfg)

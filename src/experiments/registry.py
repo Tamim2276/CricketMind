@@ -62,9 +62,9 @@ BASES = {
         "config": os.path.join("configs", "cached_gru.yaml"),
         "set": {"method": "cached_head", "head": "linear"},
     },
-    # the authors' end-to-end model, exactly as it reproduced 78.14%
-    # deterministic kernels cost 1.5-1.7x the time end to end (17.3); kept
-    # anyway, so every run repeats exactly and a power cut leaves no trace
+    # the authors' end-to-end model, exactly as it reproduced 78.14%.
+    # Families A-B ran with deterministic kernels; from C on they are off
+    # (1.5-1.7x faster, 2026-10-27). Each row records its own mode
     "mimic_author": {
         "config": os.path.join("configs", "mimic_author.yaml"),
         "set": {},
@@ -250,7 +250,8 @@ ENTRIES = [
             "to pass 89%"},
 
     # ---- R: the authors' method as their notebooks run it (7.7) ----
-    # a 2 x 2 with B01: protocol (B01's or theirs) x frames (box or theirs)
+    # a 2 x 2 with B01: protocol (B01's or theirs) x frames (box or theirs).
+    # The first runs without deterministic kernels (2026-10-25)
     {"id": "R01_port_replica", "base": "authors_port",
      "cfg": {"variant": "replica", "same_clips_as": "box"},
      "why": "their notebook's method on frames made their way: the closest "

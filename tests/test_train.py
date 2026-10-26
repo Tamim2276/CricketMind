@@ -56,8 +56,13 @@ def base_cfg(workspace, **over):
 
 # ---- it runs ------------------------------------------------------------
 
-def test_every_run_uses_deterministic_kernels_and_says_so(workspace):
-    row = T.train(base_cfg(workspace), quiet=True)
+def test_runs_are_fast_unless_asked_and_say_which(workspace):
+    """Off by default from 2026-10-27 (~1.6x faster); on when asked."""
+    row = T.train(base_cfg(workspace, name="fast"), quiet=True)
+    assert row["deterministic"] is False
+    assert not torch.are_deterministic_algorithms_enabled()
+    row = T.train(base_cfg(workspace, name="exact", deterministic=True),
+                  quiet=True)
     assert row["deterministic"] is True
     assert torch.are_deterministic_algorithms_enabled()
 
@@ -163,18 +168,19 @@ def _losses(cfg):
 
 def test_a_resumed_run_is_the_run_that_never_stopped(workspace):
     """Found 2026-10-20 after a power cut in B02: the shuffle order was not
-    saved, so the resumed epoch saw epoch 1's order again."""
-    whole = base_cfg(workspace, name="whole", epochs=3)
+    saved, so the resumed epoch saw epoch 1's order again. Exact only with
+    deterministic kernels, so they are on here."""
+    whole = base_cfg(workspace, name="whole", epochs=3, deterministic=True)
     T.train(whole, quiet=True)
 
-    cut = base_cfg(workspace, name="cut", epochs=3)
+    cut = base_cfg(workspace, name="cut", epochs=3, deterministic=True)
     _cut_during_epoch_2(cut)
     T.train(cut, quiet=True)
     assert _losses(cut) == _losses(whole)
 
     # and without the saved shuffle state (the old files) it is not: this
     # is what the test would miss if the shuffle had no effect here
-    old = base_cfg(workspace, name="old", epochs=3)
+    old = base_cfg(workspace, name="old", epochs=3, deterministic=True)
     _cut_during_epoch_2(old)
     path = os.path.join(T.run_dir(old), "resume.pt")
     state = torch.load(path, map_location="cpu", weights_only=False)
@@ -188,7 +194,7 @@ def test_a_resumed_run_is_the_run_that_never_stopped(workspace):
 def test_deterministic_can_be_switched_off_after_a_run_switched_it_on(
         workspace):
     """One process trains many runs; the last run's choice must not leak."""
-    T.train(base_cfg(workspace, name="on"), quiet=True)
+    T.train(base_cfg(workspace, name="on", deterministic=True), quiet=True)
     assert torch.are_deterministic_algorithms_enabled()
     row = T.train(base_cfg(workspace, name="off", deterministic=False),
                   quiet=True)

@@ -262,6 +262,7 @@ def test_idempotent_a_second_call_touches_nothing(harness, monkeypatch):
 @pytest.mark.parametrize("exp_id", ["X01_linear", "X02_mlp"])
 def test_deterministic_same_seed_same_numbers(harness, exp_id):
     # flip is 0.5 here, so the mirror coin is part of what must repeat
+    harness["over"]["deterministic"] = True
     name = exp_id + "__author"
     _run(harness, exp_id)
     first = _ledger(harness)[-1]

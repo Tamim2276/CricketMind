@@ -142,7 +142,11 @@ def test_unread_key_is_caught(monkeypatch):
 
 
 def test_status_names_what_is_missing():
-    assert R.status(R.get("C01_r2plus1d_18")) == "needs method video3d"
+    from src.methods import video3d
+    assert R.status(R.get("C01_r2plus1d_18")) == "ready"
+    # C03-C05 wait on pytorchvideo until it installs and imports
+    waiting = video3d._pytorchvideo_problem() or "ready"
+    assert R.status(R.get("C03_i3d")) == waiting
     assert R.status(R.get("B01_effnetv2s")) == "ready"
     fake = {"id": "B99_fake", "base": "mimic_author",
             "cfg": {"backbone": "no_such_net"}, "why": "x"}
@@ -185,13 +189,13 @@ def test_every_b_run_trains_four_clips_at_a_time():
     assert R.status(R.get("B07_regnety_16gf")) == "ready"
 
 
-def test_every_training_run_uses_deterministic_kernels():
-    """17.3: 1.5-1.7x the time end to end, kept anyway (2026-10-20), so a
-    run repeats exactly and a resumed run equals an unbroken one."""
-    for family in ("P", "A", "V", "B", "C", "R"):
-        for entry in R.entries(family):
-            assert R.resolve(entry, "author")["deterministic"] is True, \
-                entry["id"]
+def test_every_run_from_now_on_skips_deterministic_kernels():
+    """2026-10-27: off for everything from Family C on, ~1.6x faster. A and
+    B ran with them; their rows say so, and config_differences ignores the
+    key, so they are still done and never retrained over it."""
+    for entry in R.ENTRIES:
+        assert R.resolve(entry, "author")["deterministic"] is False, \
+            entry["id"]
 
 
 def test_deterministic_does_not_change_what_a_row_means():
@@ -221,7 +225,7 @@ def test_the_port_is_their_notebook_not_mimic_author():
     assert r03["same_clips_as"] == "box"
     b01 = R.resolve(R.get("B01_effnetv2s"), "author")
     for key in b01:
-        if key in ("name", "variant", "same_clips_as"):
+        if key in ("name", "variant", "same_clips_as", "deterministic"):
             continue
         assert r03[key] == b01[key], key
 
