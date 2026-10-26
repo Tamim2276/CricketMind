@@ -57,12 +57,12 @@ def main(database: str) -> None:
             if name == kept or (kept.endswith("=") and name.startswith(kept)):
                 columns.append(number)
     numbers = data["numbers"][:, columns]
-    trees = load("day54_trees_question_only.joblib", started)
+    trees = load(data["cache"] / "day54_trees_question_only.joblib", started)
     if trees is None:
         trees = fit_trees(
             numbers, data["outcome"], data["early"], data["late"], data["train"]
         )
-        save(trees, "day54_trees_question_only.joblib", started)
+        save(trees, data["cache"] / "day54_trees_question_only.joblib", started)
     given = trees.predict_proba(numbers[data["test"]])[:, 1]
     side = side_by_side(data, {"question only": given})
     outcomes = side["outcomes"]

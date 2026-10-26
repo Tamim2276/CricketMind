@@ -19,6 +19,6 @@ The logistic regression ran 19 iterations; the trees, sized on the validation ye
 ## trees against the engine (B)
 
 - Brier(trees) − Brier(B): 95% range -0.0003222 to -0.0002633
-- ECE(trees) − ECE(B): 95% range -0.000493 to +0.000970
+- ECE(trees) − ECE(B): 95% range -0.000492 to +0.000970
 - Better by more than luck, and calibration not clearly worse: it may take the engine's place only once it gives an honest range (20 refits on resampled training matches), the rule's third part.
 

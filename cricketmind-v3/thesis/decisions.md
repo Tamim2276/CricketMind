@@ -1301,8 +1301,11 @@ Template:
   a question lacks it (invented inputs); calling the trees a baseline whatever the rule said
   (ignores the result); counting the exploratory run as a verdict (fitted after seeing the
   pre-registered result).
-- Status: decided (Day 54); the honest-range step is a long run for the user; Phase 9c
-  takes the rest up
+- Status: decided (Day 54). The honest-range step ran on 2026-10-27 (N-043): the trees pass
+  all three parts of the rule, and the verdict stands for the reasons above, since the
+  rule's passing model still cannot be asked a question that does not state the match.
+  Its range is the doubt of the fit, not of the batter's rate (L-064). Phase 9c takes the
+  rest up
 - Paper section: Evaluation (N9 against ML baselines)
 
 ## D-068 — The engine report, and receipts that hold to the last digit

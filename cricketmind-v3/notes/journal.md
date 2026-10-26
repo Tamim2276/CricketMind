@@ -1741,3 +1741,45 @@ number, calibration on a year they never saw, and a fair ML comparison.
 - Evidence: E-026 and E-034 (verified), E-046 (verified)
 - Limitations: L-034 updated, L-061 to L-063
 - Section it feeds: Results (the engines); Evaluation (N9 against ML); Method (receipts)
+
+---
+
+## Day 54 — after the commit — the trees' honest range
+
+**Learned:** two kinds of doubt. The trees' range asks "if I had learned from slightly
+different matches, would my answer change?"; N9's asks "how sure am I about this batter?" A
+new batter has few balls, so only the second is wide.
+**Run on committed code** (c253075), twice. The first run reused the trees saved before the
+pairs were ordered (D-068) and asked them about the ordered inputs: one number moved, the
+men's Test gap of the trees, 0.00155 to 0.00163. Why: the likelihood search pins a prior to
+about five digits, and the last moves with the order of its inputs (checked: the men's Test
+bowler prior, inputs in four orders, 20.46450 to 20.46460 outs); trees cut sharply, so a
+model fitted on the old inputs flips a few balls on the new ones (L-065). **Fixed:** the
+cache keeps each model in a folder named after a fingerprint of its inputs (and of
+scikit-learn's version), so a model fitted on other inputs is never reused (checked: the same
+inputs give the same folder; one changed digit gives another). **The clean run** fitted
+everything again: `ml_baseline.csv` and `ml_exploratory_day54.md` came out byte for byte as
+committed; one bootstrap end moved in its sixth decimal (−0.000493 to −0.000492).
+**The rule's third part (N-043):**
+
+```
+his train balls   test balls   the trees' range   N9's range   (points, middle 95%)
+under 100           67,064        1.405              4.522
+100 to 999         198,688        0.985              3.008
+1,000 or more      221,629        1.498              1.358
+```
+
+Met: every test ball the engine answers has a range from the 20 refits, so the trees pass all
+three parts of the rule. **D-067 stands:** they still need the match, which no question
+carries. The refits keep each batter's own record as it is, so the trees look surer about a
+new batter than anyone can be (L-064); a learned engine's range must carry both doubts
+before it gives receipts (Day 159).
+**Still to do (yours):** after the commit, the same run once more on committed code. The
+models and refits are cached under their fingerprint now, so it takes about two minutes.
+
+**For the paper:**
+- Decisions: D-067 (status)
+- Numbers: N-043
+- Evidence: E-034 (the honest range verified)
+- Limitations: L-064, L-065
+- Section it feeds: Evaluation (N9 against ML); Method (reproducibility)

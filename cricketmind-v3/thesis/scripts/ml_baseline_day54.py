@@ -11,7 +11,8 @@ Logistic regression and gradient-boosted trees learn, from every train ball (bef
 they are scored per ball on the test year beside the engine's own chance (B, Day 53), on
 the same balls. Reads the database only. Writes thesis/results/ml_baseline.csv and
 ml_baseline_trials.md, one ledger line each. The fitted models are kept in
-data/ml_cache/, so a run cut short picks up where it was.
+data/ml_cache/, in a folder named after the inputs' fingerprint, so a run cut short picks
+up where it was and a model fitted on other inputs is never reused.
 """
 
 import csv
@@ -23,6 +24,7 @@ import time
 import duckdb
 import joblib
 import numpy as np
+import sklearn
 from ledger import PROJECT, RESULTS, add_to_ledger, relative, write_safely
 from scipy.stats import beta
 from sklearn.ensemble import HistGradientBoostingClassifier
@@ -77,14 +79,14 @@ def main(database: str, ranges: bool) -> None:
     numbers = data["numbers"]
     outcome = data["outcome"]
     train = data["train"]
-    logistic = load("day54_logistic.joblib", started)
+    logistic = load(data["cache"] / "day54_logistic.joblib", started)
     if logistic is None:
         logistic = fit_logistic(numbers[train], outcome[train])
-        save(logistic, "day54_logistic.joblib", started)
-    trees = load("day54_trees.joblib", started)
+        save(logistic, data["cache"] / "day54_logistic.joblib", started)
+    trees = load(data["cache"] / "day54_trees.joblib", started)
     if trees is None:
         trees = fit_trees(numbers, outcome, data["early"], data["late"], train)
-        save(trees, "day54_trees.joblib", started)
+        save(trees, data["cache"] / "day54_trees.joblib", started)
     test = data["test"]
     chances = {
         "logistic": logistic.predict_proba(numbers[test])[:, 1],
@@ -137,17 +139,30 @@ def prepare(database: str, started: float) -> dict:
     totals = {None: int(test.sum())}
     for code in FORMATS:
         totals[code] = int(((found["kind"] == code) & test).sum())
+    numbers = matrix(found, batter_priors, bowler_priors)
+    outcome = np.asarray(found["out"]).astype(int)
     return {
         "found": found,
-        "numbers": matrix(found, batter_priors, bowler_priors),
-        "outcome": np.asarray(found["out"]).astype(int),
+        "numbers": numbers,
+        "outcome": outcome,
         "test": test,
         "train": train,
         "late": late,
         "early": train & ~late,
         "engine": engine,
         "totals": totals,
+        "cache": cache_for(numbers, outcome, train, late),
     }
+
+
+def cache_for(numbers, outcome, train, late):
+    """The cache's folder for these inputs: a model is reused only if it was fitted on
+    exactly these numbers, by this scikit-learn (Day 54: a model fitted before the
+    bowlers were ordered was once reused)."""
+    found = hashlib.sha256(sklearn.__version__.encode())
+    for array in (numbers, outcome, train, late):
+        found.update(np.ascontiguousarray(array))
+    return CACHE / found.hexdigest()[:16]
 
 
 def side_by_side(data: dict, chances: dict) -> dict:
@@ -218,7 +233,7 @@ def honest_ranges(data: dict, trees, side: dict, started: float) -> str:
     test_rows = data["numbers"][data["test"]]
     refits = []
     for number, drawn in enumerate(draws):
-        path = CACHE / f"day54_refit_{number:02d}.npy"
+        path = data["cache"] / f"day54_refit_{number:02d}.npy"
         if path.exists():
             refits.append(np.load(path))
             continue
@@ -228,7 +243,7 @@ def honest_ranges(data: dict, trees, side: dict, started: float) -> str:
         )
         model.fit(data["numbers"][train], data["outcome"][train], sample_weight=weights)
         given = model.predict_proba(test_rows)[:, 1]
-        CACHE.mkdir(parents=True, exist_ok=True)
+        data["cache"].mkdir(parents=True, exist_ok=True)
         np.save(path, given)
         refits.append(given)
         say(f"refit {number + 1} of {REFITS}", started)
@@ -264,23 +279,35 @@ def honest_ranges(data: dict, trees, side: dict, started: float) -> str:
         lines.append(
             f"| {name} | {int(here.sum()):,} | {trees_width:.3f} | {engine_width:.3f} |"
         )
-    lines.append("")
+    lines += [
+        "",
+        (
+            "- The rule's third part is met: every test ball the engine answers has a "
+            f"range from the {REFITS} refits."
+        ),
+        (
+            "- The two ranges measure different doubts. The refits redraw the training "
+            "matches but keep each batter's own record as it is, so the trees' range is "
+            "the doubt of the fit; the engine's is the doubt of his own rate, which is "
+            "why it is wider for a batter with few balls."
+        ),
+        "",
+    ]
     return "\n".join(lines) + "\n"
 
 
-def load(name: str, started: float):
-    # a model fitted by an earlier run is loaded, not fitted again (a power cut)
-    path = CACHE / name
+def load(path, started: float):
+    # a model fitted by an earlier run on the same inputs is loaded, not fitted again
     if not path.exists():
         return None
-    say(f"{name}: loaded from the cache", started)
+    say(f"{path.name}: loaded from the cache", started)
     return joblib.load(path)
 
 
-def save(model, name: str, started: float) -> None:
-    CACHE.mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, CACHE / name)
-    say(f"{name}: fitted", started)
+def save(model, path, started: float) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, path)
+    say(f"{path.name}: fitted", started)
 
 
 def scores_text(side: dict, totals: dict) -> str:
