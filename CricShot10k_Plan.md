@@ -4903,6 +4903,13 @@ torch 2.13. If so, C03–C05 are recorded in the journal as "could not run, and
 why" (rule 2), and their `check()` says so in `--list`. They are not quietly
 dropped.
 
+**Ran 2026-10-27: it installed and imports** (pytorchvideo 0.1.5, with
+fvcore, iopath and av; torch 2.13.0+xpu untouched). All three hub models
+build, and the I3D, SlowFast and X3D tests pass (15 scores each from a
+15-frame clip, head softmax removed). C03–C05 read `ready`. Their
+pretrained weights download from fbaipublicfiles the first time each is
+built, so the memory probe is where that happens.
+
 ### 23.3 Memory probes (≈1 h)
 
 As 17.2. MViT, Swin3D and VideoMAE fine-tuned are the heavy ones; the same batch
