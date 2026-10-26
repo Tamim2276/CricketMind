@@ -20,6 +20,7 @@ BOWLING_FILTERS = (
     "venue",
     "season",
     "since",
+    "before",
     "match_format",
     "innings",
     "phase",
@@ -34,6 +35,7 @@ BATTING_FILTERS = (
     "venue",
     "season",
     "since",
+    "before",
     "match_format",
     "innings",
     "phase",
@@ -177,7 +179,7 @@ CLAIM_TYPES = (
         source="N8.M2",
         required_keys=("venue", "match_format", "gender"),
         unit="innings",
-        filters=("season", "since"),
+        filters=("season", "since", "before"),
     ),
     ClaimType(
         name="venue_chasing_win_share",
@@ -185,7 +187,7 @@ CLAIM_TYPES = (
         source="N8.M2",
         required_keys=("venue", "match_format", "gender"),
         unit="innings",  # the chases that ended with a winner
-        filters=("season", "since"),
+        filters=("season", "since", "before"),
     ),
     ClaimType(
         name="venue_wicket_share",
@@ -193,7 +195,7 @@ CLAIM_TYPES = (
         source="N8.M2",
         required_keys=("venue", "match_format", "gender", "bowler_type"),
         unit="wickets",  # the bowlers' wickets whose bowler type is known
-        filters=("season", "since"),
+        filters=("season", "since", "before"),
     ),
     ClaimType(
         name="workload_ratio_flag",
@@ -209,7 +211,7 @@ CLAIM_TYPES = (
         # when the batter ended up out, so a rate by kind would be lopsided (Day 42)
         required_keys=("team", "gender"),
         unit="reviews",
-        filters=("match_format", "season", "since", "side"),
+        filters=("match_format", "season", "since", "before", "side"),
     ),
     # who won, and by how much (N8 M5, Day 45)
     ClaimType(
@@ -218,7 +220,7 @@ CLAIM_TYPES = (
         source="N8.M5",
         required_keys=("team", "gender"),
         unit="matches",  # the matches someone won
-        filters=("opposition", "venue", "season", "since", "match_format"),
+        filters=("opposition", "venue", "season", "since", "before", "match_format"),
     ),
     ClaimType(
         name="match_won_by_runs",
@@ -266,7 +268,7 @@ CLAIM_TYPES = (
         required_keys=("player", "bowler", "other_bowler", "k", "match_format"),
         needs_range=True,
         comparison=True,
-        filters=("venue", "season", "since", "innings", "phase", "gender"),
+        filters=("venue", "season", "since", "before", "innings", "phase", "gender"),
     ),
 )
 

@@ -29,6 +29,12 @@ def test_a_format_becomes_sql_with_question_marks():
     assert values == ["T20", "international"]
 
 
+def test_before_is_up_to_the_day_before():
+    sql, values = match_condition("before", "2025-10-15")
+    assert sql == "m.date < ?"
+    assert str(values[0]) == "2025-10-15"
+
+
 def test_since_a_year_or_a_day():
     assert str(first_day("2020")) == "2020-01-01"
     assert str(first_day("2020-06-01")) == "2020-06-01"

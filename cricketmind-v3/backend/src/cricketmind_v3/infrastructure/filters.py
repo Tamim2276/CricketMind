@@ -8,7 +8,7 @@ import datetime
 from cricketmind_v3.application.ports import FilterError
 from cricketmind_v3.domain.formats import format_named
 
-MATCH_FILTERS = ("match_format", "gender", "season", "since", "venue")
+MATCH_FILTERS = ("match_format", "gender", "season", "since", "before", "venue")
 
 
 def match_condition(field: str, value) -> tuple[str, list]:
@@ -30,6 +30,8 @@ def match_condition(field: str, value) -> tuple[str, list]:
         return "m.season = ?", [value]
     if field == "since":
         return "m.date >= ?", [first_day(value)]
+    if field == "before":
+        return "m.date < ?", [first_day(value)]  # the day itself is not before it
     if field == "venue":
         return "v.venue_key = ?", [value]
     raise FilterError(f"cannot pick matches by {field}")

@@ -28,6 +28,7 @@ class CricketSubject(Subject):
     opposition: str | None = None  # "Australia": the side played against
     season: str | None = None  # "2024" or "2024/25", as Cricsheet writes it
     since: str | None = None  # "2020" or "2020-06-01": from that day on
+    before: str | None = None  # "2020" or "2020-06-01": up to the day before (Day 53)
     innings: int | None = None  # 1: batted first
     batting_hand: str | None = None  # "left" or "right"
     side: str | None = None  # "batting" or "fielding": who asked for a review

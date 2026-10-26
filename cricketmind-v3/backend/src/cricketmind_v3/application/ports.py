@@ -2,6 +2,7 @@ from datetime import date
 from typing import Protocol
 
 from cricketmind_v3.domain.balls import Ball
+from cricketmind_v3.domain.calibration import Moment
 from cricketmind_v3.domain.facts import Fact
 from cricketmind_v3.domain.matchups import Pair
 from cricketmind_v3.domain.results import Result
@@ -53,6 +54,10 @@ class DeliveryRepository(Protocol):
         Raises FilterError when several players share the name.
         """
 
+    def moments(self, subject: Subject) -> list[Moment]:
+        """Every ball faced, and every ball a batter was out on, under the subject's
+        filters, in match order (Day 53)."""
+
 
 class FakeDeliveryRepository:
     """Balls written in by hand for tests, filed under the subject they answer."""
@@ -64,6 +69,7 @@ class FakeDeliveryRepository:
         self.his_records: dict[Subject, list[Record]] = {}
         self.their_records: dict[Subject, list[Record]] = {}
         self.every_pair: dict[Subject, list[Pair]] = {}
+        self.every_moment: dict[Subject, list[Moment]] = {}
         self.asked: list[Subject] = []  # what the engine asked for, to check in tests
 
     def add(self, subject: Subject, balls: list[Ball]) -> None:
@@ -83,6 +89,9 @@ class FakeDeliveryRepository:
 
     def add_pairs(self, subject: Subject, pairs: list[Pair]) -> None:
         self.every_pair[subject] = pairs
+
+    def add_moments(self, subject: Subject, moments: list[Moment]) -> None:
+        self.every_moment[subject] = moments
 
     def deliveries(self, subject: Subject) -> list[Ball]:
         self.asked.append(subject)
@@ -110,6 +119,10 @@ class FakeDeliveryRepository:
 
     def person(self, name: str) -> str | None:
         return name  # the fake knows players by their names
+
+    def moments(self, subject: Subject) -> list[Moment]:
+        self.asked.append(subject)
+        return list(self.every_moment.get(subject, []))
 
 
 class FactSource(Protocol):

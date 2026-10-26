@@ -61,6 +61,8 @@ def shanaka(**filters) -> CricketSubject:
         {"season": "2026/27"},
         {"since": "2026"},
         {"since": "2026-10-11"},  # the day itself counts
+        {"before": "2026-10-12"},  # Day 53: up to the day before
+        {"before": "2027"},
         {"match_format": "T20I"},
         {"match_format": "T20"},
         {"innings": 1},
@@ -80,6 +82,8 @@ def test_every_filter_that_fits_keeps_all_his_balls(balls, filters):
         {"venue": "Lord's"},
         {"season": "2026"},
         {"since": "2026-10-12"},
+        {"before": "2026-10-11"},  # the day itself is not before it
+        {"before": "2026"},
         {"match_format": "ODI"},
         {"innings": 2},
         {"gender": "female"},
@@ -105,6 +109,7 @@ def test_a_field_the_measure_cannot_filter_by_gets_no_answer(balls):
     assert strike_rate(balls, farhan(batting_hand="right")) is None  # a bowler's filter
     assert strike_rate(balls, farhan(match_format="Rugby")) is None
     assert strike_rate(balls, farhan(since="last year")) is None
+    assert strike_rate(balls, farhan(before="next year")) is None
 
 
 # Seen from the bowler's side: opposition is who batted

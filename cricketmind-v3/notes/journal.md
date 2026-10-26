@@ -1612,3 +1612,68 @@ stopping more. **Added:** Day 166; E-044; L-019 now names the test. Nothing is b
 | 1–165 | unchanged |
 | — | 166 (new: the word lists against meaning) |
 | 166–217 | 167–218 |
+
+---
+
+## Day 53 — before the run — the pre-registration
+
+`thesis/prereg/day53_calibration.md`, SHA-256
+`1a7070c97c281a7bd2237afeedfb409ec322060d4381ccfa94741b872defff34`, written before any
+calibration ran. The run script refuses to start if the file has changed.
+
+---
+
+## Day 53 — 2026-10-26 — Does 30% mean 30%?
+
+**Learned:** calibration, the weather-forecast idea: on all the days a forecast says 70% rain,
+it should rain on about 70% of them. The Brier score is the mean of (chance − what happened)²:
+0 is perfect, always saying 50% scores 0.25. A reliability plot sorts the chances into ten
+equal bins and sets each bin's mean chance against the share that happened; the calibration
+gap (ECE) is how far, on average, the points sit from the diagonal. Uncertainty comes from
+resampling whole matches, the same matches for every model, so the comparison is fair
+(paired). And the rules come first: the pre-registration was written and fingerprinted
+before anything ran, and the script refuses to run if it changes.
+**Built:** the `before` filter (up to the day before; every menu row that takes `since` takes
+it); `domain/scoring.py` (Brier, log loss, equal bins, ECE, the paired bootstrap, the trials'
+rule); `domain/calibration.py` (the test moments, the 6-ball windows, five models fitted on
+the train matches); the repository's `moments`; `thesis/scripts/calibration_day53.py`.
+**Tested:** 31 new tests, 652 in all. By hand: Brier 0.04 for 0.2 and 0.8; a reliability plot
+of 9 chances (I first gave the wrong bin 4 of them, and the test caught me: 9 cut in 2 gives the
+first bin 5); the exact 6-ball chance for 4 outs in 50 balls, checked against 200,000 draws;
+Kerman's median for Beta(4.5, 46.5), 0.4045 against Day 49's exact 0.4049. The database test
+found a bug: a ball with no wicket came back as "None", not "false" (SQL's NULL).
+Fifteen deliberate mistakes were each caught in the end. Three were missed at first: two because a test was too weak (no bin whose chances were too high; a rule tested exactly at the mistaken threshold), one because my runner had kept an older, harmless version of the mistake.
+**The run** (2,110 matches, 538,159 test balls, three minutes; ledger lines for both runs):
+
+```
+per ball, all four kinds   Brier      gap      what it means
+D his record alone         0.047443   0.0100   too sure of small records
+A toward every batter      0.045677   0.0017
+B toward his place         0.045655   0.0010   kept (rule 1): better by more than luck
+C B with stages            0.045647   0.0015   not kept (rule 2): its edge may be luck
+```
+
+**A bug the results showed:** the first run's 6-ball windows had a gap of 0.27, far too big
+for models this good per ball. My window code ended a window at the batter's own wicket, so
+when he was out on his 2nd ball, the model was scored on a 2-ball chance for a wicket that
+fell. The pre-registration says a window is cut short only by the innings ending or his
+retiring. Fixed and run again; the per-ball results, which decide the trials, did not change.
+Within 6 balls, B now gives 24.4% and 24.8% were out (gap 0.014); the number the engine shows
+(the middle of its replays) 24.5% against 25.0%.
+**Calibrated (rule 3), per ball and within 6 balls:** men's and women's T20s and men's ODIs,
+yes; men's Tests, no (the gap is 13% of the mean chance, the rule allows 10%): said, not hidden.
+**Also:** knowing the bowler (T2) adds nothing measurable per ball (Brier 0.046235 against
+0.046232); men's T20 batters were out a little more often in the test year than before (the
+game drifts, L-057); the engine itself, asked as of 2025-10-14, agreed with the run to 0.075
+points.
+**Decided (D-066):** the prior by batting place stays; the stages leave the engine (the next
+commit) and wait as a baseline for Day 157. The ML baseline's rule, inputs and split are in
+the pre-registration (section 7), for Day 54.
+**For the next v4 revision:** the calibration result, with its rules; stages tried and not kept.
+
+**For the paper:**
+- Decisions: D-066 (D-056 not kept, D-059 kept)
+- Numbers: N-032 to N-037
+- Evidence: E-007 and E-045 (verified)
+- Limitations: L-057 to L-060
+- Section it feeds: Evaluation (calibration; the trials)

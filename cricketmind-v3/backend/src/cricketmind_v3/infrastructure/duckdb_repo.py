@@ -1,9 +1,10 @@
-"""The DuckDB adapter: SQL picks the balls a subject is about (Days 38, 43, 50, 51)."""
+"""The DuckDB adapter: SQL picks the balls a subject is about (Days 38, 43, 50, 51, 53)."""
 
 import dataclasses
 
 from cricketmind_v3.application.ports import FilterError
 from cricketmind_v3.domain.balls import NOT_DISMISSALS, SOMEONE_ELSE, THE_BATTER, Ball
+from cricketmind_v3.domain.calibration import Moment
 from cricketmind_v3.domain.matchups import Pair
 from cricketmind_v3.domain.registry import is_empty
 from cricketmind_v3.domain.stages import ORDERS, STARTS, Record
@@ -53,10 +54,8 @@ STAGED = ORDERED + (
 
 # the counting rules of balls.py, for DuckDB to count by: out when the one out was on
 # strike and did not retire (one ? per kind of retiring); faced unless a wide
-OUT = (
-    "SUM(CASE WHEN d.player_out = d.batter "
-    "AND COALESCE(d.wicket_kind, '') NOT IN ({marks}) THEN 1 ELSE 0 END)"
-)
+IS_OUT = "(d.player_out = d.batter AND COALESCE(d.wicket_kind, '') NOT IN ({marks}))"
+OUT = "SUM(CASE WHEN " + IS_OUT + " THEN 1 ELSE 0 END)"
 FACED = "SUM(CASE WHEN d.wides = 0 THEN 1 ELSE 0 END)"
 
 
@@ -211,6 +210,49 @@ class DuckDBDeliveryRepository:
     def person(self, name: str) -> str | None:
         """The register id of the player called this (Day 51)."""
         return find_person(self.db, name)
+
+    def moments(self, subject: Subject) -> list[Moment]:
+        """Every ball faced, and every ball a batter was out on, under the subject's
+        filters, in match order: what the calibration scores (Day 53)."""
+        where, values = self._where(subject, player_is="=")
+        if where is None:
+            return []
+        marks = ", ".join(["?"] * len(NOT_DISMISSALS))
+        is_out = IS_OUT.format(marks=marks)
+        sql = (
+            "SELECT d.match_id, d.innings, COALESCE(d.batter_id, d.batter), "
+            "COALESCE(d.bowler_id, d.bowler), s.faced_before, "
+            # no one out is NULL in SQL, not false
+            f"{order_case('b.slot')}, COALESCE({is_out}, false), d.wides = 0 "
+            f"FROM {STAGED} WHERE {' AND '.join(where)} "
+            f"AND (d.wides = 0 OR {is_out}) "
+            "ORDER BY d.date, d.match_id, d.innings, d.over, d.ball_index"
+        )
+        found = []
+        rows = self.db.execute(sql, [*NOT_DISMISSALS, *values, *NOT_DISMISSALS])
+        for (
+            match,
+            innings,
+            batter,
+            bowler,
+            before,
+            order,
+            out,
+            faced,
+        ) in rows.fetchall():
+            found.append(
+                Moment(
+                    match=match,
+                    innings=innings,
+                    batter=batter,
+                    bowler=bowler,
+                    faced_before=before,
+                    order=order,
+                    out=out,
+                    faced=faced,
+                )
+            )
+        return found
 
     def _records(self, subject: Subject, player_is: str) -> list[Record]:
         # millions of balls, so DuckDB counts, by the rules of balls.py; a test holds

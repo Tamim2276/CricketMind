@@ -986,8 +986,7 @@ Template:
 - Alternatives considered: a full ball-by-ball model with every feature (much more to build
   and test; harder to explain; kept for future work); no extra at all (leaves an obvious,
   testable improvement untried).
-- Status: built on Day 50 (D-058); decided on Day 53; the outcome, either way, goes in the
-  journal and here
+- Status: built on Day 50 (D-058); not kept on Day 53 (D-066)
 - Paper section: Method (N9 T1); Evaluation (E-007)
 
 ## D-057 — N9 T1: the chance of being out within k balls, with an honest range
@@ -1067,7 +1066,7 @@ Template:
   would be pulled toward different groups ball by ball); exact places (too few batters at
   each); a prior that also leans on his batting average (borrows from other numbers; more to
   explain); leaving it as a limitation (a known, large bias, and the data to fix it exists).
-- Status: built (Day 50); decided on Day 53 with the stages
+- Status: built (Day 50); kept on Day 53 (D-066)
 - Paper section: Method (N9 T1)
 
 ## D-060 — The prior is fitted by maximum likelihood, not the method of moments
@@ -1250,3 +1249,29 @@ Template:
   finding, not which word failed which check).
 - Status: planned (Day 166)
 - Paper section: Evaluation (the word lists against meaning); Limitations (L-019)
+
+## D-066 — Day 53's verdicts: batting place kept, stages out, and how calibrated it is
+- Date: 2026-10-26
+- Decision: by the rules written before the run (`thesis/prereg/day53_calibration.md`,
+  SHA-256 1a7070c9...ff34), on every test ball of men's and women's T20s, men's ODIs and
+  men's Tests after 2025-10-14, fitted only on the matches before: the prior by batting
+  place stays (B over A, D-059); the stages do not (C over B, D-056): they leave the engine
+  and the menu (`faced_so_far`), and stay only as a baseline for Day 157. The engine's
+  chances are called calibrated, per ball and within 6 balls, on men's and women's T20s and
+  men's ODIs, but not on men's Tests, where the gap is 13% of the mean chance, above rule
+  3's 10%: the paper says so, and any recalibration is a later decision, fitted on the
+  validation year, never on the test year. T2 adds nothing measurable per ball over T1;
+  it stays for what-ifs, whose differences then come out as "no detectable difference",
+  as they should.
+- Why: per ball, Brier(B) - Brier(A) has a 95% range of -0.0000317 to -0.0000125, wholly
+  below zero, and B's calibration gap is the smallest (0.00103 against A's 0.00166);
+  Brier(C) - Brier(B) ranges from -0.0000180 to +0.0000013, so C's edge may be luck. The
+  shrinkage itself earns its place: his record alone (Day 49) scores 0.047443 with a gap of
+  0.00999; pulled toward normal, 0.045655 and 0.00103, ten times better calibrated. The
+  engine, asked itself on 30 moments, agreed with the run to 0.075 points at most.
+- Alternatives considered: deciding per kind of cricket (C was better on Tests; but the rule
+  was pooled and set before the run, and a new per-kind rule now would be fitted to the
+  test year); a looser rule (better Brier alone, with no allowance for luck: written before
+  as stricter, and kept so).
+- Status: decided (Day 53); the stages leave the engine in the commit after Day 53's
+- Paper section: Evaluation (calibration; the two trials)
