@@ -1555,3 +1555,38 @@ written down on Day 53, before any model is fitted: better Brier score by more t
 uncertainty, calibration no worse, an honest range; otherwise ML is reported as a baseline.
 Deep learning stays in CricShot, where the inputs are video. **Plan notes added:** Days 53, 54
 and 150; E-034 planned. Nothing is built yet.
+
+---
+
+## Plan extension (learned models) — 2026-10-26 — 202 → 217 days
+
+**Asked:** use ML, DL and transformers wherever possible, even only for comparison; think out
+of the box; search for the best current methods. **Found by search:** no transformer trained
+on ball-by-ball cricket, while football has event transformers that simulate matches and swap
+players (Large Event Models, EventGPT, ScoutGPT); tabular transformers (TabPFN-2.5, TabICL);
+small hallucination detectors (LettuceDetect, MiniCheck, HHEM-2.1); a small trained sorter beat
+a zero-shot LLM in one test (91% against 69%); GLiNER and Qwen3 embeddings for names; DSPy for
+prompts; transformer pose models usually more accurate than MediaPipe; PyTorch now trains on
+Intel Arc GPUs. **Decided (D-063, D-064):** a new Phase 9c builds the ball model, a small
+transformer trained on every ball, judged against N9 on the newest season by a rule written
+now; and learned models are compared wherever a fair test exists, never making an unchecked
+number (rule 10). **Added:** Days 125, 137, 152-160, 165, 172, 175 and 176; limitations
+L-052 to L-056; evidence E-035 to E-043; CLAUDE.md's day numbers follow. Nothing is built yet.
+
+**The mapping** (entries before this date use the old numbers):
+
+| Old days | New days |
+|---|---|
+| 1–124 | unchanged |
+| — | 125 (new: two pose models compared) |
+| 125–135 | 126–136 |
+| — | 137 (new: the bridge's distilled labeller) |
+| 136–149 | 138–151 |
+| — | 152–160 (new: Phase 9c, the ball model) |
+| 150–153 | 161–164 |
+| — | 165 (new: AI checker 3, a hallucination detector) |
+| 154–159 | 166–171 |
+| — | 172 (new: a small fine-tuned router) |
+| 160–161 | 173–174 |
+| — | 175–176 (new: small models for reading a question; DSPy prompts) |
+| 162–202 | 177–217 |

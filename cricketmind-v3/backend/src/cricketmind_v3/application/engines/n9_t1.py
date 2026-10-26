@@ -58,7 +58,7 @@ def p_dismissal_within_k(repo: DeliveryRepository, subject: Subject) -> Fact | N
             return _one_risk(theirs, balls, subject.k)
         return _by_stage(his, theirs, so_far, subject.k)
     except FilterError:
-        return None  # a shot, before the bridge (Day 128): no answer
+        return None  # a shot, before the bridge (Day 129): no answer
 
 
 def _one_risk(theirs: list[Record], balls: list[Ball], k: int) -> Fact | None:

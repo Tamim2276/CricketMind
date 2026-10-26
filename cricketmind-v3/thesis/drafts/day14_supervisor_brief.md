@@ -45,10 +45,10 @@ study; confidence intervals and significance tests throughout.
    Management* first. Which do you prefer, and what are the backups?
 2. **New paper or extended ICCIT version?** If extended, what does ICCIT's publisher require
    (new-content share, disclosure)?
-3. **Ethics approval.** The human study (about Day 172) asks at least 10 cricket fans,
+3. **Ethics approval.** The human study (about Day 187) asks at least 10 cricket fans,
    players or coaches to rate anonymised answers from three systems, with a consent form. Does
    MIST require approval for this? If so, I will apply this week.
 4. **CricBench data.** May I email the authors for early access to their questions (draft
    ready), and may I copy you?
 5. **Authorship and timeline:** who is on the paper, and are you happy with submission after
-   Day 202?
+   Day 217?

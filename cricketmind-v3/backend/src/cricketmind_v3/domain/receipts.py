@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from cricketmind_v3.domain.subject import CricketSubject, Subject
 
-# the kinds of subject a receipt can name; football's joins it on Day 145
+# the kinds of subject a receipt can name; football's joins it on Day 147
 SUBJECTS = {"CricketSubject": CricketSubject}
 
 

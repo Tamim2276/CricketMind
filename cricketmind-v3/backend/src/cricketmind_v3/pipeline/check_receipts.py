@@ -18,7 +18,7 @@ from cricketmind_v3.infrastructure.duckdb_engines import engines_on
 
 
 def write_receipts(path: Path, receipts: list[Receipt]) -> None:
-    """A receipts file: one receipt per line (the final exam keeps one, Day 162)."""
+    """A receipts file: one receipt per line (the final exam keeps one, Day 177)."""
     lines = []
     for receipt in receipts:
         lines.append(to_line(receipt))

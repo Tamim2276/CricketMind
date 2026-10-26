@@ -257,7 +257,7 @@ Template:
   LLM-generated cricket SQL runs, but under 29% is semantically correct, N-007, and nothing
   would check it); keeping only the nine claim types (most questions unanswered); answering
   rules questions from the model's memory with numbers (unchecked numbers, against I1).
-- Status: designed (Days 40–42, 54, 67, 144–145)
+- Status: designed (Days 40–42, 54, 67, 146–147)
 - Paper section: Method (question handling); Evaluation (coverage)
 
 ## D-019 — An evaluation built for a journal
@@ -284,7 +284,7 @@ Template:
 ## D-020 — A sport-neutral Subject, and a football case study
 - Date: 2026-10-19
 - Decision: `Subject` becomes a small shared base with no fields; `CricketSubject` holds the
-  cricket filters, and `FootballSubject` (Day 145) the football ones. The checks, the claims,
+  cricket filters, and `FootballSubject` (Day 147) the football ones. The checks, the claims,
   the findings and the renderer only ever see a `Subject`. Phase 9b runs the method on open
   football event data with about 10 measures, three agents, the 8-lie test and a locked
   40-question football exam; video is not ported.
@@ -296,7 +296,7 @@ Template:
   second product (beyond a thesis).
 - Status: partly built. Day 10: `Subject` is an empty base and `CricketSubject(Subject)` has
   13 fields; `Claim` and `missing_keys()` only see a `Subject`, and a subject without a field
-  counts that field as missing (tested with a plain `Subject`). `FootballSubject` on Day 145.
+  counts that field as missing (tested with a plain `Subject`). `FootballSubject` on Day 147.
 - Paper section: Method; Results (generality)
 
 ## D-021 — A receipt for every number
@@ -323,7 +323,7 @@ Template:
   enough if the question itself is false.
 - Alternatives considered: answering the question as asked (repeats false premises);
   refusing every question that contains a judgment (unhelpful).
-- Status: designed (Day 76; evaluated on Day 168)
+- Status: designed (Day 76; evaluated on Day 183)
 - Paper section: Method; Results
 
 ## D-023 — Stronger comparisons: AI checkers, three models, an outside test set
@@ -337,7 +337,7 @@ Template:
   checking AI numbers (EG-VAR, VeriFin, tool receipts) makes these comparisons necessary.
 - Alternatives considered: one local model only (results could be model-specific); only
   self-written questions (author bias, L-009).
-- Status: designed (Days 152–154, 166–171)
+- Status: designed (Days 163–166, 181–186)
 - Paper section: Evaluation; Results
 
 ## D-024 — The language model sits behind our own port; LangChain is compared, not assumed
@@ -916,7 +916,7 @@ Template:
   and a tampered one (Kohli's Test average as 50) was caught (N-023).
 - Alternatives considered: comparing within rounding (a tampered 46.86 would pass);
   re-running receipts from other data (a different number would look like tampering).
-- Status: built (Day 48); the final exam's receipts are checked on Day 162 (E-022)
+- Status: built (Day 48); the final exam's receipts are checked on Day 177 (E-022)
 - Paper section: Method (receipts); Evaluation
 
 ## D-054 — What-if pictures: drawn from the engine, in forms people read correctly
@@ -931,7 +931,7 @@ Template:
   measured skeleton is drawn over the real frames in 2D; a 3D skeleton is a stretch goal
   only. Ball tracking, pitch maps and wagon wheels are never drawn: the data has no line,
   length or direction. Whether the human study compares sentence alone with sentence plus
-  dotplot is decided on Day 172.
+  dotplot is decided on Day 187.
 - Why: people read chances more accurately from discrete outcomes than from curves (Kay
   et al. 2016); text and quantile dotplots kept trust highest over time ("In Dice We
   Trust", CHI 2024); FiveThirtyEight showed 100 dots drawn from 40,000 simulations;
@@ -941,14 +941,14 @@ Template:
   (would be invented data); a general chart library such as Recharts (too rigid for the
   overs grid) or ECharts (built for large data); pictures drawn by the language model
   (unchecked).
-- Status: planned (Days 49, 51-52, 100, 108, 126; optional on Day 172)
+- Status: planned (Days 49, 51-52, 100, 108, 127; optional on Day 187)
 - Paper section: System (the report page); Evaluation (the human study, if chosen)
 
 ## D-055 — Agentic retrieval, where it cannot touch a number
 - Date: 2026-10-25
 - Decision: agentic retrieval-augmented generation (an LLM that retrieves, judges what it
   found, and retrieves again) is used in three places, none of which makes a number.
-  (1) A third baseline in the evaluation (Days 164-165): the same local model writes SQL on
+  (1) A third baseline in the evaluation (Days 179-180): the same local model writes SQL on
   the same DuckDB, grades the result, rewrites and retries, at most three rounds, with no
   Faith Check; its numbers are scored like the other systems'. (2) N3's names and grounds
   (Day 58): retrieve candidates from the registers, weigh the question's clues, keep one
@@ -1007,7 +1007,7 @@ Template:
   0.155-0.697 (N-004), about forty times wider, and the replays land within 0.01 of the exact
   answer found by adding up the curve. On real data, Kohli's T20 powerplay against pace
   (2,855 balls) gives 16% (13-20%), Bumrah batting in T20s (107 balls) 51% (32-70%): little
-  evidence, wide range. The shot, required before, has no data until Day 128, and Day 53's
+  evidence, wide range. The shot, required before, has no data until Day 129, and Day 53's
   calibration needs real questions.
 - Alternatives considered: the point estimate alone (v2's mistake); a flat prior, Beta(1, 1)
   (pulls tiny samples harder); playing balls inside each draw for the answer too (adds luck
@@ -1153,6 +1153,74 @@ Template:
   table data gradient-boosted trees usually match or beat deep networks: Grinsztajn et al.,
   NeurIPS 2022); ML instead of N9 from the start (no honest range, small samples learned as
   noise, and hard to check by receipt); no baseline (leaves the obvious question open).
-- Status: planned (rule and features written on Day 53; run on Day 54; in Day 150's
-  evaluation plan)
+- Status: planned (rule and features written on Day 53; run on Day 54; joined by tabular
+  transformers and the ball model on Day 157; in Day 161's evaluation plan)
 - Paper section: Evaluation (N9 against ML baselines)
+
+## D-063 — Learned models wherever they can be tested fairly
+- Date: 2026-10-26
+- Decision: machine learning, deep learning and transformers are tried wherever a fair test
+  exists, as an engine, as a helper that never makes a number, or as a comparison:
+  (1) the ball model, a small transformer trained on every ball, against N9 T1 and T2
+  (Phase 9c, D-064); (2) plain ML (logistic regression, gradient-boosted trees; Day 54,
+  D-062) and tabular transformers (TabPFN-2.5, TabICL; Day 157); (3) "batters like him" from
+  learned player vectors, against batting place (Day 158); (4) a third AI checker, an open
+  hallucination detector (LettuceDetect, MiniCheck or HHEM-2.1; Day 165); (5) a small
+  fine-tuned router (SetFit) beside the keyword and LLM routers (Day 172); (6) small models
+  for reading a question: GLiNER for names, Qwen3-Embedding to match them to the register,
+  SetFit for the kind (Day 175); (7) prompts tuned by DSPy beside hand-written ones (Day
+  176); (8) a transformer pose model (ViTPose) beside the first (Day 125); (9) the bridge's
+  labels distilled into a small fine-tuned transformer (ModernBERT) beside the rules and the
+  LLM (Day 137); (10) with MCC's permission, hybrid retrieval over the Laws (Day 72). Each
+  has a rule written before its run. A learned model makes a number a user sees only behind
+  the engine port, with receipts the Faith Check can ask again (rules 6 and 10); none is
+  trained or tuned on the locked exams; GPU work follows the device rule and is resumable;
+  the CricShot classifier's accuracy stays out, and video classifiers are compared only in
+  CricShot's paper.
+- Why: the user asked for ML, DL and transformers wherever they can be used, at least for
+  comparison. A thesis that tries the modern methods and reports where they help and where
+  they do not is stronger than one that never tries. The search (2026-10-26) found no
+  transformer trained on ball-by-ball cricket, while football has event transformers
+  (Mendes-Neves et al., 2024; EventGPT and ScoutGPT, 2025-26): a gap the ball model fills. A
+  small encoder beat a zero-shot LLM at a fixed sorting task in one test (SetFit 91% against
+  69%); hallucination detectors are small and fast (LettuceDetect, 2025); tabular
+  transformers are now strong (TabPFN-2.5; TabICL, ICML 2025); transformer pose models are
+  usually more accurate than MediaPipe, which is faster.
+- Alternatives considered: a transformer instead of N9 from the start (no honest range of its
+  own, hard to check, small samples learned as noise); video classifiers compared here (that
+  is CricShot's paper); large models only through an API (cost, and the locked exam must run
+  locally too).
+- Status: planned (Days 54, 72, 125, 137, 152-160, 165, 172, 175, 176)
+- Paper section: Method; Evaluation (learned models against the simpler ones)
+
+## D-064 — The ball model: a small transformer on every ball, and its rule
+- Date: 2026-10-26
+- Decision: each innings is a sequence of balls, each ball a few tokens: the match state
+  (format, gender, innings, over, wickets down, runs and the chase), the batter, the bowler,
+  his place in the order, his balls faced so far, and the outcome (a dot, runs, extras, the
+  kind of wicket). A small decoder-only transformer, about ten million weights, learns to
+  predict each ball from those before it, trained only on the seasons Day 53 fits on. Its
+  chance of a wicket on each ball, rolled forward 20,000 times, gives the chance of being out
+  within k balls; swapping the bowler gives the what-if. Five copies trained with different
+  seeds (a deep ensemble) give the range; temperature scaling on a held-out season
+  calibrates it; if its 95% ranges do not hold about 95% of the time, Venn-Abers or conformal
+  calibration is tried, and said. The size, inputs and training budget are written down
+  before the first run. The rule, written now, before any training: it is taken up as an
+  engine only if, on the newest season, its Brier score beats N9's by more than the score's
+  own uncertainty (a paired bootstrap over the test balls), its calibration is no worse, and
+  its ranges hold. Then it runs behind the engine port with receipts: its weights' SHA-256 as
+  its version, inference on the CPU, seeded rollouts. Otherwise it is a reported baseline.
+  Its batter and bowler vectors are tried as "batters like him" against batting place
+  (D-059), by the same rule. Training resumes after a power cut and never shares the GPU
+  with CricShot.
+- Why: N9 knows a batter, a bowler and a few situations; a sequence model could also learn
+  the match situation, the moment in the innings and how players meet, from 11.7 million
+  balls. No cricket work found trains a transformer on ball-by-ball sequences; football's
+  Large Event Models do it for events (Mendes-Neves et al., 2024), and (batter|pitcher)2vec
+  learned players from baseball's at-bats (Alcorn, 2018). The fair test decides; either
+  outcome is a result.
+- Alternatives considered: an LSTM (used in cricket win-probability work; weaker over long
+  sequences); a large pretrained LLM reading balls as text (slow, costly, hard to
+  calibrate); a table model on single balls (no sequence; tried as a baseline on Day 157).
+- Status: planned (Phase 9c, Days 152-160)
+- Paper section: Method (the ball model); Evaluation

@@ -181,6 +181,20 @@ future directions. Read only in part: check Section 4 before citing it for the g
 
 ## To read (verify that each exists, then add notes)
 
+- Learned models (D-063, D-064), from the search of 2026-10-26: Mendes-Neves et al. (Machine
+  Learning, 2024), Large Event Models for football; EventGPT (arXiv 2512.17266) and ScoutGPT
+  (arXiv 2603.15212), player-conditioned event transformers with counterfactual rollouts;
+  Alcorn, (batter|pitcher)2vec (MIT Sloan); an LSTM for ball-by-ball cricket win probability
+  (arXiv 2011.02122); TabPFN-2.5 (arXiv 2511.08667) and TabICL (ICML 2025, arXiv
+  2502.05564); LettuceDetect (arXiv 2502.17125), HHEM-2.1 and MiniCheck, hallucination
+  detectors; GLiNER (arXiv 2311.08526); Qwen3 Embedding (arXiv 2506.05176); SetFit (Tunstall
+  et al., 2022) and ModernBERT (Warner et al., 2024); DSPy and GEPA (arXiv 2507.19457);
+  "Feeding LLM annotations to BERT classifiers at your own risk" (arXiv 2504.15432) and
+  candidate-label distillation (ACL 2025); Venn-Abers calibration (van der Laan and Alaa,
+  ICML 2025) and conformal win probabilities (arXiv 2208.08598); temperature scaling (Guo et
+  al., 2017) and deep ensembles (Lakshminarayanan et al., 2017); ViTPose and RTMPose against
+  MediaPipe.
+
 - Grinsztajn, Oyallon and Varoquaux (NeurIPS 2022, Datasets and Benchmarks), "Why do
   tree-based models still outperform deep learning on tabular data?": why D-062's ML
   baseline is gradient-boosted trees, not a deep network.
