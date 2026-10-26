@@ -1045,3 +1045,27 @@ Template:
   trial fails, since D-056's rule is fixed before the run).
 - Status: built (Day 50); the stages are decided on Day 53
 - Paper section: Method (N9 T1)
+
+## D-059 — Normal is for batters who bat where he bats
+- Date: 2026-10-26
+- Decision: the prior of D-058 comes only from the other batters' balls faced batting in
+  the same part of the order as him: the top (places 1-3), the middle (4-7) or the tail (8
+  on). His place is where he faced the most balls under the question's filters (the top
+  first, if two are level); a nightwatchman's few balls do not move him. A batter's place in
+  an innings is the order he came in, from the first ball he was seen on at either end (a
+  derived table, batting_slots; the striker before the non-striker on the first ball). His
+  own record stays all his balls. On trial with the stages: Day 53 compares this prior with
+  the prior from every batter, by the same rule (D-056), written down before the run.
+- Why: found the same day (L-045). Pulled toward every batter, a tailender looks safer than
+  he is: the tail is out 9.22% a ball in men's T20s, the top order 4.82%. Bumrah batting in
+  T20s (107 balls) went from 51% on his own record to 39% pulled toward everyone; pulled
+  toward the tail he is 48% (33-63%). A tailender out once in his only two balls gets 9.9%
+  for his next, not 5.9%. Top-order batters barely change (Kohli 16.8%). Batters in one part
+  of the order also differ less from each other: the top's prior is worth 281 balls, every
+  batter's 139.
+- Alternatives considered: his place in each innings, not his usual one (the same batter
+  would be pulled toward different groups ball by ball); exact places (too few batters at
+  each); a prior that also leans on his batting average (borrows from other numbers; more to
+  explain); leaving it as a limitation (a known, large bias, and the data to fix it exists).
+- Status: built (Day 50); decided on Day 53 with the stages
+- Paper section: Method (N9 T1)

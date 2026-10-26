@@ -1,4 +1,4 @@
-"""Day 50: how long the batter had been in at each ball, in DuckDB.
+"""Day 50: how long the batter had been in at each ball, and where he batted, in DuckDB.
 
 Hand-made innings first; then Sahibzada Farhan's 44 balls in 1550709.json, counted by
 hand from the file: his first 20 balls were in the powerplay, his 44th was his last
@@ -10,13 +10,14 @@ import pytest
 
 from cricketmind_v3.domain.balls import tally
 from cricketmind_v3.domain.measures import outs_and_faced
-from cricketmind_v3.domain.stages import by_batter, stage_of
+from cricketmind_v3.domain.stages import by_batter, order_of, stage_of
 from cricketmind_v3.domain.subject import CricketSubject
 from cricketmind_v3.infrastructure.duckdb_repo import (
     DuckDBDeliveryRepository,
+    order_case,
     stage_case,
 )
-from cricketmind_v3.pipeline.derived import BALL_STAGES
+from cricketmind_v3.pipeline.derived import BALL_STAGES, BATTING_SLOTS
 from cricketmind_v3.pipeline.schema import CREATE_DELIVERIES
 from tests.integration.test_duckdb_repo import build
 
@@ -31,19 +32,29 @@ COLUMNS = (
 
 
 def hand_made(
-    db, innings, over, index, batter, wides=0, noballs=0, out=None, kind=None
+    db,
+    innings,
+    over,
+    index,
+    batter,
+    wides=0,
+    noballs=0,
+    out=None,
+    kind=None,
+    partner="Partner",
 ):
     super_over = innings == 3
     db.execute(
         f"INSERT INTO deliveries ({COLUMNS}) VALUES "
         "('m1', 'T20', 'male', 'club', '2024-01-01', 'Ground', ?, 'A', ?, ?, ?, ?, "
-        "'Bowler', 'Partner', 0, ?, ?, ?, ?, 0, 0, 0, ?, ?, ?, false)",
+        "'Bowler', ?, 0, ?, ?, ?, ?, 0, 0, 0, ?, ?, ?, false)",
         [
             innings,
             super_over,
             over,
             index,
             batter,
+            partner,
             wides + noballs,
             wides + noballs,
             wides,
@@ -98,6 +109,47 @@ def test_hand_made_innings():
     db.close()
 
 
+def test_hand_made_batting_order():
+    db = duckdb.connect()
+    db.execute(CREATE_DELIVERIES)
+    # the openers: B on strike is 1 and A at the other end is 2, though A comes first
+    # in the alphabet
+    hand_made(db, 1, 0, 1, "B", partner="A")
+    hand_made(db, 1, 0, 2, "A", partner="B")
+    hand_made(db, 1, 0, 3, "B", partner="A", out="B", kind="caught")
+    hand_made(db, 1, 0, 4, "C", partner="A")  # C comes in: 3
+    hand_made(db, 1, 1, 1, "C", partner="D")  # A retires hurt; D is 4, never on strike
+    hand_made(db, 1, 2, 1, "A", partner="C")  # A comes back: still 2
+    hand_made(db, 2, 0, 1, "E", partner="F")  # the second innings starts again
+    hand_made(db, 3, 0, 1, "G", partner="H")  # a super over: left out
+    db.execute(BATTING_SLOTS)
+    rows = db.execute(
+        "SELECT innings, batter, slot FROM batting_slots ORDER BY innings, slot"
+    ).fetchall()
+    found = []
+    for innings, batter, slot in rows:
+        found.append((innings, batter, slot))
+    assert found == [
+        (1, "B", 1),
+        (1, "A", 2),
+        (1, "C", 3),
+        (1, "D", 4),
+        (2, "E", 1),
+        (2, "F", 2),
+    ]
+    db.close()
+
+
+def test_the_sql_order_is_the_python_order():
+    db = duckdb.connect()
+    rows = db.execute(
+        f"SELECT x, {order_case('x')} FROM range(1, 13) t(x) ORDER BY x"
+    ).fetchall()
+    for place, order in rows:
+        assert order == order_of(place), place
+    db.close()
+
+
 def test_the_sql_stage_is_the_python_stage():
     db = duckdb.connect()
     rows = db.execute(
@@ -129,6 +181,16 @@ def test_his_innings_by_stage(repo):
     # balls 1-5, 6-15, 16-30, then 31-44 (the wide is not one), out on the last
     whole = repo.records(CricketSubject(player=FARHAN))
     assert stages(whole) == [(1, 0, 5), (2, 0, 10), (3, 0, 15), (4, 1, 14)]
+
+
+def test_where_they_batted(repo):
+    # Farhan opened; B Fernando batted 9th for Sri Lanka
+    for record in repo.records(CricketSubject(player=FARHAN)):
+        assert record.order == "top"
+    fernando = repo.records(CricketSubject(player="B Fernando"))
+    assert fernando
+    for record in fernando:
+        assert record.order == "tail"
 
 
 def test_a_filter_does_not_start_him_again(repo):

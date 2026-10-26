@@ -25,6 +25,31 @@ FROM deliveries
 WHERE NOT super_over
 """
 
+# where each batter batted in each innings: the order they came in, from the first ball
+# they were seen on at either end. A ball is one number that sorts as the balls do:
+# over x 1000 + ball x 2, plus 1 at the non-striker's end, so on the first ball the
+# striker comes first. Normal is for batters who bat where he bats (N9, Day 50, L-045)
+BATTING_SLOTS = """
+CREATE OR REPLACE TABLE batting_slots AS
+WITH seen AS (
+    SELECT match_id, innings, batter AS name, MIN(over * 1000 + ball_index * 2) AS ball
+    FROM deliveries WHERE NOT super_over
+    GROUP BY match_id, innings, batter
+    UNION ALL
+    SELECT match_id, innings, non_striker AS name,
+           MIN(over * 1000 + ball_index * 2 + 1) AS ball
+    FROM deliveries WHERE NOT super_over
+    GROUP BY match_id, innings, non_striker
+),
+first_seen AS (
+    SELECT match_id, innings, name, MIN(ball) AS ball
+    FROM seen GROUP BY match_id, innings, name
+)
+SELECT match_id, innings, name AS batter,
+       ROW_NUMBER() OVER (PARTITION BY match_id, innings ORDER BY ball, name) AS slot
+FROM first_seen
+"""
+
 BUILD = (
     # One name per ground. The part before the first comma names the ground, and
     # "Lord's" and "Lord's, London" are one ground. But when that name comes with
@@ -105,6 +130,7 @@ BUILD = (
     WHERE review_by IS NOT NULL
     """,
     BALL_STAGES,
+    BATTING_SLOTS,
 )
 
 TABLES = (
@@ -114,6 +140,7 @@ TABLES = (
     "bowler_days",
     "reviews",
     "ball_stages",
+    "batting_slots",
 )
 
 

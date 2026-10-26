@@ -1,7 +1,7 @@
 """Days 49-50: N9 T1 on the tiny DuckDB, through the Faith Check and the receipt checker.
 
-Counted by hand (Day 38): Sahibzada Farhan faced 44 balls and was out once. The 32
-other men's T20 batters in the fixtures were out 27 times in 435 balls (Day 50).
+Counted by hand (Day 38): Sahibzada Farhan faced 44 balls and was out once, opening.
+The other 11 men who batted 1 to 3 in the fixtures were out 11 times in 208 balls (Day 50).
 """
 
 import dataclasses
@@ -10,6 +10,7 @@ import pytest
 
 from cricketmind_v3.application.faith_check import faith_check
 from cricketmind_v3.application.receipt_checker import check_receipt
+from cricketmind_v3.domain import shrinkage
 from cricketmind_v3.domain.claims import Claim
 from cricketmind_v3.domain.faith.c2_values import check_c2
 from cricketmind_v3.domain.faith.gate import Context
@@ -25,18 +26,27 @@ FARHAN_SIX = CricketSubject(player="Sahibzada Farhan", k=6, match_format="T20")
 
 
 @pytest.fixture
-def engines(tmp_path):
+def engines(tmp_path, monkeypatch):
+    # three matches hold only 11 other top-order men, fewer than the 30 a prior needs:
+    # here the floor is 5, so the engine has an answer to check (the real floor below)
+    monkeypatch.setattr(shrinkage, "FEW_BATTERS", 5)
     db = build(tmp_path)
     yield engines_on(db)
     db.close()
 
 
+def test_with_the_real_floor_there_is_no_answer(tmp_path):
+    db = build(tmp_path)
+    assert engines_on(db).fact("p_dismissal_within_k", FARHAN_SIX) is None
+    db.close()
+
+
 def test_his_chance_from_one_out_in_44_balls(engines):
-    # the others: 27 outs in 435 balls, and they differ a lot, so normal is worth
-    # only 11.6 of his balls: Beta(0.72 + 1, 10.90 + 43)
+    # the other top-order men: 11 outs in 208 balls, worth 43.1 of his balls:
+    # Beta(2.28 + 1, 40.85 + 43)
     found = engines.fact("p_dismissal_within_k", FARHAN_SIX)
-    prior = Prior(outs=0.7210, survived=10.8957)
-    assert abs(prior.normal() - 27 / 435) < 0.0001
+    prior = Prior(outs=2.2812, survived=40.8539)
+    assert abs(prior.normal() - 11 / 208) < 0.0001
     mid, low, high = exact_chances(1, 44, 6, prior)
     assert found.n == 44
     assert abs(found.value - mid) < 0.01
@@ -50,17 +60,11 @@ def test_a_shot_has_no_answer_until_the_bridge(engines):
 
 
 def test_just_come_in(engines):
-    # his first five balls: stage 1, where all 32 others have balls
+    # his first five balls: stage 1, where all 11 other top-order men have balls
     new = dataclasses.replace(FARHAN_SIX, k=5, faced_so_far=0)
     found = engines.fact("p_dismissal_within_k", new)
     assert found.n == 5  # his own balls 1 to 5
     assert found.receipt.query.count('"faced_so_far":0') == 1
-
-
-def test_a_stage_too_few_others_reached_has_no_answer(engines):
-    # balls 6 onward: only 23 other batters got that far, fewer than 30
-    later = dataclasses.replace(FARHAN_SIX, faced_so_far=5)
-    assert engines.fact("p_dismissal_within_k", later) is None
 
 
 def reasons(engines, value, interval) -> list[str]:

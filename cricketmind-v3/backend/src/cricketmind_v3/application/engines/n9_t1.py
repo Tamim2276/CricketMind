@@ -9,7 +9,15 @@ from cricketmind_v3.domain.facts import Fact, Replays
 from cricketmind_v3.domain.measures import outs_and_faced
 from cricketmind_v3.domain.registry import extra_keys, lookup, missing_keys
 from cricketmind_v3.domain.shrinkage import population_prior
-from cricketmind_v3.domain.stages import STARTS, by_batter, in_stage, stage_of
+from cricketmind_v3.domain.stages import (
+    STARTS,
+    Record,
+    by_batter,
+    in_order,
+    in_stage,
+    stage_of,
+    usual_order,
+)
 from cricketmind_v3.domain.subject import Subject
 
 
@@ -17,8 +25,9 @@ def p_dismissal_within_k(repo: DeliveryRepository, subject: Subject) -> Fact | N
     """The engine's answer, or None when it has none for this subject.
 
     The batter's own balls under the subject's filters give his record; every other
-    batter's, under the same filters, give what is normal, and he is pulled toward it
-    (Day 50). k, how many balls ahead, says how far to play them forward.
+    batter's, under the same filters and batting where he bats, give what is normal,
+    and he is pulled toward it (Day 50). k, how many balls ahead, says how far to play
+    them forward.
     """
     claim_type = lookup("p_dismissal_within_k")
     if missing_keys(claim_type, subject) or extra_keys(claim_type, subject):
@@ -37,20 +46,24 @@ def p_dismissal_within_k(repo: DeliveryRepository, subject: Subject) -> Fact | N
             genders.add(ball.gender)
         if len(genders) != 1:
             return None  # no balls: nothing to go on
-        # normal is for his kind of cricket: his format, and men's or women's
+        # normal is for his kind of cricket, his format and men's or women's, and for
+        # batters who bat where he usually bats: a tailender is not a top-order batter
         like_him = dataclasses.replace(past, gender=genders.pop())
+        his = repo.records(past)
+        order = usual_order(his)
+        if order is None:
+            return None
+        theirs = in_order(repo.others_records(like_him), order)
         if so_far is None:
-            return _one_risk(repo, like_him, balls, subject.k)
-        return _by_stage(repo, past, like_him, so_far, subject.k)
+            return _one_risk(theirs, balls, subject.k)
+        return _by_stage(his, theirs, so_far, subject.k)
     except FilterError:
         return None  # a shot, before the bridge (Day 128): no answer
 
 
-def _one_risk(
-    repo: DeliveryRepository, like_him: Subject, balls: list[Ball], k: int
-) -> Fact | None:
+def _one_risk(theirs: list[Record], balls: list[Ball], k: int) -> Fact | None:
     # one risk for the whole innings, pulled toward the other batters' (Day 50)
-    prior = population_prior(by_batter(repo.others_records(like_him)))
+    prior = population_prior(by_batter(theirs))
     if prior is None:
         return None  # too few others, or no sign they differ
     outs, faced = outs_and_faced(tally(balls))
@@ -58,12 +71,10 @@ def _one_risk(
 
 
 def _by_stage(
-    repo: DeliveryRepository, past: Subject, like_him: Subject, so_far: int, k: int
+    his: list[Record], theirs: list[Record], so_far: int, k: int
 ) -> Fact | None:
     # how long he has been in (on trial, D-056): each stage his next k balls fall in,
     # his record there pulled toward the other batters' in that stage
-    his = repo.records(past)
-    theirs = repo.others_records(like_him)
     stages = []
     faced_here = 0
     for number in range(stage_of(so_far + 1), stage_of(so_far + k) + 1):

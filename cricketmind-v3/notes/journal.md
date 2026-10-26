@@ -1427,11 +1427,11 @@ share away (the method of moments) and what is left says how hard to pull. Few b
 normal. Many balls: his own number.
 
 ```
- men's T20s, out-rate a ball      his own   pulled   (normal 5.5%, worth 138 balls)
- 1 out in 2 balls (A Faletar)     50.0%     6.1%
- Bumrah batting, 12 in 107        11.2%     8.0%
- Kohli, powerplay v pace,         2.9%      3.0%     (normal there 4.5%, worth 168)
-   84 in 2,855
+ men's T20s, out-rate a ball      his own   pulled toward   pulled toward
+                                            every batter    his place (the fix)
+ 1 out in 2 balls (A Faletar)     50.0%     6.1%            10.3%   (he bats in the tail)
+ Bumrah batting, 12 in 107        11.2%     8.0%            10.4%   (tail)
+ Kohli, 310 in 9,841              3.15%     3.18%           3.20%   (top)
 ```
 
 **Built:** `domain/shrinkage.py` (the prior and the pull); `domain/stages.py` (four stages by
@@ -1440,30 +1440,48 @@ risk of its stage (one stage is Day 49's answer exactly); a derived table `ball_
 balls faced before each ball, on the whole innings); the repository's `records` and
 `others_records`; the engine pulls toward the other batters in his format and gender, and by
 stage when the question says how many balls he has faced. The menu row now needs the format.
-**Tested:** 33 new tests, 585 in all. The plan's tests: 1 out in 2 balls comes out near 6.5%
+**Tested:** 42 new tests, 594 in all. The plan's tests: 1 out in 2 balls comes out near 6.5%
 on made-up batters, not 50%; on hand-made innings each ball's count is as counted (a wide
 does not count, a no-ball does, a second innings starts again, a super over is left out);
 Farhan's 44 balls by stage, by hand from the file (5, 10, 15, then 14 with the out), and his
 middle overs start at stage 3, not 1. DuckDB's counts match balls.py's for every batter in
 the fixtures. The fit finds a prior it was not told: made from 5% and worth 100 on 2,000 made-up
-batters, it finds 4.93% and 96.8. Twenty-three deliberate mistakes were each caught. The first
-run missed one, a non-striker's run out counted as the striker's out: the fixtures hold no
-such ball, so a test now makes one, and a batter retiring hurt on strike.
-**Real data** (a copy of the database, so yours is untouched until you rebuild it): normal is
-5.48% a ball in men's T20s, worth 139 balls; 1.66% in Tests, worth 200. Kohli barely moves
-(16.4% to 16.8%); Bumrah batting moves a lot (51% to 39%): he is pulled toward top-order
-batters (L-045). A batter out once in his two balls gets 5.9% (2.8–10.5%). Each question
-takes 1-2 seconds. Your database needs the new table: rebuild the derived tables once.
+batters, it finds 4.93% and 96.8. Thirty-two deliberate mistakes were each caught in the end.
+The first run missed one, a non-striker's run out counted as the striker's out: the fixtures
+hold no such ball, so a test now makes one, and a batter retiring hurt on strike. Two more
+were missed because a second check stood behind the first (as on Day 42); tests now pin that
+the engine itself refuses first.
+**Real data, first version** (a copy of the database, so yours is untouched until you
+rebuild it): normal from every batter is 5.48% a ball in men's T20s, worth 139 balls; 1.66% in
+Tests, worth 200. Kohli barely moved (16.4% to 16.8%). Bumrah batting moved a lot: 51% to 39%.
+**The problem this showed (L-045):** "every batter" is mostly top-order batters, so a
+tailender was pulled toward a risk that is not his. Like judging a goalkeeper's shooting by
+the average of all players. In men's T20s the tail is out 9.22% a ball, the top 4.82%.
+**The fix, the same day (D-059):** normal is for batters who bat where he bats: the top
+(1-3), the middle (4-7) or the tail (8 on). A new derived table, batting_slots, says where
+everyone batted in every innings: the order they came in, from the first ball they were seen
+on at either end (on the first ball, the striker before the non-striker). His place is where
+he faced the most balls. Hand-made innings test it: openers, a new batter after a wicket, one
+seen only at the other end, a batter back after retiring hurt, a second innings starting
+again. My first version sorted 23 million rows at once and ran out of memory on the real data;
+the second finds each batter's first ball, then numbers only those: 438,336 places in seconds.
+**Real data, with the fix:** Bumrah 47.7% (32.7–62.9%), near his own 51%; the tailender out
+once in two balls, 9.9% for his next ball, not 5.9%; Kohli 16.8%, Tamim 16.4%, Kohli in Tests
+30.1%, all as before. Batters in one part of the order differ less, so the top's prior is
+worth 281 balls, every batter's 139. Each question takes 1-2 seconds. Your database needs the
+two new tables: rebuild the derived tables once. Day 53 tests this prior against every
+batter's, by the same rule as the stages.
 **The surprise, for the trial:** "most at risk early" is true in Tests (2.32% a ball in the
 first five, 1.38% after 30) but not in T20s, where the risk rises (5.04% to 6.42%): set
-batters attack. Kohli in T20s: 14.2% just in, 24.3% after 30 balls, 17.6% with one risk.
+batters attack. Kohli in T20s: 14.1% just in, 24.3% after 30 balls, 17.7% with one risk.
 Day 53 decides whether the stages predict better; the rule was written before (D-056).
 **For the next v4 revision:** the prediction names its format; N9's range starts from a
-prior fitted on the other batters (not Jeffreys); the stages on trial.
+prior fitted on the other batters in his part of the order (not Jeffreys); the stages and the
+batting-place prior on trial.
 
 **For the paper:**
-- Decisions: D-058
-- Numbers: N-025, N-026, N-027
-- Evidence: E-029 (verified)
-- Limitations: L-045, L-046, L-047
+- Decisions: D-058, D-059
+- Numbers: N-025, N-026, N-027, N-028
+- Evidence: E-029, E-030 (verified)
+- Limitations: L-045 (found and fixed), L-046, L-047
 - Section it feeds: Method (N9 T1)

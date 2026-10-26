@@ -36,11 +36,11 @@ class DeliveryRepository(Protocol):
 
     def records(self, subject: Subject) -> list[Record]:
         """The player's times out and balls faced under the subject's filters, one
-        record for each stage of his innings (Day 50)."""
+        record for each stage of his innings and part of the order (Day 50)."""
 
     def others_records(self, subject: Subject) -> list[Record]:
-        """Every other batter's, one record per batter and stage: what is normal, the
-        average he is pulled toward (Day 50)."""
+        """Every other batter's, one record per batter, stage and part of the order:
+        what is normal, the average he is pulled toward (Day 50)."""
 
 
 class FakeDeliveryRepository:
