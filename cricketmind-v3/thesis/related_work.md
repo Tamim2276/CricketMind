@@ -193,7 +193,8 @@ future directions. Read only in part: check Section 4 before citing it for the g
   candidate-label distillation (ACL 2025); Venn-Abers calibration (van der Laan and Alaa,
   ICML 2025) and conformal win probabilities (arXiv 2208.08598); temperature scaling (Guo et
   al., 2017) and deep ensembles (Lakshminarayanan et al., 2017); ViTPose and RTMPose against
-  MediaPipe.
+  MediaPipe; DeBERTa-v3 (He et al., 2023) and NLI for zero-shot classification (Yin et al.,
+  2019), for the word lists against meaning (D-065).
 
 - Grinsztajn, Oyallon and Varoquaux (NeurIPS 2022, Datasets and Benchmarks), "Why do
   tree-based models still outperform deep learning on tabular data?": why D-062's ML

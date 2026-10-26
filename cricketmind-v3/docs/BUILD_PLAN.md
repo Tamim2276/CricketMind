@@ -47,6 +47,11 @@ hallucination detector, prompt tuning and a transformer pose model (D-063, D-064
 125 keep their numbers; the mapping is in `notes/journal.md`, under "Plan extension (learned
 models)".*
 
+*One more day the same day (217 → 218): the Faith Check's word lists against small
+transformers that judge meaning, on paraphrased findings (Day 166, D-065). Days before 166
+keep their numbers; the mapping is in `notes/journal.md`, under "Plan extension (wording
+models)".*
+
 ---
 
 ## Contents
@@ -61,7 +66,7 @@ models)".*
 8. [Rules that never change](#8-rules-that-never-change)
 9. [The thesis paper: track everything](#9-the-thesis-paper-track-everything)
 10. [Milestones](#10-milestones)
-11. [Day-by-day plan](#11-day-by-day-plan) — Phases 0 to 12, Days 1 to 217
+11. [Day-by-day plan](#11-day-by-day-plan) — Phases 0 to 12, Days 1 to 218
 12. [When you get stuck](#12-when-you-get-stuck)
 13. [Glossary](#13-glossary)
 
@@ -138,10 +143,10 @@ review day.
 | 9 | The commentary-to-shot bridge | 10 | 16 |
 | 9b | Does it generalise? A football case study | 6 | 7 |
 | 9c | A learned cricket model: a transformer on every ball, against N9 | 8 | 9 |
-| 10 | Evaluation: coverage, baselines, ablation, AI checkers, small models, prompt tuning, three models, CricBench, human study | 30 | 34 |
+| 10 | Evaluation: coverage, baselines, ablation, AI checkers, word lists or meaning, small models, prompt tuning, three models, CricBench, human study | 31 | 35 |
 | 11 | Ship it: Docker, README, demo | 5 | 8 |
 | 12 | Write the paper | 10 | 15 |
-| | **Total** | **158** | **217** |
+| | **Total** | **159** | **218** |
 
 Add **about 10% for load shedding, exams and sick days**: the worst case is
 **about 240 sessions.**
@@ -250,10 +255,11 @@ cricketmind-v3`, never `git add -A`, on this branch (see the branch rules in Sec
 | **PyTorch, OpenCV, Ultralytics** | Video frames, the classifier, and pose keypoints (Phase 8); PyTorch also trains the ball model (Phase 9c) on the GPU. |
 | **scikit-learn** | The plain ML baselines: logistic regression and gradient-boosted trees (Day 54). |
 | **TabPFN-2.5, TabICL** | Transformers made for tables, compared on Day 157 (TabPFN's weights are for research use only). |
-| **sentence-transformers, SetFit, GLiNER, ModernBERT** | Small transformer models that sort questions, find names and label commentary, each compared with the LLM (Days 137, 172, 175). |
-| **Qwen3-Embedding, Qwen3-Reranker** | Turn text into vectors: matching names to the register (Day 175) and, with MCC's permission, finding Laws (Day 72). |
+| **sentence-transformers, SetFit, GLiNER, ModernBERT** | Small transformer models that sort questions, find names and label commentary, each compared with the LLM (Days 137, 173, 176). |
+| **Qwen3-Embedding, Qwen3-Reranker** | Turn text into vectors: matching names to the register (Day 176) and, with MCC's permission, finding Laws (Day 72). |
 | **LettuceDetect, MiniCheck or HHEM-2.1** | An open hallucination detector, the third AI checker (Day 165). |
-| **DSPy** | Writes and tunes prompts automatically, compared with hand-written ones (Day 176). |
+| **An NLI model (DeBERTa-v3)** | Judges what a sentence means, not its exact words: set against the Faith Check's word lists (Day 166). |
+| **DSPy** | Writes and tunes prompts automatically, compared with hand-written ones (Day 177). |
 | **pytest, ruff** | Tests, and a tool that keeps the code tidy. |
 
 ### Frontend — recommended stack
@@ -289,7 +295,7 @@ with an API client generated from FastAPI's OpenAPI file.**
 - **HTMX + Jinja templates** is the simpler fallback if React feels too heavy: no JavaScript
   build at all, but less interactivity and less to learn for your career.
 
-Node.js 24 is already installed. Docker Desktop is installed on Day 195.
+Node.js 24 is already installed. Docker Desktop is installed on Day 196.
 
 ---
 
@@ -480,7 +486,7 @@ CricketMind refuses to print a number nobody computed. Your paper follows the sa
 > **No number goes into the paper unless it has a row in `numbers.md`, and no claim unless it
 > has a row in `evidence.md` pointing to the file that proves it.**
 
-On Day 214 you check the finished draft against these two files, line by line. You are the
+On Day 215 you check the finished draft against these two files, line by line. You are the
 paper's Faith Check.
 
 ### The results ledger
@@ -505,7 +511,7 @@ Rough is fine; it is raw material, not the paper. On the same days, read one pap
   Saying so keeps the paper clear of duplicate publication.
 - **Synthetic results are labelled synthetic.**
 - **Every figure and table is rebuilt by one script** in `thesis/scripts/`.
-- **Final numbers come from the locked exam**, written on Day 15 and run once on Day 177.
+- **Final numbers come from the locked exam**, written on Day 15 and run once on Day 178.
   The practice set is for improving the system, never for the reported results.
 
 ### What Claude does
@@ -527,9 +533,9 @@ the commit command. You check them before you commit: they are your record.
 | **M5** | Day 128 | Questions with a video clip work end to end |
 | **M6** | Day 142 | The commentary bridge result (positive or negative) |
 | **M6b** | Day 160 | Every learned model judged against the simpler engines |
-| **M7** | Day 194 | Thesis results: tables and figures |
-| **M8** | Day 201 | Shipped: one command starts everything, plus a demo video |
-| **M9** | Day 217 | The paper, ready to submit |
+| **M7** | Day 195 | Thesis results: tables and figures |
+| **M8** | Day 202 | Shipped: one command starts everything, plus a demo video |
+| **M9** | Day 218 | The paper, ready to submit |
 
 ---
 
@@ -1441,8 +1447,8 @@ research days for the paper, with no code.
 | 11 | Failing when the system is built, not while it runs | `check_registry()`: every claim type an agent declares exists, has an engine and has renderer words; the 6 missing phrases | Test: a hollow claim type ("the pitch is holding pace") fails; all 10 render |
 | 12 | Review day | Tidy; a rough draft of the claim-contract part of the Method; read one paper | All tests green; you can explain Claim, Finding and Registry to a friend |
 | 13 | Searching the literature properly | Search Google Scholar, Semantic Scholar, the ACL Anthology and arXiv with fixed keywords; log every search (date, words, hits); read the closest papers | A search log and a "closest work vs CricketMind" table in `related_work.md`; the novelty claims re-checked |
-| 14 | How journals judge a paper | With your supervisor: 2–3 candidate journals; read 2 recent papers from the first choice; note its scope, length and how its papers evaluate. Ask whether the human study (Days 187–189) needs ethics approval; if so, apply now. Email the CricBench authors for early access to their questions. Optional: ask MCC whether the Laws of Cricket may be stored for research use, for the Explainer (Day 72, D-055) | Venue chosen and written in `outline.md`; ethics request sent if needed |
-| 15 | Why a test is written before the answers exist | The locked final exam: 100 questions across the five kinds (20 written 4 ways each, plus 20 outside any list), plus 20 tricky ones (false premises, trick attempts), each with its expected handling. You write it, ideally with 2–3 friends in their own words; Claude only explains the format. Save it, record its SHA-256 in `evidence.md`, and do not open it again until Day 177 | The file and its checksum committed |
+| 14 | How journals judge a paper | With your supervisor: 2–3 candidate journals; read 2 recent papers from the first choice; note its scope, length and how its papers evaluate. Ask whether the human study (Days 188–190) needs ethics approval; if so, apply now. Email the CricBench authors for early access to their questions. Optional: ask MCC whether the Laws of Cricket may be stored for research use, for the Explainer (Day 72, D-055) | Venue chosen and written in `outline.md`; ethics request sent if needed |
+| 15 | Why a test is written before the answers exist | The locked final exam: 100 questions across the five kinds (20 written 4 ways each, plus 20 outside any list), plus 20 tricky ones (false premises, trick attempts), each with its expected handling. You write it, ideally with 2–3 friends in their own words; Claude only explains the format. Save it, record its SHA-256 in `evidence.md`, and do not open it again until Day 178 | The file and its checksum committed |
 
 #### How a Phase 1 day works
 
@@ -1721,7 +1727,7 @@ hold its own value (Claim rule 4). See D-025.
 work well.
 
 **Why it matters:** a journal rejects a paper that calls something new when it is not. Better
-to find out now than on Day 211.
+to find out now than on Day 212.
 
 **Learn:** a *systematic* search: fixed search words, several databases and a written log, so a
 reviewer could repeat it.
@@ -1749,10 +1755,10 @@ is marked "still new" or "already done by …".
 - A shortlist of 2–3 journals; read 2 recent papers from the first choice.
 - Note in `thesis/outline.md`: the journal, its length limit, and how its papers evaluate
   (baselines? user studies? open code and data?).
-- Ask whether the human study (Days 187–189) needs ethics approval at MIST. If it does, apply
+- Ask whether the human study (Days 188–190) needs ethics approval at MIST. If it does, apply
   now: approval can take weeks.
 - Email the CricBench authors (arXiv:2512.21877) to ask for early access to their questions,
-  for the outside test on Days 184–186.
+  for the outside test on Days 185–187.
 
 **Done when:** the journal is written in `outline.md`, and the ethics request is sent if
 needed.
@@ -1780,10 +1786,10 @@ fingerprint changes, so anyone can check that the exam was never edited.
 - Next to each, its expected handling: which kind, and for stats, which measure and filters.
   No expected numbers: the data is not loaded yet.
 - You write them, ideally with 2–3 friends in their own words. Claude only explains the
-  format and never reads the file before Day 177, so the system's builder does not write,
+  format and never reads the file before Day 178, so the system's builder does not write,
   or study, its own exam.
 - Save it as `thesis/exam/final_exam.csv`; record its SHA-256 in `thesis/evidence.md`
-  (E-013); do not open it again until Day 177.
+  (E-013); do not open it again until Day 178.
 
 **Done when:** the file and its checksum are committed.
 
@@ -1973,7 +1979,7 @@ writes the report → N13 shows it.
 | 69 | — | N11e Fan Concierge, N11f Stadium Operations (uses M2), N11g Bowling Performance (new, uses T2) | Tests |
 | 70 | — | N11h Content Production, N11i Match Officials (uses M4), N11j Talent Development | Tests |
 | 71 | — | N11k Injury Management (M3 flag), N11l Player Representation. N11k's words about load follow the flag ("overworked" only with a spike), always show the four weeks' balls, and never state an injury chance (L-036) | The registry check passes for all 12 |
-| 72 | Explaining without numbers | The Explainer (N11m) for rules and general questions ("What is LBW?"): words only, labelled "general explanation, not checked against data"; no digits (C5) and no named players. Optional, only with MCC's permission to store the Laws (asked on Day 14): corrective retrieval over the Laws of Cricket (retrieve clauses, grade them, rewrite the question and retry, or say "I cannot find that in the Laws"), each answer citing its Law, and a check that every cited clause exists in the stored text; the retrieval hybrid (keywords plus Qwen3-Embedding vectors and a reranker), against keywords alone on the same questions; measured on Day 173's 30 SportQA rules questions. Without permission it stays future work (D-055) | Tests: a digit or a player's name in an explanation is rejected; the label is always shown |
+| 72 | Explaining without numbers | The Explainer (N11m) for rules and general questions ("What is LBW?"): words only, labelled "general explanation, not checked against data"; no digits (C5) and no named players. Optional, only with MCC's permission to store the Laws (asked on Day 14): corrective retrieval over the Laws of Cricket (retrieve clauses, grade them, rewrite the question and retry, or say "I cannot find that in the Laws"), each answer citing its Law, and a check that every cited clause exists in the stored text; the retrieval hybrid (keywords plus Qwen3-Embedding vectors and a reranker), against keywords alone on the same questions; measured on Day 174's 30 SportQA rules questions. Without permission it stays future work (D-055) | Tests: a digit or a player's name in an explanation is rejected; the label is always shown |
 | 73 | Fan-out and collecting results | Dispatch to the chosen agents; collect their findings | Tests |
 | 74 | A bounded loop | The Faith gate node; regenerate only the failing agents, with reasons; budget of 2 | Tests: lie-once is fixed; lie-always is withheld; the loop never runs a third time |
 | 75 | — | The withhold path; N12 synthesis (claim references only) with a fallback; N13 provenance tags | Tests |
@@ -2188,7 +2194,7 @@ Either way it never states a number the Faith Check cannot ask again.
 
 ---
 
-### Phase 10 — Evaluation for the thesis (Days 161–194)
+### Phase 10 — Evaluation for the thesis (Days 161–195)
 
 **In simple words:** an exam for your system. Each experiment asks one question and has a
 pass rule written down *before* you run it. The final numbers come from the locked exam
@@ -2202,57 +2208,58 @@ models, tested on someone else's questions (CricBench), and rated by people.
 | 163 | Can an AI check an AI? | AI checker 1, an AI judge: the language model reads a finding and the facts and says pass or fail, on the same 8-lie test | Its catch rate per lie type |
 | 164 | — | AI checker 2, Chain-of-Verification: the model writes its own check questions and answers them | Its catch rate per lie type |
 | 165 | — | AI checker 3, a small hallucination detector: an open model made for this (LettuceDetect, MiniCheck or HHEM-2.1) reads each finding beside its facts, on the same 8-lie test | Its catch rate per lie type; time per finding |
-| 166 | — | Compare the four gates (Faith Check, AI judge, Chain-of-Verification, the hallucination detector): lies caught, correct findings wrongly stopped, time and cost | `results/ai_checkers.csv`; E-017 verified |
-| 167 | — | False rejections: how often correct findings are wrongly stopped | Rate and examples |
-| 168 | — | The cost of containment: vary how often agents lie | Plot |
-| 169 | Writing good test questions | Routing set: the first 50 labelled questions | Saved |
-| 170 | — | Routing set: 50 more, then check the labels | 100 questions |
-| 171 | — | Keyword router vs LLM router, 3 runs each | Accuracy and stability |
-| 172 | A small model, trained for one job | A small fine-tuned router (SetFit, a sentence transformer) trained on half the routing set; it and the keyword and LLM routers of Day 171 are scored on the other half, 3 runs each | Accuracy, stability and time per question; E-038 |
-| 173 | Practice before the exam | Practice set: 40 questions across the five kinds, each written 5 different ways, plus 30 outside the plan's lists and 30 rules questions from SportQA, labelled before running; run it and list every gap and wrong answer | `results/coverage_practice.csv` (never reported as a final result) |
-| 174 | — | Fill the gaps the practice set found (each new measure: a registry row, an engine function, a hand-checked test); run the practice set again | Fewer gaps; every change in the journal |
-| 175 | Small models for reading a question | N3's reading by the LLM against small models: GLiNER finds the names and grounds, Qwen3-Embedding matches them to the register, SetFit sorts the kind of question; on the practice set of Day 173, never the locked exam | `results/n3_small_models.csv`; E-039 |
-| 176 | Letting the computer write the prompts | DSPy (its GEPA optimizer) tunes the agents' prompts on the practice set; against the hand-written prompts: lies before the gate, honest declines, cost. Whichever wins on the practice set is used in the final exam, decided today, before it is opened; prompts tuned for one model are tuned again for each model (L-056) | `results/dspy_prompts.csv`; E-040 |
-| 177 | Testing once, honestly | The final exam: open the locked set from Day 15, check its checksum, run it once. How many were proved, explained or declined; every wrong answer; the same checked facts for every wording? | `results/coverage_final.csv`; E-013 verified |
-| 178 | What a baseline is, and why it must be fair | Baseline 1, plain AI: the same local model, with no data and no checks, answers the locked set; every answer saved, resumable. If you can, a large online model as well | All answers saved |
-| 179 | — | Baseline 2, AI with facts but no checks: the agents get the engine's facts, but the Faith Check is switched off; it answers the locked set. Baseline 3, agentic RAG: the same local model writes SQL on the same DuckDB, grades what comes back, rewrites and tries again (at most three rounds, LangGraph's agentic RAG pattern), with no Faith Check; it answers the locked set too (D-055) | All answers saved |
-| 180 | — | Score all four systems: check every number each one states against the engine; count wrong numbers, unchecked numbers and honest declines | `results/baselines.csv`; E-014 verified |
-| 181 | One method, many models | Three models, part 1: a second local model and one online model (key in `.env`, a spending limit, version and date recorded); the 8-lie test before the gate with each | How often each model lies before checking |
-| 182 | — | Three models, part 2: the locked exam with each model; does every number stay checked whatever the model? | `results/three_models.csv`; E-018 verified |
-| 183 | — | The 20 tricky questions in the locked exam (false premises, trick attempts): premises corrected, tricks resisted | `results/tricky.csv`; E-019 verified |
-| 184 | Testing on someone else's questions | CricBench, part 1: load its released English questions (check the licence and their Cricsheet snapshot) and sort each into the five kinds. If it is still unreleased, the paper says so (L-016) and these three days are buffer | Questions loaded, or the gap recorded |
-| 185 | — | CricBench, part 2: CricketMind answers every question, resumable | All answers saved |
-| 186 | — | CricBench, part 3: compare with their correct answers, beside their published model results | `results/cricbench.csv`; E-020 verified |
-| 187 | Designing a fair human study | 20 questions from the locked set; the three systems' answers shown blind and in random order; raters score trust and usefulness; a consent form; the ethics approval asked for on Day 14 in hand. Optional, decided here: also compare the sentence alone with the sentence plus the dotplot (Kay et al. 2016; "In Dice We Trust", CHI 2024). If not, every system's answers are shown with the same display, so a picture cannot sway the trust ratings (D-054) | Study pack ready |
-| 188 | — | Run the study with at least 10 raters (cricket fans, players or coaches); save every rating as it comes in | All ratings saved |
-| 189 | Comparing ratings fairly | Mean rating per system, agreement between raters, a significance test | `results/human_study.csv`; E-015 verified |
-| 190 | — | Engine validation: calibration plots and spot checks | Figures |
-| 191 | — | Measured cost vs the formula, across scenarios | Table |
-| 192 | — | All figures and tables in one style | `docs/results/` |
-| 193 | Honest limits | Threats to validity; what not to claim | Written |
-| 194 | Review day — **M7** | Journal | **M7:** thesis results ready |
+| 166 | Words or meaning? | The Faith Check's word lists (C3's warnings, C4's hedges and band words, C6's names, C7's tone words) against small transformers that judge meaning: a DeBERTa-v3 model trained for NLI, for hedges, certainty and tone; GLiNER for names. A paraphrase set first: each of the 8 lies and each correct finding rewritten five ways, labelled before running, never taken from a locked exam. Both judge every version; the rule of D-065 decides | Lies missed and honest findings wrongly stopped, per check, for each; `results/wording_models.csv`; L-019 measured; E-044 |
+| 167 | — | Compare the four gates (Faith Check, AI judge, Chain-of-Verification, the hallucination detector): lies caught, correct findings wrongly stopped, time and cost | `results/ai_checkers.csv`; E-017 verified |
+| 168 | — | False rejections: how often correct findings are wrongly stopped | Rate and examples |
+| 169 | — | The cost of containment: vary how often agents lie | Plot |
+| 170 | Writing good test questions | Routing set: the first 50 labelled questions | Saved |
+| 171 | — | Routing set: 50 more, then check the labels | 100 questions |
+| 172 | — | Keyword router vs LLM router, 3 runs each | Accuracy and stability |
+| 173 | A small model, trained for one job | A small fine-tuned router (SetFit, a sentence transformer) trained on half the routing set; it and the keyword and LLM routers of Day 172 are scored on the other half, 3 runs each | Accuracy, stability and time per question; E-038 |
+| 174 | Practice before the exam | Practice set: 40 questions across the five kinds, each written 5 different ways, plus 30 outside the plan's lists and 30 rules questions from SportQA, labelled before running; run it and list every gap and wrong answer | `results/coverage_practice.csv` (never reported as a final result) |
+| 175 | — | Fill the gaps the practice set found (each new measure: a registry row, an engine function, a hand-checked test); run the practice set again | Fewer gaps; every change in the journal |
+| 176 | Small models for reading a question | N3's reading by the LLM against small models: GLiNER finds the names and grounds, Qwen3-Embedding matches them to the register, SetFit sorts the kind of question; on the practice set of Day 174, never the locked exam | `results/n3_small_models.csv`; E-039 |
+| 177 | Letting the computer write the prompts | DSPy (its GEPA optimizer) tunes the agents' prompts on the practice set; against the hand-written prompts: lies before the gate, honest declines, cost. Whichever wins on the practice set is used in the final exam, decided today, before it is opened; prompts tuned for one model are tuned again for each model (L-056) | `results/dspy_prompts.csv`; E-040 |
+| 178 | Testing once, honestly | The final exam: open the locked set from Day 15, check its checksum, run it once. How many were proved, explained or declined; every wrong answer; the same checked facts for every wording? | `results/coverage_final.csv`; E-013 verified |
+| 179 | What a baseline is, and why it must be fair | Baseline 1, plain AI: the same local model, with no data and no checks, answers the locked set; every answer saved, resumable. If you can, a large online model as well | All answers saved |
+| 180 | — | Baseline 2, AI with facts but no checks: the agents get the engine's facts, but the Faith Check is switched off; it answers the locked set. Baseline 3, agentic RAG: the same local model writes SQL on the same DuckDB, grades what comes back, rewrites and tries again (at most three rounds, LangGraph's agentic RAG pattern), with no Faith Check; it answers the locked set too (D-055) | All answers saved |
+| 181 | — | Score all four systems: check every number each one states against the engine; count wrong numbers, unchecked numbers and honest declines | `results/baselines.csv`; E-014 verified |
+| 182 | One method, many models | Three models, part 1: a second local model and one online model (key in `.env`, a spending limit, version and date recorded); the 8-lie test before the gate with each | How often each model lies before checking |
+| 183 | — | Three models, part 2: the locked exam with each model; does every number stay checked whatever the model? | `results/three_models.csv`; E-018 verified |
+| 184 | — | The 20 tricky questions in the locked exam (false premises, trick attempts): premises corrected, tricks resisted | `results/tricky.csv`; E-019 verified |
+| 185 | Testing on someone else's questions | CricBench, part 1: load its released English questions (check the licence and their Cricsheet snapshot) and sort each into the five kinds. If it is still unreleased, the paper says so (L-016) and these three days are buffer | Questions loaded, or the gap recorded |
+| 186 | — | CricBench, part 2: CricketMind answers every question, resumable | All answers saved |
+| 187 | — | CricBench, part 3: compare with their correct answers, beside their published model results | `results/cricbench.csv`; E-020 verified |
+| 188 | Designing a fair human study | 20 questions from the locked set; the three systems' answers shown blind and in random order; raters score trust and usefulness; a consent form; the ethics approval asked for on Day 14 in hand. Optional, decided here: also compare the sentence alone with the sentence plus the dotplot (Kay et al. 2016; "In Dice We Trust", CHI 2024). If not, every system's answers are shown with the same display, so a picture cannot sway the trust ratings (D-054) | Study pack ready |
+| 189 | — | Run the study with at least 10 raters (cricket fans, players or coaches); save every rating as it comes in | All ratings saved |
+| 190 | Comparing ratings fairly | Mean rating per system, agreement between raters, a significance test | `results/human_study.csv`; E-015 verified |
+| 191 | — | Engine validation: calibration plots and spot checks | Figures |
+| 192 | — | Measured cost vs the formula, across scenarios | Table |
+| 193 | — | All figures and tables in one style | `docs/results/` |
+| 194 | Honest limits | Threats to validity; what not to claim | Written |
+| 195 | Review day — **M7** | Journal | **M7:** thesis results ready |
 
 ---
 
-### Phase 11 — Ship it (Days 195–202)
+### Phase 11 — Ship it (Days 196–203)
 
 **In simple words:** a Docker container is a shipping box for software. Everything the app
 needs goes inside, so it runs the same on any computer.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 195 | Containers, simply; install Docker Desktop | Dockerfiles for the backend and the frontend | Both images build |
-| 196 | — | `docker-compose.yml`; Ollama stays on the host | One command starts everything |
-| 197 | — | Production settings; smoke test from a clean start | It works |
-| 198 | Writing for other people | README (a 10-step setup), architecture notes, decision records | A friend can run it |
-| 199 | — | The demo script: a text question, a clip question, and the Faith Check catching a planted lie | Rehearsed |
-| 200 | — | Record the demo video | Saved |
-| 201 | — | Final checklist; tag v1.0 | **M8:** shipped |
-| 202 | — | Buffer | — |
+| 196 | Containers, simply; install Docker Desktop | Dockerfiles for the backend and the frontend | Both images build |
+| 197 | — | `docker-compose.yml`; Ollama stays on the host | One command starts everything |
+| 198 | — | Production settings; smoke test from a clean start | It works |
+| 199 | Writing for other people | README (a 10-step setup), architecture notes, decision records | A friend can run it |
+| 200 | — | The demo script: a text question, a clip question, and the Faith Check catching a planted lie | Rehearsed |
+| 201 | — | Record the demo video | Saved |
+| 202 | — | Final checklist; tag v1.0 | **M8:** shipped |
+| 203 | — | Buffer | — |
 
 ---
 
-### Phase 12 — Write the paper (Days 203–217)
+### Phase 12 — Write the paper (Days 204–218)
 
 **In simple words:** by now the paper's pieces already exist — decisions, numbers, evidence,
 limitations, references and rough drafts. This phase assembles them and polishes. The
@@ -2260,21 +2267,21 @@ introduction and abstract are written last, once you know exactly what you found
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 203 | How papers in your target venue are written | Confirm the journal chosen on Day 14 and get its template; read 3 recent papers from it; set word budgets in `outline.md` | Template and budgets set |
-| 204 | — | Final check of figures and tables (all rebuilt by script); `evidence.md` and `numbers.md` complete | Every planned claim is verified or dropped |
-| 205 | Writing a method section | Method part 1: provenance classes, the claim contract, the registry; the six design rules written as short propositions with proofs | Draft done |
-| 206 | — | Method part 2: Faith Check C1–C7, the engines and their uncertainty, the evidence pipeline, perception (no accuracy) | Draft done |
-| 207 | — | Implementation: clean architecture, the API, the website | Draft done |
-| 208 | — | Evaluation setup: questions, data, metrics, pass rules | Draft done |
-| 209 | Writing results: say what you measured, not what you hoped | Results part 1: containment, false rejections, cost of containment | Draft done |
-| 210 | — | Results part 2: calibration, posture, bridge, routing, cost bounds; discussion | Draft done |
-| 211 | Positioning against related work | Related work from `related_work.md` | Draft done |
-| 212 | — | Introduction and abstract (written last, on purpose) | Draft done |
-| 213 | — | Limitations (from `limitations.md`), data licences and ethics, conclusion | Full draft done |
-| 214 | Be the paper's Faith Check | Check every number against `numbers.md` and every claim against `evidence.md`; no classifier accuracy anywhere | Zero unsupported numbers or claims |
-| 215 | — | Revise after your supervisor's feedback | Feedback addressed |
-| 216 | — | Polish: language, references, formatting, page limit | Fits the template |
-| 217 | — | Final read-through; a submission-ready PDF; tag the commit | **M9:** the paper is ready |
+| 204 | How papers in your target venue are written | Confirm the journal chosen on Day 14 and get its template; read 3 recent papers from it; set word budgets in `outline.md` | Template and budgets set |
+| 205 | — | Final check of figures and tables (all rebuilt by script); `evidence.md` and `numbers.md` complete | Every planned claim is verified or dropped |
+| 206 | Writing a method section | Method part 1: provenance classes, the claim contract, the registry; the six design rules written as short propositions with proofs | Draft done |
+| 207 | — | Method part 2: Faith Check C1–C7, the engines and their uncertainty, the evidence pipeline, perception (no accuracy) | Draft done |
+| 208 | — | Implementation: clean architecture, the API, the website | Draft done |
+| 209 | — | Evaluation setup: questions, data, metrics, pass rules | Draft done |
+| 210 | Writing results: say what you measured, not what you hoped | Results part 1: containment, false rejections, cost of containment | Draft done |
+| 211 | — | Results part 2: calibration, posture, bridge, routing, cost bounds; discussion | Draft done |
+| 212 | Positioning against related work | Related work from `related_work.md` | Draft done |
+| 213 | — | Introduction and abstract (written last, on purpose) | Draft done |
+| 214 | — | Limitations (from `limitations.md`), data licences and ethics, conclusion | Full draft done |
+| 215 | Be the paper's Faith Check | Check every number against `numbers.md` and every claim against `evidence.md`; no classifier accuracy anywhere | Zero unsupported numbers or claims |
+| 216 | — | Revise after your supervisor's feedback | Feedback addressed |
+| 217 | — | Polish: language, references, formatting, page limit | Fits the template |
+| 218 | — | Final read-through; a submission-ready PDF; tag the commit | **M9:** the paper is ready |
 
 ---
 

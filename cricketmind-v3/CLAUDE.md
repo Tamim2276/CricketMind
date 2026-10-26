@@ -28,7 +28,7 @@ a time: understand, learn, build, test, repeat.
   needed (the user's choice, 2026-10-16; the plan was rewritten to 165 days to match, then
   extended to 173 on 2026-10-17 so every question gets an honest answer, to 183 on
   2026-10-19 for a journal-grade evaluation, to 202 the same day for a Q1 attempt, and to
-  217 on 2026-10-26 to try learned models wherever they can be tested fairly).
+  218 on 2026-10-26 to try learned models wherever they can be tested fairly).
   `learning/` keeps Days 2-4 as they are; nothing new goes there.
 - The user runs commits, installs, long runs and downloads; Claude gives the commands.
   Claude may write project files, run tests and do quick read-only checks.
@@ -55,5 +55,5 @@ a time: understand, learn, build, test, repeat.
 - The paper must cite the ICCIT (v2) paper and clearly extend it.
 - The locked exams in `thesis/exam/` are written by the user and never read, opened or
   summarised by Claude before the day they are run: the final exam (written Day 15, run
-  Day 177) and the football exam (written Day 145, run Day 150). Final numbers come only
+  Day 178) and the football exam (written Day 145, run Day 150). Final numbers come only
   from them.

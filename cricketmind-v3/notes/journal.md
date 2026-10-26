@@ -1590,3 +1590,25 @@ L-052 to L-056; evidence E-035 to E-043; CLAUDE.md's day numbers follow. Nothing
 | 160–161 | 173–174 |
 | — | 175–176 (new: small models for reading a question; DSPy prompts) |
 | 162–202 | 177–217 |
+
+---
+
+## Plan extension (wording models) — 2026-10-26 — 217 → 218 days
+
+**Asked:** does finished work need ML, DL or a comparison? **Answered:** the counting engines
+(M1-M5), the exact checks (C1, C2, C5), the data pipeline, the receipts and the workload flag do
+not: they have one right answer, and an ML injury chance is what L-003 forbids. N9 is already
+compared (Days 54, 152-160). The word lists of C3, C4, C6 and C7 are worth a test: a word not
+on a list slips past (L-019). **Decided (D-065):** Day 166 sets the lists against small
+transformers that judge meaning (a DeBERTa-v3 NLI model; GLiNER for names), on the 8 lies and
+the correct findings each rewritten five ways. A model joins the gate only as a second reader
+that can stop a finding, never let one through, and only if it catches more without wrongly
+stopping more. **Added:** Day 166; E-044; L-019 now names the test. Nothing is built yet.
+
+**The mapping** (from the 217-day plan of earlier today):
+
+| Old days | New days |
+|---|---|
+| 1–165 | unchanged |
+| — | 166 (new: the word lists against meaning) |
+| 166–217 | 167–218 |

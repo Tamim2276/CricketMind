@@ -323,7 +323,7 @@ Template:
   enough if the question itself is false.
 - Alternatives considered: answering the question as asked (repeats false premises);
   refusing every question that contains a judgment (unhelpful).
-- Status: designed (Day 76; evaluated on Day 183)
+- Status: designed (Day 76; evaluated on Day 184)
 - Paper section: Method; Results
 
 ## D-023 — Stronger comparisons: AI checkers, three models, an outside test set
@@ -337,7 +337,7 @@ Template:
   checking AI numbers (EG-VAR, VeriFin, tool receipts) makes these comparisons necessary.
 - Alternatives considered: one local model only (results could be model-specific); only
   self-written questions (author bias, L-009).
-- Status: designed (Days 163–166, 181–186)
+- Status: designed (Days 163–167, 182–187)
 - Paper section: Evaluation; Results
 
 ## D-024 — The language model sits behind our own port; LangChain is compared, not assumed
@@ -916,7 +916,7 @@ Template:
   and a tampered one (Kohli's Test average as 50) was caught (N-023).
 - Alternatives considered: comparing within rounding (a tampered 46.86 would pass);
   re-running receipts from other data (a different number would look like tampering).
-- Status: built (Day 48); the final exam's receipts are checked on Day 177 (E-022)
+- Status: built (Day 48); the final exam's receipts are checked on Day 178 (E-022)
 - Paper section: Method (receipts); Evaluation
 
 ## D-054 — What-if pictures: drawn from the engine, in forms people read correctly
@@ -931,7 +931,7 @@ Template:
   measured skeleton is drawn over the real frames in 2D; a 3D skeleton is a stretch goal
   only. Ball tracking, pitch maps and wagon wheels are never drawn: the data has no line,
   length or direction. Whether the human study compares sentence alone with sentence plus
-  dotplot is decided on Day 187.
+  dotplot is decided on Day 188.
 - Why: people read chances more accurately from discrete outcomes than from curves (Kay
   et al. 2016); text and quantile dotplots kept trust highest over time ("In Dice We
   Trust", CHI 2024); FiveThirtyEight showed 100 dots drawn from 40,000 simulations;
@@ -941,14 +941,14 @@ Template:
   (would be invented data); a general chart library such as Recharts (too rigid for the
   overs grid) or ECharts (built for large data); pictures drawn by the language model
   (unchecked).
-- Status: planned (Days 49, 51-52, 100, 108, 127; optional on Day 187)
+- Status: planned (Days 49, 51-52, 100, 108, 127; optional on Day 188)
 - Paper section: System (the report page); Evaluation (the human study, if chosen)
 
 ## D-055 — Agentic retrieval, where it cannot touch a number
 - Date: 2026-10-25
 - Decision: agentic retrieval-augmented generation (an LLM that retrieves, judges what it
   found, and retrieves again) is used in three places, none of which makes a number.
-  (1) A third baseline in the evaluation (Days 179-180): the same local model writes SQL on
+  (1) A third baseline in the evaluation (Days 180-181): the same local model writes SQL on
   the same DuckDB, grades the result, rewrites and retries, at most three rounds, with no
   Faith Check; its numbers are scored like the other systems'. (2) N3's names and grounds
   (Day 58): retrieve candidates from the registers, weigh the question's clues, keep one
@@ -1166,10 +1166,10 @@ Template:
   D-062) and tabular transformers (TabPFN-2.5, TabICL; Day 157); (3) "batters like him" from
   learned player vectors, against batting place (Day 158); (4) a third AI checker, an open
   hallucination detector (LettuceDetect, MiniCheck or HHEM-2.1; Day 165); (5) a small
-  fine-tuned router (SetFit) beside the keyword and LLM routers (Day 172); (6) small models
+  fine-tuned router (SetFit) beside the keyword and LLM routers (Day 173); (6) small models
   for reading a question: GLiNER for names, Qwen3-Embedding to match them to the register,
-  SetFit for the kind (Day 175); (7) prompts tuned by DSPy beside hand-written ones (Day
-  176); (8) a transformer pose model (ViTPose) beside the first (Day 125); (9) the bridge's
+  SetFit for the kind (Day 176); (7) prompts tuned by DSPy beside hand-written ones (Day
+  177); (8) a transformer pose model (ViTPose) beside the first (Day 125); (9) the bridge's
   labels distilled into a small fine-tuned transformer (ModernBERT) beside the rules and the
   LLM (Day 137); (10) with MCC's permission, hybrid retrieval over the Laws (Day 72). Each
   has a rule written before its run. A learned model makes a number a user sees only behind
@@ -1190,7 +1190,7 @@ Template:
   own, hard to check, small samples learned as noise); video classifiers compared here (that
   is CricShot's paper); large models only through an API (cost, and the locked exam must run
   locally too).
-- Status: planned (Days 54, 72, 125, 137, 152-160, 165, 172, 175, 176)
+- Status: planned (Days 54, 72, 125, 137, 152-160, 165, 173, 176, 177)
 - Paper section: Method; Evaluation (learned models against the simpler ones)
 
 ## D-064 — The ball model: a small transformer on every ball, and its rule
@@ -1224,3 +1224,29 @@ Template:
   calibrate); a table model on single balls (no sequence; tried as a baseline on Day 157).
 - Status: planned (Phase 9c, Days 152-160)
 - Paper section: Method (the ball model); Evaluation
+
+## D-065 — The Faith Check's word lists against models that judge meaning
+- Date: 2026-10-26
+- Decision: on Day 166, the word lists of C3 (warnings), C4 (hedges and band words), C6
+  (names) and C7 (tone words) are set against small transformers that judge meaning: a
+  DeBERTa-v3 model trained for natural-language inference, for hedges, certainty and tone,
+  and GLiNER for names. The test set is written first: each of the 8 lies and each correct
+  finding rewritten five ways ("struggles against spin", "is all at sea against spin"),
+  labelled before running, never taken from a locked exam. Both judge every version; for
+  each check, the lies missed and the honest findings wrongly stopped are counted. The rule,
+  written now: a model is taken into the gate only if it catches lies the lists miss without
+  stopping more honest findings than the lists do, and runs the same way every time on the
+  CPU. Even then it is a second reader: it can stop a finding, never let one through that
+  the lists stop, and its reason names the sentence it judged. Otherwise the lists stay,
+  and the measured misses go in the paper.
+- Why: the user asked whether finished work needs ML or a comparison. The counting engines
+  and the exact checks (C1, C2, C5) do not: they have one right answer. The word lists do:
+  their known weakness is that a word not on a list slips past (L-019), and a model that
+  reads meaning may catch paraphrases. Measuring both turns a written weakness into a
+  result, whichever way it goes.
+- Alternatives considered: replacing the lists with a model (a gate whose reasons cannot be
+  read, and that can let a lie through); growing the lists by hand only (never measured
+  against paraphrase); the hallucination detector of Day 165 alone (it judges a whole
+  finding, not which word failed which check).
+- Status: planned (Day 166)
+- Paper section: Evaluation (the word lists against meaning); Limitations (L-019)
