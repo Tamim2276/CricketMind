@@ -180,6 +180,9 @@ future directions. Read only in part: check Section 4 before citing it for the g
   the two players' records (E-033). Verify the chapter before citing.
 - The beta-binomial fitted by maximum likelihood (Griffiths, 1973), and the likelihood
   principle (Berger and Wolpert, 1988): why batting until out does not bias it (D-060).
+- Wolpert (1992), stacked generalization; Breiman (1996), stacked regressions: a second
+  model learns how to weigh the first ones, on data they were not fitted on. Day 157's
+  stacked mix of N9 and the trees (D-069).
 
 ## To read (verify that each exists, then add notes)
 

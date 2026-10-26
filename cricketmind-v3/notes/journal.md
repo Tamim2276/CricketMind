@@ -1774,8 +1774,9 @@ three parts of the rule. **D-067 stands:** they still need the match, which no q
 carries. The refits keep each batter's own record as it is, so the trees look surer about a
 new batter than anyone can be (L-064); a learned engine's range must carry both doubts
 before it gives receipts (Day 159).
-**Still to do (yours):** after the commit, the same run once more on committed code. The
-models and refits are cached under their fingerprint now, so it takes about two minutes.
+**Re-run on committed code** (a7e5261): every result file came out byte for byte the same,
+the models and refits loaded from their fingerprint's folder; the ledger's new lines say
+`uncommitted_changes: false`.
 
 **For the paper:**
 - Decisions: D-067 (status)
@@ -1783,3 +1784,36 @@ models and refits are cached under their fingerprint now, so it takes about two 
 - Evidence: E-034 (the honest range verified)
 - Limitations: L-064, L-065
 - Section it feeds: Evaluation (N9 against ML); Method (reproducibility)
+
+---
+
+## Plan change — 2026-10-27 — N9 and ML, mixed
+
+**Asked:** can the statistical model and the ML model be used together, to make a better
+one? **Answered:** yes: a mix (an ensemble) helps when two models make different mistakes,
+and the trees already take N9's batter rate as one input, so they are a light mix already.
+**Decided (D-069):** Day 157 adds three mixes of N9 with the question-only trees (only those
+can answer a question, which carries no match):
+
+```
+question ─► N9 ─────────────► 4.0% ─┐
+                                    ├─► mix ─► one chance
+question ─► trees (question) ► 5.0% ─┘
+
+1. averaged          (4.0 + 5.0) / 2 = 4.5%, nothing learned
+2. stacked           a small model learns how much to trust each, on the validation year
+3. N9 plus a fix     trees start from N9's 4.0% and learn only the correction
+```
+
+The third keeps N9's Beta curve for its range, so it carries the batter's doubt (L-064).
+Fixed today, before any mix is tried; written into Day 157's pre-registration; judged by
+Day 54's rule; all three reported, none picked after (L-066). The trees' starting score
+needs LightGBM, which scikit-learn's trees are modelled on: a new install on Day 157.
+**Plan notes added:** Day 157; E-047 planned; Wolpert (1992) and Breiman (1996) in the
+related work. No new day: 218 days still. Nothing is built yet.
+
+**For the paper:**
+- Decisions: D-069
+- Evidence: E-047 (planned)
+- Limitations: L-066
+- Section it feeds: Evaluation (N9 against ML)

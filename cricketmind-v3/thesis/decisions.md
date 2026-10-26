@@ -1325,3 +1325,29 @@ Template:
   too); rounding engine answers (the same, earlier).
 - Status: built (Day 54)
 - Paper section: Method (receipts); Evaluation (the engine report)
+
+## D-069 — N9 mixed with ML: three ensembles, on Day 157
+- Date: 2026-10-27
+- Decision: Day 157 adds three mixes of N9's chance with the question-only trees (the
+  trees given only what a question carries, D-067), so that every mix can answer the
+  menu's questions: (1) the two chances averaged, nothing learned; (2) stacking, a logistic
+  regression on the two chances, its weights learned on the validation year from N9 and
+  trees fitted on the years before it, then used with both fitted on every train year;
+  (3) boosted trees that start from N9's chance and learn only a correction (LightGBM's
+  starting score), whose range is N9's Beta curve moved by the correction, so it carries
+  the batter's doubt as well as the fit's (L-064). The three are fixed today, written into
+  Day 157's pre-registration before the run, judged by Day 54's rule (D-062), and all
+  reported; none is picked after the run. A mix that passes the rule could answer the
+  menu's questions, so it would need receipts the way Day 159 gives them to the ball model.
+- Why: the user asked whether the statistical model and ML could be used together. A mix
+  helps when two models make different mistakes; N9 is sure where data is thick and
+  careful where it is thin, and the trees find patterns N9 has no slot for. The trees
+  already take N9's batter rate as an input, so the gain may be small; only the test can
+  say. Mixing only the question-only trees keeps the mix askable, which the full trees are
+  not.
+- Alternatives considered: trying mixes on the test year now (it has been looked at, so a
+  mix picked after seeing it could win by luck); mixing the full trees (they need the match
+  situation no question carries); more than three mixes (each one more is one more chance
+  to win by luck); a new plan day (Day 157 already holds the table every model joins).
+- Status: planned (Day 157)
+- Paper section: Evaluation (N9 against ML)
