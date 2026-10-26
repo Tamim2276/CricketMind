@@ -76,13 +76,10 @@ def test_a_shot_has_no_answer_until_the_bridge(engines):
     assert engines.fact("p_dismissal_within_k", pull) is None
 
 
-def test_just_come_in(engines):
-    # his first five balls: stage 1, where all 11 other top-order men have balls
+def test_how_long_he_has_been_in_is_not_asked(engines):
+    # tried on Day 53 and not kept (D-066): the menu no longer takes it
     new = dataclasses.replace(FARHAN_SIX, k=5, faced_so_far=0)
-    found = engines.fact("p_dismissal_within_k", new)
-    assert len(HANDED[0]) == 11
-    assert found.n == 5  # his own balls 1 to 5
-    assert found.receipt.query.count('"faced_so_far":0') == 1
+    assert engines.fact("p_dismissal_within_k", new) is None
 
 
 def reasons(engines, value, interval) -> list[str]:

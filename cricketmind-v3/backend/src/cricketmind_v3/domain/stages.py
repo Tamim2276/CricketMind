@@ -1,7 +1,8 @@
 """How long the batter has been in, and where he bats (Day 50).
 
 His innings in four stages, by the balls he has faced so far: 1-5, 6-15, 16-30, after
-30 (on trial: D-056). Each stage has its own risk, pulled toward normal for that stage.
+30. Each stage has its own risk, pulled toward normal for that stage. Tried on Day 53 and
+not kept for the engine (D-066); kept here for the comparisons of Day 157.
 Normal is for batters who bat where he bats: a tailender is not pulled toward the top
 order (L-045).
 """

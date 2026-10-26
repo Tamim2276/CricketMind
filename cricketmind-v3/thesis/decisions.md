@@ -1273,5 +1273,6 @@ Template:
   was pooled and set before the run, and a new per-kind rule now would be fitted to the
   test year); a looser rule (better Brier alone, with no allowance for luck: written before
   as stricter, and kept so).
-- Status: decided (Day 53); the stages leave the engine in the commit after Day 53's
+- Status: decided (Day 53); the stages left the engine and the menu in the commit after
+  033b4b7, Day 53's own
 - Paper section: Evaluation (calibration; the two trials)

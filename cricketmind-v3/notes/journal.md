@@ -1677,3 +1677,14 @@ the pre-registration (section 7), for Day 54.
 - Evidence: E-007 and E-045 (verified)
 - Limitations: L-057 to L-060
 - Section it feeds: Evaluation (calibration; the trials)
+
+---
+
+## Day 53 — after the commit — the stages leave the engine
+
+**Re-run on committed code** (033b4b7): every result file came out byte for byte the same; the
+ledger's new lines say `uncommitted_changes: false`. **Done, as rule 2 said:** `faced_so_far`
+is off the prediction's menu, and the engine has one risk for the whole innings again; the
+staged maths stays in `domain/` for Day 157's comparison, and the field stays so that old
+questions can still be read back. The run script's engine check now asks the one-risk engine
+when the menu has no stages (checked: 30 moments, largest gap 0.015 points). 649 tests pass.

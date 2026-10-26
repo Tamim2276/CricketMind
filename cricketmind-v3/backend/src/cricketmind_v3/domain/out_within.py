@@ -3,8 +3,8 @@
 Two kinds of uncertainty. Luck: even at a known rate he may or may not be out. And the
 rate itself: 4 outs in 50 balls only roughly says how risky he is. The Beta curve says
 how believable each rate is; every replay draws a rate from it, then plays the balls.
-Since Day 50 the curve starts from what is normal (a prior), and the risk may change
-with how long he has been in (stages).
+Since Day 50 the curve starts from what is normal (a prior). The risk by how long he
+has been in (stages) was tried on Day 53 and not kept for the engine (D-066).
 """
 
 import random

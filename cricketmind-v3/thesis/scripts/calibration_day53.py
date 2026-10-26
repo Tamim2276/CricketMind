@@ -26,10 +26,12 @@ from cricketmind_v3.domain.calibration import (
     ball_chance,
     displayed_middle,
     fit,
+    posterior,
     window_chance,
     windows,
 )
-from cricketmind_v3.domain.out_within import Stage, out_within_stages
+from cricketmind_v3.domain.out_within import Stage, out_within, out_within_stages
+from cricketmind_v3.domain.registry import lookup
 from cricketmind_v3.domain.scoring import (
     BINS,
     bin_of,
@@ -305,7 +307,12 @@ def trial(lines, title, resampled, new, old) -> bool:
 
 
 def engine_check(db, repo, fitted) -> str:
-    """Section 6: the engine itself, asked as if it were 2025-10-14, against this run."""
+    """Section 6: the engine itself, asked as if it were 2025-10-14, against this run.
+
+    The run of 2026-10-26 (commit 033b4b7) asked the engine by stage, as pre-registered.
+    Since D-066 took the stages out of the menu, a later run asks the one-risk engine and
+    sets it against B's replays instead, and says so in the file."""
+    staged = "faced_so_far" in lookup("p_dismissal_within_k").filters
     moments = repo.moments(
         CricketSubject(match_format="T20", gender="male", since=CUTOFF)
     )
@@ -319,25 +326,29 @@ def engine_check(db, repo, fitted) -> str:
         shared.add(name)
     rng = random.Random(42)
     engines = engines_on(db)
-    rows = [["batter", "faced so far", "engine", "this run", "gap"]]
+    rows = [["batter", "faced so far", "engine", "this run", "gap", "path"]]
     tries = 0
     while len(rows) <= CHECKS and tries < 10 * CHECKS:
         tries += 1
         moment = moments[rng.randrange(len(moments))]
         name = names.get(moment.batter)
-        mine = bulk_answer(fitted, moment.batter, moment.faced_before)
+        if staged:
+            mine = bulk_answer(fitted, moment.batter, moment.faced_before)
+            so_far = moment.faced_before
+        else:
+            mine = bulk_one_risk(fitted, moment.batter)
+            so_far = None
         if name is None or name in shared or mine is None:
             continue
         subject = CricketSubject(
-            player=name,
-            match_format="T20",
-            before=CUTOFF,
-            k=K,
-            faced_so_far=moment.faced_before,
+            player=name, match_format="T20", before=CUTOFF, k=K, faced_so_far=so_far
         )
         fact = engines.fact("p_dismissal_within_k", subject)
         if fact is None:
             continue
+        path = "one risk"
+        if staged:
+            path = "by stage"
         rows.append(
             [
                 name,
@@ -345,6 +356,7 @@ def engine_check(db, repo, fitted) -> str:
                 round(fact.value, 5),
                 round(mine, 5),
                 round(fact.value - mine, 5),
+                path,
             ]
         )
     out = io.StringIO()
@@ -367,6 +379,19 @@ def bulk_answer(fitted, batter, so_far) -> float | None:
             Stage(first=STARTS[number - 1], outs=outs, faced=faced, prior=prior)
         )
     found = out_within_stages(stages, K, so_far)
+    if found is None:
+        return None
+    return found.chance
+
+
+def bulk_one_risk(fitted, batter) -> float | None:
+    # the engine's one-risk answer (B), made from this run's priors
+    beta = posterior(fitted, "B", batter, 1)
+    if beta is None:
+        return None
+    prior = fitted.order[fitted.usual[batter]]
+    outs, faced = fitted.totals[batter]
+    found = out_within(outs, faced, K, prior)
     if found is None:
         return None
     return found.chance

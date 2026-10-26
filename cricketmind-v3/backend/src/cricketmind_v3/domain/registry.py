@@ -253,10 +253,10 @@ CLAIM_TYPES = (
         # the batter, how many balls ahead, and the format: he is pulled toward
         # normal for that kind of cricket (Day 50). The rest narrows his past (Day 49):
         # a shot gets no answer until the bridge, so the shot is a filter, not a need.
-        # faced_so_far is how long he has been in, on trial (D-056)
+        # How long he has been in (faced_so_far) was tried and not kept (Day 53, D-066)
         required_keys=("player", "k", "match_format"),
         needs_range=True,
-        filters=(*without(BATTING_FILTERS, "match_format"), "shot", "faced_so_far"),
+        filters=(*without(BATTING_FILTERS, "match_format"), "shot"),
     ),
     ClaimType(
         name="matchup_difference",

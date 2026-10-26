@@ -7,9 +7,9 @@ import dataclasses
 
 from cricketmind_v3.application.engines.n9_t1 import p_dismissal_within_k
 from cricketmind_v3.application.ports import FakeDeliveryRepository, FilterError
-from cricketmind_v3.domain.out_within import Stage, out_within, out_within_stages
+from cricketmind_v3.domain.out_within import out_within
 from cricketmind_v3.domain.shrinkage import population_prior
-from cricketmind_v3.domain.stages import Record, by_batter, in_stage
+from cricketmind_v3.domain.stages import Record, by_batter
 from cricketmind_v3.domain.subject import CricketSubject
 from tests.examples import KOHLI_PULL, V2_PULL, v2_balls
 from tests.unit.test_engine_source import source
@@ -167,56 +167,14 @@ def test_a_filter_the_data_cannot_apply_gives_no_answer():
     assert p_dismissal_within_k(RefusingRepository(), KOHLI_PULL) is None
 
 
-# How long he has been in (on trial, D-056)
+# How long he has been in: tried on Day 53, not kept (D-066)
 
 
-def stage_prior(number: int):
-    return population_prior(in_stage(TOP, number))
-
-
-def test_each_of_his_next_balls_has_the_risk_of_its_stage():
+def test_balls_faced_so_far_is_not_on_the_menu():
     repo = pull_balls()
-    # he has faced 3: his next six are balls 4 to 9, two in stage 1 and four in stage 2
-    found = p_dismissal_within_k(repo, dataclasses.replace(KOHLI_PULL, faced_so_far=3))
-    expected = out_within_stages(
-        [
-            Stage(first=1, outs=2, faced=20, prior=stage_prior(1)),
-            Stage(first=6, outs=2, faced=30, prior=stage_prior(2)),
-        ],
-        6,
-        3,
-    )
-    assert found.value == expected.chance
-    assert found.interval == (expected.low, expected.high)
-    assert found.n == 50  # his balls in the two stages
-    assert repo.asked == [PAST, PAST, LIKE_HIM]  # his balls, his record, the others
-
-
-def test_just_come_in():
-    repo = pull_balls()
-    # balls 1 to 5: his first stage only, so only its 20 balls are behind the answer
-    found = p_dismissal_within_k(
-        repo, dataclasses.replace(KOHLI_PULL, k=5, faced_so_far=0)
-    )
-    expected = out_within_stages(
-        [Stage(first=1, outs=2, faced=20, prior=stage_prior(1))], 5, 0
-    )
-    assert found.value == expected.chance
-    assert found.n == 20
-
-
-def test_a_stage_with_no_others_gives_no_answer():
-    repo = pull_balls()
-    # balls 13 to 18 reach stage 3, where no other batter has a record
-    later = dataclasses.replace(KOHLI_PULL, faced_so_far=12)
-    assert p_dismissal_within_k(repo, later) is None
-
-
-def test_balls_faced_so_far_must_be_a_count():
-    repo = pull_balls()
-    for wrong in (-1, "3", 2.5):
-        odd = dataclasses.replace(KOHLI_PULL, faced_so_far=wrong)
-        assert p_dismissal_within_k(repo, odd) is None
+    for so_far in (0, 3, 30):
+        later = dataclasses.replace(KOHLI_PULL, faced_so_far=so_far)
+        assert p_dismissal_within_k(repo, later) is None
     assert repo.asked == []  # refused before the data is asked
 
 
