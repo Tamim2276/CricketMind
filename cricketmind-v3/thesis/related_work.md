@@ -181,6 +181,10 @@ future directions. Read only in part: check Section 4 before citing it for the g
 
 ## To read (verify that each exists, then add notes)
 
+- Grinsztajn, Oyallon and Varoquaux (NeurIPS 2022, Datasets and Benchmarks), "Why do
+  tree-based models still outperform deep learning on tabular data?": why D-062's ML
+  baseline is gradient-boosted trees, not a deep network.
+
 - Agentic retrieval (D-055): Singh et al. (2025), "Agentic Retrieval-Augmented Generation:
   A Survey" (arXiv 2501.09136); Self-RAG (Asai et al., ICLR 2024); corrective RAG; LangGraph's
   agentic RAG tutorial (grade, rewrite, retry); SPORTSQL (arXiv 2508.17157), sports

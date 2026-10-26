@@ -1539,3 +1539,19 @@ and meetings fitted by likelihood; the priors by likelihood.
 - Evidence: E-031, E-032, E-033 (verified)
 - Limitations: L-048 to L-051
 - Section it feeds: Method (N9 T2); Results (matchups)
+
+---
+
+## Plan change — 2026-10-26 — An ML baseline, judged by the same test
+
+**Asked:** should the result come from running an ML or DL model again and again? **Answered:**
+N9 already runs a model again and again (20,000 replays); it is a statistical model, chosen
+because the data holds who faced whom, not line or length, because it gives an honest range,
+and because its answers can be checked by receipt. ML is worth taking up only if it predicts
+better. **Decided (D-062):** after Day 53, on its exact split, logistic regression and
+gradient-boosted trees predict the same thing from what the data held before each match
+(records, format, phase, balls faced, place in the order, wickets, the chase). The rule is
+written down on Day 53, before any model is fitted: better Brier score by more than its
+uncertainty, calibration no worse, an honest range; otherwise ML is reported as a baseline.
+Deep learning stays in CricShot, where the inputs are video. **Plan notes added:** Days 53, 54
+and 150; E-034 planned. Nothing is built yet.

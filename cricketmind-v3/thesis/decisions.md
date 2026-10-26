@@ -1127,3 +1127,32 @@ Template:
   meetings (would refuse most what-ifs that the two records answer well).
 - Status: built (Days 51-52); calibrated on Day 53
 - Paper section: Method (N9 T2)
+
+## D-062 — An ML baseline for the out-risk engine, judged by the same test
+- Date: 2026-10-26
+- Decision: after Day 53's calibration, on its exact split (fitted on the older seasons,
+  tested on the newest) and the same questions, two machine-learning models predict the
+  same thing as N9 T1, the chance of being out within the next k balls: logistic
+  regression, and gradient-boosted trees (scikit-learn). Their inputs are only what the
+  data holds at the moment of the ball, from matches before that day: the batter's and the
+  bowler's records, the format, phase, balls faced so far, place in the order, innings,
+  wickets down, and the chase (runs needed, balls left). No line, length, speed, field or
+  pitch: the data has none (L-044). The rule, written down on Day 53 before any model is
+  fitted: an ML model is taken up only if its Brier score is better than N9 T1's by more
+  than the score's own uncertainty (a paired bootstrap over the test balls), its
+  calibration is no worse, and it can give an honest range; otherwise it is reported as a
+  baseline. Taken up, it would go through the same receipts and Faith Check: seeded,
+  versioned, run again to check. The code stays apart from the engines (an evaluation
+  script), so the domain stays plain Python. The result goes in the paper either way.
+- Why: the user asked whether the predictions should come from an ML or DL model run again
+  and again. N9 already runs a model 20,000 times; the honest test of ML is whether it
+  predicts the newest season better (D-056's rule: stronger only if tested). On these
+  inputs, who faced whom and the match situation, a learned model may add the situation,
+  or may add nothing; a paper that tried it and reports the outcome is stronger.
+- Alternatives considered: a deep network (needs far more data, harder to calibrate, and on
+  table data gradient-boosted trees usually match or beat deep networks: Grinsztajn et al.,
+  NeurIPS 2022); ML instead of N9 from the start (no honest range, small samples learned as
+  noise, and hard to check by receipt); no baseline (leaves the obvious question open).
+- Status: planned (rule and features written on Day 53; run on Day 54; in Day 150's
+  evaluation plan)
+- Paper section: Evaluation (N9 against ML baselines)
