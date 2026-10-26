@@ -50,6 +50,17 @@ def test_a_run_that_does_not_fit_says_what_to_try():
     assert "batch 2 x accum 2" in line
 
 
+def test_the_arcs_way_of_running_out_counts_as_running_out():
+    """C08 at batch 4: the driver said OUT_OF_RESOURCES, not out of memory,
+    so the probe crashed instead of advising batch 2."""
+    from tools.memprobe import _out_of_memory
+    told = RuntimeError("level_zero backend failed with error: 40 "
+                        "(UR_RESULT_ERROR_OUT_OF_RESOURCES)")
+    assert _out_of_memory(told)
+    assert _out_of_memory(RuntimeError("XPU out of memory. Tried to ..."))
+    assert not _out_of_memory(RuntimeError("shape mismatch"))
+
+
 def test_too_close_to_full_is_not_called_a_fit():
     found = {"id": "B07_regnety_16gf", "batch": 4, "fits": False,
              "peak_gb": 11.5, "reserved_gb": 11.9, "total_gb": 12.0,

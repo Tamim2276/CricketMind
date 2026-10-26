@@ -4959,6 +4959,32 @@ them, R without; every row records its own mode, and `config_differences`
 ignores the key, so finished runs still count as done. A config that
 truly needs an exact repeat can still set `deterministic: true`.
 
+**Measured 2026-10-27**, batch 4, deterministic off, of 11.6 GB:
+
+| ID | peak | reserved | s/batch | min/epoch (train) |
+| --- | --- | --- | --- | --- |
+| C01 R(2+1)D-18 | 1.4 | 1.5 | 0.18 | 4.7 |
+| C02 R3D-18 | 0.9 | 1.0 | 0.09 | 2.4 |
+| C03 I3D | 1.5 | 1.6 | 0.12 | 3.1 |
+| C04 SlowFast | 2.8 | 2.8 | 0.19 | 5.0 |
+| C05 X3D-M | 1.7 | 1.8 | 0.16 | 4.2 |
+| C06 MViT-v2-S | 5.0 | 5.7 | 0.39 | 10.2 |
+| C07 Swin3D-T | 5.3 | 6.4 | 0.25 | 6.7 |
+| C08 VideoMAE | **batch 4 crashed the GPU**; batch 2: 6.5 | 6.7 | 0.19 a step of 2 | ~10 |
+
+1. **C08 does not fit at batch 4.** Eager attention over 1,568 tokens
+   puts batch 4 at ~11.6 GB, the whole card. The Arc reported it as
+   `UR_RESULT_ERROR_OUT_OF_RESOURCES`, not "out of memory", so the probe
+   did not recognise it, and the device was lost. **C08 trains at batch 2
+   × accumulation 2**, which is exactly batch 4 here: VideoMAE has no
+   BatchNorm (tested), so nothing looks across the clips in a batch. The
+   probe now counts the Arc's message as out of memory, and stops with the
+   rest of the list when the device is lost.
+2. **Everything else fits easily**, the heaviest at 55% of the card.
+3. **Family C re-costed:** ~44 GPU-hours a split at ~45 epochs plus
+   validation, **~90 for the family, about 4 days**, against 65–130
+   budgeted.
+
 ---
 
 ## Days 24–27 — Family C, part 2: the queue

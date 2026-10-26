@@ -134,6 +134,25 @@ def test_videomae_gets_16_frames_eager_attention_and_a_new_classifier():
         assert model(torch.randn(1, 15, 3, 224, 224)).shape == (1, 15)
 
 
+def test_c08_trains_two_at_a_time_and_has_no_batchnorm():
+    """23.3: batch 4 needs the whole card. With LayerNorm only, nothing
+    looks across the clips in a batch, so 2 x accum 2 is exactly batch 4.
+    B07's collapse came from BatchNorm over two clips; there is none here."""
+    pytest.importorskip("transformers")
+    from src.experiments import registry as R
+
+    cfg = R.resolve(R.get("C08_videomae"), "author")
+    assert (cfg["batch_size"], cfg["accum"]) == (2, 2)
+    model = VideoClassifier("videomae_base", 15, pretrained=False)
+    for layer in model.modules():
+        assert not isinstance(layer, nn.modules.batchnorm._BatchNorm)
+    for entry in R.entries("C"):
+        if entry["id"] == "C08_videomae":
+            continue
+        cfg = R.resolve(entry, "author")
+        assert (cfg["batch_size"], cfg["accum"]) == (4, 1), entry["id"]
+
+
 # ---- pytorchvideo, when it installs ---------------------------------------
 
 @pytest.mark.parametrize("name", ["i3d_r50", "slowfast_r50", "x3d_m"])

@@ -39,7 +39,10 @@ def _memory(device):
 
 
 def _out_of_memory(err):
-    return "out of memory" in str(err).lower()
+    """torch says "out of memory"; the Arc's driver can say OUT_OF_RESOURCES
+    instead (C08 at batch 4, 2026-10-27)."""
+    text = str(err).lower()
+    return "out of memory" in text or "out_of_resources" in text
 
 
 def probe(entry, split="author", batches=3, overrides=None, device=None):
@@ -96,7 +99,11 @@ def probe(entry, split="author", batches=3, overrides=None, device=None):
         del model
         del optimizer
         if mem is not None:
-            mem.empty_cache()
+            try:
+                mem.empty_cache()
+            except RuntimeError as err:
+                # running out can take the whole device down with it
+                found["device_lost"] = str(err).splitlines()[0][:120]
     return found
 
 
@@ -134,13 +141,20 @@ def main(argv=None):
             ids.append(entry["id"])
     if not ids:
         ap.error("give --exp or --family")
-    for exp_id in ids:
+    for i, exp_id in enumerate(ids):
         entry = R.get(exp_id)
         problem = R.status(entry)
         if problem != "ready":
             print(f"{exp_id:20s} not ready: {problem}")
             continue
-        print(describe(probe(entry, args.split, args.batches)), flush=True)
+        found = probe(entry, args.split, args.batches)
+        print(describe(found), flush=True)
+        if found.get("device_lost"):
+            print("the GPU reset after that; probe the rest in a new process")
+            rest = ids[i + 1:]
+            if rest:
+                print(f"  python -m tools.memprobe --exp {' '.join(rest)}")
+            return
 
 
 if __name__ == "__main__":

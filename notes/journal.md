@@ -3681,3 +3681,23 @@ Later: deterministic kernels are now off by default, for Family C and
 everything after it. C goes from ~5-7 days to ~3-4. Finished runs are
 untouched: their rows say how they ran, and the runner still treats them
 as done.
+
+## 2026-10-27 — Family C probed; VideoMAE trains two at a time
+
+pytorchvideo installed after all (0.1.5, torch untouched), so all eight C
+models are in. The probe: seven fit with room to spare, the heaviest
+(Swin3D) at 55% of the card. VideoMAE at batch 4 took the GPU down. The
+Arc said OUT_OF_RESOURCES rather than "out of memory", so the probe
+didn't recognise it as the out-of-memory case it was built to catch;
+it does now, and stops cleanly when the device is lost.
+
+Batch 2 fits at 6.7 GB. C08 trains at batch 2 x accumulation 2, which is
+exactly batch 4 for VideoMAE: it has no BatchNorm, only LayerNorm, so
+nothing compares one clip with another inside a batch. That is the
+difference from B07, where BatchNorm over two clips broke the run.
+
+Also found: my shell had been running tests with the system Python, not
+the project's .venv. Same torch in both, so no result changes, and the
+full suite passes in .venv. Tests run there from now on.
+
+Family C re-costed from the probe: ~90 GPU-hours, about four days.

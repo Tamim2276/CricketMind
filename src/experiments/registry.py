@@ -244,8 +244,9 @@ ENTRIES = [
     {"id": "C07_swin3d_t", "base": "video3d",
      "cfg": {"backbone": "swin3d_t"},
      "why": "Video Swin, the authors' own suggestion for future work"},
+    # batch 4 needs the whole card (23.3); no BatchNorm, so 2 x 2 is exact
     {"id": "C08_videomae", "base": "video3d",
-     "cfg": {"backbone": "videomae_base"},
+     "cfg": {"backbone": "videomae_base", "batch_size": 2, "accum": 2},
      "why": "self-supervised video pretraining: the strongest candidate "
             "to pass 89%"},
 
