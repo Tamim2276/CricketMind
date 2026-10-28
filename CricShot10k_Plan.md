@@ -5294,6 +5294,47 @@ This section is what turns a results table into a paper.
 
 ---
 
+# Day 44 — A shot-classification agent (added 2026-10-29)
+
+*After Phase 4, because only then are the models, the weights and the
+threshold known. All three are fitted on **val**.*
+
+**Why.** Family G combines models for one better answer. An agent wraps
+that core in what a real tool needs: cheap answers for easy clips, the
+heavy models only for hard ones, a refusal for clips it cannot read, and
+an explanation of every answer.
+
+**Build.** A LangGraph graph, as in CricketMind; every node a plain
+function around a trained model, no LLM in the classification:
+
+```text
+clip -> detect_and_crop -> quality_check -> fast_model
+          fast_model confident  -> answer
+          fast_model unsure     -> experts in parallel -> fuse -> explain -> answer
+```
+
+- `detect_and_crop`: Day 4's batter detector, 15 cropped frames
+- `quality_check`: too few frames with a batter -> "cannot classify"
+- `fast_model`: the cheapest strong model from Phase 3 (C01 R(2+1)D-18
+  so far: ~80% val, 112 px)
+- the confidence threshold: chosen on val, trading speed for accuracy
+- `experts`: the best models that *see differently* (motion, single
+  frames, pose), e.g. C04 SlowFast, B04 ConvNeXt-T + GRU, C08 VideoMAE, E
+- `fuse`: Family G's weighted vote, weights fitted on val (G02)
+- `explain`: top-3 shots, which models agreed, the frames that mattered
+  (attention / Grad-CAM from Day 42)
+
+**Check.** On val: the agent at its threshold matches the full ensemble's
+accuracy within noise, while sending most clips through the fast model
+alone. Report both numbers, and the share of clips that needed experts.
+
+**Rule.** If the agent goes into CricketMind, its accuracy numbers stay
+out of the CricketMind papers, website and slides: they belong to the
+CricShot accuracy paper only. The CricketMind side describes the
+architecture without measured accuracy.
+
+---
+
 # Appendix A — The experiment list
 
 ## Family A — Temporal heads (backbone frozen, cached features)

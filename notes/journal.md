@@ -3701,3 +3701,13 @@ the project's .venv. Same torch in both, so no result changes, and the
 full suite passes in .venv. Tests run there from now on.
 
 Family C re-costed from the probe: ~90 GPU-hours, about four days.
+
+## 2026-10-29 — Day 44 added: a shot-classification agent
+
+Added to the plan after the supervisor package: a small LangGraph agent
+that crops the batter, refuses unreadable clips, answers easy clips with
+one fast model, and sends hard ones to several different experts whose
+weighted vote it explains. It waits for Phase 4, since the models, vote
+weights and confidence threshold all come from val. Same rule as always:
+if it goes into CricketMind, the accuracy numbers stay in the CricShot
+paper.
