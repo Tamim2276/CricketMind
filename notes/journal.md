@@ -3711,3 +3711,10 @@ weighted vote it explains. It waits for Phase 4, since the models, vote
 weights and confidence threshold all come from val. Same rule as always:
 if it goes into CricketMind, the accuracy numbers stay in the CricShot
 paper.
+
+Later: decided the whole Day 44 agent becomes CricketMind's classifier
+node, rather than one exported model. Its crop and quality check travel
+inside it, so CricketMind can't rebuild them slightly wrong, and its
+expert route replaces Phase 8's blind "retry up to 2 times". The note for
+the CricketMind chat is notes/to_cricketmind_phase8.md. It carries no
+accuracy numbers, by the usual rule.

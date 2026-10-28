@@ -5333,6 +5333,22 @@ out of the CricketMind papers, website and slides: they belong to the
 CricShot accuracy paper only. The CricketMind side describes the
 architecture without measured accuracy.
 
+**Decided 2026-10-29: the whole agent becomes CricketMind's classifier
+node** (its Phase 8, Days 112–128), not one exported model. The note sent
+to the CricketMind chat is `notes/to_cricketmind_phase8.md`. So Day 44
+also delivers a handover package:
+- the agent as a LangGraph subgraph that takes the **raw clip** (crop and
+  quality check inside it), and returns label, confidence, top 3, a status
+  (`ok`, `low_confidence`, `cannot_classify`), each model's answer and the
+  key frames
+- every model's weights with checksums, `classes.json`, a model card per
+  model and an agent card (models, threshold, vote weights, exact input)
+- the 20 parity clips: frame numbers, crops, per-model probabilities and the
+  final answer, for CricketMind's exact parity test
+- weights plus model code, or `torch.export`; not TorchScript (deprecated
+  in torch 2.13, and VideoMAE / pytorchvideo may not convert)
+- runs unmodified on the Arc, CUDA and CPU
+
 ---
 
 # Appendix A — The experiment list
