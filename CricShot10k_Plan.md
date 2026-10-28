@@ -5339,12 +5339,17 @@ to the CricketMind chat is `notes/to_cricketmind_phase8.md`. So Day 44
 also delivers a handover package:
 - the agent as a LangGraph subgraph that takes the **raw clip** (crop and
   quality check inside it), and returns label, confidence, top 3, a status
-  (`ok`, `low_confidence`, `cannot_classify`), each model's answer and the
-  key frames
+  (`ok`, `low_confidence`, `cannot_classify`), each model's answer, the
+  key frames, and **the batter track**: every kept frame's number in the
+  raw clip (OpenCV's, from 0, before dedupe) and its crop box in original
+  pixels, with the 15 classifier frames marked. CricketMind's pose needs
+  the whole sequence at full resolution, and today's manifest records only
+  counts (raw / dedup / kept), so `build_dataset`'s picks and boxes must be
+  kept, not thrown away (asked by the CricketMind side, 2026-10-29)
 - every model's weights with checksums, `classes.json`, a model card per
   model and an agent card (models, threshold, vote weights, exact input)
-- the 20 parity clips: frame numbers, crops, per-model probabilities and the
-  final answer, for CricketMind's exact parity test
+- the 20 parity clips: the batter track, crops, per-model probabilities and
+  the final answer, for CricketMind's exact parity test
 - weights plus model code, or `torch.export`; not TorchScript (deprecated
   in torch 2.13, and VideoMAE / pytorchvideo may not convert)
 - runs unmodified on the Arc, CUDA and CPU

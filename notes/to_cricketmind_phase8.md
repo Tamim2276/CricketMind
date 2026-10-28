@@ -29,7 +29,8 @@ validation set before the handover.
 - `classes.json`
 - A model card for each model, and an **agent card**: which models, the
   threshold, the vote weights, and the exact input, step by step
-- For the 20 parity clips: the frame numbers picked, the crops, each model's
+- For the 20 parity clips: the batter track (every kept frame's number and
+  crop box, the 15 classifier frames marked), the crops, each model's
   probabilities and the agent's final answer
 - **Not TorchScript.** It is deprecated in torch 2.13, and some of the video
   models (VideoMAE, the pytorchvideo ones) may not convert. Weights plus model
@@ -43,7 +44,17 @@ validation set before the handover.
   colours) internally.
 - **Output:** the shot label, its confidence, the top 3, a status
   (`ok`, `low_confidence` or `cannot_classify`), which models were asked and
-  what each said, and the frames that mattered.
+  what each said, the frames that mattered, and **the batter track**:
+  - one entry for **every frame the crop step kept**, not only the 15 the
+    classifier used, so pose gets the densest sequence there is
+  - each entry: the frame's number in the raw clip, counted from 0 as
+    OpenCV decodes it, **before** dedupe (the one numbering both projects
+    share), and the crop box in the original frame's pixels
+  - the 15 classifier frames marked
+- **Run pose on the original frame inside the box,** not on the 224 px
+  crop: the crop has been resized, and pose works better at full size.
+- The agent card holds the **rule** for picking frames; the actual picks are
+  per clip, so they live in this output and in the parity package.
 - It runs unmodified on the Arc (XPU), CUDA and CPU.
 
 ## Day-by-day changes
@@ -57,7 +68,7 @@ validation set before the handover.
 | 117 | classifier adapter | a thin adapter that calls the agent subgraph; the stub stays for tests |
 | 118 | confidence gate, retry up to 2 times, low-confidence exit | **no blind retry**: the same model on the same frames gives the same answer. The agent's own route is the retry (fast model, then experts). Its `low_confidence` status is the low-confidence exit; `cannot_classify` is new, for clips with no readable batter |
 | 119 | video path into the graph and API | the agent as a subgraph node, end to end with a real clip |
-| 120–125 | pose | unchanged. If the agent has a pose expert, share its keypoints with N2b instead of running pose twice; the posture measurements and their AUC stay CricketMind's own work |
+| 120–125 | pose | pose runs over the agent's batter track: every kept frame, original resolution, inside its box. If the agent has a pose expert, share its keypoints with N2b instead of running pose twice; the posture measurements and their AUC stay CricketMind's own work |
 | 127 | website shows shot and confidence | also which experts were asked and whether they agreed; still never accuracy |
 
 ## Rules that do not change
