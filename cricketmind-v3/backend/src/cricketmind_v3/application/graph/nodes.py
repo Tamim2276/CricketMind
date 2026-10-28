@@ -1,7 +1,12 @@
-"""Every node of the v4 graph as a stub (Day 55): each one only signs the notebook. The
-days that follow make them real, one at a time. A node's name is its function's name."""
+"""Every node of the v4 graph (Day 55): each signs the notebook, and the stubs do nothing
+else. The days that follow make them real, one at a time: N3 on Day 56. A node's name is
+its function's name."""
 
+from langgraph.runtime import Runtime
+
+from cricketmind_v3.application.graph.context import GraphContext
 from cricketmind_v3.application.graph.state import GraphState
+from cricketmind_v3.domain.reading import read_by_rules
 
 # A. the clip: its frames, the shot, how sure, the body
 
@@ -26,8 +31,12 @@ def n2b_pose_estimator(state: GraphState) -> dict:
 # B. the question, and the shot it is about
 
 
-def n3_question_reader(state: GraphState) -> dict:
-    return {"visited": ["n3_question_reader"]}
+def n3_question_reader(state: GraphState, runtime: Runtime[GraphContext]) -> dict:
+    # Day 56: simple rules; a language model from Day 58
+    if runtime.context is None:
+        raise ValueError("the graph was run without its context (a GraphContext)")
+    subject = read_by_rules(state["question"], runtime.context.names)
+    return {"visited": ["n3_question_reader"], "subject": subject}
 
 
 def n6_shot_dna(state: GraphState) -> dict:

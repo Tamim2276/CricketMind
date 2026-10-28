@@ -1371,3 +1371,25 @@ Template:
   the engines' menu on Days 39 to 54, which could bias the questions without meaning to).
 - Status: decided; the lock is due before Day 67
 - Paper section: Evaluation (the locked exam)
+
+## D-071 — The graph's first branch, its tools, and N3's rules
+- Date: 2026-10-29
+- Decision: (1) the graph starts with a branch: with a clip, the video nodes and N3 run
+  side by side; without one, only N3, and the video nodes never run. (2) Shot DNA (N6) is a
+  deferred node: it waits until every node still running has finished, so it runs once,
+  after the video and the question or after the question alone; a list join cannot do
+  both, since without a clip two of its three inputs never come. (3) What the nodes are
+  given (the names N3 knows now; the language model and the engines later) comes in a
+  `GraphContext` passed when the graph runs, not in the state, and N3 refuses to run
+  without it. (4) Until Day 58, N3 reads by rules, with the Faith Check's own gazetteer
+  (C6): the same names, shots, phases and bowler types are used to read a question and
+  to check an answer. A name two players share is left empty, never guessed.
+- Why: a text question should not pass through the video path; the state is the
+  question's notebook, and a table of every player is not part of any one question; a
+  graph that runs quietly without its names would read every player as nobody. One
+  vocabulary for reading and checking means a word the checks know is a word N3 can read.
+- Alternatives considered: two list joins into N6 with a second arrow from N3 (works, but
+  draws N3's arrow twice and hides the reason); the names in the state; a module-level
+  table of famous players; reading names from capital letters (misreads "What", "Test").
+- Status: built (Day 56)
+- Paper section: Implementation (the graph)

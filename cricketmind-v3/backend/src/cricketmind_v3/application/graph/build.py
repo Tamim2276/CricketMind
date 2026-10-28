@@ -1,28 +1,36 @@
-"""The v4 flowchart, wired (Day 55). Every arrow here is one in the v4 figure; the
-branches (clip or not, retry, decline, regenerate, withhold) come on their own days."""
+"""The v4 flowchart, wired (Day 55). Every arrow here is one in the v4 figure. The
+branches come on their own days: clip or text (Day 56); retry, decline, regenerate and
+withhold later."""
 
 from langgraph.graph import END, START, StateGraph
 
-from cricketmind_v3.application.graph import nodes
+from cricketmind_v3.application.graph import nodes, routes
+from cricketmind_v3.application.graph.context import GraphContext
 from cricketmind_v3.application.graph.state import GraphState
 
 
 def build_graph():
-    graph = StateGraph(GraphState)
+    graph = StateGraph(GraphState, context_schema=GraphContext)
     for node in nodes.EVERY_NODE:
-        graph.add_node(node)  # named after its function
+        if node is nodes.n6_shot_dna:
+            # it waits until every node still running has finished, so it runs once:
+            # after the video and the question, or after the question alone
+            graph.add_node(node, defer=True)
+        else:
+            graph.add_node(node)  # named after its function
 
-    # the clip and the question are read side by side
-    graph.add_edge(START, "n1_video_input")
-    graph.add_edge(START, "n3_question_reader")
+    # a branch: with a clip, the clip and the question side by side; without, the
+    # question only
+    graph.add_conditional_edges(
+        START, routes.clip_or_text, ["n1_video_input", "n3_question_reader"]
+    )
     graph.add_edge("n1_video_input", "n2_n5_shot_classifier")
     graph.add_edge("n2_n5_shot_classifier", "confidence_gate")
     graph.add_edge("n1_video_input", "n2b_pose_estimator")
 
-    # a list waits for all of them, so Shot DNA runs once, with everything in
-    graph.add_edge(
-        ["confidence_gate", "n2b_pose_estimator", "n3_question_reader"], "n6_shot_dna"
-    )
+    graph.add_edge("confidence_gate", "n6_shot_dna")
+    graph.add_edge("n2b_pose_estimator", "n6_shot_dna")
+    graph.add_edge("n3_question_reader", "n6_shot_dna")
     graph.add_edge("n6_shot_dna", "n7a_evidence_retrieval")
     graph.add_edge("n6_shot_dna", "n7b_context_retrieval")
     retrievers = ["n7a_evidence_retrieval", "n7b_context_retrieval"]

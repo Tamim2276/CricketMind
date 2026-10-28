@@ -1861,3 +1861,41 @@ finished, a node rubbing out the question. **My mistake:** I said 28 nodes; the 
 **For the paper:**
 - Decisions: D-070
 - Section it feeds: Implementation (the graph); Evaluation (the locked exam)
+
+---
+
+## Day 56 — 2026-10-29 — The first fork in the road
+
+**Learned:** a *conditional edge*: a small function looks at the notebook and says where to
+go next (`routes.clip_or_text`). A *deferred* node waits until every node still running
+has finished. And the *run context*: what the nodes are given, passed in when the graph
+runs, not written in the notebook. Checked on a tiny graph first (langgraph 1.2.18).
+**Built:** the entry branch, as in the v4 figure: with a clip, the video and the question
+side by side; without one, only the question. Shot DNA (N6) became deferred: Day 55's list
+join waited for all three of its inputs, and without a clip two of them never come.
+`application/graph/context.py` (`GraphContext`: the names N3 knows); `routes.py`; N3 made
+real, the first node that does its job: `domain/reading.py` reads a question by rules with
+the Faith Check's gazetteer: names, shots, phases, pace or spin; a name after "against" or
+"vs" bowls, and one after "or" keeps that side; a shot said second is the other shot;
+digits before "balls" are k; the format words of D-047; "women". A name two players share
+stays empty, never a guess. N3 refuses to run without its context. The state has a
+`subject` page. Decided in D-071; its limits in L-067.
+
+```
+"Kohli against Bumrah or Starc in ODIs, cover drive or pull?"
+  -> player V Kohli, bowler JJ Bumrah, other bowler MA Starc, ODI, Cover Drive or Pull
+with a clip: 27 nodes run          without: 23 (the four video nodes skipped)
+```
+
+**Tested:** 14 new tests, 677 in all (11 for the rules; the graph's for both paths, N3's
+subject, the context, and which arrows are branches). Ten deliberate mistakes; nine caught
+at once. **Missed:** "T20I read as T20": the test tried "T20Is" but never "T20I". Fixed with
+a test, then caught. One test was sharpened before the run: "a name said twice" only tried a
+batter, who has one slot anyway; now a shot and a bowler said twice. Picture:
+`docs/graph/day56.md` (the branch dotted); the notebook runs both paths and reads your own
+question.
+
+**For the paper:**
+- Decisions: D-071
+- Limitations: L-067
+- Section it feeds: Implementation (the graph, N3)
