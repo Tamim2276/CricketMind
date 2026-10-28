@@ -1937,9 +1937,18 @@ clips the fast model was sure of) and only if it uses N2b's pose model. Also: D-
 superseded, D-010's classifier retries dropped, L-068 (CricketMind now runs CricShot's
 code), two code comments. No new day: 218 days still.
 `CLAUDE.md` now says the same: v3 never imports from CricShot's repository; the only bridge
-is the frozen agent package handed over on Day 112 (the user's choice). **Still to settle**
-with CricShot: whether "the frames that mattered" are enough frames for pose, or the agent
-card should list every frame it picked.
+is the frozen agent package handed over on Day 112 (the user's choice). **Settled with
+CricShot** (its note re-read, updated the same day): "the frames that mattered" are not
+enough for pose, so the agent also returns the batter track: every frame the crop step
+kept, numbered from 0 as OpenCV decodes the raw clip before dedupe, with its crop box in
+original pixels and the 15 classifier frames marked; pose runs on the original frames
+inside those boxes, not on the 224 px crops; the agent card holds only the picking rule.
+Days 114 (a frame reader with the agent's numbering), 115 (the track checked), 116 (the
+track and the reader in the parity test), 120 and 121 (pose over the track) follow it.
+**Added after (the user's choice):** Day 113 now also checks the agent's memory and speed:
+all its models fit on the 8 GB RTX 3070, or its experts run one after another, and an
+unsure clip is answered within a time limit written down before timing it on both
+machines. Day 112 notes each model's weights licence.
 
 **For the paper:**
 - Decisions: D-072 (D-012 superseded; D-010 updated)

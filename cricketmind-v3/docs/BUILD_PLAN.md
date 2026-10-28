@@ -2091,8 +2091,9 @@ and nothing else waits.
 - `classes.json`;
 - a model card for each model, and an **agent card**: which models, the confidence
   threshold, the vote weights, and the exact input, step by step;
-- for the 20 parity clips: the frame numbers picked, the crops, each model's probabilities
-  and the agent's final answer.
+- for the 20 parity clips: the batter track (every kept frame's number and crop box, the
+  15 classifier frames marked), the crops, each model's probabilities and the agent's final
+  answer.
 
 Not TorchScript: it is deprecated in torch 2.13, and some video models (VideoMAE, the
 pytorchvideo ones) may not convert. Weights plus model code, or `torch.export`, decided at
@@ -2103,21 +2104,27 @@ is a plain function around a trained model: there is no language model in it.
 **The contract.** *In:* the raw clip. Frame picking, the batter crop and the quality check
 happen inside the agent, so CricketMind cannot get them subtly wrong; each model converts
 frames to what its weights expect. *Out:* the shot label, its confidence, the top 3, a status
-(`ok`, `low_confidence` or `cannot_classify`), which models were asked and what each said, and
-the frames that mattered. It runs unmodified on the Arc (XPU), CUDA and CPU.
+(`ok`, `low_confidence` or `cannot_classify`), which models were asked and what each said, the
+frames that mattered, and **the batter track**: one entry for every frame the crop step kept
+(not only the 15 the classifier used), each with its number in the raw clip, counted from 0
+as OpenCV decodes it, *before* dedupe (the one numbering both projects share), and its crop
+box in the original frame's pixels, with the 15 classifier frames marked. Pose runs on the
+original frame inside each box, not on the resized 224 px crop. The agent card holds the
+*rule* for picking frames; the actual picks are per clip, in this answer and in the parity
+package. It runs unmodified on the Arc (XPU), CUDA and CPU.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 112 | A contract between two projects | Import the agent package from CricShot, frozen: its weights into CricketMind's `models/` (git-ignored), their checksums in a committed manifest; its dependencies installed beside CricketMind's and pinned, with the same LangGraph version | Checksums match; the agent card states the models, the threshold, the vote weights and the exact input, step by step |
-| 113 | — | The device helper: XPU → CUDA → CPU | Runs on both machines, and so does the agent, unmodified |
-| 114 | A graph inside a graph: subgraphs | N1 only takes the raw clip and checks it opens. Frame picking and the striker crop are not rebuilt: they ship inside the agent. A stub agent with the agent card's exact input and output, added as a subgraph in N2–N5's place, so the wrap is built before the real agent is needed | The stub subgraph runs inside the graph, end to end |
-| 115 | — | The agent's answer in CricketMind's terms: label, confidence, top 3, status, the models asked and what each said, the frames that mattered. A label outside `classes.json`, or not one of the 15 shots the Faith Check knows, is refused | Tests, including a malformed answer and an unknown label |
-| 116 | Parity tests: same input, same output | Run the agent inside CricketMind on the 20 parity clips and compare with the package's own record of them | The same frame numbers, exactly; the same crops; the same answer; the same probabilities, exactly on the machine the record was made on and within the agent card's tolerance on the other |
+| 112 | A contract between two projects | Import the agent package from CricShot, frozen: its weights into CricketMind's `models/` (git-ignored), their checksums in a committed manifest; its dependencies installed beside CricketMind's and pinned, with the same LangGraph version | Checksums match; the agent card states the models, the threshold, the vote weights and the exact input, step by step; each model's weights licence is noted (some video models' weights are for non-commercial use only) |
+| 113 | — | The device helper: XPU → CUDA → CPU. The agent's memory and speed: write a time limit for an unsure clip down first, then time one easy and one unsure clip on each machine | Runs on both machines, and so does the agent, unmodified. All its models fit in memory on the 8 GB RTX 3070, or its experts run one after another; an unsure clip is answered within the limit on both machines |
+| 114 | A graph inside a graph: subgraphs | N1 only takes the raw clip and checks it opens. Frame picking and the striker crop are not rebuilt: they ship inside the agent. A frame reader for pose that numbers frames as OpenCV decodes them, from 0, before dedupe: the agent's numbering. A stub agent with the agent card's exact input and output, added as a subgraph in N2–N5's place, so the wrap is built before the real agent is needed | The stub subgraph runs inside the graph, end to end; the reader's frame N is frame N of a tiny numbered test clip |
+| 115 | — | The agent's answer in CricketMind's terms: label, confidence, top 3, status, the models asked and what each said, the frames that mattered, and the batter track (each kept frame's number and its crop box, the 15 classifier frames marked). Refused: a label outside `classes.json` or not one of the 15 shots the Faith Check knows; a track whose numbers do not rise, fall outside the clip, or whose boxes leave the frame | Tests, including a malformed answer, an unknown label and a broken track |
+| 116 | Parity tests: same input, same output | Run the agent inside CricketMind on the 20 parity clips and compare with the package's own record of them | The same batter track (every frame number exactly, and the boxes), the same crops, the same answer; the same probabilities, exactly on the machine the record was made on and within the agent card's tolerance on the other; and CricketMind's frame reader gives, for each number, the frame the package cropped |
 | 117 | — | A thin adapter that calls the agent subgraph; the stub stays for tests | Stub test, plus one real run |
 | 118 | — | The status gate, with no blind retry: the same model on the same frames gives the same answer, and the agent's own route (the fast model, then the experts) is the retry. `ok` goes on to Shot DNA; `low_confidence` is the low-confidence exit; `cannot_classify` (no readable batter) is a new, honest exit | Tests for all three statuses |
 | 119 | — | The agent as a subgraph node, wired into the graph and the API | End to end with a real clip |
-| 120 | Pose keypoints: 17 dots on the joints | Run pose on one frame and draw it | Picture saved |
-| 121 | — | N2b on the frames the agent's answer names, so the body is measured on the frames the shot was named from; pick the striker; handle missing joints. If the agent asked its pose expert, and that expert uses the pose model N2b uses (Day 125 may change which), N2b takes its keypoints instead of running pose twice; otherwise, as when the fast model was sure and no expert ran, N2b runs pose itself | Tests |
+| 120 | Pose keypoints: 17 dots on the joints | Run pose on one original frame, inside its box from the batter track, and draw it | Picture saved |
+| 121 | — | N2b over the agent's batter track: every kept frame, the original frame at full size, inside its box (the densest sequence there is, so pose needs no frame picking of its own); pick the striker; handle missing joints. If the agent ran its pose expert with N2b's pose model (Day 125 may change which) on the same frames and boxes, N2b reuses those keypoints and runs pose only on the rest; when no expert ran, as when the fast model was sure, N2b runs pose on every frame | Tests |
 | 122 | Turning dots into measurements | Weight transfer, stride length, head over front knee | Tests on hand-made keypoints |
 | 123 | — | Posture validation run on the CricShot10k test clips, resumable | All clips done |
 | 124 | ROC-AUC, in simple words | AUC per metric; keep a metric only if AUC ≥ 0.75 | Report written; registry updated |
@@ -2135,6 +2142,9 @@ just sees inputs it never trained on, and answers worse. CricShot learned this t
 the authors' own model, fed crops made a different way, lost more than half its accuracy. So
 CricketMind never picks the classifier's frames itself: the agent does, and Day 116 checks
 the frame numbers exactly, because a frame or two off can hide inside a pixel tolerance.
+The one place CricketMind reads frames is pose, and it reads them by the agent's numbers:
+from 0, as OpenCV decodes the raw clip, before dedupe. A reader that counted another way
+would measure the body one frame off, and nothing would crash.
 
 **No CricShot accuracy anywhere in CricketMind:** not in the paper, the website or the
 slides. It belongs to the CricShot paper. CricketMind describes the agent's design (the

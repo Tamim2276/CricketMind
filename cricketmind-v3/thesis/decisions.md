@@ -1406,7 +1406,11 @@ Template:
   answers easy clips, and unsure ones go to experts that see the clip differently (motion,
   single frames, pose), whose weighted vote decides. It answers with the label, its
   confidence, the top 3, a status (`ok`, `low_confidence`, `cannot_classify`), the models
-  asked and what each said, and the frames that mattered. CricketMind never imports from
+  asked and what each said, the frames that mattered, and the batter track: every frame
+  the crop step kept, numbered from 0 as OpenCV decodes the raw clip before dedupe, with
+  its crop box in original pixels and the 15 classifier frames marked. Pose (N2b) runs on
+  the original frames inside those boxes; the agent card holds only the picking rule, the
+  picks are per clip. CricketMind never imports from
   CricShot's repository, only this package, and changes none of its models, weights or
   threshold. The classifier's blind retry goes: the same model on the same frames gives the
   same answer, and the agent's own route is the retry; `low_confidence` is the
