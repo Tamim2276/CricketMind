@@ -1960,6 +1960,12 @@ N3 parses it → N6 makes the Shot DNA → N7a fetches the balls → N8 and N9 c
 Tactical Analysis and Personal Performance → each agent writes claims → Faith Check → N12
 writes the report → N13 shows it.
 
+**Seeing it grow:** the code stays in `.py` files, tested. Each day of this phase ends with
+`uv run python scripts/draw_graph.py N` (from `backend/`), which draws the graph from the
+code into `docs/graph/dayN.md`, and `notebooks/graph_walkthrough.ipynb` runs one question
+through it, node by node. The exam is written meanwhile, by friends only, and locked before
+Day 67 (D-070).
+
 | Day | Learn | Build | Done when |
 |---|---|---|---|
 | 55 | LangGraph basics: state, nodes, edges, reducers | `application/graph/state.py`; the full skeleton with every node as a stub (node name = function name) | Test: the graph compiles and runs end to end |

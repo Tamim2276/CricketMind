@@ -1351,3 +1351,23 @@ Template:
   to win by luck); a new plan day (Day 157 already holds the table every model joins).
 - Status: planned (Day 157)
 - Paper section: Evaluation (N9 against ML)
+
+## D-070 — The final exam is written by friends while Phase 5 is built
+- Date: 2026-10-28
+- Decision: the locked final exam (Day 15) is written only by four friends, 30 questions
+  each from the Day 15 guide (80 wordings, 20 unusual questions, 20 tricky ones), and the
+  user neither writes nor reads any of it. The friends' files are joined by a script that
+  prints only the row count and the SHA-256, never a question. Phase 5 is built meanwhile,
+  under three rules: the friends do not see CricketMind work until they have sent their
+  files; the user never opens them; and the exam is locked (its SHA-256 in E-013,
+  committed) before Day 67, the first day the system gives a real answer. Day 55 (stubs
+  only) is built before the lock.
+- Why: the exam was to be locked before Phase 5 (journal, 2026-10-21) so that its builder
+  could not write or study it. If the builder writes none of it and never sees it, that
+  risk is gone, and the date that still matters is the first real answer: the guide tells
+  the friends their questions come before the system can answer anything.
+- Alternatives considered: waiting for the exam before Day 55 (the same fairness, a longer
+  wait); the user writing part of it, as the plan first allowed (the builder has now seen
+  the engines' menu on Days 39 to 54, which could bias the questions without meaning to).
+- Status: decided; the lock is due before Day 67
+- Paper section: Evaluation (the locked exam)

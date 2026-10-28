@@ -1817,3 +1817,47 @@ related work. No new day: 218 days still. Nothing is built yet.
 - Evidence: E-047 (planned)
 - Limitations: L-066
 - Section it feeds: Evaluation (N9 against ML)
+
+---
+
+## Day 55 — 2026-10-28 — A flowchart that runs
+
+**Before the exam is locked (D-070):** the exam is now written by four friends only; the
+user neither writes nor reads it, and it is locked before Day 67, the first real answer.
+Day 55's stubs answer nothing, so they are built meanwhile.
+**Learned:** LangGraph in four words. The *state* is one shared notebook; a *node* is a
+function that reads it and returns only the pages it changed; an *edge* is an arrow; a
+*reducer* says how two writes to the same page are joined. And one more: an arrow from a
+list of nodes waits for all of them (a join). Checked on a tiny graph:
+
+```
+two separate arrows into dna:  long1, short, dna, long2, dna   dna runs twice, once too early
+one arrow from a list:         long1, short, long2, dna        once, after both
+two nodes side by side, no reducer on their page:   InvalidUpdateError
+```
+
+**Built:** `application/graph/`: `state.py` (`GraphState`: the question, the clip, `visited`
+with `operator.add` as its reducer, the answer); `nodes.py` (all 27 nodes of the v4 figure
+as stubs that only sign `visited`, each named after its function: 11 before the agents, the
+12 agents and the Explainer, then the Faith gate, N12 and N13); `build.py` (every arrow of
+the v4 figure that is not a branch: the clip and the question read side by side, Shot DNA
+waiting for all three of its inputs, both retrievers before both engines, every agent for
+now, the Faith gate waiting for all 13). The branches come on their own days (56, 74, 75,
+118). `scripts/draw_graph.py` draws the graph from the code: `docs/graph/day55.md`.
+`notebooks/graph_walkthrough.ipynb` only imports the graph: it draws it part by part from
+the real graph's arrows (the clip, the question, the evidence and the engines, the router
+and the agents, the checks and the answer; each new part in yellow; 4, 8, 14, 29, then all
+45 arrows), then prints one question's path, node by node. The code stays in `.py` files,
+where it is tested and its changes are readable. Installed: langgraph 1.2.18, jupyter, ipykernel.
+**Tested:** 7 new tests, 663 in all: it runs end to end and passes the question on
+untouched; 13 agents, 27 nodes; every node runs exactly once; each named after its
+function; the arrows are exactly the v4 figure's, written out by hand; no node runs before
+the ones it waits for; the picture names every node. Seven deliberate mistakes, all caught:
+the reducer removed, Shot DNA's join split into three arrows, one arrow missing, the
+Explainer left out, the answer never written, the checks started before the agents
+finished, a node rubbing out the question. **My mistake:** I said 28 nodes; the test said
+27, and the test was right.
+
+**For the paper:**
+- Decisions: D-070
+- Section it feeds: Implementation (the graph); Evaluation (the locked exam)
