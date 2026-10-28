@@ -1,6 +1,6 @@
 """The v4 flowchart, wired (Day 55). Every arrow here is one in the v4 figure. The
-branches come on their own days: clip or text (Day 56); retry, decline, regenerate and
-withhold later."""
+branches come on their own days: clip or text (Day 56); the classifier's status (Day
+118), decline, regenerate and withhold later."""
 
 from langgraph.graph import END, START, StateGraph
 

@@ -16,7 +16,7 @@ def n1_video_input(state: GraphState) -> dict:
 
 
 def n2_n5_shot_classifier(state: GraphState) -> dict:
-    # N2 to N5 in v4: one exported model from the CricShot study
+    # N2 to N5 in v4: CricShot's shot-classification agent, as one node (D-072)
     return {"visited": ["n2_n5_shot_classifier"]}
 
 

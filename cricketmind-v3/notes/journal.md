@@ -1899,3 +1899,48 @@ question.
 - Decisions: D-071
 - Limitations: L-067
 - Section it feeds: Implementation (the graph, N3)
+
+---
+
+## Plan change — 2026-10-29 — CricShot hands over its whole agent
+
+**Asked:** update Phase 8 to match CricShot's note, `cricshot-improve/notes/to_cricketmind_phase8.md`
+(read only; nothing in that repository was changed). **The change (D-072):** CricShot will not
+hand over one classifier but its whole shot-classification agent, used as the N2–N5 node:
+
+```
+clip -> detect and crop -> quality check -> fast model
+           confident -> answer
+           unsure    -> experts side by side -> weighted vote -> explain -> answer
+```
+
+It takes the raw clip, so the frame picking and the batter crop now happen inside it, and it
+answers with the label, its confidence, the top 3, a status (`ok`, `low_confidence`,
+`cannot_classify`), the models asked and what each said, and the frames that mattered. Not
+TorchScript: weights plus model code, or `torch.export`.
+**Phase 8, day by day:** 112 imports the frozen package (weights in the git-ignored `models/`,
+checksums committed, dependencies pinned); 113 the device helper, and the agent must run on
+both machines; 114–115 no longer rebuild frame picking and the crop: 114 teaches subgraphs,
+with N1 only taking the clip and a stub agent wrapped in N2–N5's place, and 115 turns the
+agent's answer into CricketMind's terms and refuses a label it does not know; 116 parity of
+the agent run inside CricketMind against the package's own record; 117 a thin adapter; 118
+the status gate with no blind retry (the agent's own route is the retry), and
+`cannot_classify` as a new honest exit; 119 the agent as a subgraph node, end to end; 121 pose
+on the frames the agent names, sharing its pose expert's keypoints when it ran one with the
+same pose model; 125 says the posture measurements stay CricketMind's own; 127 also shows
+which experts were asked and whether they agreed. Section 3's bridge rule now names the
+package. **Filled in or tightened here, beyond the note:** what Days 114 and 115 build (the
+note left them as "only wrap the agent"); the probabilities match exactly on the machine the
+parity record was made on and within the agent card's tolerance on the other, since XPU and
+CUDA round differently; the pose expert's keypoints are shared only when it ran (not for
+clips the fast model was sure of) and only if it uses N2b's pose model. Also: D-012
+superseded, D-010's classifier retries dropped, L-068 (CricketMind now runs CricShot's
+code), two code comments. No new day: 218 days still.
+**Still to settle:** `CLAUDE.md` still says "v3 never imports CricShot code; the only bridge
+is the exported model file", which D-072 replaces; and whether "the frames that mattered" are
+enough frames for pose, or the agent card should list every frame it picked.
+
+**For the paper:**
+- Decisions: D-072 (D-012 superseded; D-010 updated)
+- Limitations: L-068
+- Section it feeds: Method (perception), with no accuracy figures

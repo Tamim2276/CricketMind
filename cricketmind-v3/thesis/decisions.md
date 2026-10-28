@@ -136,7 +136,7 @@ Template:
   retries and 2 regenerations.
 - Why: reasonable starting points. The paper must call them design parameters, not tuned values.
 - Alternatives considered: tuning them now (no data yet).
-- Status: designed
+- Status: designed; the classifier's 2 retries are dropped by D-072 (no blind retry)
 - Paper section: Method; Limitations (L-010)
 
 ## D-011 — Commentary-to-shot bridge, with a go/no-go gate
@@ -160,7 +160,7 @@ Template:
 - Why: separation of the two projects; the classifier's accuracy is reported in the CricShot
   paper, not here.
 - Alternatives considered: importing CricShot's model code (couples the projects).
-- Status: designed
+- Status: superseded by D-072 (2026-10-29): CricShot hands over its whole agent
 - Paper section: Method (perception) — with no accuracy figures
 
 ## D-013 — DuckDB for evidence, SQLite for the app
@@ -1393,3 +1393,36 @@ Template:
   table of famous players; reading names from capital letters (misreads "What", "Test").
 - Status: built (Day 56)
 - Paper section: Implementation (the graph)
+
+## D-072 — CricShot hands over its whole agent as the classifier node
+- Date: 2026-10-29
+- Decision: CricShot no longer exports one classifier. On Day 112 it hands over a frozen
+  package: its shot-classification agent as a LangGraph subgraph, which CricketMind adds as
+  one node (N2–N5); the trained weights of every model in it, with checksums; `classes.json`;
+  a model card per model; an agent card (the models, the confidence threshold, the vote
+  weights, the exact input step by step); and, for the 20 parity clips, the frame numbers,
+  the crops, each model's probabilities and the final answer. The agent takes the raw clip
+  and does the frame picking, the batter crop and the quality check itself; a fast model
+  answers easy clips, and unsure ones go to experts that see the clip differently (motion,
+  single frames, pose), whose weighted vote decides. It answers with the label, its
+  confidence, the top 3, a status (`ok`, `low_confidence`, `cannot_classify`), the models
+  asked and what each said, and the frames that mattered. CricketMind never imports from
+  CricShot's repository, only this package, and changes none of its models, weights or
+  threshold. The classifier's blind retry goes: the same model on the same frames gives the
+  same answer, and the agent's own route is the retry; `low_confidence` is the
+  low-confidence exit and `cannot_classify` a new one. No CricShot accuracy appears
+  anywhere in CricketMind; it describes the agent's design only.
+- Why: CricShot's own decision, sent as `notes/to_cricketmind_phase8.md` from its side
+  (2026-10-29). The agent is already a confidence gate, so a second one in CricketMind
+  would only repeat it; and with the frames picked inside the agent, CricketMind can no
+  longer feed the model frames it never trained on, the risk D-012's parity test guarded.
+  TorchScript is deprecated in torch 2.13 and some video models may not convert, so the
+  package is weights plus model code, or `torch.export`, decided at export time.
+- Alternatives considered: D-012's single TorchScript file (one model, no experts, and
+  CricketMind rebuilding the frame picking it could get wrong); importing CricShot's
+  repository directly (couples the projects: any change there changes CricketMind).
+- Consequences: Days 112–121 and 127 changed (the plan, 2026-10-29); D-010's two
+  classifier retries are dropped; the v4 document's N1–N5 section and its figure's retry
+  loop change at its next revision; L-068.
+- Status: planned (Days 112–128); the agent is built after CricShot's Phase 4
+- Paper section: Method (perception), with no accuracy figures

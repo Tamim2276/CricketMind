@@ -139,7 +139,7 @@ review day.
 | 5 | The graph: all nodes, 12 agents and the Explainer, working in the terminal | 18 | 25 |
 | 6 | The web API (FastAPI) | 8 | 12 |
 | 7 | The website (React) | 11 | 20 |
-| 8 | Video: classifier and pose | 12 | 17 |
+| 8 | Video: the CricShot agent and pose | 12 | 17 |
 | 9 | The commentary-to-shot bridge | 10 | 16 |
 | 9b | Does it generalise? A football case study | 6 | 7 |
 | 9c | A learned cricket model: a transformer on every ball, against N9 | 8 | 9 |
@@ -172,7 +172,7 @@ CricShot10k (the classifier and its accuracy paper) and CricketMind (this system
 | **Two folders, two names** | `cricketmind/` (no suffix) is the old v2 prototype; CricShot's tests still import it, so never edit it. `cricketmind-v3/` is the new project, and its Python package is `cricketmind_v3`, so an import can never pick up the old one by accident. |
 | **Separate Python environment** | Each project has its own `uv` environment. The new one is `cricketmind-v3/backend/.venv`. Don't activate CricShot's `.venv` while working on v3; `uv run` picks the right one. |
 | **Separate journal** | `cricketmind-v3/notes/journal.md`. CricShot keeps its own. |
-| **One bridge only: a file and a spec** | CricketMind never imports CricShot code. CricShot *exports* the final classifier (a TorchScript file + `classes.json` + a model card that says exactly what input it expects). CricketMind copies those files into its `models/` folder and checks the checksum. Day 112. |
+| **One bridge only: a frozen package and its cards** | CricketMind never imports from CricShot's repository. On Day 112 CricShot hands over a frozen package (D-072): its shot-classification agent as a LangGraph subgraph, the weights of every model in it with checksums, `classes.json`, a model card per model and an agent card that says exactly what goes in and what comes out. CricketMind copies it in, checks the checksums and calls only the agent's entry point. |
 | **One GPU at a time** | Never train CricShot while CricketMind uses the GPU (Ollama, the classifier, pose). |
 | **Separate papers** | The classifier's accuracy is reserved for the CricShot paper. The CricketMind website and paper never report it. They may show a single clip's prediction and confidence. |
 | **Old code is reference only** | The old notebook and `cricshot-improve/cricketmind/` are for remembering ideas, not for copying. |
@@ -2069,49 +2069,77 @@ export function ProvenanceBadge({ kind }: Props) {
 
 ---
 
-### Phase 8 — Video: classifier and pose (Days 112–128)
+### Phase 8 — Video: the CricShot agent and pose (Days 112–128)
 
 **In simple words:** the video path turns a clip into *"this is a Pull, 92% sure"* and measures
-the batter's body.
+the batter's body. The shot comes from CricShot's own shot-classification agent, handed over
+whole and used as one node, N2–N5 (D-072).
 
-**Example:** a clip → drop repeated frames → crop around the batter → 15 frames →
-classifier → "Pull, 0.92". Pose → dots on the joints → "weight transfer 0.31, on the back foot".
+**Example:** a clip → the CricShot agent (it finds and crops the batter, checks the clip can be
+read, asks its fast model; if that model is unsure, asks its experts, which see the clip
+differently, and takes their weighted vote) → "Pull, 0.92, ok; two experts asked, both
+agreed". Pose → dots on the joints → "weight transfer 0.31, on the back foot".
 
-**When:** this phase comes late on purpose. The classifier comes from CricShot, and by then
-its final model will be ready. Until it is, a stub stands in for it, and nothing else waits.
+**When:** this phase comes late on purpose. CricShot builds the agent after its own Phase 4,
+about 3–4 weeks from 2026-10-29, so it is ready before Day 112. Until then a stub stands in,
+and nothing else waits.
+
+**The handover (D-072).** CricShot hands over a frozen package, not one model file:
+
+- the agent's code: a LangGraph subgraph that CricketMind adds as one node;
+- the trained weights of every model in it, with checksums;
+- `classes.json`;
+- a model card for each model, and an **agent card**: which models, the confidence
+  threshold, the vote weights, and the exact input, step by step;
+- for the 20 parity clips: the frame numbers picked, the crops, each model's probabilities
+  and the agent's final answer.
+
+Not TorchScript: it is deprecated in torch 2.13, and some video models (VideoMAE, the
+pytorchvideo ones) may not convert. Weights plus model code, or `torch.export`, decided at
+export time. The models, the vote weights and the threshold are fixed by CricShot on its
+validation set before the handover; CricketMind changes none of them. Every node in the agent
+is a plain function around a trained model: there is no language model in it.
+
+**The contract.** *In:* the raw clip. Frame picking, the batter crop and the quality check
+happen inside the agent, so CricketMind cannot get them subtly wrong; each model converts
+frames to what its weights expect. *Out:* the shot label, its confidence, the top 3, a status
+(`ok`, `low_confidence` or `cannot_classify`), which models were asked and what each said, and
+the frames that mattered. It runs unmodified on the Arc (XPU), CUDA and CPU.
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 112 | A contract between two projects | In the CricShot repo: export the final classifier (TorchScript), `classes.json`, a model card, and the frame numbers it picks for the 20 parity clips. Copy them into CricketMind's `models/` with a checksum | Checksum matches; the model card states the exact input, step by step (see the note below) |
-| 113 | — | The device helper: XPU → CUDA → CPU | Runs on both machines |
-| 114 | Reading video frames | N1: decode the clip and pick frames exactly as the model card says | Test on a tiny clip |
-| 115 | — | The striker crop, following the model card | The crops look right on 5 clips |
-| 116 | Parity tests: same input, same output | Compare your frames and crops with CricShot's processed clips on the 20 parity clips | The same frame numbers are picked, and the pixel difference is under the agreed limit |
-| 117 | — | The classifier adapter: label and confidence | Stub test, plus one real run |
-| 118 | — | The confidence gate; retry up to 2 times; the low-confidence exit | Tests |
-| 119 | — | The video path wired into the graph and the API | End to end with a real clip |
+| 112 | A contract between two projects | Import the agent package from CricShot, frozen: its weights into CricketMind's `models/` (git-ignored), their checksums in a committed manifest; its dependencies installed beside CricketMind's and pinned, with the same LangGraph version | Checksums match; the agent card states the models, the threshold, the vote weights and the exact input, step by step |
+| 113 | — | The device helper: XPU → CUDA → CPU | Runs on both machines, and so does the agent, unmodified |
+| 114 | A graph inside a graph: subgraphs | N1 only takes the raw clip and checks it opens. Frame picking and the striker crop are not rebuilt: they ship inside the agent. A stub agent with the agent card's exact input and output, added as a subgraph in N2–N5's place, so the wrap is built before the real agent is needed | The stub subgraph runs inside the graph, end to end |
+| 115 | — | The agent's answer in CricketMind's terms: label, confidence, top 3, status, the models asked and what each said, the frames that mattered. A label outside `classes.json`, or not one of the 15 shots the Faith Check knows, is refused | Tests, including a malformed answer and an unknown label |
+| 116 | Parity tests: same input, same output | Run the agent inside CricketMind on the 20 parity clips and compare with the package's own record of them | The same frame numbers, exactly; the same crops; the same answer; the same probabilities, exactly on the machine the record was made on and within the agent card's tolerance on the other |
+| 117 | — | A thin adapter that calls the agent subgraph; the stub stays for tests | Stub test, plus one real run |
+| 118 | — | The status gate, with no blind retry: the same model on the same frames gives the same answer, and the agent's own route (the fast model, then the experts) is the retry. `ok` goes on to Shot DNA; `low_confidence` is the low-confidence exit; `cannot_classify` (no readable batter) is a new, honest exit | Tests for all three statuses |
+| 119 | — | The agent as a subgraph node, wired into the graph and the API | End to end with a real clip |
 | 120 | Pose keypoints: 17 dots on the joints | Run pose on one frame and draw it | Picture saved |
-| 121 | — | N2b on all 15 frames; pick the striker; handle missing joints | Tests |
+| 121 | — | N2b on the frames the agent's answer names, so the body is measured on the frames the shot was named from; pick the striker; handle missing joints. If the agent asked its pose expert, and that expert uses the pose model N2b uses (Day 125 may change which), N2b takes its keypoints instead of running pose twice; otherwise, as when the fast model was sure and no expert ran, N2b runs pose itself | Tests |
 | 122 | Turning dots into measurements | Weight transfer, stride length, head over front knee | Tests on hand-made keypoints |
 | 123 | — | Posture validation run on the CricShot10k test clips, resumable | All clips done |
 | 124 | ROC-AUC, in simple words | AUC per metric; keep a metric only if AUC ≥ 0.75 | Report written; registry updated |
-| 125 | Comparing two pose models fairly | The same posture validation with a transformer pose model (ViTPose, a vision transformer) beside the first; the same clips, the same measurements, AUC for each; the one that keeps more metrics above 0.75 stays, a rule written down before the run (D-063) | `results/pose_models.csv`; E-041 |
+| 125 | Comparing two pose models fairly | The same posture validation with a transformer pose model (ViTPose, a vision transformer) beside the first; the same clips, the same measurements, AUC for each; the one that keeps more metrics above 0.75 stays, a rule written down before the run (D-063). The posture measurements and their AUC are CricketMind's own work, whatever the agent's pose expert uses | `results/pose_models.csv`; E-041 |
 | 126 | — | Measured posture into N6; N11c and N11j cite it | Tests |
-| 127 | — | The website shows the clip, the predicted shot, its confidence and the posture. The measured skeleton is drawn over the real frames (2D), only for metrics that passed Day 124's AUC gate. A 3D skeleton (MediaPipe's world landmarks, drawn with React Three Fiber) is a stretch goal only, labelled "estimated from video": one camera gives unreliable depth (D-054) | Tests |
+| 127 | — | The website shows the clip, the predicted shot, its confidence, which experts were asked and whether they agreed, and the posture. The measured skeleton is drawn over the real frames (2D), only for metrics that passed Day 124's AUC gate. A 3D skeleton (MediaPipe's world landmarks, drawn with React Three Fiber) is a stretch goal only, labelled "estimated from video": one camera gives unreliable depth (D-054). Never any accuracy | Tests |
 | 128 | Review day — **M5** | Journal | **M5:** the video path works |
 
-**Which frames is part of the contract.** Never assume "15 evenly spaced frames from the raw
-clip". On 2026-10-16, CricShot's pipeline was: read the clip as RGB → drop repeated frames
-(some clips have copies inserted by frame-rate conversion) → find the batter → crop, keeping
-only the camera shot with the most detections → only then take 15 evenly spaced frames from
-what is left. The final model may want a different count too (video models often take 16).
-Get any step wrong and nothing crashes: the classifier just sees inputs it never trained on,
-and answers worse. CricShot learned this the hard way: the authors' own model, fed crops made a
-different way, lost more than half its accuracy. So N1 follows the model card, never the
-numbers in this plan, and Day 116 checks the frame numbers exactly, because a frame or two off
-can hide inside a pixel tolerance.
+**Which frames is still part of the contract, now inside the agent.** Never assume "15
+evenly spaced frames from the raw clip". On 2026-10-16, CricShot's pipeline was: read the clip
+as RGB → drop repeated frames (some clips have copies inserted by frame-rate conversion) →
+find the batter → crop, keeping only the camera shot with the most detections → only then take
+evenly spaced frames from what is left. Get any step wrong and nothing crashes: the classifier
+just sees inputs it never trained on, and answers worse. CricShot learned this the hard way:
+the authors' own model, fed crops made a different way, lost more than half its accuracy. So
+CricketMind never picks the classifier's frames itself: the agent does, and Day 116 checks
+the frame numbers exactly, because a frame or two off can hide inside a pixel tolerance.
 
-The website shows a prediction for a clip, but never the classifier's accuracy.
+**No CricShot accuracy anywhere in CricketMind:** not in the paper, the website or the
+slides. It belongs to the CricShot paper. CricketMind describes the agent's design (the
+routing, the gate, the vote, the refusal) and shows a single clip's prediction, its
+confidence and which experts were asked, never a measured accuracy.
 
 ---
 
