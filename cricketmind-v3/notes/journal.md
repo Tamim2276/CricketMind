@@ -1936,9 +1936,10 @@ CUDA round differently; the pose expert's keypoints are shared only when it ran 
 clips the fast model was sure of) and only if it uses N2b's pose model. Also: D-012
 superseded, D-010's classifier retries dropped, L-068 (CricketMind now runs CricShot's
 code), two code comments. No new day: 218 days still.
-**Still to settle:** `CLAUDE.md` still says "v3 never imports CricShot code; the only bridge
-is the exported model file", which D-072 replaces; and whether "the frames that mattered" are
-enough frames for pose, or the agent card should list every frame it picked.
+`CLAUDE.md` now says the same: v3 never imports from CricShot's repository; the only bridge
+is the frozen agent package handed over on Day 112 (the user's choice). **Still to settle**
+with CricShot: whether "the frames that mattered" are enough frames for pose, or the agent
+card should list every frame it picked.
 
 **For the paper:**
 - Decisions: D-072 (D-012 superseded; D-010 updated)

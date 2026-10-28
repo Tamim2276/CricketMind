@@ -15,8 +15,8 @@ a time: understand, learn, build, test, repeat.
   `cd /d/Cricket/cricketmind-v3-work && git add cricketmind-v3 && git commit -m "day N: ..."`.
   Never `git add -A`. Never switch branches.
 - CricShot (the classifier) lives in `D:\Cricket\cricshot-improve` on `langGraph`, in a
-  different chat. Never touch it from here. v3 never imports CricShot code; the
-  only bridge is the exported model file (Day 112).
+  different chat. Never touch it from here. v3 never imports from CricShot's
+  repository; the only bridge is the frozen agent package handed over on Day 112 (D-072).
 - `cricketmind/` (no suffix) is the old v2 prototype: reference only, never edit.
 
 ## How to work with this user
