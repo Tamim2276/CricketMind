@@ -143,6 +143,9 @@ def test_c08_trains_two_at_a_time_and_has_no_batchnorm():
 
     cfg = R.resolve(R.get("C08_videomae"), "author")
     assert (cfg["batch_size"], cfg["accum"]) == (2, 2)
+    # B01's 1e-4 wiped its pretraining in one epoch: 14% val, against 61.7%
+    # frozen; the VideoMAE paper's rate scaled to batch 4
+    assert cfg["lr"] == 1e-5
     model = VideoClassifier("videomae_base", 15, pretrained=False)
     for layer in model.modules():
         assert not isinstance(layer, nn.modules.batchnorm._BatchNorm)

@@ -75,6 +75,15 @@ BASES = {
         "config": os.path.join("configs", "mimic_author.yaml"),
         "set": {"method": "video3d"},
     },
+    # VideoMAE, a plain ViT: B01's lr 1e-4 wiped its pretraining within one
+    # epoch (val 14%, where its frozen features gave 61.7%). The VideoMAE
+    # paper's fine-tuning rate, scaled to batch 4, is ~1e-5. Batch 4 fills
+    # the card, so 2 x accum 2, which is exact with no BatchNorm (23.3)
+    "video3d_vit": {
+        "config": os.path.join("configs", "mimic_author.yaml"),
+        "set": {"method": "video3d", "lr": 1e-5, "batch_size": 2,
+                "accum": 2},
+    },
     # their training notebook, read line by line (7.7)
     "authors_port": {
         "config": os.path.join("configs", "authors_port.yaml"),
@@ -245,9 +254,9 @@ ENTRIES = [
     {"id": "C07_swin3d_t", "base": "video3d",
      "cfg": {"backbone": "swin3d_t"},
      "why": "Video Swin, the authors' own suggestion for future work"},
-    # batch 4 needs the whole card (23.3); no BatchNorm, so 2 x 2 is exact
-    {"id": "C08_videomae", "base": "video3d",
-     "cfg": {"backbone": "videomae_base", "batch_size": 2, "accum": 2},
+    # lr 1e-5 and batch 2 x 2 come from its base; see video3d_vit
+    {"id": "C08_videomae", "base": "video3d_vit",
+     "cfg": {"backbone": "videomae_base"},
      "why": "self-supervised video pretraining: the strongest candidate "
             "to pass 89%"},
 

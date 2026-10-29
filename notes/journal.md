@@ -3734,3 +3734,32 @@ so the models can tell "not seen" from "standing still".
 
 The detector waits for mediapipe, which gets a dry-run install first: it
 has pinned old numpy and protobuf in the past, and this venv runs numpy 2.
+
+Later: mediapipe installed (1.2.0; numpy and protobuf untouched, OpenCV
+decodes byte-for-byte as before, checked with a hash because CricketMind
+will rely on OpenCV's frame numbers). The first overlay sheet was the
+useful kind of bad: 6 of 30 skeletons were on the wicketkeeper. The crop
+is centred on the batter, so the fix was geometry: find up to three
+people, keep the one nearest the centre, and keep nobody if even that one
+is too far off. The numbers drew the line by themselves: batters 0.02-0.21
+from the centre, the stray keepers 0.27-0.31. Two fresh sheets later it is
+about 3 wrong in 60, all a keeper crouched right behind the batter, which
+nothing short of tracking would separate. Good enough to run; noted as a
+limit.
+
+## 2026-10-29 — VideoMAE forgot everything in one epoch
+
+C08 was crawling: 14% val after one epoch, 34% after seven, when every
+other video model passed 60% in its first epoch and VideoMAE's own frozen
+features had given 61.7%. Before touching the learning rate I checked the
+boring explanations on the CPU: the untrained C08 model describes clips
+exactly as the V07 cache did, cosine 1.0000. Weights loaded, clips
+converted right.
+
+So it was the optimiser. Adam at 1e-4, B01's rate, is roughly ten times
+what a plain ViT tolerates; the first epoch's updates wiped the
+pretraining and it was learning from scratch with a 15-class head. MViT and
+Video Swin, with their more convolution-like designs, took 1e-4 without
+trouble. C08 reruns at 1e-5, the VideoMAE paper's fine-tuning rate scaled
+to our batch of 4. That makes it the one C model with its own learning
+rate, said plainly in the registry and kept with the evidence.

@@ -4985,6 +4985,22 @@ truly needs an exact repeat can still set `deterministic: true`.
    validation, **~90 for the family, about 4 days**, against 65–130
    budgeted.
 
+**C08 at B01's lr failed, 2026-10-29; rerun at 1e-5.** Val 14% after
+epoch 1 and 34% after 7, train 10.6% in epoch 1, where every other C model
+was at 60–70% val after one epoch and VideoMAE's own frozen features gave
+61.7% (V07). Checked on the CPU before blaming the lr: the C08 model,
+untrained, describes clips exactly as the V07 cache did (cosine 1.0000 on
+3 clips), so the weights load and the clips are converted right. **Adam
+at 1e-4 wiped its pretraining within the first epoch**, and it was
+relearning from near nothing. MViT and Video Swin trained fine at 1e-4; a
+plain ViT is the fragile one. **C08 now trains at lr 1e-5**, the VideoMAE
+paper's fine-tuning rate scaled to batch 4, through its own base
+(`video3d_vit`, with the 2 × 2 batch) since four changed keys would break
+the registry's three-key rule. The failed run's seven epochs are kept in
+`notes/evidence/C08_videomae_lr1e-4__author_history.json`. So C08 differs
+from the rest of C in its learning rate as well as its model, on this
+evidence.
+
 ---
 
 ## Days 24–27 — Family C, part 2: the queue
@@ -5084,11 +5100,31 @@ symmetric with self-loops.
    and refuses it on anything but the pose view.
 7. Registry: E01 (pose → GRU-128, so E01 against A03 is pose against RGB)
    and E02 (ST-GCN). Both read `needs cache pose` until the cache exists.
-8. **Waiting on `pip install mediapipe`:** the detector call, the
-   `--pose` flag on `src.extract`, and the 30-overlay check. The install is
-   dry-run first, since mediapipe has pinned older numpy and protobuf
-   before; if it would downgrade either, YOLO11-pose (installed) is the
-   fallback, and it needs the GPU after Family C.
+8. **mediapipe 1.2.0 installed** after a dry run: numpy 2.2.6 and protobuf
+   untouched; it adds `opencv-contrib-python` at the same 5.0.0.93 as the
+   OpenCV already there. Checked: decoding three raw clips and resizing
+   gives byte-identical frames before and after (sha256 `811dac88…`), which
+   matters for CricketMind's frame-number contract.
+9. **The detector** (`MediaPipeDetector`): mediapipe 1.2 has no `solutions`
+   API, so the Tasks `PoseLandmarker`, IMAGE mode, the heavy model
+   (`data/models/pose_landmarker_heavy.task`, downloaded once). My edges
+   are MediaPipe's 35 plus the 4 head-to-body ones, checked against its
+   own list. 0.06 s a frame on the CPU: ~2.5 h for every clip.
+10. **The overlay check caught the keeper.** Asked for one person,
+    MediaPipe drew the wicketkeeper instead of the batter in 6 of 30
+    clips: the box crop holds whoever stands right behind the striker.
+    Measured on those 30: the batter's torso sits 0.02–0.21 from the
+    crop's centre (the crop is centred on the striker by construction);
+    the wrong ones were a lone keeper at 0.27–0.31, the batter not found
+    at all. **Fix:** up to 3 people at confidence 0.3 (0.5 missed batters
+    in unusual poses), keep the one nearest the centre, and none if even
+    that one is more than 0.25 off: a missing frame is honest, the
+    keeper filed as the batter is not. Rechecked on the same 30 and 30
+    others (`notes/figures/pose_overlays*.png`): wrong person down from
+    ~20% to **~3 of 60**, all a keeper crouched directly behind the
+    batter, inside the centre zone (square cuts, a sweep), which no
+    centre rule can separate; 7 of 60 middle frames have no pose. Kept
+    as a known limit of pose on broadcast cricket.
 
 ## Day 29 — Family E, part 2: fusion, then run
 
