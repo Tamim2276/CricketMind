@@ -1954,3 +1954,49 @@ machines. Day 112 notes each model's weights licence.
 - Decisions: D-072 (D-012 superseded; D-010 updated)
 - Limitations: L-068
 - Section it feeds: Method (perception), with no accuracy figures
+
+---
+
+## Day 57 — 2026-10-29 — A door for the language model
+
+**Learned:** a *local* language model runs on this machine through Ollama: no internet, no
+fee, and the question never leaves the computer. It writes text one piece at a time; with a
+*JSON schema*, Ollama only lets it write JSON of that shape. *Temperature 0* means always
+the likeliest next word, and a fixed *seed* the same dice, so a question asked again should
+get the same answer. And the lesson of the day: **a schema fixes a reply's form, not its
+truth.**
+**Built (D-073):** in `application/ports.py`, the `LLM` port (`answer(system, prompt,
+shape)`), `LLMError`, `read_reply` (every reply checked against its Pydantic shape) and
+`FakeLLM` (scripted replies, checked the same way; it can fail on purpose).
+`infrastructure/ollama_llm.py`, `OllamaLLM` with the official `ollama` client (0.6.3):
+temperature 0, seed 42, `think=False`, the model always named; Ollama not running or a
+model it does not have becomes an `LLMError`. `scripts/ask_llm.py` asks a model to read
+four questions into a toy shape. Installed: `ollama`. Ollama 0.40.13; qwen2.5:7b
+(845dbda0ea48) and qwen3:8b (500a1f067a9f), on D:.
+**The run by hand** (yours, the GPU free; 4 questions, a toy shape, not a measurement):
+
+```
+                                     qwen2.5:7b                      qwen3:8b
+Kohli, 6 balls, T20 powerplay, pace  format "T20 powerplay against   format "T20 powerplay"
+                                     pace"
+Babar Azam, strike rate, ODIs        right                           format "ODIs"
+Bumrah or Starc vs Smith, Tests      player Bumrah, bowler "Stern"   player Bumrah, bowler Bumrah
+What is LBW?                         the word "null" three times     all empty: right
+first question 13-15 s (the model loading), then about 1 s each
+```
+
+Every reply fitted the shape, and most were wrong somewhere: a made-up name ("Stern"), a
+bowler in the batter's place, a format with words stuck on. So N3 never trusts the model:
+on Day 58 its shape has allowed values (the formats of D-047, the phases, pace or spin), a
+field for each role, and every name is looked up in the register (L-069).
+**Tested:** 11 new tests, 688 in all: a reply that fits; five that do not (words, a missing
+field, a wrong type, a number nobody asked for, nothing); the fake in order, checked,
+failing on purpose, running out; what the adapter sends; its reply checked; no such model
+and no server as `LLMError` (one test against a real client on a closed port). Ten
+deliberate mistakes, all caught. One promise softened: the adapter's comment said the same
+question *gets* the same answer, which was never checked; now it *should*.
+
+**For the paper:**
+- Decisions: D-073
+- Limitations: L-069
+- Section it feeds: Implementation (the LLM port)

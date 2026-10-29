@@ -1430,3 +1430,22 @@ Template:
   loop change at its next revision; L-068.
 - Status: planned (Days 112–128); the agent is built after CricShot's Phase 4
 - Paper section: Method (perception), with no accuracy figures
+
+## D-073 — The LLM port: a shape in, a checked answer out
+- Date: 2026-10-29
+- Decision: the `LLM` port has one method, `answer(system, prompt, shape)`: the shape is a
+  Pydantic model, its JSON schema goes to the model with the question, and the reply comes
+  back checked against it (`read_reply`); broken JSON, a missing field, a wrong type or, in
+  a shape that forbids them, an extra field is an `LLMError`, never a half-filled answer.
+  `OllamaLLM` (the official `ollama` client) sends temperature 0, seed 42 and `think=False`
+  (Qwen3 otherwise thinks aloud before answering); it names its model explicitly, with no
+  default, and turns "Ollama is not running" or "no such model" into an `LLMError`.
+  `FakeLLM` gives scripted replies in order, checked the same way, and can fail on purpose.
+- Why: the same check for every adapter means a later one (LangChain on Day 58, the online
+  model on Day 182) cannot quietly skip it; a fake that checks like a real model makes the
+  tests honest; a model named in full is a model a result can say it used.
+- Alternatives considered: the port returning a dict (every caller would check it again);
+  Ollama's HTTP API by hand (more code for the same request); a default model (a run that
+  does not say which model answered).
+- Status: built (Day 57)
+- Paper section: Implementation (the LLM port)

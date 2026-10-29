@@ -1,6 +1,8 @@
 from datetime import date
 from typing import Protocol
 
+from pydantic import BaseModel, ValidationError
+
 from cricketmind_v3.domain.balls import Ball
 from cricketmind_v3.domain.calibration import Moment
 from cricketmind_v3.domain.facts import Fact
@@ -258,3 +260,49 @@ class FakeResultRepository:
 
     def results(self, subject: Subject) -> list[Result]:
         return list(self.matches.get(subject, []))
+
+
+# the language model (Day 57, D-024)
+
+
+class LLMError(ValueError):
+    """The language model gave no answer, or one that does not fit its shape."""
+
+
+class LLM(Protocol):
+    """A language model that answers in a fixed shape: the shape's JSON schema goes in
+    with the question, and the reply comes back checked against it."""
+
+    def answer[Shape: BaseModel](
+        self, system: str, prompt: str, shape: type[Shape]
+    ) -> Shape:
+        """Raises LLMError when there is no reply, or it does not fit the shape."""
+
+
+def read_reply[Shape: BaseModel](reply: str, shape: type[Shape]) -> Shape:
+    """A model's reply, checked against its shape: broken JSON, a missing field or a
+    wrong type is an LLMError, never a half-filled answer."""
+    try:
+        return shape.model_validate_json(reply)
+    except ValidationError as error:
+        raise LLMError(f"the reply does not fit {shape.__name__}: {error}") from error
+
+
+class FakeLLM:
+    """Replies written by hand and given out in order, for tests: each is the text a
+    model would send, or an LLMError to raise."""
+
+    def __init__(self, replies: list[str | LLMError]) -> None:
+        self.replies = list(replies)
+        self.asked: list[tuple[str, str, str]] = []  # system, prompt, the shape's name
+
+    def answer[Shape: BaseModel](
+        self, system: str, prompt: str, shape: type[Shape]
+    ) -> Shape:
+        self.asked.append((system, prompt, shape.__name__))
+        if not self.replies:
+            raise LLMError("the fake has no reply left")
+        reply = self.replies.pop(0)
+        if isinstance(reply, LLMError):
+            raise reply
+        return read_reply(reply, shape)  # checked like a real model's
