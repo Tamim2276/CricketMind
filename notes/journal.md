@@ -3718,3 +3718,19 @@ inside it, so CricketMind can't rebuild them slightly wrong, and its
 expert route replaces Phase 8's blind "retry up to 2 times". The note for
 the CricketMind chat is notes/to_cricketmind_phase8.md. It carries no
 accuracy numbers, by the usual rule.
+
+## 2026-10-29 — Day 28, pose: everything but the detector
+
+While Family C finishes (MViT is now best at 83.40 / 84.51), the pose side
+of Family E is built and tested on made-up skeletons: normalising, exact
+mirroring, the resumable cache, a pose view for the feature dataset, the
+ST-GCN head, and E01/E02 in the registry.
+
+Two choices worth remembering. Poses are centred per clip, not per frame,
+because per frame would erase a step forward or back inside the crop, and
+footwork is half of a stroke. And a frame where no pose was found stays all
+zeros with visibility zero, rather than being copied from its neighbours,
+so the models can tell "not seen" from "standing still".
+
+The detector waits for mediapipe, which gets a dry-run install first: it
+has pinned old numpy and protobuf in the past, and this venv runs numpy 2.

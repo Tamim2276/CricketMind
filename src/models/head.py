@@ -35,8 +35,8 @@ import torch.nn as nn
 
 __all__ = ["GRUHead", "LSTMHead", "LinearHead", "MLPHead", "PoolHead",
            "TransformerHead", "TCNHead", "AttnPoolHead", "NetVLADHead",
-           "FrameNorm", "pool_frames", "POOLS", "WIDTH", "FRAMES", "CLUSTERS",
-           "NUM_CLASSES", "HIDDEN", "DENSE"]
+           "STGCNHead", "FrameNorm", "pool_frames", "POOLS", "WIDTH", "FRAMES",
+           "CLUSTERS", "NUM_CLASSES", "HIDDEN", "DENSE"]
 
 
 def _init_gru_like_keras(gru: nn.GRU) -> None:
@@ -448,6 +448,74 @@ class NetVLADHead(_Tail):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         _check_frames(x, self.in_dim)
         return self._tail(self.encode(x))
+
+
+class _GraphBlock(nn.Module):
+    """Each joint takes in its neighbours', then each joint looks across
+    nearby frames. A shortcut around both, as in ST-GCN."""
+
+    def __init__(self, cin: int, cout: int, kernel: int = 5):
+        super().__init__()
+        self.graph = nn.Conv2d(cin, cout, 1)       # channels, per joint
+        self.time = nn.Sequential(
+            nn.BatchNorm2d(cout), nn.ReLU(),
+            nn.Conv2d(cout, cout, (kernel, 1), padding=(kernel // 2, 0)),
+            nn.BatchNorm2d(cout))
+        if cin == cout:
+            self.skip = nn.Identity()
+        else:
+            self.skip = nn.Sequential(nn.Conv2d(cin, cout, 1),
+                                      nn.BatchNorm2d(cout))
+        self.relu = nn.ReLU()
+
+    def forward(self, x: torch.Tensor, a: torch.Tensor) -> torch.Tensor:
+        # x is (B, C, T, J); a mixes joint j into joint k along the bones
+        y = torch.einsum("bctj,jk->bctk", self.graph(x), a)
+        return self.relu(self.time(y) + self.skip(x))
+
+
+class STGCNHead(_Tail):
+    """Joints as graph nodes, edges along the skeleton (E02).
+
+    (B, T, J * C) -> (B, classes). Three graph blocks, then the clip is the
+    average over frames and joints, then the same tail as every Family A
+    head. `adjacency` is (J, J) with self-loops; it is normalised here as
+    D^-1/2 A D^-1/2, so a joint with many bones does not drown the others.
+    """
+
+    def __init__(self, in_dim: int, adjacency: torch.Tensor,
+                 num_classes: int = NUM_CLASSES, channels: int = 3,
+                 widths=(64, 64, 128), dense: int = DENSE,
+                 dropout: float = 0.0):
+        super().__init__()
+        joints = adjacency.shape[0]
+        if in_dim != joints * channels:
+            raise ValueError(f"{in_dim} features is not {joints} joints x "
+                             f"{channels}")
+        self.in_dim = in_dim
+        self.joints = joints
+        self.channels = channels
+        degree = adjacency.sum(dim=1).pow(-0.5)
+        self.register_buffer("adjacency",
+                             degree.unsqueeze(1) * adjacency
+                             * degree.unsqueeze(0))
+        self.data_norm = nn.BatchNorm1d(in_dim)
+        blocks = []
+        cin = channels
+        for cout in widths:
+            blocks.append(_GraphBlock(cin, cout))
+            cin = cout
+        self.blocks = nn.ModuleList(blocks)
+        self._build_tail(cin, num_classes, dense, dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        _check_frames(x, self.in_dim)
+        b, t = x.shape[:2]
+        x = self.data_norm(x.transpose(1, 2)).transpose(1, 2)
+        x = x.reshape(b, t, self.joints, self.channels).permute(0, 3, 1, 2)
+        for block in self.blocks:
+            x = block(x, self.adjacency)               # (B, C, T, J)
+        return self._tail(x.mean(dim=(2, 3)))
 
 
 class FrameNorm(nn.Module):

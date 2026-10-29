@@ -9,6 +9,7 @@
     tcn          dilated convolutions over time (A10)
     attnpool     a learned weight per frame (A11)
     netvlad      frames described by 8 learned centres (A12)
+    stgcn        joints as graph nodes, on the pose view only (E02)
 
 `feature_norm: layer` puts a LayerNorm on every frame first (A13).
 
@@ -20,7 +21,7 @@ import os
 from src.data.features import FeatureDataset
 from src.models.head import (WIDTH, AttnPoolHead, FrameNorm, GRUHead,
                              LinearHead, LSTMHead, MLPHead, NetVLADHead,
-                             PoolHead, TCNHead, TransformerHead)
+                             PoolHead, STGCNHead, TCNHead, TransformerHead)
 
 NAME = "cached_head"
 
@@ -28,11 +29,11 @@ READS = ("features", "view", "flip", "head", "hidden", "dense", "dropout",
          "bidirectional", "layers", "attn_heads", "feature_norm")
 
 HEADS = ("linear", "mlp", "gru", "lstm", "mean", "max", "transformer", "tcn",
-         "attnpool", "netvlad")
+         "attnpool", "netvlad", "stgcn")
 
 # heads that read the 15 frames one by one, so they need a time axis
 NEEDS_FRAMES = ("gru", "lstm", "mean", "max", "transformer", "tcn",
-                "attnpool", "netvlad")
+                "attnpool", "netvlad", "stgcn")
 
 RECURRENT = ("gru", "lstm")
 
@@ -50,6 +51,8 @@ def check(cfg):
         return f"unknown head {head!r}"
     if head in NEEDS_FRAMES and cfg["view"] == "video":
         return f"{head} needs frames; the video view is one vector per clip"
+    if head == "stgcn" and cfg["view"] != "pose":
+        return "stgcn reads joints; it needs the pose view"
     if cfg["bidirectional"] and head not in RECURRENT:
         return f"bidirectional only applies to gru and lstm, not {head}"
     if cfg["hidden"] != DEFAULTS["hidden"] and head not in RECURRENT:
@@ -103,6 +106,10 @@ def _head(cfg, dim, num_classes):
         return AttnPoolHead(dim, num_classes, dense=dense, dropout=dropout)
     if head == "netvlad":
         return NetVLADHead(dim, num_classes, dense=dense, dropout=dropout)
+    if head == "stgcn":
+        from src.preprocess.pose import CHANNELS, adjacency
+        return STGCNHead(dim, adjacency(), num_classes, channels=CHANNELS,
+                         dense=dense, dropout=dropout)
     return GRUHead(dim, num_classes, cfg["hidden"], dense, dropout,
                    bidirectional=cfg["bidirectional"])
 

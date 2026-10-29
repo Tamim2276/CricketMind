@@ -16,6 +16,7 @@ reshape, and **no fallbacks**:
     "grid"   grid/  (T, C, H, W) -> unchanged    for heads that use position
     "avg"    avg/   (T, C)       -> unchanged    1280; Families A and D
     "video"  video/ (D,)         -> unchanged    512; one vector per clip
+    "pose"   pose/  (T, 33, 3)   -> (T, 99)      joints, x y visibility (E)
 
 A fallback -- "read avg/ if it exists, else reduce grid/" -- is the kind of
 convenience that lets two experiments silently read different numbers, and
@@ -40,9 +41,10 @@ from src.data.dataset import _classes_for
 __all__ = ["FeatureDataset", "FEATURES", "VIEWS", "DIR_FOR_VIEW"]
 
 FEATURES = os.path.join("data", "features", "effnetv2s")
-VIEWS = ("flat", "grid", "avg", "video")
-DIR_FOR_VIEW = {"flat": "grid", "grid": "grid", "avg": "avg", "video": "video"}
-DIMS_FOR_VIEW = {"flat": 2, "grid": 4, "avg": 2, "video": 1}
+VIEWS = ("flat", "grid", "avg", "video", "pose")
+DIR_FOR_VIEW = {"flat": "grid", "grid": "grid", "avg": "avg", "video": "video",
+                "pose": "pose"}
+DIMS_FOR_VIEW = {"flat": 2, "grid": 4, "avg": 2, "video": 1, "pose": 2}
 MIRROR_SUFFIX = "_mirror"
 
 
@@ -79,6 +81,8 @@ class FeatureDataset(Dataset):
                          " or --backbone <name> --pool avg  (8.10)")
             if view == "video":
                 extra = "  Run: python -m src.extract --backbone r3d_18  (8.10)"
+            if view == "pose":
+                extra = "  Run: python -m src.extract --pose  (28.1)"
             raise FileNotFoundError(
                 f"no feature cache at {self.root} for view={view!r}.{extra}")
         if mirror and not os.path.isdir(self.mirror_root):
@@ -140,6 +144,8 @@ class FeatureDataset(Dataset):
         x = torch.load(path, map_location="cpu").float()
         if self.view == "flat":
             x = x.flatten(1)            # (T, C, H, W) -> (T, C*H*W), C-major
+        if self.view == "pose":
+            x = x.flatten(1)            # (T, 33, 3) -> (T, 99), joint-major
         return x, label
 
     def label_counts(self) -> dict:

@@ -32,6 +32,7 @@ FAMILIES = {
     "C": ("3D and video models, end to end", "23-27"),
     "R": ("the authors' own method, from their notebooks, on their "
           "preprocessing", "7.7"),
+    "E": ("the batter's pose instead of pixels", "28-29"),
 }
 
 MAX_DELTA = 3
@@ -264,6 +265,14 @@ ENTRIES = [
      "cfg": {"variant": "replica", "same_clips_as": "box"},
      "why": "B01's protocol on frames made their way: what the "
             "preprocessing alone changes"},
+
+    # ---- E: 33 body points a frame instead of pixels (Day 28) ----
+    {"id": "E01_pose_gru", "base": "cached_head",
+     "cfg": {"features": _cache("pose"), "view": "pose"},
+     "why": "pose against RGB with nothing else changed: E01 against A03"},
+    {"id": "E02_stgcn", "base": "cached_head",
+     "cfg": {"features": _cache("pose"), "view": "pose", "head": "stgcn"},
+     "why": "joints as graph nodes, edges along the skeleton: the GNN"},
 ]
 
 _ID = re.compile(r"^([A-Z])\d\d_[a-z0-9_]+$")

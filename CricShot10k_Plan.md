@@ -5061,6 +5061,35 @@ finding), and 30 overlays you have looked at, as on Day 3.
 **Check.** Tests: shapes, one training step, and the skeleton's adjacency is
 symmetric with self-loops.
 
+**Built 2026-10-29 (all but the detector itself).**
+1. `src/preprocess/pose.py`: the skeleton (`EDGES`: MediaPipe's drawing
+   edges plus nose–shoulders and mouth–nose, so the head is not a separate
+   graph; tested connected), `normalise`, `mirror`, and a resumable `build`
+   that takes any detector and writes `pose/` and `pose_mirror/` with a
+   manifest of frames found, plus `--coverage` per class.
+2. **Centred per clip, not per frame:** on the clip's mean hip point,
+   scaled by its median torso length. Per frame would erase the hips
+   moving inside the crop, and a step forward or back is half a stroke
+   (tested both ways). Crop position and batter size drop out (tested).
+3. **A frame with no pose is all zeros, visibility included**, which no
+   found pose has; never filled from its neighbours.
+4. **The mirror is exact:** tested equal to normalising the pose of the
+   flipped clip (x → 1 − x, sides swapped), and its own inverse.
+5. The `pose` view in `FeatureDataset`, (T, 33, 3) → (T, 99), flipping by
+   choosing `pose_mirror/` as every other cache does.
+6. `STGCNHead` in `head.py`: input BatchNorm, three graph blocks (each
+   joint takes in its neighbours through D^-1/2 (A + I) D^-1/2, then a
+   kernel-5 convolution over time, with a shortcut), the mean over frames
+   and joints, then the shared Family A tail. `cached_head` knows `stgcn`
+   and refuses it on anything but the pose view.
+7. Registry: E01 (pose → GRU-128, so E01 against A03 is pose against RGB)
+   and E02 (ST-GCN). Both read `needs cache pose` until the cache exists.
+8. **Waiting on `pip install mediapipe`:** the detector call, the
+   `--pose` flag on `src.extract`, and the 30-overlay check. The install is
+   dry-run first, since mediapipe has pinned older numpy and protobuf
+   before; if it would downgrade either, YOLO11-pose (installed) is the
+   fallback, and it needs the GPU after Family C.
+
 ## Day 29 — Family E, part 2: fusion, then run
 
 ### 29.1 Late fusion, no training (≈1 h)
