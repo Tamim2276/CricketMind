@@ -5382,8 +5382,9 @@ F03 against C02: does motion add to an RGB 3D CNN?
 3. `src/models/motion.py` (`MotionClassifier`): r3d_18 from Kinetics, its
    first Conv3d rebuilt for 2 (flow) or 3 (frame-difference) channels,
    each starting from the mean of the pretrained RGB filters; a new last
-   layer. Flow is divided by `FLOW_SCALE` (10 px, a first guess to check
-   against the built cache's mean_px / max_px before W01 runs); frame differences
+   layer. Flow is divided by `FLOW_SCALE` (10 px; measured on 20 real
+   clips at 112: median move 2.4 px, 90% under 6.4, 99% under 14.5, the
+   largest 42.5, so typical inputs sit near 0.2-0.6); frame differences
    |f(t+1) − f(t)| are taken inside the model from the box clip and
    shrunk to 112, so flipping the clip flips them exactly (tested).
 4. `src/methods/motion.py`: `motion: flow` reads the cache (`FlowDataset`,
@@ -5391,8 +5392,9 @@ F03 against C02: does motion add to an RGB 3D CNN?
    does. Base `motion3d` (Day 23's protocol, r3d_18); W01 and W05 in the
    registry, and **F03** (`fusion`: C02 + W01), which opens Family F.
 5. W05 is ready now. W01 waits for the flow cache, and F03 for W01.
-   RAFT's weights download once; the build follows C08 and the tracks
-   on the GPU.
+6. **Checked on 20 real clips after RAFT's weights came down:** 0.39 s a
+   clip on the Arc (~1 h for all), every value finite, and the same clip
+   run twice matched exactly (largest gap 0.000000).
 
 ## Day 33 — Family F, part 1: multi-scale and hybrid
 
