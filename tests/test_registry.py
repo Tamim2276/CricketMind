@@ -1,4 +1,4 @@
-"""The registry: 56 experiments as data, checked before anything runs."""
+"""The registry: 58 experiments as data, checked before anything runs."""
 import io
 import os
 
@@ -9,7 +9,7 @@ from src.experiments import registry as R
 from src.experiments import run as runner
 from src.train import DEFAULTS, LOOP_READS, load_config
 
-COUNTS = {"P": 5, "A": 14, "D": 6, "V": 10, "B": 8, "C": 8, "R": 3, "E": 2}
+COUNTS = {"P": 5, "A": 14, "D": 6, "V": 10, "B": 8, "C": 8, "R": 3, "E": 4}
 
 
 def test_every_delta_key_is_a_config_key():
@@ -42,15 +42,15 @@ def test_every_entry_says_why():
 def test_every_family_has_its_count():
     for fam, n in COUNTS.items():
         assert len(R.entries(fam)) == n, fam
-    assert len(R.ENTRIES) == 56
+    assert len(R.ENTRIES) == 58
 
 
-def test_112_run_names_none_repeated():
+def test_116_run_names_none_repeated():
     names = set()
     for entry in R.ENTRIES:
         for split in R.SPLITS:
             names.add(R.run_name(entry["id"], split))
-    assert len(names) == 112
+    assert len(names) == 116
 
 
 def test_the_harness_owns_name_and_split():
@@ -166,10 +166,10 @@ def test_list_prints_every_id():
     out = io.StringIO()
     shown = runner.print_list(out=out)
     text = out.getvalue()
-    assert shown == 56
+    assert shown == 58
     for entry in R.ENTRIES:
         assert entry["id"] in text
-    assert "56 IDs, 112 runs" in text
+    assert "58 IDs, 116 runs" in text
 
 
 def test_list_one_family():

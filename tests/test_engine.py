@@ -226,11 +226,15 @@ def test_evaluate_can_collect_predictions_for_a_confusion_matrix():
     stats = evaluate(model, data(), device=torch.device("cpu"), collect=True)
     assert stats.preds.shape == (N,) and stats.labels.shape == (N,)
     assert (stats.preds == stats.labels).mean() == pytest.approx(stats.top1)
+    # the logits fusion averages are the ones the predictions came from
+    assert stats.logits.shape[0] == N
+    assert (stats.logits.argmax(axis=1) == stats.preds).all()
 
 
 def test_evaluate_collects_nothing_unless_asked():
     stats = evaluate(tiny(), data(), device=torch.device("cpu"))
     assert stats.preds is None and stats.labels is None
+    assert stats.logits is None
 
 
 def test_a_perfect_model_scores_one():

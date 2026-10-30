@@ -845,9 +845,19 @@ def main(argv=None):
                     "a video model; avg writes avg/ directly (8.10)")
     ap.add_argument("--derive", choices=("avg",),
                     help="make the pooled view from grid/, no GPU (8.8)")
+    ap.add_argument("--pose", action="store_true",
+                    help="33 body points a frame from the box crops, on the "
+                    "CPU, into data/features/pose/ (28.1)")
     a = ap.parse_args(argv)
 
     opts = vars(a)
+    if opts.pop("pose"):
+        from src.preprocess import pose
+        detector = pose.MediaPipeDetector()
+        failed = pose.build(detector, opts["processed"], limit=opts["limit"],
+                            ledger=CACHE_LEDGER)
+        detector.close()
+        return failed
     do_verify = opts.pop("verify")
     checked = opts.pop("clips")
     pooled_view = opts.pop("derive")

@@ -3763,3 +3763,54 @@ Video Swin, with their more convolution-like designs, took 1e-4 without
 trouble. C08 reruns at 1e-5, the VideoMAE paper's fine-tuning rate scaled
 to our batch of 4. That makes it the one C model with its own learning
 rate, said plainly in the registry and kept with the evidence.
+
+Pose cache done: 88.4% of frames have a pose, every class between 83% and
+94%. The weakest are Down The Wicket and the sweeps, as the overlay sheets
+suggested. E01 and E02 can train now; they are small enough to share the
+GPU with C08.
+
+## 2026-10-29 — Day 29: fusion and cross-attention
+
+Two ways to combine pose with pixels. E03 trains nothing: it takes the
+best RGB head (A09) and the better of the two pose heads, picked on val,
+and averages their probabilities clip by clip. E04 trains one small head
+in which every pose frame attends to every RGB frame.
+
+The fusion method is general on purpose; F03 and Phase 4's ensembles will
+use it too. Its key test is the plan's own: a run fused with itself must
+score exactly what it scored alone. Top-1 and the confusion matrix match
+exactly. The loss matched only to three digits at first, which turned out
+to be the evaluator taking its loss under the Arc's bf16 autocast while
+fusion computes it in fp32 from the same logits. Same predictions;
+different rounding.
+
+For E04 the one detail that matters is the flip: pose and picture must be
+mirrored together, one coin per clip, or the model learns that left and
+right disagree. That has its own test.
+
+## 2026-10-30 — Pose alone: 65.7%, and the GNN under-fits
+
+E01, pose into the authors' GRU, reached 65.7% on both splits. The same
+head on 62,720 frozen EfficientNet numbers a frame (A03) got 52-54. Thirty
+three body points beat the whole frozen picture by 12-14 points. That is
+the clearest single result Family E could have given: how the batter's
+body moves is most of what tells the shots apart.
+
+E02, the ST-GCN, managed 49-51%, and its training accuracy never got above
+48%, so it was not overfitting; it simply did not learn enough. Three
+graph blocks with Adam at 1e-4 is a long way from how ST-GCN is normally
+trained, and I am leaving it that way on purpose: Phase 3 runs every model
+under one protocol. It goes down as "ST-GCN under our protocol".
+
+## 2026-10-30 — Family E done: averaging beats learning
+
+E03, the plain average of the best RGB head and the pose head, reached
+72.7 / 73.5, about 3.5 points above either alone. E04, a head that learns
+how pose should read the RGB frames, got 63.8 / 68.1 and overfit, 90%
+train against the high sixties on val. With six thousand clips, the
+fusion that has nothing to learn wins. It also had weaker RGB input (the
+pooled view), which is part of it.
+
+The useful part is the first result: pose and pixels make different
+mistakes. Phase 4 should try the pose head averaged into MViT and
+SlowFast; the fusion method already does that.

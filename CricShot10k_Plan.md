@@ -5126,6 +5126,16 @@ symmetric with self-loops.
     centre rule can separate; 7 of 60 middle frames have no pose. Kept
     as a known limit of pose on broadcast cricket.
 
+**Ran 2026-10-29:** all 9,880 box clips, 0 failed, ~3.4 h on the CPU beside
+Family C (0.8 clips/s; resumed once). **88.4% of frames have a pose**; per
+class 83.3% (Down The Wicket) to 94.2% (Hook), an 11-point spread, so no
+class lost most of its frames. The lowest are the ones expected: Down The
+Wicket (the batter leaves the crop's centre), Sweep 84.8 and Reverse Sweep
+85.3 (crouched, the keeper close behind). 63 clips (0.6%) have no pose in
+any frame and 478 (4.8%) in under half; both stay as missing frames.
+`pose/` and `pose_mirror/` hold 9,880 files each, the mirror exact on a
+sample.
+
 ## Day 29 — Family E, part 2: fusion, then run
 
 ### 29.1 Late fusion, no training (≈1 h)
@@ -5150,6 +5160,76 @@ python -m src.experiments.run --family E
 
 **Read.** Pose alone against RGB alone (E01 against A03), and whether fusion
 beats A09 by more than the noise (~1.5 points).
+
+**Built 2026-10-29.**
+1. **`src/methods/fusion.py` (E03).** `fuse` is a list of streams, each a
+   list of IDs; from each stream the run with the best val top-1 on that
+   split is used, so "the better of E01 and E02" is decided on val, never
+   on test. Each chosen run's own `best.pt` scores the split, and every
+   clip's probabilities are averaged over the streams, over the clips all
+   of them have. It writes `fusion.json` (the runs it chose) instead of a
+   checkpoint, a ledger row with `epochs_run: 0`, and reports through the
+   runner like any run, test hidden. Tested: a run fused with itself gives
+   exactly its own top-1 and confusion matrix; the loss agrees to bf16's
+   three digits, since `evaluate.py` takes it under the Arc's autocast and
+   fusion from the same logits in fp32.
+2. To get there: `engine.evaluate` now also keeps the logits it already
+   computed (`EvalStats.logits`), and `evaluate.py` gained `probabilities`
+   (per clip, in split order) and `scores_report` (a report from
+   probabilities), with the model rebuilding shared in `_restore`.
+3. **`src/methods/pose_rgb.py` + `CrossAttnHead` (E04).** Each clip is its
+   pose (T, 99) beside the EfficientNetV2-S avg cache (T, 1280), one tensor
+   so the loop is unchanged; the head splits it, projects both to 256 with
+   a learned position per frame, and one cross-attention layer lets every
+   pose frame read every RGB frame, then a shortcut, LayerNorm, the mean
+   and the shared tail. **One flip coin per clip for both halves** (tested:
+   a mirrored pose never sits beside an unmirrored picture). The weights
+   stay in `last_weights` for a figure. The XPU attention fast path is off
+   for its call, as in `TransformerHead`.
+4. Registry: E03 (`fusion` base, A09 + the better of E01/E02) and E04
+   (`pose_rgb` base). E03 reads "needs E01_pose_gru or E02_stgcn on author
+   first" until they finish, so `--family E` runs E01, E02 and E04, and a
+   second `--family E` runs E03.
+
+**Ran 2026-10-30, E01 and E02** (val top-1 / macro-F1, author · grouped):
+
+| ID | author | grouped | train at the end |
+| --- | --- | --- | --- |
+| E01 pose → GRU-128 | 65.72 / 0.644 | 65.71 / 0.641 | ~68% |
+| E02 ST-GCN | 48.67 / 0.436 | 50.86 / 0.484 | ~48% |
+| A03 frozen RGB (flat) → GRU-128 | 51.96 | 54.11 | |
+| A09 frozen RGB → transformer | 68.81 | 70.11 | |
+
+1. **Pose against RGB, nothing else changed (E01 against A03): +13.8 and
+   +11.6.** 33 joints a frame carry more of the shot, to the same head,
+   than 62,720 frozen image numbers; pose alone comes within 3–4 points
+   of the best frozen RGB head.
+2. **ST-GCN under-fits here:** train and val both sit near 48%, so it is
+   not memorising but not learning enough. Three blocks and the shared
+   protocol (Adam 1e-4) are far from ST-GCN's usual recipe (more blocks,
+   SGD near 0.1); this measures ST-GCN under our protocol, not at its best,
+   and it stays that way in Phase 3 (one variable at a time).
+3. **Neither pose model overfits**, unlike every RGB run: a compact signal.
+4. E01 beat E02 on val on both splits, so E03 fuses A09 with E01.
+
+**Then E03 and E04:**
+
+| ID | author | grouped |
+| --- | --- | --- |
+| **E03 A09 + E01, averaged** | **72.73 / 0.719** | **73.49 / 0.728** |
+| E04 pose attends to RGB (avg view) | 63.83 / 0.620 | 68.07 / 0.681 |
+
+5. **Fusion beats its better stream by +3.9 and +3.4**, more than twice
+   the noise: pose knows something the RGB features do not.
+6. **The learned fusion lost to the plain average** and overfits (train
+   ~90%, val 64–68). It learns new weights from ~6,300 clips where the
+   average learns nothing, and it reads the pooled RGB view (1,280 a
+   frame), weaker than A09's full grid.
+7. **For Phase 4:** pose and pixels make different mistakes, so the pose
+   head averaged into the best fine-tuned video models (MViT, SlowFast)
+   is a cheap ensemble worth trying; `fusion` already does it.
+
+**Family E: done**, ~2 GPU-hours, plus ~3.4 CPU-hours for the pose cache.
 
 ## Day 30 — Family W, part 1: bat and ball tracks
 

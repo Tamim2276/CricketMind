@@ -84,6 +84,17 @@ BASES = {
         "set": {"method": "video3d", "lr": 1e-5, "batch_size": 2,
                 "accum": 2},
     },
+    # finished runs' probabilities, averaged; nothing trains (29.1)
+    "fusion": {
+        "config": os.path.join("configs", "cached_gru.yaml"),
+        "set": {"method": "fusion", "flip": 0.0},
+    },
+    # the pose cache beside the RGB avg cache, one head over both (29.2)
+    "pose_rgb": {
+        "config": os.path.join("configs", "cached_gru.yaml"),
+        "set": {"method": "pose_rgb", "features": "data/features/pose",
+                "rgb_features": "data/features/effnetv2s"},
+    },
     # their training notebook, read line by line (7.7)
     "authors_port": {
         "config": os.path.join("configs", "authors_port.yaml"),
@@ -282,6 +293,14 @@ ENTRIES = [
     {"id": "E02_stgcn", "base": "cached_head",
      "cfg": {"features": _cache("pose"), "view": "pose", "head": "stgcn"},
      "why": "joints as graph nodes, edges along the skeleton: the GNN"},
+    # the better of E01 and E02 is picked on val, per split
+    {"id": "E03_fuse_rgb_pose", "base": "fusion",
+     "cfg": {"fuse": [["A09_tf4l8h"], ["E01_pose_gru", "E02_stgcn"]]},
+     "why": "the best RGB head and the best pose head, answers averaged: "
+            "does each stream know something the other does not?"},
+    {"id": "E04_xattn_rgb_pose", "base": "pose_rgb", "cfg": {},
+     "why": "pose frames attend to RGB frames: deeper than averaging two "
+            "answers"},
 ]
 
 _ID = re.compile(r"^([A-Z])\d\d_[a-z0-9_]+$")

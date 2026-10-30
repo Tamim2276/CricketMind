@@ -33,6 +33,7 @@ from src.utils.checkpoint import atomic_write_json
 from src.utils.device import get_device
 
 __all__ = ["file_fingerprint", "StaleReport", "evaluate_checkpoint",
+           "probabilities", "scores_report",
            "load_report", "confusion", "per_class"]
 
 
@@ -97,17 +98,11 @@ def per_class(matrix: np.ndarray) -> dict:
             "support": support}
 
 
-def evaluate_checkpoint(ckpt_path: str, split_csv: str, variant=None,
-                        processed=None, batch_size: int = 6, device=None,
-                        workers: int = 0) -> dict:
-    """Load a checkpoint, score it on one split, return the report.
-
-    Any method: the checkpoint's own config names it, and the method builds
-    both the data and the model, exactly as it did in training.
-    """
+def _restore(ckpt_path, split_csv, variant=None, processed=None, device=None):
+    """(cfg, data, model, saved): the checkpoint's model and the split's
+    clips, built by the checkpoint's own method exactly as in training."""
     from src.train import DEFAULTS
 
-    device = device or get_device()
     saved = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     stored = saved.get("cfg") or {}
     classes = saved.get("classes")
@@ -128,11 +123,71 @@ def evaluate_checkpoint(ckpt_path: str, split_csv: str, variant=None,
 
     method = methods.load(cfg["method"])
     data = method.eval_set(cfg, split_csv, classes)
-    loader = DataLoader(data, batch_size=batch_size, shuffle=False,
-                        num_workers=workers)
-
     model = method.model(cfg, data, len(data.classes)).to(device)
     model.load_state_dict(saved["model_state"])
+    return cfg, data, model, saved
+
+
+def probabilities(ckpt_path: str, split_csv: str, batch_size: int = 6,
+                  device=None, workers: int = 0) -> dict:
+    """Per clip, in the split's order: its name, its true label, and the
+    model's probabilities. What fusion averages (29.1)."""
+    device = device or get_device()
+    _, data, model, _ = _restore(ckpt_path, split_csv, device=device)
+    loader = DataLoader(data, batch_size=batch_size, shuffle=False,
+                        num_workers=workers)
+    stats = run_eval(model, loader, device=device, collect=True)
+    clips = []
+    for item in data.items:
+        clips.append(item[2])
+    probs = torch.softmax(torch.from_numpy(stats.logits), dim=1).numpy()
+    return {"clips": clips, "labels": stats.labels, "probs": probs,
+            "classes": list(data.classes), "dropped": len(data.missing)}
+
+
+def scores_report(probs, labels, classes) -> dict:
+    """The metric half of a report, from probabilities: top-k, loss,
+    macro scores and the confusion matrix."""
+    labels = np.asarray(labels)
+    # stable, so a tie goes to the first class, as argmax does
+    order = np.argsort(-probs, axis=1, kind="stable")
+    hits = [0, 0, 0]
+    for k in range(3):
+        for i in range(len(labels)):
+            if labels[i] in order[i, :k + 1]:
+                hits[k] += 1
+    picked = probs[np.arange(len(labels)), labels]
+    loss = float(-np.log(np.clip(picked, 1e-12, None)).mean())
+    matrix = confusion(labels, order[:, 0], len(classes))
+    scores = per_class(matrix)
+    return {
+        "clips": int(len(labels)),
+        "classes": list(classes),
+        "loss": loss,
+        "top1": hits[0] / len(labels),
+        "top2": hits[1] / len(labels),
+        "top3": hits[2] / len(labels),
+        "macro_f1": float(np.mean(scores["f1"])),
+        "macro_precision": float(np.mean(scores["precision"])),
+        "macro_recall": float(np.mean(scores["recall"])),
+        "per_class": scores,
+        "confusion": matrix.tolist(),
+    }
+
+
+def evaluate_checkpoint(ckpt_path: str, split_csv: str, variant=None,
+                        processed=None, batch_size: int = 6, device=None,
+                        workers: int = 0) -> dict:
+    """Load a checkpoint, score it on one split, return the report.
+
+    Any method: the checkpoint's own config names it, and the method builds
+    both the data and the model, exactly as it did in training.
+    """
+    device = device or get_device()
+    cfg, data, model, saved = _restore(ckpt_path, split_csv, variant,
+                                       processed, device)
+    loader = DataLoader(data, batch_size=batch_size, shuffle=False,
+                        num_workers=workers)
 
     stats = run_eval(model, loader, device=device, collect=True)
     matrix = confusion(stats.labels, stats.preds, len(data.classes))

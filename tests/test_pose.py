@@ -202,6 +202,45 @@ def test_the_pose_view_gives_99_numbers_a_frame_and_mirrors_by_file(clips):
     assert torch.allclose(x.view(5, 33, 3), P.mirror(plain[0][0].view(5, 33, 3)))
 
 
+# ---- the real detector ---------------------------------------------------------
+
+def test_of_several_people_the_batter_is_the_one_in_the_middle():
+    """The crop is centred on the striker; the keeper stands to one side."""
+    batter = _raw_pose(0)
+    batter[:, :2] = batter[:, :2] - batter[:, :2].mean(axis=0) + 0.5
+    keeper = batter.copy()
+    keeper[:, 0] = keeper[:, 0] + 0.3
+    assert P.nearest_centre([keeper, batter]) is batter
+    assert P.nearest_centre([batter, keeper]) is batter
+    assert P.nearest_centre([]) is None
+    # the keeper alone, 0.3 off centre, is not the batter: missing instead
+    assert P.nearest_centre([keeper]) is None
+
+def test_a_missing_model_file_names_the_download(tmp_path):
+    pytest.importorskip("mediapipe")
+    with pytest.raises(SystemExit, match="curl -L --create-dirs"):
+        P.MediaPipeDetector(model=str(tmp_path / "nope.task"))
+
+
+@pytest.mark.skipif(not os.path.exists(P.MODEL), reason="no pose model yet")
+def test_mediapipe_finds_the_batter_in_a_real_crop():
+    from src.extract import clip_list
+
+    root = os.path.join("data", "processed", "box")
+    rel = clip_list(root)[0]
+    frames = np.load(os.path.join(root, rel.replace("/", os.sep) + ".npy"))
+    detector = P.MediaPipeDetector()
+    found = 0
+    for frame in frames:
+        pose = detector(frame)
+        if pose is None:
+            continue
+        found += 1
+        assert pose.shape == (33, 3)
+        assert np.all((pose[:, 2] >= 0) & (pose[:, 2] <= 1))
+    assert found >= len(frames) // 2
+
+
 # ---- the heads ---------------------------------------------------------------
 
 def test_stgcn_gives_15_scores_and_trains():

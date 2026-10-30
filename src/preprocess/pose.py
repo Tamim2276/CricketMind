@@ -17,8 +17,9 @@ inside the crop, and stepping forward or back is half of a stroke.
 geometry, unlike a CNN feature map (8.7: flipped cached features matched at
 cosine 0.41), so the mirror half needs no second detector pass.
 
-    python -m src.extract --pose              writes data/features/pose/
-    python -m src.preprocess.pose --coverage  frames with a pose, per class
+    python -m src.extract --pose                 writes data/features/pose/
+    python -m src.preprocess.pose --overlays 30  skeletons on 30 clips, a sheet
+    python -m src.preprocess.pose --coverage     frames with a pose, per class
 """
 import argparse
 import os
@@ -32,11 +33,18 @@ from src.utils import progress
 from src.utils.checkpoint import append_result, atomic_save, read_results
 
 __all__ = ["JOINTS", "CHANNELS", "LEFT_RIGHT", "EDGES", "adjacency",
-           "normalise", "mirror", "build", "coverage", "POSE_DIR"]
+           "normalise", "mirror", "build", "coverage", "POSE_DIR",
+           "MediaPipeDetector", "overlays"]
 
 JOINTS = 33
 CHANNELS = 3                     # x, y, visibility
 POSE_DIR = os.path.join("data", "features", "pose")
+
+# the heavy model: batting poses are extreme, and the CPU has time
+MODEL = os.path.join("data", "models", "pose_landmarker_heavy.task")
+MODEL_URL = ("https://storage.googleapis.com/mediapipe-models/"
+             "pose_landmarker/pose_landmarker_heavy/float16/1/"
+             "pose_landmarker_heavy.task")
 
 # MediaPipe's numbering: 0 nose, 1-6 eyes, 7-8 ears, 9-10 mouth,
 # 11-12 shoulders, 13-14 elbows, 15-16 wrists, 17-22 hands, 23-24 hips,
@@ -110,6 +118,132 @@ def mirror(pose):
         flipped[..., right, :] = pose[..., left, :]
     flipped[..., 0] = -flipped[..., 0]
     return flipped
+
+
+PEOPLE = 3          # the batter, the keeper, sometimes a fielder
+CONFIDENCE = 0.3    # 0.5 missed batters in unusual poses
+# torso centre to crop centre, measured on 30 clips: the batter 0.02-0.21,
+# the keeper 0.27-0.31 when the batter was not found at all
+OFF_CENTRE = 0.25
+
+
+def nearest_centre(poses, limit=OFF_CENTRE):
+    """The pose whose torso centre is nearest the middle of the crop, or
+    None if even that one is too far off to be the batter.
+
+    The box crop is centred on the striker by construction (Day 3), but the
+    keeper is often in it too: asked for one person, MediaPipe picked the
+    keeper in 6 of 30 clips (2026-10-29). A missing frame is honest; the
+    keeper's pose filed as the batter's is not."""
+    best = None
+    best_distance = None
+    for pose in poses:
+        torso = (_midpoint(pose, LEFT_HIP, RIGHT_HIP)
+                 + _midpoint(pose, LEFT_SHOULDER, RIGHT_SHOULDER)) / 2.0
+        distance = float(np.linalg.norm(torso - 0.5))
+        if best is None or distance < best_distance:
+            best = pose
+            best_distance = distance
+    if best is None or best_distance > limit:
+        return None
+    return best
+
+
+class MediaPipeDetector:
+    """MediaPipe's pose landmarker, one frame at a time, on the CPU.
+
+    mediapipe 1.2 dropped the old `solutions` API; the Tasks API needs the
+    model file downloaded once. IMAGE mode, not VIDEO: each frame on its
+    own, so one frame's mistake cannot be carried into the next. Up to
+    PEOPLE poses a frame; the one nearest the crop's centre is the batter.
+    """
+
+    def __init__(self, model=MODEL):
+        if not os.path.exists(model):
+            raise SystemExit(f"no pose model at {model}. Download it once "
+                             f"with:\n  curl -L --create-dirs -o {model} "
+                             f"{MODEL_URL}")
+        from mediapipe.tasks.python import vision
+        from mediapipe.tasks.python.core.base_options import BaseOptions
+
+        options = vision.PoseLandmarkerOptions(
+            base_options=BaseOptions(model_asset_path=model),
+            running_mode=vision.RunningMode.IMAGE, num_poses=PEOPLE,
+            min_pose_detection_confidence=CONFIDENCE,
+            min_pose_presence_confidence=CONFIDENCE)
+        self.landmarker = vision.PoseLandmarker.create_from_options(options)
+
+    def __call__(self, frame):
+        """(H, W, 3) uint8 RGB -> (33, 3) raw pose of the batter, or None."""
+        import mediapipe as mp
+
+        image = mp.Image(image_format=mp.ImageFormat.SRGB,
+                         data=np.ascontiguousarray(frame))
+        result = self.landmarker.detect(image)
+        poses = []
+        for marks in result.pose_landmarks:
+            pose = np.zeros((JOINTS, CHANNELS), dtype=np.float32)
+            for i, mark in enumerate(marks):
+                pose[i, 0] = mark.x
+                pose[i, 1] = mark.y
+                pose[i, 2] = mark.visibility
+            poses.append(pose)
+        return nearest_centre(poses)
+
+    def close(self):
+        # before interpreter shutdown, or mediapipe complains on exit
+        self.landmarker.close()
+
+
+def _draw(frame, raw):
+    """The skeleton over one frame, bones by visibility."""
+    import cv2
+
+    picture = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    if raw is None:
+        cv2.putText(picture, "no pose", (8, 20), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6, (0, 0, 255), 2)
+        return picture
+    h, w = picture.shape[:2]
+    points = []
+    for x, y, _ in raw:
+        points.append((int(x * w), int(y * h)))
+    for i, j in EDGES:
+        seen = min(raw[i, 2], raw[j, 2])
+        colour = (0, int(255 * seen), int(255 * (1 - seen)))
+        cv2.line(picture, points[i], points[j], colour, 2)
+    for point in points:
+        cv2.circle(picture, point, 2, (255, 255, 255), -1)
+    return picture
+
+
+def overlays(detector, processed, path, count=30):
+    """One sheet: the middle frame of `count` clips spread over every
+    class, the skeleton drawn on. Green bones were seen, red ones guessed."""
+    import cv2
+    from src.extract import clip_list
+
+    clips = clip_list(os.path.join(processed, "box"))
+    step = max(len(clips) // count, 1)
+    tiles = []
+    for rel in clips[::step][:count]:
+        frames = np.load(os.path.join(processed, "box",
+                                      rel.replace("/", os.sep) + ".npy"))
+        middle = frames[len(frames) // 2]
+        tile = _draw(middle, detector(middle))
+        cv2.putText(tile, rel.split("/")[0], (6, tile.shape[0] - 8),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+        tiles.append(tile)
+    rows = []
+    per_row = 6
+    for start in range(0, len(tiles), per_row):
+        row = tiles[start:start + per_row]
+        while len(row) < per_row:
+            row.append(np.zeros_like(tiles[0]))
+        rows.append(np.hstack(row))
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    cv2.imwrite(path, np.vstack(rows))
+    return path
 
 
 def _manifest(out_dir):
@@ -213,8 +347,17 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--coverage", action="store_true",
                     help="frames with a pose, per class")
+    ap.add_argument("--overlays", type=int, metavar="N",
+                    help="draw N clips' skeletons onto one sheet")
+    ap.add_argument("--sheet", default=os.path.join("notes", "figures",
+                                                    "pose_overlays.png"))
+    ap.add_argument("--processed", default=os.path.join("data", "processed"))
     ap.add_argument("--out", default=POSE_DIR)
     args = ap.parse_args(argv)
+    if args.overlays:
+        detector = MediaPipeDetector()
+        print(overlays(detector, args.processed, args.sheet, args.overlays))
+        detector.close()
     if args.coverage:
         total_found = 0
         total = 0

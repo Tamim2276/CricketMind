@@ -59,6 +59,7 @@ class EvalStats(NamedTuple):
     clips: int
     preds: Optional[object] = None    # (N,) predicted labels, when collected
     labels: Optional[object] = None   # (N,) true labels, for a confusion matrix
+    logits: Optional[object] = None   # (N, classes) float32, for fusion
 
 
 def make_scaler(device=None):
@@ -229,6 +230,7 @@ def evaluate(model, loader, criterion=None, device=None,
     clips = 0
     preds = []
     labels = []
+    kept = []
 
     with torch.no_grad():
         for i, (x, y) in enumerate(loader):
@@ -255,6 +257,7 @@ def evaluate(model, loader, criterion=None, device=None,
             if collect:
                 preds.append(logits.argmax(dim=1).cpu())
                 labels.append(y.cpu())
+                kept.append(logits.cpu())
 
             if on_batch is not None:
                 on_batch(i, planned, loss.item())
@@ -264,9 +267,12 @@ def evaluate(model, loader, criterion=None, device=None,
 
     out_preds = None
     out_labels = None
+    out_logits = None
     if collect:
         out_preds = torch.cat(preds).numpy()
         out_labels = torch.cat(labels).numpy()
+        out_logits = torch.cat(kept).numpy()
 
     return EvalStats(loss_sum / clips, hits[0] / clips, hits[1] / clips,
-                     hits[2] / clips, clips, out_preds, out_labels)
+                     hits[2] / clips, clips, out_preds, out_labels,
+                     out_logits)

@@ -35,8 +35,8 @@ import torch.nn as nn
 
 __all__ = ["GRUHead", "LSTMHead", "LinearHead", "MLPHead", "PoolHead",
            "TransformerHead", "TCNHead", "AttnPoolHead", "NetVLADHead",
-           "STGCNHead", "FrameNorm", "pool_frames", "POOLS", "WIDTH", "FRAMES",
-           "CLUSTERS", "NUM_CLASSES", "HIDDEN", "DENSE"]
+           "STGCNHead", "CrossAttnHead", "FrameNorm", "pool_frames", "POOLS",
+           "WIDTH", "FRAMES", "CLUSTERS", "NUM_CLASSES", "HIDDEN", "DENSE"]
 
 
 def _init_gru_like_keras(gru: nn.GRU) -> None:
@@ -516,6 +516,54 @@ class STGCNHead(_Tail):
         for block in self.blocks:
             x = block(x, self.adjacency)               # (B, C, T, J)
         return self._tail(x.mean(dim=(2, 3)))
+
+
+class CrossAttnHead(_Tail):
+    """Pose frames attend to RGB frames (E04). (B, T, P + R) -> (B, classes).
+
+    Each frame arrives as its pose and its RGB features side by side. Both
+    shrink to WIDTH and get a learned position per frame; one cross-attention
+    layer lets every pose frame take from every RGB frame what it needs,
+    with a shortcut and a LayerNorm; then the mean over frames and the
+    shared tail. The last batch's weights stay in `last_weights`, (B, T, T).
+    """
+
+    def __init__(self, pose_dim: int, rgb_dim: int,
+                 num_classes: int = NUM_CLASSES, attn_heads: int = 4,
+                 dense: int = DENSE, dropout: float = 0.0):
+        super().__init__()
+        if WIDTH % attn_heads:
+            raise ValueError(f"attn_heads must divide {WIDTH}, got {attn_heads}")
+        self.pose_dim = pose_dim
+        self.rgb_dim = rgb_dim
+        self.in_dim = pose_dim + rgb_dim
+        self.pose_proj = nn.Linear(pose_dim, WIDTH)
+        self.rgb_proj = nn.Linear(rgb_dim, WIDTH)
+        self.pos = nn.Parameter(torch.zeros(1, FRAMES, WIDTH))
+        nn.init.normal_(self.pos, std=0.02)
+        self.attn = nn.MultiheadAttention(WIDTH, attn_heads, dropout=dropout,
+                                          batch_first=True)
+        self.attn_norm = nn.LayerNorm(WIDTH)
+        self.last_weights = None
+        self._build_tail(WIDTH, num_classes, dense, dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        _check_frames(x, self.in_dim)
+        frames = x.shape[1]
+        if frames > FRAMES:
+            raise ValueError(f"at most {FRAMES} frames, got {frames}")
+        pose = self.pose_proj(x[..., :self.pose_dim]) + self.pos[:, :frames]
+        rgb = self.rgb_proj(x[..., self.pose_dim:]) + self.pos[:, :frames]
+        # the fused eval path misses XPU autocast, as in TransformerHead
+        was = torch.backends.mha.get_fastpath_enabled()
+        torch.backends.mha.set_fastpath_enabled(False)
+        try:
+            taken, weights = self.attn(pose, rgb, rgb, need_weights=True)
+        finally:
+            torch.backends.mha.set_fastpath_enabled(was)
+        self.last_weights = weights.detach()
+        h = self.attn_norm(pose + taken)
+        return self._tail(h.mean(dim=1))
 
 
 class FrameNorm(nn.Module):
