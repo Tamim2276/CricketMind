@@ -33,6 +33,8 @@ FAMILIES = {
     "R": ("the authors' own method, from their notebooks, on their "
           "preprocessing", "7.7"),
     "E": ("the batter's pose instead of pixels", "28-29"),
+    "W": ("bat, ball and motion: small physical signals", "30-32"),
+    "F": ("multi-scale, hybrid and two-stream models", "32-36"),
 }
 
 MAX_DELTA = 3
@@ -83,6 +85,11 @@ BASES = {
         "config": os.path.join("configs", "mimic_author.yaml"),
         "set": {"method": "video3d", "lr": 1e-5, "batch_size": 2,
                 "accum": 2},
+    },
+    # Day 23's protocol around r3d_18, on motion instead of colour (32.2)
+    "motion3d": {
+        "config": os.path.join("configs", "mimic_author.yaml"),
+        "set": {"method": "motion", "backbone": "r3d_18"},
     },
     # finished runs' probabilities, averaged; nothing trains (29.1)
     "fusion": {
@@ -301,6 +308,32 @@ ENTRIES = [
     {"id": "E04_xattn_rgb_pose", "base": "pose_rgb", "cfg": {},
      "why": "pose frames attend to RGB frames: deeper than averaging two "
             "answers"},
+
+    # ---- W: the bat and ball tracks, from the authors' detectors (Day 30) ----
+    {"id": "W02_bat", "base": "cached_head",
+     "cfg": {"features": _cache("tracks"), "view": "bat"},
+     "why": "the bat's path, angle and speed, 10 numbers a frame: does the "
+            "bat alone tell a pull from a hook?"},
+    {"id": "W03_ball", "base": "cached_head",
+     "cfg": {"features": _cache("tracks"), "view": "ball"},
+     "why": "the ball's path, 5 numbers a frame; capped by finding the ball "
+            "in ~40% of frames"},
+    {"id": "W04_bat_ball_pose", "base": "cached_head",
+     "cfg": {"features": _cache("tracks"), "view": "bat_ball_pose"},
+     "why": "bat, ball and body together, 114 numbers a frame: a physical "
+            "description of the stroke"},
+    # motion into r3d_18, Day 23's protocol (Day 32)
+    {"id": "W01_flow_r3d", "base": "motion3d",
+     "cfg": {"motion": "flow", "features": _cache("flow")},
+     "why": "the classic motion stream: RAFT optical flow into r3d_18"},
+    {"id": "W05_framediff_r3d", "base": "motion3d", "cfg": {"motion": "diff"},
+     "why": "the cheapest motion signal, frame differences: W01's control"},
+
+    # ---- F: multi-scale, hybrid and two-stream (Days 32-36) ----
+    {"id": "F03_two_stream", "base": "fusion",
+     "cfg": {"fuse": [["C02_r3d_18"], ["W01_flow_r3d"]]},
+     "why": "the classic two-stream recipe: RGB r3d_18 and flow r3d_18, "
+            "answers averaged. Does motion add to an RGB 3D CNN?"},
 ]
 
 _ID = re.compile(r"^([A-Z])\d\d_[a-z0-9_]+$")

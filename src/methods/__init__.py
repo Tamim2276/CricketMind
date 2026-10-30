@@ -29,7 +29,7 @@ import importlib
 __all__ = ["load", "KNOWN"]
 
 KNOWN = ("video_gru", "cached_gru", "cached_head", "classical", "video3d",
-         "fusion", "pose_rgb")
+         "fusion", "pose_rgb", "motion")
 
 
 def load(name):

@@ -17,6 +17,10 @@ reshape, and **no fallbacks**:
     "avg"    avg/   (T, C)       -> unchanged    1280; Families A and D
     "video"  video/ (D,)         -> unchanged    512; one vector per clip
     "pose"   pose/  (T, 33, 3)   -> (T, 99)      joints, x y visibility (E)
+    "bat"    bat/   (T, 10)      -> unchanged    the bat track (W02)
+    "ball"   ball/  (T, 5)       -> unchanged    the ball track (W03)
+    "bat_ball_pose"  (T, 114)    -> unchanged    all three per frame (W04)
+    "flow"   flow/  (T, 2, H, W) -> unchanged    RAFT optical flow (W01)
 
 A fallback -- "read avg/ if it exists, else reduce grid/" -- is the kind of
 convenience that lets two experiments silently read different numbers, and
@@ -41,10 +45,13 @@ from src.data.dataset import _classes_for
 __all__ = ["FeatureDataset", "FEATURES", "VIEWS", "DIR_FOR_VIEW"]
 
 FEATURES = os.path.join("data", "features", "effnetv2s")
-VIEWS = ("flat", "grid", "avg", "video", "pose")
+VIEWS = ("flat", "grid", "avg", "video", "pose", "bat", "ball",
+         "bat_ball_pose", "flow")
 DIR_FOR_VIEW = {"flat": "grid", "grid": "grid", "avg": "avg", "video": "video",
-                "pose": "pose"}
-DIMS_FOR_VIEW = {"flat": 2, "grid": 4, "avg": 2, "video": 1, "pose": 2}
+                "pose": "pose", "bat": "bat", "ball": "ball",
+                "bat_ball_pose": "bat_ball_pose", "flow": "flow"}
+DIMS_FOR_VIEW = {"flat": 2, "grid": 4, "avg": 2, "video": 1, "pose": 2,
+                 "bat": 2, "ball": 2, "bat_ball_pose": 2, "flow": 4}
 MIRROR_SUFFIX = "_mirror"
 
 
@@ -83,6 +90,10 @@ class FeatureDataset(Dataset):
                 extra = "  Run: python -m src.extract --backbone r3d_18  (8.10)"
             if view == "pose":
                 extra = "  Run: python -m src.extract --pose  (28.1)"
+            if view in ("bat", "ball", "bat_ball_pose"):
+                extra = "  Run: python -m src.preprocess.tracks  (30.1)"
+            if view == "flow":
+                extra = "  Run: python -m src.preprocess.flow  (32.1)"
             raise FileNotFoundError(
                 f"no feature cache at {self.root} for view={view!r}.{extra}")
         if mirror and not os.path.isdir(self.mirror_root):
