@@ -5022,6 +5022,40 @@ python -m src.experiments.run --family C
 **While it runs:** build Days 28 and 30 (the pose and track code), CPU only.
 Their GPU extractions wait for the queue (rule 6).
 
+**Ran 2026-10-27 to 10-30, 59.5 GPU-hours** (plus the failed C08 start at
+lr 1e-4), deterministic kernels off. Val top-1 / macro-F1:
+
+| ID | author | grouped | mean |
+| --- | --- | --- | --- |
+| **C06 MViT-v2-S** | **83.40 / 0.826** | **84.51 / 0.841** | **84.0** |
+| C04 SlowFast R50 | 81.69 / 0.804 | 83.81 / 0.832 | 82.8 |
+| C05 X3D-M | 81.19 / 0.803 | 83.11 / 0.825 | 82.2 |
+| C08 VideoMAE (lr 1e-5) | 80.87 / 0.793 | 82.92 / 0.819 | 81.9 |
+| C07 Video Swin-T | 81.31 / 0.796 | 82.03 / 0.820 | 81.7 |
+| C01 R(2+1)D-18 | 80.49 / 0.790 | 79.67 / 0.788 | 80.1 |
+| C03 I3D R50 | 77.90 / 0.766 | 80.62 / 0.804 | 79.3 |
+| C02 R3D-18 | 78.35 / 0.768 | 79.16 / 0.781 | 78.8 |
+| *B04 ConvNeXt-T, best of B* | *80.24* | *81.52* | *80.9* |
+
+1. **Joint space-time beats "2-D per frame, then time".** Five of eight
+   video models beat the best B model on average; **MViT by +3.2 / +3.0**,
+   past the noise. The family's answer is yes, for the models built to
+   model motion (MViT's pooled attention over time, SlowFast's fast path,
+   X3D); the plain 3D CNNs (C01–C03) only tie the B models.
+2. **The price of fine-tuning (C02 against V01, the same r3d_18 frozen):
+   +32.8 / +32.3 points.** Frozen Kinetics features know little about
+   cricket shots; the network has to learn them.
+3. **VideoMAE, the frozen favourite, finished fourth** once its learning
+   rate was fixed: it memorises fastest (97% train by epoch 5), and our
+   shared protocol has none of the regularisation its paper fine-tunes
+   with. A Phase 4 candidate for its own recipe, not a Phase 3 winner.
+4. **Size, again, is not the story:** X3D-M (3M parameters) is third.
+5. Every model reached ~100% train accuracy: the same overfitting as
+   Family B, and the same Phase 4 item.
+6. The early-stop rule's one-clip "gains" kept several runs going long
+   (C05 author 68 epochs; C08 grouped's last best was +1 clip at lr 1e-7):
+   the Phase 4 fix stands.
+
 ---
 
 ## Days 28–37 — The stretch families: E, W and F
@@ -5259,6 +5293,39 @@ W02 (bat), W03 (ball) and W04 (bat + ball + pose, joined per frame) all go
 through GRU-128 as cached views, like E01. A missing frame gets a mask
 channel, not zeros.
 
+**Checked first, 30 clips, 2026-10-30** (15 frames each; ball on 15 evenly
+spaced raw frames):
+
+| | found | note |
+| --- | --- | --- |
+| bat box, 224 px | **81.3%** | 66.2% at 640: the crops' own size wins |
+| bat mask (angle), 224 px | 74.9% | Day 7 saw 65% |
+| ball, raw frame, 640 px | **40.4%** | 37.3% at the plan's 896: its training size wins |
+
+The ball ranges from 13% (Pull) to 73% (Late Cut) of frames: tiny, blurred,
+often out of shot. **That caps W03, and the cap is a finding.** So the
+detectors run at 224 (bat) and 640 (ball), not 896.
+
+**Built 2026-10-30.** `src/preprocess/tracks.py`:
+1. **Bat, on the box crops:** per frame found, centre x y, size w h (0..1 of
+   the crop), the angle of the bat mask's main axis as (cos 2a, sin 2a),
+   mask found, and dx dy from the frame before (only where both frames
+   have a bat) — 10 numbers. The angle is doubled because an axis has no
+   direction: 10° and 190° are the same bat, with no jump at 180°.
+2. **Ball, on every raw frame:** found, x y (0..1 of the raw frame), dx dy
+   — 5 numbers, resampled to the box clip's 15 points, each taking the
+   nearest raw frame within half a step that has a ball. Approximate in
+   time against the bat and pose: the box clips never recorded which raw
+   frames they kept (the same gap Day 44 must close).
+3. **Bat + ball + pose joined per frame**, 114 numbers, for W04.
+4. **Mirroring exact:** x → 1 − x (missing frames stay zeros), dx → −dx,
+   sin 2a → −sin 2a; tested equal to tracking detections made on the
+   flipped frame, for both bat and ball.
+5. Views `bat`, `ball`, `bat_ball_pose` in `FeatureDataset`; W02–W04 in the
+   registry as cached GRU-128 heads, like E01, reading `needs cache tracks`.
+6. Smoke test on 3 real clips: bat in 13–14 of 15 frames, ball in 7–9 of
+   15, ~1.7 s a clip beside C08 (~3–4.5 GPU-hours for all).
+
 ## Day 31 — Family W, part 2: run the tracks
 
 ```bash
@@ -5301,6 +5368,31 @@ training.
 
 **Read.** W05 against W01: is flow worth its cost over plain differences?
 F03 against C02: does motion add to an RGB 3D CNN?
+
+**Built 2026-10-30.**
+1. `src/preprocess/flow.py`: RAFT-small between consecutive box frames at
+   224 (its input scaled to −1..1 as its own transforms do; the last of
+   its refinements kept), shrunk to 112, where the values halve too (a
+   4-pixel move at 224 is 2 at 112; tested). (14, 2, 112, 112) fp16, ~0.7
+   MB a clip, resumable, non-finite flow counted as a failure.
+2. **The mirror is made on the fly, not stored:** flip left-right and
+   negate u, exact for a flow field (tested), saving the plan's second
+   7 GB. `--verify N` recomputes N clips spread over the cache and runs
+   one clip twice, for Day 14's not-quite-repeatable kernels.
+3. `src/models/motion.py` (`MotionClassifier`): r3d_18 from Kinetics, its
+   first Conv3d rebuilt for 2 (flow) or 3 (frame-difference) channels,
+   each starting from the mean of the pretrained RGB filters; a new last
+   layer. Flow is divided by `FLOW_SCALE` (10 px, a first guess to check
+   against the built cache's mean_px / max_px before W01 runs); frame differences
+   |f(t+1) − f(t)| are taken inside the model from the box clip and
+   shrunk to 112, so flipping the clip flips them exactly (tested).
+4. `src/methods/motion.py`: `motion: flow` reads the cache (`FlowDataset`,
+   mirrored on the fly), `motion: diff` reads the box clips as video_gru
+   does. Base `motion3d` (Day 23's protocol, r3d_18); W01 and W05 in the
+   registry, and **F03** (`fusion`: C02 + W01), which opens Family F.
+5. W05 is ready now. W01 waits for the flow cache, and F03 for W01.
+   RAFT's weights download once; the build follows C08 and the tracks
+   on the GPU.
 
 ## Day 33 — Family F, part 1: multi-scale and hybrid
 

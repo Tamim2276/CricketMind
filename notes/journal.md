@@ -3814,3 +3814,53 @@ pooled view), which is part of it.
 The useful part is the first result: pose and pixels make different
 mistakes. Phase 4 should try the pose head averaged into MViT and
 SlowFast; the fusion method already does that.
+
+## 2026-10-30 — Day 30: bat and ball tracks
+
+Measured before building, as the plan asked: on 30 clips the bat box is
+found in 81% of frames, its mask in 75%, and the ball in only 40%. Two of
+the plan's numbers turned out wrong for these detectors: the bat model
+does better at the crops' own 224 px than at 640, and the ball model
+better at its training size, 640, than at 896. The ball's 40% is a hard
+ceiling on what W03 can do, and worth reporting as it is.
+
+The tracks are small: 10 numbers a frame for the bat (where, how big, at
+what angle, how fast), 5 for the ball. The bat's angle is doubled before
+it is stored, because a bat pointing at 10 and at 190 degrees is the same
+bat. The ball track is only approximately aligned in time with the bat
+and pose, because the box clips never recorded which raw frames they
+kept; that same gap is what Day 44 has to close for CricketMind.
+
+## 2026-10-30 — Day 32: motion, two ways
+
+Two ways to feed motion to the same Kinetics r3d_18. W01 uses optical flow
+from RAFT: how far each pixel moved between frames. W05 just subtracts
+each frame from the next, which costs nothing and is W01's control: if
+plain differences do as well, flow is not worth its price.
+
+Two small savings. The flow is stored once; the mirrored version is made
+on the fly by flipping the field and negating its left-right part, which
+is exact for flow and saves 7 GB. And the frame differences are taken
+inside the model, so the clip's ordinary flip already flips them exactly;
+a test checks that the order doesn't matter.
+
+The network's first layer has to change, since flow has two channels and
+not three colours. Each new channel starts from the average of the
+pretrained colour filters, the usual way to carry Kinetics weights over
+to motion.
+
+## 2026-10-30 — Family C done: MViT, 84.0 on average
+
+The last run, VideoMAE on grouped, finished at 82.92. Family C's answer to
+its question is yes, with a condition: the video models built around
+motion (MViT, SlowFast, X3D) beat every per-frame image model, MViT by
+about three points on both splits, while the plain 3D CNNs only tie them.
+
+VideoMAE, the strongest frozen model and my favourite to win, came fourth.
+It memorises faster than anything else here, and the shared recipe gives
+it none of the regularisation it was designed to be fine-tuned with. That
+makes it a Phase 4 question rather than a Phase 3 answer.
+
+The frozen-against-fine-tuned number the plan asked for: the same r3d_18
+gains 32 points when it is allowed to learn. Best overall now: MViT-v2-S,
+83.40 author, 84.51 grouped. The authors' 89% is about five points away.
