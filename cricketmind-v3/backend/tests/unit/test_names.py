@@ -1,4 +1,15 @@
-from cricketmind_v3.domain.names import Player, find_players, name_list, simplify
+from cricketmind_v3.domain.names import (
+    Clues,
+    Player,
+    clearly_most_played,
+    close_spellings,
+    clue_fits,
+    describe,
+    find_players,
+    name_list,
+    prefer_by_clues,
+    simplify,
+)
 
 KOHLI = Player(person_id="ba607b88", name="V Kohli", matches=400)
 ROHIT = Player(person_id="740742ef", name="RG Sharma", matches=450)
@@ -120,3 +131,97 @@ def test_cricsheets_number_for_two_people_of_one_name_is_ignored():
         "Imran Khan",
         "Imran Khan (1)",
     ]
+
+
+# Day 58: telling players of one name apart
+
+STEVE = Player(
+    person_id="30a45b23",
+    name="SPD Smith",
+    matches=574,
+    teams=("Australia", "Sydney Sixers"),
+    formats=("ODI", "T20", "T20I", "Test"),
+    first_year=2010,
+    last_year=2026,
+    gender="male",
+)
+GRAEME = Player(
+    person_id="6f0ef3ea",
+    name="GC Smith",
+    matches=314,
+    teams=("South Africa",),
+    formats=("ODI", "T20", "T20I", "Test"),
+    first_year=2002,
+    last_year=2014,
+    gender="male",
+)
+DWAYNE = Player(
+    person_id="1c4c1b5f",
+    name="DR Smith",
+    matches=319,
+    teams=("West Indies", "Chennai Super Kings"),
+    formats=("ODI", "T20", "T20I", "Test"),
+    first_year=2004,
+    last_year=2019,
+    gender="male",
+)
+SMITHS = [STEVE, DWAYNE, GRAEME]
+
+
+def test_a_clue_narrows_the_namesakes():
+    assert names(prefer_by_clues(SMITHS, Clues(teams=("Australia",)))) == ["SPD Smith"]
+    assert names(prefer_by_clues(SMITHS, Clues(from_year=2016))) == [
+        "SPD Smith",
+        "DR Smith",
+    ]
+    both = prefer_by_clues(SMITHS, Clues(teams=("India", "Australia")))
+    assert names(both) == ["SPD Smith"]  # his side or the other: either may be his
+
+
+def test_a_clue_that_fits_nobody_rules_nobody_out():
+    assert names(prefer_by_clues(SMITHS, Clues(teams=("Nepal",)))) == names(SMITHS)
+    assert names(prefer_by_clues(SMITHS, Clues(gender="female"))) == names(SMITHS)
+
+
+def test_clues_add_up():
+    clues = Clues(match_format="Test", from_year=2016, to_year=2018)
+    assert names(prefer_by_clues(SMITHS, clues)) == ["SPD Smith", "DR Smith"]
+
+
+def test_clearly_the_most_played():
+    a_kohli = Player(person_id="aaaa0003", name="A Kohli", matches=41)
+    assert clearly_most_played(
+        [Player(person_id="x", name="V Kohli", matches=837), a_kohli]
+    )
+    assert not clearly_most_played(SMITHS)  # 574 against 319
+    assert clearly_most_played([STEVE])
+    assert not clearly_most_played([])
+
+
+def test_a_misspelt_name_offers_close_spellings():
+    v_kohli = Player(person_id="ba607b88", name="V Kohli", matches=837)
+    a_kohli = Player(person_id="aaaa0003", name="A Kohli", matches=41)
+    found = close_spellings("Kholi", [a_kohli, v_kohli, STEVE])
+    assert names(found) == ["V Kohli", "A Kohli"]  # most-played first
+    assert close_spellings("Jaddu", [v_kohli, STEVE]) == []
+
+
+def test_a_clue_fits_who_he_is():
+    assert clue_fits("the Australian", STEVE)
+    assert not clue_fits("the Australian", GRAEME)
+    assert clue_fits("in 2005", GRAEME)
+    assert not clue_fits("in 2020", GRAEME)  # he had stopped
+    assert not clue_fits("the captain", STEVE)  # nothing to check it against
+    oman = Player(
+        person_id="o1", name="A Khan", teams=("Oman",), first_year=2015, last_year=2024
+    )
+    assert clue_fits("the Omani bowler", oman)
+    assert not clue_fits("the woman who bowls", oman)  # Oman hides inside "woman"
+
+
+def test_described_without_a_statistic():
+    assert (
+        describe(STEVE)
+        == "SPD Smith; Australia, Sydney Sixers; ODI, T20, T20I, Test; 2010-2026"
+    )
+    assert describe(KOHLI) == "V Kohli"

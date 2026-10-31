@@ -94,6 +94,17 @@ class Unsure:
     field: str  # "player"
     written: str  # "Mendis", as the question has it
     candidates: tuple[Player, ...]  # most-played first
+    why: str = "several players have this name"  # or "nobody has it; close spellings"
+
+
+@dataclass(frozen=True, kw_only=True)
+class AskValue:
+    """Something the question says that could mean more than one thing: asked back."""
+
+    field: str  # "k"
+    written: str  # "the next over"
+    why: str  # "an over is six balls, but he may face fewer of them"
+    suggestion: str | None = None  # "6"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -105,10 +116,10 @@ class Reading:
     unknown: tuple[str, ...] = ()  # names nobody in the register has
     unsure: tuple[Unsure, ...] = ()  # names several players share
     not_in_question: tuple[str, ...] = ()  # what the model gave that the question lacks
-    not_looked_up: tuple[
-        tuple[str, str], ...
-    ] = ()  # ("venue", "Mirpur"): Day 58, part 2
+    # ("venue", "Mirpur"): kept as written until part 2's registers
+    not_looked_up: tuple[tuple[str, str], ...] = ()
     notes: tuple[str, ...] = ()  # "read as men's cricket: no gender named"
+    asks: tuple[AskValue, ...] = ()  # "the next over": his next 6 balls?
 
 
 # the checks on a model's reading
@@ -126,7 +137,17 @@ NUMBER_WORDS = {
     "ten": 10,
     "eleven": 11,
     "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+    "twenty": 20,
+    "thirty": 30,
 }
+TENS = ("twenty", "thirty")  # "twenty four"
 INNINGS_WORDS = {
     1: ("1", "1st", "first"),
     2: ("2", "2nd", "second", "chasing", "chase"),
@@ -153,10 +174,15 @@ def appears_in(written: str, question: str) -> bool:
 
 
 def says_number(value: int, question: str) -> bool:
-    """The question says this number, in digits or as a word: "6" or "six"."""
-    for word in words(question):
+    """The question says this number, in digits or in words: "6", "six", "twenty four"."""
+    said = words(question)
+    for i, word in enumerate(said):
         if word == str(value) or NUMBER_WORDS.get(word) == value:
             return True
+        if word in TENS and i + 1 < len(said):
+            ones = NUMBER_WORDS.get(said[i + 1], 0)
+            if 1 <= ones <= 9 and NUMBER_WORDS[word] + ones == value:
+                return True
     return False
 
 
@@ -198,9 +224,15 @@ MONTHS = (
 
 def says_date(value: str, question: str) -> bool:
     """The question says this day: "2024-04-12" needs 2024, 12, and April or 4."""
+    year, month, day = date_parts_said(value, question)
+    return year and month and day
+
+
+def date_parts_said(value: str, question: str) -> tuple[bool, bool, bool]:
+    """Which of the day's year, month and day the question says."""
     parts = value.split("-")
     if len(parts) != 3 or not (parts[0] + parts[1] + parts[2]).isdigit():
-        return False
+        return False, False, False
     year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
     said = words(question)
     has_year = str(year) in said
@@ -213,4 +245,22 @@ def says_date(value: str, question: str) -> bool:
             has_month = True
         if 1 <= month <= 12 and word in (MONTHS[month - 1], MONTHS[month - 1][:3]):
             has_month = True
-    return has_year and has_day and has_month
+    return has_year, has_month, has_day
+
+
+def next_overs(question: str) -> int | None:
+    """How many overs "the next over" or "the next two overs" says; asked back as balls,
+    since he may face fewer than six of an over's balls."""
+    said = words(question)
+    for i, word in enumerate(said):
+        if word not in ("over", "overs"):
+            continue
+        if i >= 1 and said[i - 1] == "next":
+            return 1
+        if i >= 2 and said[i - 2] == "next":
+            count = said[i - 1]
+            if count.isdigit():
+                return int(count)
+            if count in NUMBER_WORDS:
+                return NUMBER_WORDS[count]
+    return None

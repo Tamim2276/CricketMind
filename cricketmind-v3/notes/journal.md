@@ -2059,3 +2059,56 @@ rewritten and run again in full). Limits of the checks: L-070.
 - Decisions: D-075
 - Limitations: L-070
 - Section it feeds: Method (reading a question); Implementation (N3)
+
+---
+
+## Day 58, part 2a — 2026-11-01 — Which Smith? A search that checks every step
+
+**Split again:** part 2 became 2a (names) and 2b (grounds, teams, and the register id for a
+name several players have word for word). Added on the user's word (L-070): close
+spellings, more number words, and questions back for "the next over" and a day with no
+year.
+**Learned:** *agentic retrieval*: search, judge what came back, search again. Here the
+model may only point: at a fuller name in the question, or at the words that show which
+player. The code checks each pointing, so the model never decides.
+**Looked at first** (the real register, read-only): how lopsided shared names are.
+
+```
+Kohli   V Kohli 837 matches, A Kohli 41       20x   kept, and said
+Babar   Babar Azam 510, Babar Hayat 177       2.9x  asked, unless a clue settles it
+Mendis  BKG 402, PHKD 165                     2.4x  asked
+Smith   SPD 574, DR 319                       1.8x  asked
+Rashid  AU Rashid 550, Rashid Khan 400        1.4x  asked
+```
+
+So the rule: kept only at five times the next one's matches (`MOST_PLAYED_BY`, a design
+parameter). And spellings: "kholi" finds the Kohlis, "bumrha" Bumrah, "smtih" Smith, in a
+quarter of a second; "jaddu" nothing.
+**Built (D-076):** `Player` gains who he is: sides (most played first), formats (T20I for
+a T20 between international sides, D-047), first and last year, gender, loaded from
+`people` and `matches` (0.4 s for 13,741 players). In `domain/names.py`: `Clues`,
+`prefer_by_clues` (a clue that fits nobody is set aside), `clearly_most_played`,
+`close_spellings`, `clue_fits` (a side at the start of a word, or a year of his career),
+`describe` (never a statistic). `application/resolver.py`: `find_player`, the search: look
+up; narrow by clues; the clearly most-played; the model's fuller name or its pointed
+clue, each checked; at most three look-ups; then ask, or offer spellings, or unknown. The
+reader checks the values first, so only checked values can be clues, then finds the
+people. `AskValue` asks back "the next over" (his next 6 balls?) and "19 November" (which
+year?). Balls in words up to thirty ("twenty four"). The run-by-hand script shows all of
+it.
+**Tested:** 31 new tests, 742 in all. The fake model searches again with "Kamindu Mendis"
+(found in two look-ups); its fuller name not in the question is not searched; its pick
+stands on "The Australian" for SPD Smith, and falls with a clue not in the question, one
+that fits two players (2012), one that does not fit him, or an id it was never shown;
+three look-ups at most, the fourth reply never needed; a failing model leaves it to the
+user. A side the model made up is no clue. Fourteen deliberate mistakes; thirteen caught.
+**Missed:** a clue matched by any letters, not a word's start: no test had a side hidden
+inside another word. Cricket has one: Oman, inside "woman". Fixed with a test, then caught.
+**Still to do (part 2b):** five players are called "Imran Khan" word for word; once one is
+told apart, the subject must carry his register id, and the engines and C6 must read it.
+Until then the engine refuses the name, and no number is given.
+
+**For the paper:**
+- Decisions: D-076
+- Limitations: L-029 and L-070 updated
+- Section it feeds: Method (reading a question); Implementation (N3)

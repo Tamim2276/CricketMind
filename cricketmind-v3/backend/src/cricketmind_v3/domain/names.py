@@ -1,6 +1,14 @@
-"""Who a name in a question means (Day 33): "Kohli" -> "V Kohli"."""
+"""Who a name in a question means (Day 33): "Kohli" -> "V Kohli". And, when several
+players have it, what tells them apart (Day 58): never a statistic, only who they are."""
 
+import difflib
 from dataclasses import dataclass
+
+# the top player is kept only with this many times the next one's matches: "Kohli" is
+# V Kohli (837 matches) before A Kohli (41); "Smith" (574 against 319) is asked back.
+# A design parameter, like D-010's (Day 58)
+MOST_PLAYED_BY = 5
+CLOSE_SPELLING = 0.8  # how alike two names must be to be offered: "kholi", "kohli"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -11,6 +19,25 @@ class Player:
     name: str  # "V Kohli": the name used most in the data
     aliases: tuple[str, ...] = ()  # other names: "Virat Kohli" (Day 34)
     matches: int = 0  # how many matches they played: the tie-breaker
+    # what tells two players of one name apart (Day 58)
+    teams: tuple[
+        str, ...
+    ] = ()  # "India", "Royal Challengers Bengaluru": most played first
+    formats: tuple[str, ...] = ()  # "Test", "ODI", "T20I", "T20" (D-047)
+    first_year: int | None = None
+    last_year: int | None = None
+    gender: str | None = None  # "male" or "female"
+
+
+@dataclass(frozen=True, kw_only=True)
+class Clues:
+    """What a question says that can tell players of one name apart."""
+
+    teams: tuple[str, ...] = ()  # the sides it names, his or the other: "Australia"
+    match_format: str | None = None  # "Test"
+    gender: str | None = None
+    from_year: int | None = None  # since, or a season
+    to_year: int | None = None  # before, or a season
 
 
 def simplify(text: str) -> str:
@@ -107,3 +134,113 @@ def name_list(players: list[Player]) -> dict[str, tuple[str, ...]]:
                 ways.append(alias)
         names[player.name] = tuple(ways)
     return names
+
+
+# telling players of one name apart (Day 58)
+
+
+def close_spellings(written: str, players: list[Player]) -> list[Player]:
+    """Players whose name, or surname, is spelt nearly like this: "Kholi" finds the
+    Kohlis. Only ever offered, never taken: a near name can be another player."""
+    wanted = simplify(written)
+    spellings = {}
+    for player in players:
+        for name in (player.name, *player.aliases):
+            whole = simplify(name)
+            _note(spellings, whole, player)
+            parts = whole.split()
+            if len(parts) >= 2:
+                _note(spellings, parts[-1], player)  # the surname alone
+    found = []
+    for spelling in difflib.get_close_matches(
+        wanted, list(spellings), n=5, cutoff=CLOSE_SPELLING
+    ):
+        if spelling == wanted:
+            continue  # the same spelling was a find, not a near miss
+        for player in spellings[spelling]:
+            if player not in found:
+                found.append(player)
+    return sorted(found, key=_most_played_first)
+
+
+def _note(spellings: dict[str, list[Player]], spelling: str, player: Player) -> None:
+    if spelling not in spellings:
+        spellings[spelling] = []
+    if player not in spellings[spelling]:
+        spellings[spelling].append(player)
+
+
+def prefer_by_clues(candidates: list[Player], clues: Clues) -> list[Player]:
+    """The candidates the question's clues fit: his team, the format, men or women, the
+    years. A clue that fits none of them is set aside, not used to rule everyone out."""
+    kept = list(candidates)
+    for fits in (_fits_gender, _fits_format, _fits_team, _fits_years):
+        narrowed = []
+        for player in kept:
+            if fits(player, clues):
+                narrowed.append(player)
+        if narrowed:
+            kept = narrowed
+    return kept
+
+
+def clearly_most_played(candidates: list[Player]) -> bool:
+    """One player has played far more than the next (MOST_PLAYED_BY times)."""
+    if len(candidates) < 2:
+        return len(candidates) == 1
+    ranked = sorted(candidates, key=_most_played_first)
+    return ranked[0].matches >= MOST_PLAYED_BY * ranked[1].matches
+
+
+def describe(player: Player) -> str:
+    """Who he is, for a question back: never a statistic."""
+    parts = [player.name]
+    if player.teams:
+        parts.append(", ".join(player.teams[:3]))
+    if player.formats:
+        parts.append(", ".join(player.formats))
+    if player.first_year is not None:
+        parts.append(f"{player.first_year}-{player.last_year}")
+    return "; ".join(parts)
+
+
+def _fits_gender(player: Player, clues: Clues) -> bool:
+    return clues.gender is None or player.gender == clues.gender
+
+
+def _fits_format(player: Player, clues: Clues) -> bool:
+    return clues.match_format is None or clues.match_format in player.formats
+
+
+def _fits_team(player: Player, clues: Clues) -> bool:
+    if not clues.teams:
+        return True
+    for named in clues.teams:
+        for team in player.teams:
+            if simplify(team) == simplify(named):
+                return True
+    return False
+
+
+def clue_fits(clue: str, player: Player) -> bool:
+    """A clue's words fit who he is: a side he played for ("Australian" fits
+    Australia), or a year of his career."""
+    said = simplify(clue)
+    for team in player.teams:
+        if (" " + simplify(team)) in (" " + said):  # at the start of a word
+            return True
+    if player.first_year is None:
+        return False
+    for word in said.split():
+        is_year = word.isdigit() and len(word) == 4
+        if is_year and player.first_year <= int(word) <= player.last_year:
+            return True
+    return False
+
+
+def _fits_years(player: Player, clues: Clues) -> bool:
+    if player.first_year is None:
+        return clues.from_year is None and clues.to_year is None
+    if clues.from_year is not None and player.last_year < clues.from_year:
+        return False  # he had stopped before it
+    return clues.to_year is None or player.first_year <= clues.to_year

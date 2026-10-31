@@ -14,6 +14,7 @@ import duckdb
 
 from cricketmind_v3.application.reader import read_question
 from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer
+from cricketmind_v3.domain.names import describe, name_list
 from cricketmind_v3.infrastructure.ollama_llm import OllamaLLM
 from cricketmind_v3.pipeline.players import load_players
 
@@ -21,8 +22,10 @@ QUESTIONS = [
     "Kohli out within 6 balls in the T20 powerplay against pace?",
     "What is Babar Azam's strike rate in ODIs?",
     "Would Bumrah or Starc get Smith out sooner in Tests?",
+    "Australia's Smith out within 6 balls in Tests?",
+    "Is Kamindu Mendis or Kusal Mendis better against spin?",
+    "Kholi out in the next over?",
     "What is LBW?",
-    "Mendis out within 6 balls?",
     "India's win share at Mirpur?",
 ]
 
@@ -30,10 +33,7 @@ QUESTIONS = [
 def main(database: str, model: str) -> None:
     db = duckdb.connect(database, read_only=True)
     players = tuple(load_players(db))
-    every_name = {}
-    for player in players:
-        every_name[player.name] = player.aliases
-    names = cricket_gazetteer(every_name)  # for the rules, if the model fails
+    names = cricket_gazetteer(name_list(list(players)))  # for the rules, if needed
     print(f"{len(players):,} players in the register; the model: {model}\n")
     llm = OllamaLLM(model)
     for question in QUESTIONS:
@@ -42,12 +42,13 @@ def main(database: str, model: str) -> None:
         print(f"{time.time() - started:5.1f}s  {question}")
         print(f"        read by {reading.by}: {filled(reading.subject)}")
         for unsure in reading.unsure:
-            candidates = []
-            for player in unsure.candidates[:4]:
-                candidates.append(player.name)
             print(
-                f"        which {unsure.written}? {len(unsure.candidates)}: {candidates}"
+                f"        which {unsure.written}? {unsure.why} ({len(unsure.candidates)})"
             )
+            for player in unsure.candidates[:3]:
+                print(f"          - {describe(player)}")
+        for ask in reading.asks:
+            print(f"        ask about {ask.written}: {ask.why}")
         for label, items in (
             ("unknown", reading.unknown),
             ("not in the question", reading.not_in_question),

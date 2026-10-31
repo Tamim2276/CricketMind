@@ -1495,3 +1495,38 @@ Template:
   good name); matching names loosely (a near name is a different player).
 - Status: built (Day 58, part 1)
 - Paper section: Method (reading a question); Implementation (N3)
+
+## D-076 — Which player a name means: a small agentic search that checks every step
+- Date: 2026-11-01
+- Decision: each name N3 reads (D-075) is found in this order (`application/resolver.py`).
+  (1) The register is searched (Day 33's `find_players`). (2) If several players have the
+  name, the question's checked clues narrow them: a side it names (his or the other), the
+  format, men or women, the years (since, before, a season); a clue that fits none of them
+  is set aside, not used to rule everyone out. (3) If one has at least five times the next
+  one's matches (`MOST_PLAYED_BY`, a design parameter: V Kohli 837 against A Kohli 41;
+  SPD Smith 574 against DR Smith 319 is asked), he is kept and the reading says so. (4)
+  Otherwise the model sees the players, described by sides, formats and years and never by
+  a statistic, and may search again with a fuller name, taken only if it is longer and in
+  the question word for word, or pick one with the words of the question that show which,
+  taken only if those words are in the question and fit him and no one else shown (a side
+  he played for at the start of a word, or a year of his career). At most three look-ups.
+  (5) Still several: asked back. Nobody: close spellings (`difflib`, 0.8 alike), offered
+  and never taken; nothing close: unknown. A player's profile (sides most played first,
+  formats with T20I for a T20 between international sides, first and last year, gender)
+  comes from `people` and `matches` when the register loads (0.4 s for 13,741 players).
+  Also asked back, never guessed: "the next over" (his next 6 balls? he may face fewer),
+  and a day without its year. Numbers of balls in words go up to thirty.
+- Why: D-055's agentic retrieval for names, with a check on every step so that the model
+  can point but never decide: its pick stands only on words the code can match to who the
+  player is. On the real register "Kohli" is 6 players, "Smith" 56, "Mendis" 12; asking
+  every time is safe but tiresome, and guessing the most-played is wrong when they are
+  close (L-029). A near spelling can be another player, so it is offered, never taken.
+- Alternatives considered: always the most-played (wrong for Smith, Rashid, Mendis); the
+  model's pick on trust (a guess with a reason attached); matching names loosely (a near
+  name is a different person); a lower threshold for "clearly" (Babar Azam 510 against
+  Babar Hayat 177 is 2.9 times; still asked unless a clue settles it).
+- Still to do: a name several players have word for word (five "Imran Khan"s), once told
+  apart, needs the subject to carry his register id, which the engines and C6 must then
+  read (Day 58, part 2b); until then the engine refuses that name (D-040), no number given.
+- Status: built (Day 58, part 2a)
+- Paper section: Method (reading a question); Implementation (N3)

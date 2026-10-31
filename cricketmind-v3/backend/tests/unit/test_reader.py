@@ -7,14 +7,15 @@ from cricketmind_v3.application.ports import FakeLLM, LLMError
 from cricketmind_v3.application.reader import QuestionForm, read_question
 from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer
 from cricketmind_v3.domain.names import Player
+from cricketmind_v3.domain.reading import AskValue
 from cricketmind_v3.domain.subject import CricketSubject
 
 PLAYERS = (
     Player(person_id="ba607b88", name="V Kohli", aliases=("Virat Kohli",), matches=600),
     Player(person_id="462411b3", name="JJ Bumrah", matches=300),
     Player(person_id="7c7d63a2", name="MA Starc", matches=350),
-    Player(person_id="30a45b23", name="SPD Smith", matches=400),
-    Player(person_id="6f0ef3ea", name="GC Smith", matches=300),
+    Player(person_id="30a45b23", name="SPD Smith", matches=400, teams=("Australia",)),
+    Player(person_id="6f0ef3ea", name="GC Smith", matches=300, teams=("South Africa",)),
     Player(person_id="2f39d6a1", name="BKG Mendis", matches=150),
     Player(
         person_id="d5f0b6c3",
@@ -208,3 +209,64 @@ def test_a_team_or_ground_with_no_gender_is_mens():
 def test_a_player_question_gets_no_gender():
     reading, _ = read("Kohli's strike rate?", form(player="Kohli"))
     assert reading.subject.gender is None
+
+
+# Day 58, part 2a
+
+
+def test_the_next_over_is_asked_back_never_guessed():
+    reading, _ = read("Kohli out in the next over?", form(player="Kohli"))
+    assert reading.subject.k is None
+    assert reading.asks == (
+        AskValue(
+            field="k",
+            written="the next over",
+            why="an over is six balls, but he may face fewer: his next 6 balls?",
+            suggestion="6",
+        ),
+    )
+    reading, _ = read("Kohli out in the next two overs?", form(player="Kohli"))
+    assert reading.asks[0].suggestion == "12"
+
+
+def test_a_day_without_its_year_is_asked_back():
+    reading, _ = read(
+        "Who won India against Australia on 19 November?",
+        form(team="India", opposition="Australia", date="2023-11-19"),
+    )
+    assert reading.subject.date is None
+    assert reading.asks == (
+        AskValue(field="date", written="19 November", why="which year?"),
+    )
+    assert reading.not_in_question == ()
+
+
+def test_a_number_of_balls_in_words():
+    reading, _ = read("Kohli out within twenty four balls?", form(player="Kohli", k=24))
+    assert reading.subject.k == 24
+
+
+def test_a_side_in_the_question_tells_two_smiths_apart():
+    reading, _ = read(
+        "Australia's Smith out within 6 balls?",
+        form(player="Smith", team="Australia", k=6),
+    )
+    assert reading.subject.player == "SPD Smith"
+    assert reading.unsure == ()
+    assert "Smith read as the only one of 2" in reading.notes[1]
+
+
+def test_only_a_checked_value_is_a_clue():
+    # the model adds "Australia", which the question never says: no clue, so asked
+    reading, _ = read("Smith's strike rate?", form(player="Smith", team="Australia"))
+    assert reading.not_in_question == ("Australia",)
+    assert reading.subject.player is None
+    assert reading.unsure[0].written == "Smith"
+
+
+def test_a_misspelt_name_is_asked_back_with_close_spellings():
+    reading, _ = read("Kholi's strike rate?", form(player="Kholi"))
+    assert reading.subject.player is None
+    assert reading.unknown == ()
+    assert reading.unsure[0].why == "nobody has this name; did you mean one of these?"
+    assert reading.unsure[0].candidates[0].name == "V Kohli"

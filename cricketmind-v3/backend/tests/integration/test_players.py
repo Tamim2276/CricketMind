@@ -48,3 +48,20 @@ def test_searching_the_real_names(players):
     assert find_players("Malinga", players)[0].name == "E Malinga"
     assert find_players("Eshan Malinga", players)[0].name == "E Malinga"
     assert find_players("Nithish Kumar Reddy", players)[0].name == "Nithish Kumar Reddy"
+
+
+def test_what_tells_players_apart(players):
+    # Day 58: his sides, formats, years and gender; never a statistic
+    malinga = by_name(players, "E Malinga")
+    assert malinga.teams == ("Sri Lanka", "Sunrisers Hyderabad")  # one match each
+    assert malinga.formats == ("T20", "T20I")  # the T20I: international sides
+    assert (malinga.first_year, malinga.last_year) == (2026, 2026)
+    assert malinga.gender == "male"
+
+
+def test_a_womens_player_is_female(players):
+    women = []
+    for player in players:
+        if player.gender == "female":
+            women.append(player)
+    assert len(women) == 22  # the one women's match in the fixtures

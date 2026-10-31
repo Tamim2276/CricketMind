@@ -1,10 +1,12 @@
-"""N3 reads a question with the language model, and never trusts it (Day 58, part 1).
+"""N3 reads a question with the language model, and never trusts it (Day 58).
 
 The model fills a form whose fields are the subject's, with allowed values wherever the
 data has them. Then plain code checks it: every name, value and number must be in the
-question's own words, and every name is looked up in the player register (one player:
-kept; nobody: unknown; several: asked back, never guessed). A reply that does not fit
-is asked again once, with the reason; if it fails again, the rules read the question.
+question's own words. Each name is found by a small agentic search (resolver.py): one
+player is kept; several are told apart by the question's checked clues, or asked back,
+never guessed; nobody gets close spellings, offered. "The next over" and a day with no
+year are asked back too. A reply that does not fit is asked again once, with the
+reason; if it fails again, the rules read the question.
 """
 
 from typing import Literal
@@ -12,14 +14,18 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from cricketmind_v3.application.ports import LLM, LLMError
+from cricketmind_v3.application.resolver import find_player
 from cricketmind_v3.domain.faith.gazetteer import BOWLER_TYPES, PHASES, SHOTS, Entry
-from cricketmind_v3.domain.names import Player, find_players
+from cricketmind_v3.domain.names import Clues, Player
 from cricketmind_v3.domain.reading import (
     FORMATS,
+    MONTHS,
     WOMEN,
+    AskValue,
     Reading,
-    Unsure,
     appears_in,
+    date_parts_said,
+    next_overs,
     read_by_rules,
     says_date,
     says_digits,
@@ -129,7 +135,7 @@ def read_question(
             by="rules",
             notes=(f"read by rules: the model's reply did not fit twice ({reason})",),
         )
-    return _check(form, question, players)
+    return _check(form, question, players, llm)
 
 
 def _ask(llm: LLM, question: str) -> QuestionForm:
@@ -143,38 +149,18 @@ def _ask(llm: LLM, question: str) -> QuestionForm:
         return llm.answer(SYSTEM, again, QuestionForm)
 
 
-def _check(form: QuestionForm, question: str, players: tuple[Player, ...]) -> Reading:
+def _check(
+    form: QuestionForm, question: str, players: tuple[Player, ...], llm: LLM
+) -> Reading:
     fields = {}
     unknown = []
     unsure = []
     not_in_question = []
     not_looked_up = []
     notes = []
+    asks = []
 
-    for name in PEOPLE:
-        written = getattr(form, name)
-        if written is None:
-            continue
-        if not appears_in(written, question):
-            not_in_question.append(written)  # "Stern" for "Starc"
-            continue
-        found = find_players(written, list(players))
-        if not found:
-            unknown.append(written)
-        elif len(found) == 1:
-            fields[name] = found[0].name
-        else:
-            unsure.append(Unsure(field=name, written=written, candidates=tuple(found)))
-
-    for name in NOT_LOOKED_UP:
-        written = getattr(form, name)
-        if written is None:
-            continue
-        if appears_in(written, question):
-            not_looked_up.append((name, written))
-        else:
-            not_in_question.append(written)
-
+    # first the values, so that only checked ones can tell players apart
     for name, said_by in SAID_BY.items():
         value = getattr(form, name)
         if value is None:
@@ -196,8 +182,33 @@ def _check(form: QuestionForm, question: str, players: tuple[Player, ...]) -> Re
             continue
         if _says_number(name, value, question):
             fields[name] = value
+        elif name == "date" and _day_without_year(value, question):
+            asks.append(
+                AskValue(field="date", written=_day_said(value), why="which year?")
+            )
         else:
             not_in_question.append(f"{name}={value}")  # 12 balls when it said 6
+
+    overs = next_overs(question)
+    if overs is not None and "k" not in fields:
+        balls = 6 * overs
+        asks.append(
+            AskValue(
+                field="k",
+                written=_overs_said(overs),
+                why=f"an over is six balls, but he may face fewer: his next {balls} balls?",
+                suggestion=str(balls),
+            )
+        )
+
+    for name in NOT_LOOKED_UP:
+        written = getattr(form, name)
+        if written is None:
+            continue
+        if appears_in(written, question):
+            not_looked_up.append((name, written))
+        else:
+            not_in_question.append(written)
 
     # a team or ground with no gender named is men's cricket, and the reading says so
     if not_looked_up and "gender" not in fields:
@@ -205,6 +216,25 @@ def _check(form: QuestionForm, question: str, players: tuple[Player, ...]) -> Re
         notes.append(
             "read as men's cricket: a team or ground, and no gender named (D-046)"
         )
+
+    # then the people, each found by a small agentic search (resolver.py)
+    clues = _clues(fields, not_looked_up)
+    for name in PEOPLE:
+        written = getattr(form, name)
+        if written is None:
+            continue
+        if not appears_in(written, question):
+            not_in_question.append(written)  # "Stern" for "Starc"
+            continue
+        found = find_player(name, written, question, clues, players, llm)
+        if found.player is not None:
+            fields[name] = found.player.name
+            if found.note is not None:
+                notes.append(found.note)
+        elif found.unsure is not None:
+            unsure.append(found.unsure)
+        else:
+            unknown.append(written)
 
     return Reading(
         subject=CricketSubject(**fields),
@@ -214,7 +244,50 @@ def _check(form: QuestionForm, question: str, players: tuple[Player, ...]) -> Re
         not_in_question=tuple(not_in_question),
         not_looked_up=tuple(not_looked_up),
         notes=tuple(notes),
+        asks=tuple(asks),
     )
+
+
+def _clues(fields: dict, not_looked_up: list[tuple[str, str]]) -> Clues:
+    # only what the checks kept: his side or the other, the format, the gender, the years
+    teams = []
+    for name, written in not_looked_up:
+        if name in ("team", "opposition"):
+            teams.append(written)
+    from_year = None
+    to_year = None
+    if "season" in fields:
+        from_year = int(fields["season"][:4])
+        to_year = from_year
+        if "/" in fields["season"]:
+            to_year = from_year + 1
+    if "since" in fields:
+        from_year = int(fields["since"][:4])
+    if "before" in fields:
+        to_year = int(fields["before"][:4])
+    return Clues(
+        teams=tuple(teams),
+        match_format=fields.get("match_format"),
+        gender=fields.get("gender"),
+        from_year=from_year,
+        to_year=to_year,
+    )
+
+
+def _day_without_year(value: str, question: str) -> bool:
+    year, month, day = date_parts_said(value, question)
+    return month and day and not year
+
+
+def _day_said(value: str) -> str:
+    # "2024-04-12" -> "12 April"
+    return f"{int(value[8:10])} {MONTHS[int(value[5:7]) - 1].title()}"
+
+
+def _overs_said(overs: int) -> str:
+    if overs == 1:
+        return "the next over"
+    return f"the next {overs} overs"
 
 
 def _says(value: str, said_by: dict, question: str) -> bool:

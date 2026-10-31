@@ -61,20 +61,94 @@ def load_players(db) -> list[Player]:
                 if alias and alias != name:
                     _add_alias(others, person_id, alias)
 
+    profiles = _profiles(db)
     players = []
     rows = db.execute(
         "SELECT person_id, name, matches FROM players ORDER BY person_id"
     ).fetchall()
     for person_id, name, matches in rows:
+        profile = profiles.get(person_id, {})
         players.append(
             Player(
                 person_id=person_id,
                 name=name,
                 aliases=tuple(others.get(person_id, [])),
                 matches=matches,
+                teams=profile.get("teams", ()),
+                formats=profile.get("formats", ()),
+                first_year=profile.get("first_year"),
+                last_year=profile.get("last_year"),
+                gender=profile.get("gender"),
             )
         )
     return players
+
+
+# what tells two players of one name apart (Day 58): never a statistic
+PROFILES = """
+SELECT p.person_id, p.team, m.match_type, m.team_type, m.gender,
+       MIN(YEAR(CAST(m.date AS DATE))) AS first_year,
+       MAX(YEAR(CAST(m.date AS DATE))) AS last_year,
+       COUNT(DISTINCT p.match_id) AS matches
+FROM people p JOIN matches m ON m.match_id = p.match_id
+WHERE p.team IS NOT NULL
+GROUP BY p.person_id, p.team, m.match_type, m.team_type, m.gender
+ORDER BY p.person_id, matches DESC, p.team, m.match_type
+"""
+
+
+def _profiles(db) -> dict[str, dict]:
+    """Each player's teams (most played first), formats, years and gender."""
+    teams = {}
+    formats = {}
+    years = {}
+    genders = {}
+    for (
+        person_id,
+        team,
+        match_type,
+        team_type,
+        gender,
+        first,
+        last,
+        matches,
+    ) in db.execute(PROFILES).fetchall():
+        _count(teams.setdefault(person_id, {}), team, matches)
+        _count(genders.setdefault(person_id, {}), gender, matches)
+        kinds = formats.setdefault(person_id, [])
+        names = [match_type]
+        if match_type == "T20" and team_type == "international":
+            names.append("T20I")  # D-047: a T20 between international sides
+        for name in names:
+            if name not in kinds:
+                kinds.append(name)
+        low, high = years.get(person_id, (first, last))
+        years[person_id] = (min(low, first), max(high, last))
+    profiles = {}
+    for person_id, counted in teams.items():
+        profiles[person_id] = {
+            "teams": _most_first(counted),
+            "formats": tuple(sorted(formats[person_id])),
+            "first_year": years[person_id][0],
+            "last_year": years[person_id][1],
+            "gender": _most_first(genders[person_id])[0],
+        }
+    return profiles
+
+
+def _count(counts: dict[str, int], key: str, matches: int) -> None:
+    counts[key] = counts.get(key, 0) + matches
+
+
+def _most_first(counts: dict[str, int]) -> tuple[str, ...]:
+    ranked = []
+    for key, matches in counts.items():
+        ranked.append((-matches, key))
+    ranked.sort()
+    names = []
+    for _, key in ranked:
+        names.append(key)
+    return tuple(names)
 
 
 def _add_alias(others: dict[str, list[str]], person_id: str, alias: str) -> None:
