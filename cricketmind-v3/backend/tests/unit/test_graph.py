@@ -1,12 +1,17 @@
 """Day 55: the v4 flowchart, run end to end. Day 56: the branch for a clip, and N3."""
 
+import json
+
 import pytest
 from langgraph.graph import END, START
 
 from cricketmind_v3.application.graph import nodes
 from cricketmind_v3.application.graph.build import build_graph
 from cricketmind_v3.application.graph.context import GraphContext
+from cricketmind_v3.application.ports import FakeLLM
+from cricketmind_v3.application.reader import QuestionForm
 from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer
+from cricketmind_v3.domain.names import Player
 from cricketmind_v3.domain.subject import CricketSubject
 
 QUESTION = "Kohli out within 6 balls in the T20 powerplay against pace?"
@@ -89,6 +94,25 @@ def test_n3_reads_the_question():
     )
     assert run()["subject"] == expected
     assert run("clip.mp4")["subject"] == expected
+
+
+def test_n3_reads_with_the_model_when_it_has_one():
+    reply = dict.fromkeys(QuestionForm.model_fields)
+    reply.update(player="Kohli", k=6)
+    context = GraphContext(
+        names=CONTEXT.names,
+        llm=FakeLLM([json.dumps(reply)]),
+        players=(Player(person_id="ba607b88", name="V Kohli", matches=600),),
+    )
+    state = build_graph().invoke(
+        {"question": "Kohli out within 6 balls?", "clip": None}, context=context
+    )
+    assert state["reading"].by == "model"
+    assert state["subject"] == CricketSubject(player="V Kohli", k=6)
+
+
+def test_n3_reads_by_rules_without_a_model():
+    assert run()["reading"].by == "rules"
 
 
 def test_the_graph_needs_its_context():

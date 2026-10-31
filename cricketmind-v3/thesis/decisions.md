@@ -1467,3 +1467,31 @@ Template:
 - Status: planned (Day 59)
 - Paper section: Implementation (the local model), with a numbers.md row if the scores are
   reported
+
+## D-075 — N3 reads with the model, and the code checks every box
+- Date: 2026-11-01
+- Decision: N3 asks the model to fill a form (`QuestionForm`) whose fields are the
+  subject's, with allowed values wherever the data has them (the four formats of D-047,
+  the phases, pace or spin, the fifteen shots, 1 to 4 for the innings, left or right,
+  batting or fielding) and patterns for years, seasons and days. Then plain code checks
+  each box against the question's own words: a name must be in the question word for word
+  ("Stern" is not in "Starc"); an allowed value must be said by its name or one of the
+  gazetteer's other names ("seamers" says pace); a number must be in the question, in
+  digits or, for balls, as a word up to twelve; a day needs its year, month and day. What
+  fails is left out and listed (`not_in_question`), never used. Each name is looked up in
+  the player register: one player is kept by his register name; nobody gives `unknown`;
+  several give `unsure`, asked back, never guessed. A team or ground with no gender named
+  is read as men's, with a note (D-046). A reply that does not fit the form is asked again
+  once, with the reason; a second failure, or no model at all, reads by the rules (Day
+  56), with a note. Teams, opposition and grounds are kept as written until their
+  registers are built (Day 58, part 2).
+- Why: on Day 57 every reply fitted its shape and most were wrong somewhere (L-069). The
+  allowed values make some mistakes impossible to write; the checks catch the rest without
+  trusting the model; a value the question never said would narrow the answer to a
+  different question with a true-looking number. One retry with the reason fixes a slip;
+  more would make the cost unbounded.
+- Alternatives considered: trusting a reply that fits its schema; asking the model again
+  until it fits; dropping the whole reading when one box fails (one bad filter would lose a
+  good name); matching names loosely (a near name is a different player).
+- Status: built (Day 58, part 1)
+- Paper section: Method (reading a question); Implementation (N3)

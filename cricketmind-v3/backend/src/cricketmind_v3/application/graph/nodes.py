@@ -6,7 +6,7 @@ from langgraph.runtime import Runtime
 
 from cricketmind_v3.application.graph.context import GraphContext
 from cricketmind_v3.application.graph.state import GraphState
-from cricketmind_v3.domain.reading import read_by_rules
+from cricketmind_v3.application.reader import read_question
 
 # A. the clip: its frames, the shot, how sure, the body
 
@@ -32,11 +32,18 @@ def n2b_pose_estimator(state: GraphState) -> dict:
 
 
 def n3_question_reader(state: GraphState, runtime: Runtime[GraphContext]) -> dict:
-    # Day 56: simple rules; a language model from Day 58
-    if runtime.context is None:
+    # the model reads and the code checks (Day 58); without a model, the rules (Day 56)
+    context = runtime.context
+    if context is None:
         raise ValueError("the graph was run without its context (a GraphContext)")
-    subject = read_by_rules(state["question"], runtime.context.names)
-    return {"visited": ["n3_question_reader"], "subject": subject}
+    reading = read_question(
+        state["question"], context.llm, context.players, context.names
+    )
+    return {
+        "visited": ["n3_question_reader"],
+        "subject": reading.subject,
+        "reading": reading,
+    }
 
 
 def n6_shot_dna(state: GraphState) -> dict:

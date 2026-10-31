@@ -2017,3 +2017,45 @@ the better model stays, a tie keeps qwen2.5:7b. Both stay installed until then. 
 **For the paper:**
 - Decisions: D-074
 - Section it feeds: Implementation (the local model)
+
+---
+
+## Day 58, part 1 — 2026-11-01 — The model reads, the code checks
+
+**Split:** Day 58 is three jobs, done and committed one at a time: (1) N3 reads with the
+model and every box is checked; (2) the agentic search for shared names, and the ground and
+team registers; (3) the second adapter, LangChainLLM, and the runs by hand with both.
+**Learned:** a form with *allowed values* makes some mistakes impossible to write: the
+format's box takes only T20I, T20, ODI or Test, so "T20 powerplay against pace" cannot be
+sent. And a model's box is never trusted because it fits: it must be in the question.
+**Built (D-075):** `application/reader.py`: `QuestionForm`, twenty boxes, one per subject
+field, allowed values where the data has them and patterns for years, seasons and days;
+the system prompt (the batter, the bowler and the other bowler explained, with one example);
+`read_question`: the model fills the form, a reply that does not fit is asked again once
+with the reason, and a second failure (or no model) reads by the rules. Then the checks,
+in `domain/reading.py`: `appears_in` (a name, word for word, in the question), `says_number`
+(digits, or words up to twelve), `says_digits` (every digit run of a season or year),
+`says_innings` ("first", "2nd", "chasing"), `says_date` (year, month and day); and the
+`Reading` it returns: the subject, and what could not go in it (`unknown`, `unsure`,
+`not_in_question`, `not_looked_up`, `notes`). Names are looked up with Day 33's
+`find_players`: one player kept by his register name, nobody "unknown", several asked back.
+A team or ground with no gender is men's, with a note (D-046). `GraphContext` now holds the
+model and the register; N3 writes `subject` and `reading`. `scripts/read_questions.py` for
+the run by hand.
+**Found in the real register** (13,741 players, read-only): "Kohli" matches 6 players,
+"Smith" 56, "Mendis" 12; "Bumrah", "Starc" and "Babar Azam" one each. Part 1 never guesses,
+so it asks "which Kohli?", although Virat Kohli has by far the most matches: part 2's job
+(L-029).
+**Tested:** 23 new tests, 711 in all. The fake model's replies are Day 57's real mistakes:
+"Stern" for Starc is left out; "T20 powerplay against pace" does not fit, so the model is
+asked again with the reason; the word "null" is not a name; a phase, pace and a format the
+question never said are dropped; twelve balls when it said six; "since 2020" when it said
+2019. Also: a fuller name settles a shared one ("Kamindu Mendis"); twice wrong reads by the
+rules; Ollama down reads by the rules; men's by default only for a team or ground. Fifteen
+deliberate mistakes, all caught (one run stopped on a mistyped mutation, nothing changed;
+rewritten and run again in full). Limits of the checks: L-070.
+
+**For the paper:**
+- Decisions: D-075
+- Limitations: L-070
+- Section it feeds: Method (reading a question); Implementation (N3)

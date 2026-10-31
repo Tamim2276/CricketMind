@@ -1,12 +1,18 @@
-"""Reading a question by simple rules (Day 56): only words the system already knows.
+"""Reading a question (Days 56 and 58).
 
-A language model reads better from Day 58; these rules stay as the plain fallback. What
-they cannot read stays empty: a name two players share (never a guess; Day 58 asks
-which), "six" written as a word, a second batter.
+By simple rules (Day 56): only words the system already knows. What they cannot read
+stays empty: a name two players share (never a guess), "six" written as a word, a second
+batter. A language model reads better (Day 58); the rules stay as the plain fallback.
+
+What a reading is (Day 58), and the checks that keep a model's reading honest: every
+name and every number it gives must be in the question's own words.
 """
+
+from dataclasses import dataclass
 
 from cricketmind_v3.domain.faith.gazetteer import Entry
 from cricketmind_v3.domain.faith.text import find_phrases, tokens
+from cricketmind_v3.domain.names import Player
 from cricketmind_v3.domain.subject import CricketSubject
 
 # the format names of D-047, as people type them
@@ -76,3 +82,135 @@ def _fill(fields: dict, names: tuple[str, ...], value: str) -> None:
         if name not in fields:
             fields[name] = value
             return
+
+
+# what a reading is (Day 58)
+
+
+@dataclass(frozen=True, kw_only=True)
+class Unsure:
+    """A name the question uses that several players have: N3 asks which one."""
+
+    field: str  # "player"
+    written: str  # "Mendis", as the question has it
+    candidates: tuple[Player, ...]  # most-played first
+
+
+@dataclass(frozen=True, kw_only=True)
+class Reading:
+    """What N3 read: the subject, and everything it could not put in it."""
+
+    subject: CricketSubject
+    by: str  # "model" or "rules"
+    unknown: tuple[str, ...] = ()  # names nobody in the register has
+    unsure: tuple[Unsure, ...] = ()  # names several players share
+    not_in_question: tuple[str, ...] = ()  # what the model gave that the question lacks
+    not_looked_up: tuple[
+        tuple[str, str], ...
+    ] = ()  # ("venue", "Mirpur"): Day 58, part 2
+    notes: tuple[str, ...] = ()  # "read as men's cricket: no gender named"
+
+
+# the checks on a model's reading
+
+NUMBER_WORDS = {
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+}
+INNINGS_WORDS = {
+    1: ("1", "1st", "first"),
+    2: ("2", "2nd", "second", "chasing", "chase"),
+    3: ("3", "3rd", "third"),
+    4: ("4", "4th", "fourth"),
+}
+
+
+def words(text: str) -> list[str]:
+    """The text's words, dots gone first: "M.S. Dhoni's" -> ms dhoni."""
+    return tokens(text.replace(".", ""))
+
+
+def appears_in(written: str, question: str) -> bool:
+    """The name, word for word, somewhere in the question: "Stern" is not in "Starc"."""
+    wanted = words(written)
+    said = words(question)
+    if not wanted:
+        return False
+    for start in range(len(said) - len(wanted) + 1):
+        if said[start : start + len(wanted)] == wanted:
+            return True
+    return False
+
+
+def says_number(value: int, question: str) -> bool:
+    """The question says this number, in digits or as a word: "6" or "six"."""
+    for word in words(question):
+        if word == str(value) or NUMBER_WORDS.get(word) == value:
+            return True
+    return False
+
+
+def says_digits(value: str, question: str) -> bool:
+    """Every run of digits in the value is in the question: "2024/25" needs 2024 and 25."""
+    said = words(question)
+    found_any = False
+    for part in words(value):
+        if part.isdigit():
+            found_any = True
+            if part not in said:
+                return False
+    return found_any
+
+
+def says_innings(value: int, question: str) -> bool:
+    """The question says which innings: "first", "2nd", "chasing"."""
+    for word in words(question):
+        if word in INNINGS_WORDS.get(value, ()):
+            return True
+    return False
+
+
+MONTHS = (
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+)
+
+
+def says_date(value: str, question: str) -> bool:
+    """The question says this day: "2024-04-12" needs 2024, 12, and April or 4."""
+    parts = value.split("-")
+    if len(parts) != 3 or not (parts[0] + parts[1] + parts[2]).isdigit():
+        return False
+    year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+    said = words(question)
+    has_year = str(year) in said
+    has_day = False
+    has_month = False
+    for word in said:
+        if word.isdigit() and int(word) == day:
+            has_day = True
+        if word.isdigit() and int(word) == month:
+            has_month = True
+        if 1 <= month <= 12 and word in (MONTHS[month - 1], MONTHS[month - 1][:3]):
+            has_month = True
+    return has_year and has_day and has_month
