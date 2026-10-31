@@ -2000,3 +2000,20 @@ question *gets* the same answer, which was never checked; now it *should*.
 - Decisions: D-073
 - Limitations: L-069
 - Section it feeds: Implementation (the LLM port)
+
+---
+
+## Plan change — 2026-10-29 — Which local model? A test decides
+
+**Asked:** use qwen2.5:7b or download a better model? **Answered:** qwen3:8b is newer and,
+by most reviews, follows a JSON schema better; it is 5.2 GB, fits the 8 GB RTX 3070, and is
+downloaded (D:, beside qwen2.5:7b). But reviews disagree, and Day 57's run by hand was four
+questions. **Decided (D-074):** Day 59, after comparing the two adapters with qwen2.5:7b,
+compares the two models with the adapter that stays, on the same 30 example questions
+(90 wordings), prompt and schema; the score is fixed first (wordings read exactly right);
+the better model stays, a tie keeps qwen2.5:7b. Both stay installed until then. No new day:
+218 days still.
+
+**For the paper:**
+- Decisions: D-074
+- Section it feeds: Implementation (the local model)

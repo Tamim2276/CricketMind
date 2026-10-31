@@ -1449,3 +1449,21 @@ Template:
   does not say which model answered).
 - Status: built (Day 57)
 - Paper section: Implementation (the LLM port)
+
+## D-074 — Day 59 also picks the local model, by the same test
+- Date: 2026-10-29
+- Decision: after the two adapters are compared with qwen2.5:7b (D-024), the adapter that
+  stays reads the same 30 example questions (90 wordings) with qwen2.5:7b and with qwen3:8b,
+  with the same prompt and schema (and `think=False`). The score is fixed before the run:
+  the share of wordings read exactly right, the kind and every field. The better model is
+  CricketMind's local model from Day 60 on; a tie keeps qwen2.5:7b, the smaller one. The
+  model that stays is recorded by its Ollama ID, and the other may then be removed.
+- Why: the plan named qwen2.5:7b because it was already installed, not because it was
+  tested; qwen3:8b is newer and is said to follow schemas better, but a by-hand run of four
+  questions on Day 57 (L-069) is a hint, not a result. The same questions, prompt and
+  schema keep the comparison fair, and a rule written first keeps it honest.
+- Alternatives considered: switching to qwen3:8b now, on reviews and Day 57's four questions;
+  keeping qwen2.5:7b untested; comparing on the locked exam (it stays locked until Day 178).
+- Status: planned (Day 59)
+- Paper section: Implementation (the local model), with a numbers.md row if the scores are
+  reported
