@@ -270,3 +270,17 @@ def test_a_misspelt_name_is_asked_back_with_close_spellings():
     assert reading.unknown == ()
     assert reading.unsure[0].why == "nobody has this name; did you mean one of these?"
     assert reading.unsure[0].candidates[0].name == "V Kohli"
+
+
+def test_a_bowling_word_is_not_a_name():
+    # the real run: qwen3:8b put "pace" in a player's box, and N3 offered "U Peace"
+    reading, _ = read(
+        "Kohli out within 6 balls in the T20 powerplay against pace?",
+        form(
+            player="Kohli", bowler="pace", k=6, match_format="T20", bowler_type="pace"
+        ),
+    )
+    assert reading.subject.bowler is None
+    assert reading.subject.bowler_type == "pace"
+    assert '"pace" is not the name of a player' in reading.notes
+    assert reading.unknown == () and reading.unsure == ()

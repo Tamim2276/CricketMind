@@ -1528,5 +1528,10 @@ Template:
 - Still to do: a name several players have word for word (five "Imran Khan"s), once told
   apart, needs the subject to carry his register id, which the engines and C6 must then
   read (Day 58, part 2b); until then the engine refuses that name (D-040), no number given.
-- Status: built (Day 58, part 2a)
+- Status: built (Day 58, part 2a). After the run by hand (2026-11-01): a given name with
+  the surname finds a player by his full name ("Kamindu Mendis" in "Pasqual Handi
+  Kamindu Dilanka Mendis"), searched together with the whole name, so two players
+  registered as "Rohit Sharma" (7 and 5 matches) no longer hide RG Sharma (785); and a
+  word for a phase, a kind of bowling, a shot or a format is not a name ("pace" in a
+  bowler's box)
 - Paper section: Method (reading a question); Implementation (N3)

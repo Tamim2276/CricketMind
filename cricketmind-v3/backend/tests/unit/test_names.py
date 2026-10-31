@@ -225,3 +225,39 @@ def test_described_without_a_statistic():
         == "SPD Smith; Australia, Sydney Sixers; ODI, T20, T20I, Test; 2010-2026"
     )
     assert describe(KOHLI) == "V Kohli"
+
+
+def test_known_by_a_given_name_in_his_full_name():
+    # the real run: "Kamindu Mendis" was unknown, his K being his third initial
+    kamindu = Player(
+        person_id="k1",
+        name="PHKD Mendis",
+        aliases=("Pasqual Handi Kamindu Dilanka Mendis",),
+        matches=165,
+    )
+    kusal = Player(
+        person_id="k2",
+        name="BKG Mendis",
+        aliases=("Balapuwaduge Kusal Gimhan Mendis",),
+        matches=402,
+    )
+    assert names(find_players("Kamindu Mendis", [kamindu, kusal])) == ["PHKD Mendis"]
+    assert names(find_players("Kusal Mendis", [kamindu, kusal])) == ["BKG Mendis"]
+    assert find_players("Kamindu Perera", [kamindu, kusal]) == []
+
+
+def test_namesakes_by_the_whole_name_do_not_hide_him():
+    # two players registered as "Rohit Sharma" (7 and 5 matches) hid RG Sharma (785)
+    rohit = Player(
+        person_id="r1",
+        name="RG Sharma",
+        aliases=("Rohit Gurunath Sharma",),
+        matches=785,
+    )
+    others = [
+        Player(person_id="r2", name="Rohit Sharma", matches=7),
+        Player(person_id="r3", name="Rohit Sharma", matches=5),
+    ]
+    found = find_players("Rohit Sharma", [*others, rohit])
+    assert names(found) == ["RG Sharma", "Rohit Sharma", "Rohit Sharma"]
+    assert clearly_most_played(found)

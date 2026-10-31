@@ -2112,3 +2112,33 @@ Until then the engine refuses the name, and no number is given.
 - Decisions: D-076
 - Limitations: L-029 and L-070 updated
 - Section it feeds: Method (reading a question); Implementation (N3)
+
+---
+
+## Day 58, part 2a — after the run by hand — three names it got wrong
+
+**The run** (yours: qwen3:8b, the real register, eight questions): Kohli read as V Kohli,
+"by far the most-played of 6"; "Australia's Smith" as SPD Smith, "the only one of 56 the
+question's clues fit", and the model's own `phase=death` dropped as never said; "Would
+Bumrah or Starc get Smith out sooner in Tests?" asked "which Smith?" over 7 (56 narrowed by
+Tests); "Kholi" offered V Kohli first; "the next over" asked as "his next 6 balls?"; Mirpur
+and India kept as written for part 2b. About 3 s a question after the first (13 s, the model
+loading). **Wrong, and fixed:**
+
+```
+"pace" in a bowler's box   -> searched as a name, "U Peace" offered     a cricket word is not a name
+"Kamindu Mendis"           -> unknown: his K is his third initial       a given name + the surname
+"Rohit Sharma" (my check)  -> two players registered so (7, 5 matches)  searched with the whole name
+                              hid RG Sharma (785)                        too; the 5x rule then picks
+                                                                         RG Sharma, and says so
+```
+
+The register had the answer all along: "Pasqual Handi Kamindu Dilanka Mendis", "Rohit
+Gurunath Sharma". The third was not in the run: looking for the second, "Rohit Sharma"
+gave two obscure players and not the one anyone means, a Day 33 rule (the exact name won).
+**Tested:** 3 new tests from the three real cases, 745 in all; each fix broken on purpose,
+each break caught. D-076's status records them.
+
+**For the paper:**
+- Decisions: D-076 (status)
+- Section it feeds: Implementation (N3)

@@ -62,7 +62,11 @@ def simplify(text: str) -> str:
 def find_players(query: str, players: list[Player]) -> list[Player]:
     """Who the name could be, most-played first, using the closest kind of match found.
 
-    1. the whole name: "V Kohli", or an alias like "Virat Kohli"
+    1. the whole name: "V Kohli", or an alias like "Virat Kohli"; and, together with
+       it, given names he is known by and the surname: "Kamindu Mendis" is "Pasqual
+       Handi Kamindu Dilanka Mendis" (Day 58: his K is his third initial). Together,
+       because two players registered as "Rohit Sharma" (5 and 7 matches) must not
+       hide RG Sharma, "Rohit Gurunath Sharma" (785)
     2. a first name's initial and the surname: "Rohit Sharma" -> "RG Sharma"
     3. one part of the name, surname or first name, most-played first: "Kohli" ->
        "V Kohli"; "Mendis" -> both Mendises; "Babar" -> "Babar Azam" before
@@ -72,6 +76,7 @@ def find_players(query: str, players: list[Player]) -> list[Player]:
     if not wanted:
         return []
     whole = []
+    given = []
     initial = []
     part = []
     for player in players:
@@ -80,14 +85,35 @@ def find_players(query: str, players: list[Player]) -> list[Player]:
             names.append(simplify(alias))
         if wanted in names:
             whole.append(player)
+        elif _given_names_and_surname(wanted, names):
+            given.append(player)
         elif _initial_and_surname(wanted, names[0]):
             initial.append(player)
         elif _ends_with(names, wanted) or _starts_with_first_name(names, wanted):
             part.append(player)
-    for found in (whole, initial, part):
+    for found in (whole + given, initial, part):
         if found:
             return sorted(found, key=_most_played_first)
     return []
+
+
+def _given_names_and_surname(wanted: str, names: list[str]) -> bool:
+    # "kamindu mendis" in "pasqual handi kamindu dilanka mendis": the same surname, and
+    # every other word asked is one of his given names
+    asked = wanted.split()
+    if len(asked) < 2:
+        return False
+    for name in names:
+        known = name.split()
+        if len(known) < 2 or known[-1] != asked[-1]:
+            continue
+        every = True
+        for word in asked[:-1]:
+            if word not in known[:-1]:
+                every = False
+        if every:
+            return True
+    return False
 
 
 def _initial_and_surname(wanted: str, name: str) -> bool:

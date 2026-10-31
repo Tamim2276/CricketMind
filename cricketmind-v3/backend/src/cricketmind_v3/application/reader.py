@@ -31,6 +31,7 @@ from cricketmind_v3.domain.reading import (
     says_digits,
     says_innings,
     says_number,
+    words,
 )
 from cricketmind_v3.domain.subject import CricketSubject
 
@@ -226,6 +227,11 @@ def _check(
         if not appears_in(written, question):
             not_in_question.append(written)  # "Stern" for "Starc"
             continue
+        if _a_cricket_word(written):
+            notes.append(
+                f'"{written}" is not the name of a player'
+            )  # "pace" as a bowler
+            continue
         found = find_player(name, written, question, clues, players, llm)
         if found.player is not None:
             fields[name] = found.player.name
@@ -246,6 +252,17 @@ def _check(
         notes=tuple(notes),
         asks=tuple(asks),
     )
+
+
+def _a_cricket_word(written: str) -> bool:
+    """A word for something other than a player: "pace", "powerplay", "pull", "Tests"."""
+    said = " ".join(words(written))
+    for said_by in (PHASES, BOWLER_TYPES, SHOTS):
+        for value, others in said_by.items():
+            for phrase in (value, *others):
+                if " ".join(words(phrase)) == said:
+                    return True
+    return said in FORMATS
 
 
 def _clues(fields: dict, not_looked_up: list[tuple[str, str]]) -> Clues:
