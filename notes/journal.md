@@ -3864,3 +3864,31 @@ makes it a Phase 4 question rather than a Phase 3 answer.
 The frozen-against-fine-tuned number the plan asked for: the same r3d_18
 gains 32 points when it is allowed to learn. Best overall now: MViT-v2-S,
 83.40 author, 84.51 grouped. The authors' 89% is about five points away.
+
+## 2026-10-31 — Day 33: Family F, each one change from B01
+
+The archived multi-scale model averaged each EfficientNet stage to a
+vector and projected the lot to 1,280 numbers. B01 never averages: it
+flattens the whole 7x7 grid. Rebuilding the old design faithfully would
+have made F01 differ from B01 in two ways at once, and the result would
+not have said which one mattered. So F01 keeps B01's grid untouched and
+stacks the finer stages onto it, shrunk to the same 7x7. The first 62,720
+numbers the GRU sees are exactly B01's; the rest are new. F04 does the
+same with a second, smaller copy of the frame. F05 changes only how the
+GRU's steps are summarised. F02 is F01 with a transformer on top.
+
+Tests check each of those claims directly: same numbers first, no new
+weights, one config key different from its parent. The memory probe also
+learned to skip F03, which is a fusion and has nothing to train.
+
+## 2026-11-01 — F01's first run was mine to break
+
+F01 crawled at 12-16% for five epochs with half the GRU's units pinned at
+the rail: the saturation watch from Phase 1 caught it on epoch 1. The
+cause was my multi-scale design. The fine and mid stages come from inside
+EfficientNet, before any normalising, and they are about five times wider
+than the final grid B01 reads. Stacked raw, they swamped the GRU. Each
+added map is now normalised per channel before it joins; still no learned
+weights, and B01's own numbers still come first and unchanged. On real
+clips the added channels now sit at a spread of 0.4-0.7 next to B01's
+0.97. F01 starts again from scratch.

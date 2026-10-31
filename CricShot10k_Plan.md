@@ -5422,6 +5422,43 @@ question.
 
 **Check.** A test each (shape, one step), then 17.2's memory probe on all four.
 
+**Built 2026-10-31.**
+1. **F01 stays one change from B01, so it is not the archived model as
+   written.** `multiscale_cnn.py` averaged each stage to a vector (64 +
+   160 + 1,280 = 1,504) and projected to 1,280; B01 flattens the whole
+   7×7 grid (62,720). Built that way, F01 against B01 would change both
+   the scales and the pooling. Instead the fine (stage 3) and mid (stage 5)
+   maps are shrunk to the last stage's 7×7 grid and stacked as channels:
+   the same 1,504, as a grid, 73,696 numbers a frame. B01's 62,720 come
+   first and unchanged, and no weight is added (both tested), so the only
+   difference is that the GRU also sees the finer stages.
+   **Fixed 2026-11-01, after F01's first 5 epochs:** 12–16% val, half the
+   GRU's units pinned from epoch 1. The inner stages are raw residual
+   streams, ~5x wider than B01's grid (std 3.8 and 4.4 against 0.87,
+   largest 58). Each added map is now normalised per channel first
+   (`BatchNorm2d`, no affine weights, so still no learned parameter):
+   std 0.41 and 0.67 against 0.97 on real clips. F01 restarted fresh.
+   F04 needs nothing: its second view ends on the last layer, as B01's.
+2. **F04, the same way:** B01's 224 grid, then the frame again at 112
+   through the same network (a 4×4 grid, 20,480 more), joined per frame.
+   B01's numbers first, no new weights (tested).
+3. **F05:** `GRUAttnHead`, B01's GRU and tail (same weights from the same
+   seed, tested) reading every step through attention pooling instead of
+   the last state; the weights stay in `last_weights`.
+4. **F02:** F01's encoder under `TransformerHead` (2 layers, 4 heads); the
+   registry test checks F02 differs from F01 in the head alone, and F01,
+   F04, F05 from B01 in their one key each.
+5. In `video_gru` as opt-in keys (`scales`, `extra_size`, `head`, with
+   `layers`, `attn_heads`), so every earlier run builds what it built.
+   `memprobe` now skips methods that fit once (fusion, classical): F03
+   would have crashed it.
+
+**Probed 2026-10-31**, batch 4, of 11.6 GB: F01 6.0 peak / 6.3 reserved,
+0.45 s/batch (~11.7 min an epoch); F02 5.0 / 5.3, 0.32 s (~8.3); F04
+7.3 / 7.7, 0.49 s (~12.8); F05 5.8 / 6.0, 0.30 s (~7.8). All fit; F03
+trains nothing and is skipped. Re-costed at ~35 epochs plus validation:
+**~45–55 GPU-hours for the family**, above the 25–50 budgeted.
+
 ### 33.2 Re-cost on F01, alone (≈4 GPU-hours)
 
 As 17.3: one run with nothing else open, then update the cost table.

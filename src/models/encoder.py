@@ -37,6 +37,7 @@ from collections import OrderedDict
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torchvision.models import get_model, list_models
 
 from src.data.dataset import IMAGENET_MEAN, IMAGENET_STD
@@ -47,6 +48,11 @@ __all__ = ["FrameEncoder", "DEFAULT_BACKBONE", "DEFAULT_SIZE", "POOLS",
 DEFAULT_BACKBONE = "efficientnet_v2_s"
 DEFAULT_SIZE = 224
 POOLS = ("avg", "flatten")
+SCALES = ("global", "multi")
+# scales="multi": the stages whose maps join the last one, fine then mid,
+# as (stage, channels) (Family F, Day 33). Normalised, shrunk to the last
+# stage's grid and stacked as channels
+TAPS = {"efficientnet_v2_s": ((3, 64), (5, 160))}
 
 
 def is_timm(name: str) -> bool:
@@ -218,34 +224,32 @@ def _strip_pooling(model: nn.Module) -> None:
     model.avgpool = nn.Identity()
 
 
-def _measure_out_dim(model: nn.Module, size: int) -> int:
-    """Run one empty frame through and look. Cheaper than deriving it.
-
-    Deriving the width means knowing the backbone's stride and whether it
-    pools, which differs per model; one forward pass just answers.
-    """
-    was_training = model.training
-    model.eval()
-    with torch.no_grad():
-        out = model(torch.zeros(1, 3, size, size))
-    model.train(was_training)
-    if out.dim() != 2:
-        raise ValueError(f"backbone returned {tuple(out.shape)}, expected (N, D)")
-    return int(out.shape[1])
-
-
 class FrameEncoder(nn.Module):
     """Every frame through the same CNN. (B, T, 3, H, W) -> (B, T, out_dim)."""
 
     def __init__(self, name: str = DEFAULT_BACKBONE, pretrained: bool = True,
                  freeze: bool = False, pool: str = "avg",
                  size: int = DEFAULT_SIZE, grad_checkpoint: bool = False,
-                 drop_path=None):
+                 drop_path=None, scales: str = "global", extra_size=None):
         super().__init__()
         if pool not in POOLS:
             raise ValueError(f"pool must be one of {POOLS}, got {pool!r}")
+        if scales not in SCALES:
+            raise ValueError(f"scales must be one of {SCALES}, got {scales!r}")
+        if scales == "multi":
+            if name not in TAPS:
+                raise ValueError(f"multi-scale knows the stages of "
+                                 f"{tuple(TAPS)}, not {name}")
+            if pool != "flatten":
+                raise ValueError("multi-scale stacks grids; it needs "
+                                 "pool='flatten'")
+            if grad_checkpoint:
+                raise ValueError("multi-scale walks the stages itself; "
+                                 "grad_checkpoint is not supported with it")
         self.name = name
         self.pool = pool
+        self.scales = scales
+        self.extra_size = extra_size
         mean, std = IMAGENET_MEAN, IMAGENET_STD
         if is_timm(name):
             if grad_checkpoint:
@@ -280,7 +284,15 @@ class FrameEncoder(nn.Module):
                                  persistent=False)
             self.register_buffer("shift", torch.tensor(shift).view(1, 3, 1, 1),
                                  persistent=False)
-        self.out_dim = _measure_out_dim(self.backbone, size)
+        if scales == "multi":
+            # the inner stages come out ~5x wider than the last one (std
+            # ~4 against 0.87, 2026-11-01) and saturated the GRU, so each
+            # channel is normalised first. No learned weights: only stats
+            norms = []
+            for _, channels in TAPS[name]:
+                norms.append(nn.BatchNorm2d(channels, affine=False))
+            self.tap_norms = nn.ModuleList(norms)
+        self.out_dim = self._measure(size)
         self.frozen = freeze
         if freeze:
             for p in self.backbone.parameters():
@@ -298,6 +310,57 @@ class FrameEncoder(nn.Module):
             self.backbone.eval()
         return self
 
+    def _one_size(self, frames):
+        """(N, 3, H, W) -> (N, D) at one resolution."""
+        if self.scales == "global":
+            return self.backbone(frames)
+        # the last stage's grid first, so its numbers sit where B01's do,
+        # then the fine and mid maps shrunk to that grid (F01)
+        taps = []
+        for stage_at, _ in TAPS[self.name]:
+            taps.append(stage_at)
+        x = frames
+        early = []
+        for i, stage in enumerate(self.backbone.features):
+            x = stage(x)
+            if i in taps:
+                early.append(x)
+        maps = [x]
+        for k, found in enumerate(early):
+            maps.append(F.adaptive_avg_pool2d(self.tap_norms[k](found),
+                                              x.shape[-2:]))
+        return torch.cat(maps, dim=1).flatten(1)
+
+    def _describe(self, frames):
+        """(N, 3, H, W) -> (N, out_dim): what the head reads for a frame.
+        With extra_size, the same frame shrunk joins it (F04)."""
+        out = self._one_size(frames)
+        if self.extra_size:
+            small = F.interpolate(frames, size=(self.extra_size,
+                                                self.extra_size),
+                                  mode="bilinear", antialias=True,
+                                  align_corners=False)
+            out = torch.cat([out, self._one_size(small)], dim=1)
+        return out
+
+    def _measure(self, size):
+        """Run one empty frame through and look. Cheaper than deriving the
+        width, which depends on the backbone's stride and pooling."""
+        # every layer in eval, set directly: train() reads self.frozen,
+        # not set yet, and a zero frame must not move any running stats
+        modes = []
+        for layer in self.modules():
+            modes.append((layer, layer.training))
+            layer.training = False
+        with torch.no_grad():
+            out = self._describe(torch.zeros(1, 3, size, size))
+        for layer, mode in modes:
+            layer.training = mode
+        if out.dim() != 2:
+            raise ValueError(f"backbone returned {tuple(out.shape)}, "
+                             f"expected (N, D)")
+        return int(out.shape[1])
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.dim() != 5:
             raise ValueError(f"expected (B, T, C, H, W), got {tuple(x.shape)}")
@@ -306,5 +369,5 @@ class FrameEncoder(nn.Module):
         if self.recolour:
             # (x * std_in + mean_in - mean) / std, as one multiply-add
             frames = frames * self.scale + self.shift
-        feats = self.backbone(frames)              # -> (B*T, D)
+        feats = self._describe(frames)             # -> (B*T, D)
         return feats.unflatten(0, (b, t))          # -> (B, T, D)
