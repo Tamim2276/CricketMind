@@ -17,7 +17,13 @@ from cricketmind_v3.application.ports import LLM, LLMError
 from cricketmind_v3.application.resolver import find_player
 from cricketmind_v3.domain.faith.gazetteer import BOWLER_TYPES, PHASES, SHOTS, Entry
 from cricketmind_v3.domain.grounds import Ground, find_grounds
-from cricketmind_v3.domain.names import MOST_PLAYED_BY, Clues, Player
+from cricketmind_v3.domain.names import (
+    MOST_PLAYED_BY,
+    Clues,
+    Player,
+    register_name,
+    shared_names,
+)
 from cricketmind_v3.domain.reading import (
     FORMATS,
     MONTHS,
@@ -36,9 +42,9 @@ from cricketmind_v3.domain.reading import (
     words,
 )
 from cricketmind_v3.domain.subject import CricketSubject
+from cricketmind_v3.domain.teams import Team, find_teams, other_name
 
 PEOPLE = ("player", "bowler", "other_bowler")
-NOT_LOOKED_UP = ("team", "opposition")  # the team register comes in part 2c
 YEAR_OR_DAY = r"^\d{4}(-\d{2}-\d{2})?$"
 
 
@@ -125,6 +131,7 @@ def read_question(
     players: tuple[Player, ...],
     names: dict[str, list[Entry]],
     grounds: tuple[Ground, ...] = (),
+    teams: tuple[Team, ...] = (),
 ) -> Reading:
     """The model reads, the code checks; without a model, or when its reply does not
     fit twice, the rules read (Day 56)."""
@@ -139,7 +146,7 @@ def read_question(
             by="rules",
             notes=(f"read by rules: the model's reply did not fit twice ({reason})",),
         )
-    return _check(form, question, players, llm, grounds)
+    return _check(form, question, players, llm, grounds, teams)
 
 
 def _ask(llm: LLM, question: str) -> QuestionForm:
@@ -159,12 +166,12 @@ def _check(
     players: tuple[Player, ...],
     llm: LLM,
     grounds: tuple[Ground, ...],
+    teams: tuple[Team, ...],
 ) -> Reading:
     fields = {}
     unknown = []
     unsure = []
     not_in_question = []
-    not_looked_up = []
     notes = []
     asks = []
 
@@ -209,14 +216,41 @@ def _check(
             )
         )
 
-    for name in NOT_LOOKED_UP:
+    # the teams: one kept; several, the clearly most-played or asked; none, unknown
+    team_named = False
+    for name in ("team", "opposition"):
         written = getattr(form, name)
         if written is None:
             continue
-        if appears_in(written, question):
-            not_looked_up.append((name, written))
-        else:
+        if not appears_in(written, question):
             not_in_question.append(written)
+            continue
+        team_named = True
+        found = find_teams(written, list(teams))
+        if not found:
+            unknown.append(written)
+            continue
+        if len(found) > 1 and not _clearly_first(found):
+            unsure.append(
+                Unsure(
+                    field=name,
+                    written=written,
+                    candidates=tuple(found),
+                    why="several teams have this name",
+                )
+            )
+            continue
+        fields[name] = found[0].name
+        if len(found) > 1:
+            notes.append(
+                f"{written} read as {found[0].name}: by far the most-played "
+                f"of {len(found)} teams"
+            )
+        renamed = other_name(found[0])
+        if renamed is not None:
+            notes.append(
+                f"{found[0].name} counted under this name only; it also played as {renamed}"
+            )
 
     # the ground: one kept; several, the clearly most-played or asked; none, unknown
     ground_named = False
@@ -228,7 +262,7 @@ def _check(
             found = find_grounds(form.venue, list(grounds))
             if len(found) == 1:
                 fields["venue"] = found[0].name
-            elif _clearly_most_played(found):
+            elif _clearly_first(found):
                 fields["venue"] = found[0].name
                 notes.append(
                     f"{form.venue} read as {found[0].name}: by far the most-played "
@@ -247,14 +281,15 @@ def _check(
                 unknown.append(form.venue)
 
     # a team or ground with no gender named is men's cricket, and the reading says so
-    if (not_looked_up or ground_named) and "gender" not in fields:
+    if (team_named or ground_named) and "gender" not in fields:
         fields["gender"] = "male"
         notes.append(
             "read as men's cricket: a team or ground, and no gender named (D-046)"
         )
 
     # then the people, each found by a small agentic search (resolver.py)
-    clues = _clues(fields, not_looked_up)
+    clues = _clues(fields)
+    shared = shared_names(list(players))
     for name in PEOPLE:
         written = getattr(form, name)
         if written is None:
@@ -269,9 +304,14 @@ def _check(
             continue
         found = find_player(name, written, question, clues, players, llm)
         if found.player is not None:
-            fields[name] = found.player.name
+            fields[name] = register_name(found.player, shared)
             if found.note is not None:
                 notes.append(found.note)
+            if fields[name] != found.player.name:
+                notes.append(
+                    f"{found.player.name} given by his register id, "
+                    f"{found.player.person_id}: several players have this name"
+                )
         elif found.unsure is not None:
             unsure.append(found.unsure)
         else:
@@ -283,17 +323,16 @@ def _check(
         unknown=tuple(unknown),
         unsure=tuple(unsure),
         not_in_question=tuple(not_in_question),
-        not_looked_up=tuple(not_looked_up),
         notes=tuple(notes),
         asks=tuple(asks),
     )
 
 
-def _clearly_most_played(grounds: list[Ground]) -> bool:
-    # as for players (D-076): the first has five times the next one's matches
-    if len(grounds) < 2:
+def _clearly_first(found: list) -> bool:
+    # grounds or teams, as for players (D-076): five times the next one's matches
+    if len(found) < 2:
         return False
-    return grounds[0].matches >= MOST_PLAYED_BY * grounds[1].matches
+    return found[0].matches >= MOST_PLAYED_BY * found[1].matches
 
 
 def _a_cricket_word(written: str) -> bool:
@@ -307,12 +346,12 @@ def _a_cricket_word(written: str) -> bool:
     return said in FORMATS
 
 
-def _clues(fields: dict, not_looked_up: list[tuple[str, str]]) -> Clues:
+def _clues(fields: dict) -> Clues:
     # only what the checks kept: his side or the other, the format, the gender, the years
     teams = []
-    for name, written in not_looked_up:
-        if name in ("team", "opposition"):
-            teams.append(written)
+    for name in ("team", "opposition"):
+        if name in fields:
+            teams.append(fields[name])
     from_year = None
     to_year = None
     if "season" in fields:

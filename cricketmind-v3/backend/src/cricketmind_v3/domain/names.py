@@ -148,18 +148,45 @@ def _most_played_first(player: Player) -> tuple[int, str]:
 
 
 def name_list(players: list[Player]) -> dict[str, tuple[str, ...]]:
-    """Every way to say each player, for C6's gazetteer: "V Kohli" -> ("Kohli", ...)."""
+    """Every way to say each player, for C6's gazetteer: "V Kohli" -> ("Kohli", ...).
+
+    A name several players share is listed under each one's register id, with the name
+    among its ways: the id is what N3 puts in the subject for them (Day 58).
+    """
+    shared = shared_names(players)
     names = {}
     for player in players:
         ways = []
+        key = player.name
+        if player.name in shared:
+            key = player.person_id
+            ways.append(player.name)
         last = player.name.split()[-1]
         if last != player.name:
             ways.append(last)  # the surname alone
         for alias in player.aliases:
             if alias not in ways:
                 ways.append(alias)
-        names[player.name] = tuple(ways)
+        names[key] = tuple(ways)
     return names
+
+
+def shared_names(players: list[Player]) -> set[str]:
+    """The names more than one player has, word for word: "Imran Khan"."""
+    seen = set()
+    shared = set()
+    for player in players:
+        if player.name in seen:
+            shared.add(player.name)
+        seen.add(player.name)
+    return shared
+
+
+def register_name(player: Player, shared: set[str]) -> str:
+    """How the subject names him: his name, or his register id if others have it."""
+    if player.name in shared:
+        return player.person_id
+    return player.name
 
 
 # telling players of one name apart (Day 58)

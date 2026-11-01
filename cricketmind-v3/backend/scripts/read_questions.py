@@ -16,9 +16,11 @@ from cricketmind_v3.application.reader import read_question
 from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer
 from cricketmind_v3.domain.grounds import Ground, describe_ground
 from cricketmind_v3.domain.names import describe, name_list
+from cricketmind_v3.domain.teams import Team, describe_team
 from cricketmind_v3.infrastructure.ollama_llm import OllamaLLM
 from cricketmind_v3.pipeline.grounds import load_grounds
 from cricketmind_v3.pipeline.players import load_players
+from cricketmind_v3.pipeline.teams import load_teams
 
 QUESTIONS = [
     "Kohli out within 6 balls in the T20 powerplay against pace?",
@@ -31,6 +33,8 @@ QUESTIONS = [
     "India's win share at Mirpur?",
     "First-innings totals at Chinnaswamy in IPL T20s?",
     "Spin's share of wickets in Mumbai?",
+    "Delhi Capitals' win share against RCB?",
+    "Imran Khan's strike rate in Tests for Pakistan?",
 ]
 
 
@@ -39,11 +43,12 @@ def main(database: str, model: str) -> None:
     players = tuple(load_players(db))
     names = cricket_gazetteer(name_list(list(players)))  # for the rules, if needed
     grounds = tuple(load_grounds(db))
+    teams = tuple(load_teams(db))
     print(f"{len(players):,} players, {len(grounds):,} grounds; the model: {model}\n")
     llm = OllamaLLM(model)
     for question in QUESTIONS:
         started = time.time()
-        reading = read_question(question, llm, players, names, grounds)
+        reading = read_question(question, llm, players, names, grounds, teams)
         print(f"{time.time() - started:5.1f}s  {question}")
         print(f"        read by {reading.by}: {filled(reading.subject)}")
         for unsure in reading.unsure:
@@ -51,7 +56,9 @@ def main(database: str, model: str) -> None:
                 f"        which {unsure.written}? {unsure.why} ({len(unsure.candidates)})"
             )
             for candidate in unsure.candidates[:3]:
-                if isinstance(candidate, Ground):
+                if isinstance(candidate, Team):
+                    print(f"          - {describe_team(candidate)}")
+                elif isinstance(candidate, Ground):
                     print(f"          - {describe_ground(candidate)}")
                 else:
                     print(f"          - {describe(candidate)}")
@@ -60,7 +67,6 @@ def main(database: str, model: str) -> None:
         for label, items in (
             ("unknown", reading.unknown),
             ("not in the question", reading.not_in_question),
-            ("not looked up yet", reading.not_looked_up),
             ("notes", reading.notes),
         ):
             if items:

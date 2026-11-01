@@ -8,6 +8,7 @@ from cricketmind_v3.application.ports import LLM
 from cricketmind_v3.domain.faith.gazetteer import Entry
 from cricketmind_v3.domain.grounds import Ground
 from cricketmind_v3.domain.names import Player
+from cricketmind_v3.domain.teams import Team
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -16,3 +17,4 @@ class GraphContext:
     llm: LLM | None = None  # without one, N3 reads by rules
     players: tuple[Player, ...] = ()  # the register, for the model's names
     grounds: tuple[Ground, ...] = ()  # one name per ground (Day 58, part 2b)
+    teams: tuple[Team, ...] = ()  # the team register (Day 58, part 2c)

@@ -80,10 +80,16 @@ def order_case(slot: str) -> str:
 
 
 def find_person(db, name: str) -> str | None:
-    """The register id of the player called this; None if nobody is.
+    """The register id of the player with this id, or called this; None if nobody is.
 
-    Raises FilterError when several players share the name (Day 38: five Imran Khans).
+    Raises FilterError when several players share the name (Day 38: five Imran Khans):
+    N3 then gives the one it means by his register id (Day 58).
     """
+    rows = db.execute(
+        "SELECT person_id FROM players WHERE person_id = ?", [name]
+    ).fetchall()
+    if rows:
+        return rows[0][0]
     rows = db.execute("SELECT person_id FROM players WHERE name = ?", [name]).fetchall()
     if not rows:
         return None

@@ -115,8 +115,6 @@ class Reading:
     unknown: tuple[str, ...] = ()  # names nobody in the register has
     unsure: tuple[Unsure, ...] = ()  # names several players share
     not_in_question: tuple[str, ...] = ()  # what the model gave that the question lacks
-    # ("venue", "Mirpur"): kept as written until part 2's registers
-    not_looked_up: tuple[tuple[str, str], ...] = ()
     notes: tuple[str, ...] = ()  # "read as men's cricket: no gender named"
     asks: tuple[AskValue, ...] = ()  # "the next over": his next 6 balls?
 

@@ -10,6 +10,7 @@ from cricketmind_v3.domain.grounds import Ground
 from cricketmind_v3.domain.names import Player
 from cricketmind_v3.domain.reading import AskValue
 from cricketmind_v3.domain.subject import CricketSubject
+from cricketmind_v3.domain.teams import Team
 
 PLAYERS = (
     Player(person_id="ba607b88", name="V Kohli", aliases=("Virat Kohli",), matches=600),
@@ -45,6 +46,18 @@ GROUNDS = (
 )
 
 
+TEAMS = (
+    Team(name="India", matches=1353),
+    Team(name="Australia", matches=1242),
+    Team(name="South Africa", matches=900),
+    Team(name="West Indies", matches=1070),
+    Team(name="Delhi Capitals", matches=157, first_year=2019, last_year=2026),
+    Team(name="Delhi Daredevils", matches=161, first_year=2008, last_year=2018),
+    Team(name="Delhi", matches=51),
+    Team(name="Royal Challengers Bengaluru", matches=63),
+)
+
+
 def form(**given) -> str:
     """A reply as a model would send it: every field, null unless given."""
     values = dict.fromkeys(QuestionForm.model_fields)
@@ -54,7 +67,7 @@ def form(**given) -> str:
 
 def read(question: str, *replies):
     llm = FakeLLM(list(replies))
-    return read_question(question, llm, PLAYERS, NAMES, GROUNDS), llm
+    return read_question(question, llm, PLAYERS, NAMES, GROUNDS, TEAMS), llm
 
 
 def test_the_model_reads_and_the_register_names_the_player():
@@ -215,7 +228,7 @@ def test_a_team_or_ground_with_no_gender_is_mens():
     )
     assert reading.subject.gender == "male"
     assert reading.subject.venue == "Shere Bangla National Stadium"
-    assert reading.not_looked_up == (("team", "India"),)
+    assert reading.subject.team == "India"
     assert "men's" in reading.notes[0]
     reading, _ = read(
         "India women's win share at Mirpur?",
@@ -351,3 +364,91 @@ def test_a_ground_not_in_the_question():
     assert reading.subject.venue is None
     assert reading.not_in_question == ("Wankhede",)
     assert reading.subject.gender is None  # no ground was really named
+
+
+# Day 58, part 2c: teams, and a name several players share
+
+
+def test_a_team_by_its_name_or_nickname():
+    reading, _ = read(
+        "Windies against India?", form(team="Windies", opposition="India")
+    )
+    assert reading.subject.team == "West Indies"
+    assert reading.subject.opposition == "India"
+    assert reading.subject.gender == "male"  # a team, no ground, no gender named
+
+
+def test_a_team_not_in_the_question_is_dropped():
+    reading, _ = read(
+        "Kohli's strike rate?", form(player="Kohli", opposition="Australia")
+    )
+    assert reading.subject.opposition is None
+    assert reading.not_in_question == ("Australia",)
+
+
+def test_several_teams_close_are_asked():
+    reading, _ = read("Delhi's win share?", form(team="Delhi"))
+    assert reading.subject.team is None
+    asked = reading.unsure[0]
+    assert (asked.field, asked.why) == ("team", "several teams have this name")
+    assert [t.name for t in asked.candidates] == [
+        "Delhi Daredevils",
+        "Delhi Capitals",
+        "Delhi",
+    ]
+
+
+def test_a_renamed_team_is_counted_under_its_name_and_said():
+    reading, _ = read("Delhi Capitals' win share?", form(team="Delhi Capitals"))
+    assert reading.subject.team == "Delhi Capitals"
+    assert (
+        "Delhi Capitals counted under this name only; it also played as "
+        "Delhi Daredevils" in reading.notes
+    )
+
+
+def test_a_team_nobody_knows():
+    reading, _ = read("Hogwarts' win share?", form(team="Hogwarts"))
+    assert reading.unknown == ("Hogwarts",)
+
+
+IMRAN_PAKISTAN = Player(
+    person_id="a1a1a1a1",
+    name="Imran Khan",
+    matches=125,
+    teams=("Pakistan",),
+    formats=("ODI", "Test"),
+    first_year=1971,
+    last_year=1992,
+)
+IMRAN_KENT = Player(
+    person_id="b2b2b2b2",
+    name="Imran Khan",
+    matches=60,
+    teams=("Kent",),
+    formats=("T20",),
+    first_year=2010,
+    last_year=2016,
+)
+
+
+def test_a_name_several_players_share_goes_in_by_register_id():
+    llm = FakeLLM([form(player="Imran Khan", team="Pakistan")])
+    reading = read_question(
+        "Imran Khan's strike rate for Pakistan?",
+        llm,
+        (IMRAN_PAKISTAN, IMRAN_KENT),
+        NAMES,
+        GROUNDS,
+        (Team(name="Pakistan", matches=1160),),
+    )
+    assert reading.subject.player == "a1a1a1a1"  # his id: the name is not his alone
+    assert (
+        "Imran Khan given by his register id, a1a1a1a1: several players have this name"
+        in reading.notes
+    )
+
+
+def test_a_name_one_player_has_goes_in_by_name():
+    reading, _ = read("Kohli's strike rate?", form(player="Kohli"))
+    assert reading.subject.player == "V Kohli"

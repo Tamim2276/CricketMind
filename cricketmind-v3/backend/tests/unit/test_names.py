@@ -261,3 +261,13 @@ def test_namesakes_by_the_whole_name_do_not_hide_him():
     found = find_players("Rohit Sharma", [*others, rohit])
     assert names(found) == ["RG Sharma", "Rohit Sharma", "Rohit Sharma"]
     assert clearly_most_played(found)
+
+
+def test_a_shared_name_is_listed_by_register_id_for_c6():
+    one = Player(person_id="a1a1a1a1", name="Imran Khan", matches=125)
+    two = Player(person_id="b2b2b2b2", name="Imran Khan", matches=60)
+    assert name_list([one, two, KOHLI]) == {
+        "a1a1a1a1": ("Imran Khan", "Khan"),
+        "b2b2b2b2": ("Imran Khan", "Khan"),
+        "V Kohli": ("Kohli",),
+    }

@@ -1567,3 +1567,33 @@ Template:
   is run again, and N-022 (Bangladesh's ODI win share at Mirpur) changes by one match.
 - Status: built (Day 58, part 2b)
 - Paper section: Data (cleaning); Implementation (N3)
+
+## D-078 — Teams found and renamed teams said; a shared name carried by its register id
+- Date: 2026-11-01
+- Decision: (1) N3 finds a team (and the opposition) in the team register (`domain/teams.py`,
+  `pipeline/teams.py`: 404 teams on the real data): by a nickname checked by hand
+  ("Windies", "RCB", sixteen in all), or else among every team whose name has the words
+  in a row, the whole name with them, most-played first. One team is kept; several, the
+  clearly most-played (five times the next, as for players and grounds) or asked; none,
+  unknown. "India" (1,353 matches) is kept over "Hyderabad (India)" (37); "Sunrisers" asks
+  between Sunrisers Hyderabad (211), an English women's side named "Sunrisers" (76) and
+  others; "Delhi" asks between Delhi Daredevils, Delhi Capitals and the domestic Delhi. A
+  team named with no gender is men's (D-046). A team found is a clue for the players. (2)
+  A renamed team (Delhi Daredevils, now Delhi Capitals; Kings XI Punjab, Punjab Kings;
+  Royal Challengers Bangalore, Bengaluru; Rising Pune Supergiants, Supergiant) is counted
+  under the name it is asked by, and the reading says so: "Delhi Capitals counted under
+  this name only; it also played as Delhi Daredevils". (3) A player whose name another
+  player has word for word ("Imran Khan") goes into the subject by his register id, with
+  a note; `find_person` takes an id as well as a name; C6's name list keys such a player
+  by his id, with the name among his ways, so prose naming him agrees with the claim.
+- Why: the plan's Day 58 says the subject then carries the chosen register id (L-031); a
+  name the engines refuse can be meant at last. The whole team name found first would
+  answer "Sunrisers" about a women's side and "Delhi" about the domestic team: the same
+  trap as "Rohit Sharma" (D-076). A renamed franchise is a different question to
+  different people (since the rename, or the whole history), and joining it would mean
+  changing every engine's team condition and its winner comparisons; said, not guessed.
+- Alternatives considered: the exact team name first; joining renamed teams in the data or
+  in every engine's SQL (L-071, possible later); a separate id field beside each name in
+  the subject (every menu row would have to list it, D-048).
+- Status: built (Day 58, part 2c)
+- Paper section: Implementation (N3); Method (reading a question)

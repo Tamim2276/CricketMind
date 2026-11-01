@@ -2200,3 +2200,38 @@ out the same, so the merge moved nothing it should not have. N-022 updated (49.5
 **For the paper:**
 - Numbers: N-022 updated
 - Section it feeds: Data (cleaning)
+
+---
+
+## Day 58, part 2c — 2026-11-01 — Which team, and which Imran Khan
+
+**Looked at first** (read-only): 404 team names. Renamed franchises: Delhi Daredevils
+(2008-2018) and Delhi Capitals (2019 on), Kings XI Punjab and Punjab Kings, Royal
+Challengers Bangalore and Bengaluru, Rising Pune Supergiants and Supergiant. Near names to
+keep apart: the domestic "Delhi" and "Punjab", "MI Emirates" and the United Arab Emirates.
+The engines compare team names exactly, in several SQL shapes and in the winner checks.
+**Decided (D-078):** a renamed team is counted under the name it is asked by, and the
+reading says so (L-071), rather than joined: "Delhi Capitals" means 2019 on to some, the
+whole franchise to others. **Found by trying:** the whole team name first answered
+"Sunrisers" with an English women's side named exactly that (76 matches), not Sunrisers
+Hyderabad (211), and "Delhi" with the domestic team: the "Rohit Sharma" trap again. Now
+the whole name and every name with the words are found together, and the five-times rule
+keeps "India" (1,353 against 37) or asks ("Sunrisers", "Delhi").
+**Built:** `domain/teams.py` (`Team`, sixteen nicknames checked by hand, the renamed teams,
+`find_teams`, `other_name`, `describe_team`); `pipeline/teams.py` (`load_teams`); N3 looks
+up the team and the opposition (one kept, several the clearly most-played or asked, none
+unknown; a renamed one noted; a team named with no gender is men's; a team found is a clue
+for the players). The `not_looked_up` list is gone: everything is looked up now. **The
+register id (L-031, done):** a player whose name another has word for word goes into the
+subject by his id, with a note; `find_person` takes an id; C6's name list keys him by his
+id, his name among his ways (`shared_names`, `register_name`).
+**Tested:** 15 new tests, 780 in all. One gap found before the run: every gender test also
+named a ground, so a break in "a team alone is men's" would have hidden behind it; a check
+added. Eleven deliberate mistakes, all caught.
+**Still on Day 58 (part 3):** the second adapter, LangChainLLM, behind the same port, and
+the runs by hand with both.
+
+**For the paper:**
+- Decisions: D-078
+- Limitations: L-071 new; L-031 done
+- Section it feeds: Implementation (N3); Method (reading a question)

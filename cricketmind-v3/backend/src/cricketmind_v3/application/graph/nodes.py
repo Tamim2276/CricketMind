@@ -42,6 +42,7 @@ def n3_question_reader(state: GraphState, runtime: Runtime[GraphContext]) -> dic
         context.players,
         context.names,
         context.grounds,
+        context.teams,
     )
     return {
         "visited": ["n3_question_reader"],
