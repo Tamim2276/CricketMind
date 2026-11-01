@@ -2404,3 +2404,27 @@ verdict should be read with that in mind.
 **Tested:** 11 new tests, 815 in all; the perfect forms still give all 90 expected readings
 with the fixed reader. Eleven deliberate mistakes, all caught. **Yours to run next:** the
 "after" stage, on the committed fixes.
+
+---
+
+## Day 59, part 3 — the verdict — the fixes fail their test and come out
+
+**The "after" run** (yours, on 9b11c6c, nothing uncommitted): on the same 90 new wordings
+the fixed reader read 43 exactly right; the reader before read 49. The gap (6) is within
+luck, but the rule was written first: the fixed reader stays only if it reads more. **It
+did not, so the reader before stays and the fixes are taken out** (N-045, E-049).
+**What the fixes did, deciding nothing now:** the honest decline worked: 15 of the 18
+questions nothing can check were declined (before: 1). But the predictions broke: 0 of 18
+right (before: 12). For "will Kohli get out within 12 balls?" the model mostly chose a
+counted measure (dismissal rate, wickets), and the measure's kind then turned the question
+into stats. The model chose the expected measure in only 10 of 36 stats and prediction
+wordings: picking one of 22 is hard for a 7B model, and letting that pick set the kind
+spread its mistakes. The rules reader went from 17 to 25 (deciding nothing).
+**Taken out:** the code is back exactly as at 27b51d8 (the reader, the read-back, the
+rules' checks, and their 11 tests); 804 tests pass, lint clean. Everything in D-080 went,
+including the year written as a number, the batting-hand words and the surname check, as
+the rule says; L-072 and L-073 are open again. **Kept:** the pre-registration, both runs,
+and the scripts, so anyone can check the verdict; each reading is in `data/day59b_runs/`, on this computer only (`data/` is not in git).
+**The lesson:** "none of the menu" was good at saying no; tying the kind to the measure was
+the mistake. Any new try has to be judged on questions neither set has shown, since this
+set has now shaped the idea. **Next:** Day 60.

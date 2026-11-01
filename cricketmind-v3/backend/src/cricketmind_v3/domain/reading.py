@@ -28,25 +28,6 @@ FORMATS = {
 BALLS = ("ball", "balls", "delivery", "deliveries")
 AGAINST = ("against", "vs", "v", "versus", "facing")  # the name after it bowls
 SAME_SIDE = ("or", "and")  # "against Bumrah or Starc": Starc bowls too
-# words a question starts with, never a surname on their own ("How" is JM How)
-QUESTION_WORDS = (
-    "how",
-    "what",
-    "who",
-    "when",
-    "where",
-    "why",
-    "which",
-    "will",
-    "would",
-    "is",
-    "are",
-    "does",
-    "did",
-    "can",
-    "could",
-    "has",
-)
 WOMEN = ("women", "womens")
 
 
@@ -61,9 +42,6 @@ def read_by_rules(question: str, names: dict[str, list[Entry]]) -> CricketSubjec
         if len(entries) != 1:
             continue  # a name two players share: never a guess
         entry = entries[0]
-        one_word = " " not in phrase
-        if "player" in entry.fields and one_word and not _named(phrase, question):
-            continue  # "leaning", "How": a word, not a surname (Day 59)
         before = ""
         if start > 0:
             before = words[start - 1]
@@ -93,18 +71,6 @@ def read_by_rules(question: str, names: dict[str, list[Entry]]) -> CricketSubjec
         if word in WOMEN:
             fields["gender"] = "female"
     return CricketSubject(**fields)
-
-
-def _named(word: str, question: str) -> bool:
-    """A one-word surname counts only written with a capital, and not as a question
-    word: "Kohli out?" yes; "leaning forward", "How often" no."""
-    if word in QUESTION_WORDS:
-        return False
-    for written in question.replace("’", "'").split():
-        written = written.strip('.,?!:;"()').removesuffix("'s")
-        if written.lower() == word and written[:1].isupper():
-            return True
-    return False
 
 
 def _fill(fields: dict, names: tuple[str, ...], value: str) -> None:
@@ -154,8 +120,6 @@ class Reading:
     asks: tuple[AskValue, ...] = ()  # "the next over": his next 6 balls?
     # a register id in the subject -> who he is, for the read-back (Day 59)
     shown: tuple[tuple[str, str], ...] = ()
-    measure: str | None = None  # the menu's measure it asks for (D-080)
-    off_menu: bool = False  # declined because no measure counts it (D-080)
 
 
 # the checks on a model's reading

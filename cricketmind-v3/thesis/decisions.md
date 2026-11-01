@@ -1652,10 +1652,14 @@ Template:
 - Alternatives considered: a list of words that always mean cant_check (only the words
   foreseen); a better prompt alone (the model still decides alone); a small trained
   classifier (Day 176 compares one).
-- Status: built (Day 59, part 3), to be judged on 90 new wordings before and after, by
-  `thesis/prereg/day59b_fixes.md`. A rules or cant_check question keeps its kind
-  whatever its measure ("What is an economy rate?" is rules). Added after the "before"
-  run, and said so: a year the model writes as a number (2021) is read as "2021"; the
-  first set's three "since 2020" wordings had failed the form on it, as two of the new
-  set's "since 2021" ones did before
+- Status: rejected by its own rule and taken out (Day 59, part 3). On 90 new wordings
+  (`thesis/prereg/day59b_fixes.md`) the fixed reader read 43 exactly right, the reader
+  before 49: within luck, but the rule keeps the reader before (N-045). It declined 15 of
+  the 18 that nothing can check (before: 1), and read none of the 18 predictions right
+  (before: 12): for "will he get out" the model mostly chose a counted measure (dismissal
+  rate, wickets), and the measure's kind then made it stats; its measure was the expected
+  one in 10 of 36. The code is back as at 27b51d8, and everything else listed above went
+  out with it, as the rule says. As built: a rules or cant_check question kept its kind
+  whatever its measure; the year written as a number (2021) was added after the "before"
+  run, and said so
 - Paper section: Method (honest decline: the menu as the boundary); Implementation (N3)
