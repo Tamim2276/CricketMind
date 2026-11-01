@@ -12,7 +12,6 @@ from dataclasses import dataclass
 
 from cricketmind_v3.domain.faith.gazetteer import Entry
 from cricketmind_v3.domain.faith.text import find_phrases, tokens
-from cricketmind_v3.domain.names import Player
 from cricketmind_v3.domain.subject import CricketSubject
 
 # the format names of D-047, as people type them
@@ -93,7 +92,7 @@ class Unsure:
 
     field: str  # "player"
     written: str  # "Mendis", as the question has it
-    candidates: tuple[Player, ...]  # most-played first
+    candidates: tuple  # players, or grounds (Day 58, part 2b): most-played first
     why: str = "several players have this name"  # or "nobody has it; close spellings"
 
 

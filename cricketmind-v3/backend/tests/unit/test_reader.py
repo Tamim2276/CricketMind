@@ -6,6 +6,7 @@ import json
 from cricketmind_v3.application.ports import FakeLLM, LLMError
 from cricketmind_v3.application.reader import QuestionForm, read_question
 from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer
+from cricketmind_v3.domain.grounds import Ground
 from cricketmind_v3.domain.names import Player
 from cricketmind_v3.domain.reading import AskValue
 from cricketmind_v3.domain.subject import CricketSubject
@@ -25,6 +26,23 @@ PLAYERS = (
     ),
 )
 NAMES = cricket_gazetteer({"V Kohli": ("Kohli",)})
+GROUNDS = (
+    Ground(
+        name="Shere Bangla National Stadium", places=("Dhaka", "Mirpur"), matches=497
+    ),
+    Ground(
+        name="M Chinnaswamy Stadium, Bangalore",
+        other_names=("M Chinnaswamy Stadium, Bengaluru", "M.Chinnaswamy Stadium"),
+        places=("Bangalore", "Bengaluru"),
+        matches=173,
+    ),
+    Ground(name="Eden Gardens", places=("Kolkata",), matches=176),
+    Ground(name="Eden Park Outer Oval", places=("Auckland",), matches=90),
+    Ground(name="Wankhede Stadium", places=("Mumbai",), matches=213),
+    Ground(name="Dr DY Patil Sports Academy, Mumbai", places=("Mumbai",), matches=73),
+    Ground(name="Lord's", places=("London",), matches=312),
+    Ground(name="Lords", places=("Bermuda",), matches=3),
+)
 
 
 def form(**given) -> str:
@@ -36,7 +54,7 @@ def form(**given) -> str:
 
 def read(question: str, *replies):
     llm = FakeLLM(list(replies))
-    return read_question(question, llm, PLAYERS, NAMES), llm
+    return read_question(question, llm, PLAYERS, NAMES, GROUNDS), llm
 
 
 def test_the_model_reads_and_the_register_names_the_player():
@@ -196,7 +214,8 @@ def test_a_team_or_ground_with_no_gender_is_mens():
         "India's win share at Mirpur?", form(team="India", venue="Mirpur")
     )
     assert reading.subject.gender == "male"
-    assert reading.not_looked_up == (("team", "India"), ("venue", "Mirpur"))
+    assert reading.subject.venue == "Shere Bangla National Stadium"
+    assert reading.not_looked_up == (("team", "India"),)
     assert "men's" in reading.notes[0]
     reading, _ = read(
         "India women's win share at Mirpur?",
@@ -284,3 +303,51 @@ def test_a_bowling_word_is_not_a_name():
     assert reading.subject.bowler_type == "pace"
     assert '"pace" is not the name of a player' in reading.notes
     assert reading.unknown == () and reading.unsure == ()
+
+
+# Day 58, part 2b: grounds
+
+
+def test_a_ground_by_its_place():
+    reading, _ = read("Spin's share of wickets at Mirpur?", form(venue="Mirpur"))
+    assert reading.subject.venue == "Shere Bangla National Stadium"
+    assert reading.subject.gender == "male"  # a ground, and no gender named
+
+
+def test_a_ground_by_any_of_its_names():
+    reading, _ = read("Totals at Chinnaswamy?", form(venue="Chinnaswamy"))
+    assert reading.subject.venue == "M Chinnaswamy Stadium, Bangalore"
+    reading, _ = read("Totals at M.Chinnaswamy?", form(venue="M.Chinnaswamy"))
+    assert reading.subject.venue == "M Chinnaswamy Stadium, Bangalore"
+
+
+def test_lords_in_london_not_lords_in_bermuda():
+    reading, _ = read("First innings at Lord's?", form(venue="Lord's"))
+    assert reading.subject.venue == "Lord's"
+    assert "Lord's read as Lord's: by far the most-played of 2 grounds" in reading.notes
+
+
+def test_several_grounds_close_are_asked():
+    reading, _ = read("Totals at Eden?", form(venue="Eden"))
+    assert reading.subject.venue is None
+    asked = reading.unsure[0]
+    assert (asked.field, asked.written) == ("venue", "Eden")
+    assert [g.name for g in asked.candidates] == [
+        "Eden Gardens",
+        "Eden Park Outer Oval",
+    ]
+    reading, _ = read("Totals in Mumbai?", form(venue="Mumbai"))
+    assert len(reading.unsure[0].candidates) == 2  # Wankhede 213, DY Patil 73: asked
+
+
+def test_a_ground_nobody_knows():
+    reading, _ = read("Totals at Hogwarts?", form(venue="Hogwarts"))
+    assert reading.unknown == ("Hogwarts",)
+    assert reading.subject.venue is None
+
+
+def test_a_ground_not_in_the_question():
+    reading, _ = read("Kohli's strike rate?", form(player="Kohli", venue="Wankhede"))
+    assert reading.subject.venue is None
+    assert reading.not_in_question == ("Wankhede",)
+    assert reading.subject.gender is None  # no ground was really named

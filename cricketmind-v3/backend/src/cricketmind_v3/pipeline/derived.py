@@ -8,6 +8,8 @@ import sys
 
 import duckdb
 
+from cricketmind_v3.pipeline.grounds import merge_grounds
+
 # kinds of "wicket" that are not dismissals: the batter can come back
 NOT_OUT = "('retired hurt', 'retired not out')"
 
@@ -148,6 +150,8 @@ def build_derived(db) -> dict[str, int]:
     """Make the derived tables; returns their row counts."""
     for sql in BUILD:
         db.execute(sql)
+        if "TABLE match_venues" in sql:
+            merge_grounds(db)  # one ground, one name, before anything counts by ground
     counts = {}
     for table in TABLES:
         counts[table] = db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]

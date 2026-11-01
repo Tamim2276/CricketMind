@@ -1,5 +1,5 @@
-"""N3 reads a few questions with a real model and the real player register (Day 58, by
-hand). It reads the database only.
+"""N3 reads a few questions with a real model and the real player and ground registers
+(Day 58, by hand). It reads the database only.
 
 Run from backend/, with Ollama running and no CricShot training on the GPU:
     uv run python scripts/read_questions.py ../data/cricket.duckdb qwen2.5:7b
@@ -14,8 +14,10 @@ import duckdb
 
 from cricketmind_v3.application.reader import read_question
 from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer
+from cricketmind_v3.domain.grounds import Ground, describe_ground
 from cricketmind_v3.domain.names import describe, name_list
 from cricketmind_v3.infrastructure.ollama_llm import OllamaLLM
+from cricketmind_v3.pipeline.grounds import load_grounds
 from cricketmind_v3.pipeline.players import load_players
 
 QUESTIONS = [
@@ -27,6 +29,8 @@ QUESTIONS = [
     "Kholi out in the next over?",
     "What is LBW?",
     "India's win share at Mirpur?",
+    "First-innings totals at Chinnaswamy in IPL T20s?",
+    "Spin's share of wickets in Mumbai?",
 ]
 
 
@@ -34,19 +38,23 @@ def main(database: str, model: str) -> None:
     db = duckdb.connect(database, read_only=True)
     players = tuple(load_players(db))
     names = cricket_gazetteer(name_list(list(players)))  # for the rules, if needed
-    print(f"{len(players):,} players in the register; the model: {model}\n")
+    grounds = tuple(load_grounds(db))
+    print(f"{len(players):,} players, {len(grounds):,} grounds; the model: {model}\n")
     llm = OllamaLLM(model)
     for question in QUESTIONS:
         started = time.time()
-        reading = read_question(question, llm, players, names)
+        reading = read_question(question, llm, players, names, grounds)
         print(f"{time.time() - started:5.1f}s  {question}")
         print(f"        read by {reading.by}: {filled(reading.subject)}")
         for unsure in reading.unsure:
             print(
                 f"        which {unsure.written}? {unsure.why} ({len(unsure.candidates)})"
             )
-            for player in unsure.candidates[:3]:
-                print(f"          - {describe(player)}")
+            for candidate in unsure.candidates[:3]:
+                if isinstance(candidate, Ground):
+                    print(f"          - {describe_ground(candidate)}")
+                else:
+                    print(f"          - {describe(candidate)}")
         for ask in reading.asks:
             print(f"        ask about {ask.written}: {ask.why}")
         for label, items in (

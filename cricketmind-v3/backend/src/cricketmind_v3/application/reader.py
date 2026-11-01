@@ -16,13 +16,15 @@ from pydantic import BaseModel, ConfigDict, Field
 from cricketmind_v3.application.ports import LLM, LLMError
 from cricketmind_v3.application.resolver import find_player
 from cricketmind_v3.domain.faith.gazetteer import BOWLER_TYPES, PHASES, SHOTS, Entry
-from cricketmind_v3.domain.names import Clues, Player
+from cricketmind_v3.domain.grounds import Ground, find_grounds
+from cricketmind_v3.domain.names import MOST_PLAYED_BY, Clues, Player
 from cricketmind_v3.domain.reading import (
     FORMATS,
     MONTHS,
     WOMEN,
     AskValue,
     Reading,
+    Unsure,
     appears_in,
     date_parts_said,
     next_overs,
@@ -36,7 +38,7 @@ from cricketmind_v3.domain.reading import (
 from cricketmind_v3.domain.subject import CricketSubject
 
 PEOPLE = ("player", "bowler", "other_bowler")
-NOT_LOOKED_UP = ("team", "opposition", "venue")  # their registers come in part 2
+NOT_LOOKED_UP = ("team", "opposition")  # the team register comes in part 2c
 YEAR_OR_DAY = r"^\d{4}(-\d{2}-\d{2})?$"
 
 
@@ -122,6 +124,7 @@ def read_question(
     llm: LLM | None,
     players: tuple[Player, ...],
     names: dict[str, list[Entry]],
+    grounds: tuple[Ground, ...] = (),
 ) -> Reading:
     """The model reads, the code checks; without a model, or when its reply does not
     fit twice, the rules read (Day 56)."""
@@ -136,7 +139,7 @@ def read_question(
             by="rules",
             notes=(f"read by rules: the model's reply did not fit twice ({reason})",),
         )
-    return _check(form, question, players, llm)
+    return _check(form, question, players, llm, grounds)
 
 
 def _ask(llm: LLM, question: str) -> QuestionForm:
@@ -151,7 +154,11 @@ def _ask(llm: LLM, question: str) -> QuestionForm:
 
 
 def _check(
-    form: QuestionForm, question: str, players: tuple[Player, ...], llm: LLM
+    form: QuestionForm,
+    question: str,
+    players: tuple[Player, ...],
+    llm: LLM,
+    grounds: tuple[Ground, ...],
 ) -> Reading:
     fields = {}
     unknown = []
@@ -211,8 +218,36 @@ def _check(
         else:
             not_in_question.append(written)
 
+    # the ground: one kept; several, the clearly most-played or asked; none, unknown
+    ground_named = False
+    if form.venue is not None:
+        if not appears_in(form.venue, question):
+            not_in_question.append(form.venue)
+        else:
+            ground_named = True
+            found = find_grounds(form.venue, list(grounds))
+            if len(found) == 1:
+                fields["venue"] = found[0].name
+            elif _clearly_most_played(found):
+                fields["venue"] = found[0].name
+                notes.append(
+                    f"{form.venue} read as {found[0].name}: by far the most-played "
+                    f"of {len(found)} grounds"
+                )
+            elif found:
+                unsure.append(
+                    Unsure(
+                        field="venue",
+                        written=form.venue,
+                        candidates=tuple(found),
+                        why="several grounds have this name or place",
+                    )
+                )
+            else:
+                unknown.append(form.venue)
+
     # a team or ground with no gender named is men's cricket, and the reading says so
-    if not_looked_up and "gender" not in fields:
+    if (not_looked_up or ground_named) and "gender" not in fields:
         fields["gender"] = "male"
         notes.append(
             "read as men's cricket: a team or ground, and no gender named (D-046)"
@@ -252,6 +287,13 @@ def _check(
         notes=tuple(notes),
         asks=tuple(asks),
     )
+
+
+def _clearly_most_played(grounds: list[Ground]) -> bool:
+    # as for players (D-076): the first has five times the next one's matches
+    if len(grounds) < 2:
+        return False
+    return grounds[0].matches >= MOST_PLAYED_BY * grounds[1].matches
 
 
 def _a_cricket_word(written: str) -> bool:

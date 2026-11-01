@@ -37,7 +37,11 @@ def n3_question_reader(state: GraphState, runtime: Runtime[GraphContext]) -> dic
     if context is None:
         raise ValueError("the graph was run without its context (a GraphContext)")
     reading = read_question(
-        state["question"], context.llm, context.players, context.names
+        state["question"],
+        context.llm,
+        context.players,
+        context.names,
+        context.grounds,
     )
     return {
         "visited": ["n3_question_reader"],

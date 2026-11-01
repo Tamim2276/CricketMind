@@ -1535,3 +1535,35 @@ Template:
   word for a phase, a kind of bowling, a shot or a format is not a name ("pace" in a
   bowler's box)
 - Paper section: Method (reading a question); Implementation (N3)
+
+## D-077 — One ground, one name, in the data; and which ground a question means
+- Date: 2026-11-01
+- Decision: right after `match_venues` is built, every match of a ground is given its
+  main name (`pipeline/grounds.py`, `domain/grounds.py`), so every engine counts the whole
+  ground. Two names are one ground when the ground's name agrees letters and digits only
+  ("M.Chinnaswamy", "M Chinnaswamy") and they share a place: a word after the comma or a
+  city its matches give, with renamed cities mapped (Bangalore, Bengaluru; Port Elizabeth,
+  Gqeberha; Chittagong, Chattogram, and others). A name with no place joins nothing by
+  rule. Renamed and misspelt grounds no rule can see are in a list checked by hand (Feroz
+  Shah Kotla is the Arun Jaitley Stadium; the PCA Stadium the IS Bindra Stadium; Daren and
+  Darren Sammy; "Sher-e-Bangla National Cricket Stadium" is Mirpur's ground; nine in all).
+  The Narendra Modi Stadium is kept apart from the Sardar Patel Stadium it replaced, a new
+  ground, and so are second grounds beside a main one (Palam II, "Ground 'A'"). The main
+  name is the name with the most matches. On the real data: 711 names, 654 grounds, 41 of
+  them with more than one name. N3 finds a ground by its name, the part before the comma,
+  or else by its place ("Mirpur", "Mumbai"): one ground is kept; several, the clearly
+  most-played (five times the next, as for players) or asked back; none, unknown. A
+  ground named with no gender is men's cricket, with a note (D-046).
+- Why: L-028 named one split ground; the data has 41. A split ground gives every engine a
+  partial count and true-looking numbers: Mirpur's one ODI filed as "Sher-e-Bangla National
+  Cricket Stadium" was missing from N-022. A rule on the ground's name alone would join
+  Lord's (London) with Lords (Bermuda), "ACA Stadium" in Mangalagiri with the one in
+  Barsapara, and Palam with Palam II; requiring a shared place keeps them apart, and lets
+  the Caribbean grounds, filed with the town and the island swapped, become one.
+- Alternatives considered: the ground's name alone; the city field alone (the town and the
+  island swap places); joining at query time in every engine's SQL (one more thing every
+  query must remember); a longer hand list (each entry must be checked).
+- Consequences: the derived tables are built again (the user runs it); the engine report
+  is run again, and N-022 (Bangladesh's ODI win share at Mirpur) changes by one match.
+- Status: built (Day 58, part 2b)
+- Paper section: Data (cleaning); Implementation (N3)

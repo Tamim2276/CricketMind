@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from cricketmind_v3.application.ports import LLM
 from cricketmind_v3.domain.faith.gazetteer import Entry
+from cricketmind_v3.domain.grounds import Ground
 from cricketmind_v3.domain.names import Player
 
 
@@ -14,3 +15,4 @@ class GraphContext:
     names: dict[str, list[Entry]] = field(default_factory=dict)  # cricket_gazetteer
     llm: LLM | None = None  # without one, N3 reads by rules
     players: tuple[Player, ...] = ()  # the register, for the model's names
+    grounds: tuple[Ground, ...] = ()  # one name per ground (Day 58, part 2b)

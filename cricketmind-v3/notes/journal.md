@@ -2142,3 +2142,46 @@ each break caught. D-076's status records them.
 **For the paper:**
 - Decisions: D-076 (status)
 - Section it feeds: Implementation (N3)
+
+---
+
+## Day 58, part 2b — 2026-11-01 — One ground, one name
+
+**Split again:** grounds now (2b); teams, and the register id for a name several players
+have word for word, next (2c).
+**Looked at first** (read-only): L-028 named Chinnaswamy's three names; the data has more,
+and a first rule went wrong both ways. On the ground's name and the city field alone it
+joined "ACA Stadium" in Mangalagiri with the one in Barsapara (Guwahati) and Palam with
+Palam II, and kept Kensington Oval in three pieces: Cricsheet files it "Bridgetown" with
+the island as its city, and "Barbados" with the town. **The rule that held:** one ground
+when the name agrees letter for letter and the names share a place (a word after the comma
+or a city its matches give), renamed cities mapped. Lord's (London) and Lords (Bermuda)
+stay apart; so do the County Grounds of Taunton and Bristol. A short list, checked by hand,
+for what no rule sees: Feroz Shah Kotla is the Arun Jaitley Stadium, the PCA Stadium the IS
+Bindra Stadium, Daren and Darren Sammy one, and Mirpur's ground under "Sher-e-Bangla
+National Cricket Stadium" (nine in all). Kept apart on purpose: the Narendra Modi Stadium,
+built where the Sardar Patel Stadium stood. **On the real data:** 711 names, 654 grounds, 41
+of them with more than one name, every group checked by eye.
+**Found:** Mirpur's "Sher-e-Bangla" match is a men's ODI of 25 May 2021, so N-022
+(Bangladesh's ODI win share at Mirpur, 98 matches) was one match short.
+**Built (D-077):** `domain/grounds.py` (`same_grounds`, `places_of`, the hand list, `Ground`,
+`find_grounds`, `describe_ground`); `pipeline/grounds.py` (`merge_grounds`, run in the build
+right after `match_venues`; `load_grounds`); N3 looks the ground up: one kept, several the
+clearly most-played or asked, none unknown; a ground named with no gender is men's. The
+graph's context holds the grounds; the run-by-hand script loads them.
+**Bug found by a test:** "Mumbai" found only the DY Patil Academy, because "Mumbai" was in
+its name ("Dr DY Patil Sports Academy, Mumbai"), and a name beat a place. Now the part
+before the comma is the name, the rest are places: "Mumbai" finds Wankhede too, and asks.
+**Tested:** 20 new tests, 765 in all, each case from the real data. Eleven deliberate
+mistakes; nine caught. **Missed:** "a place before a name" (no test had a word that is one
+ground's name and another's place: Melbourne, the MCG and the Junction Oval) and "the build
+forgets to merge" (no test built the whole data with two names for one ground; now one
+fixture match is filed "Lords, London" beside "Lord's, London"). Both tests added; both
+caught.
+**Yours to run:** the derived tables built again (the merge is in the build), then the
+engine report again: N-022 changes by one match, and its receipt with it.
+
+**For the paper:**
+- Decisions: D-077
+- Limitations: L-028 updated
+- Section it feeds: Data (cleaning); Implementation (N3)
