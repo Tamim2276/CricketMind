@@ -357,7 +357,10 @@ Template:
 - Status: built (Days 57 and 58): `OllamaLLM` and `LangChainLLM` behind the same port. On
   Day 58 the request LangChain builds was read and matched OllamaLLM's (the same form,
   temperature 0, seed 42, `think` false; it streams), and both check the raw reply with
-  the same `read_reply`. Day 59 scores them
+  the same `read_reply`. Day 59 (N-044): LangChainLLM 60 of 90, OllamaLLM 58, both with
+  qwen2.5:7b. By the pre-registered rule LangChainLLM stays; the gap is within luck (one
+  wording where OllamaLLM's reply failed twice and the rules took over, one where the
+  same request gave another kind), so the paper claims no difference
 - Paper section: Implementation (only if the scores differ enough to matter; numbers.md row first)
 
 ## D-025 — Every shown number says what it counts, which way it points, and how sure it is
@@ -1469,7 +1472,9 @@ Template:
   schema keep the comparison fair, and a rule written first keeps it honest.
 - Alternatives considered: switching to qwen3:8b now, on reviews and Day 57's four questions;
   keeping qwen2.5:7b untested; comparing on the locked exam (it stays locked until Day 178).
-- Status: planned (Day 59)
+- Status: decided (Day 59, N-044): qwen2.5:7b 60 of 90, qwen3:8b 43, through LangChainLLM;
+  a gap of 17, more than the 9 that luck allows: qwen2.5:7b stays (Ollama digest
+  845dbda0ea48). qwen3:8b missed the number of balls 13 times
 - Paper section: Implementation (the local model), with a numbers.md row if the scores are
   reported
 
@@ -1626,3 +1631,27 @@ Template:
   never run).
 - Status: built (Day 59, part 1)
 - Paper section: Method (five kinds; honest decline); Implementation (N3, N13)
+
+## D-080 — The reader asks which measure; a question for none of them is declined
+- Date: 2026-11-01
+- Decision (planned on this date, before it is coded): N3's form gains a `measure` box whose
+  allowed values are the menu's claim types (the 22 measures the engines can count) and
+  "none". A stats or prediction question whose measure is none is declined: no engine
+  can check it, whether it asks about an injury, a salary or a number nobody counts (a
+  player's ODI centuries). A measure's own kind (predictive or descriptive) settles a
+  stats-or-prediction mix-up. With it: clearer words for each kind in the prompt, with an
+  example of the number of balls and of a bowler's measure; a batting hand only from
+  "handed", "handers" or "left-hand"/"right-hand", not the bare word ("right now"); the
+  rules reader takes a one-word surname only when the question writes it with a capital
+  and it is not a question word ("How"); and every reading keeps the reason when the
+  model's reply did not fit.
+- Why: a word list blocks only words someone foresaw; the menu is what CricketMind can
+  actually answer, so "none of these" covers what nobody foresaw, and the model cannot
+  write a measure that does not exist, as it cannot write a format (D-075). On Day 59's
+  first set the model read 17 of 18 cant_check wordings as stats or predictions (L-072).
+- Alternatives considered: a list of words that always mean cant_check (only the words
+  foreseen); a better prompt alone (the model still decides alone); a small trained
+  classifier (Day 176 compares one).
+- Status: planned; judged on 90 new wordings before and after, by
+  `thesis/prereg/day59b_fixes.md`
+- Paper section: Method (honest decline: the menu as the boundary); Implementation (N3)

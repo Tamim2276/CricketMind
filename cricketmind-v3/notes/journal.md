@@ -2323,3 +2323,60 @@ the door that stays; ties keep OllamaLLM and qwen2.5:7b; a gap of 9 or fewer wor
 within luck and will not be claimed as a difference. The rules reader is scored beside
 them, deciding nothing. `thesis/scripts/readers_day59.py` checks both fingerprints, keeps
 every reading in `data/day59_runs/` as it is made, and writes the results and the ledger.
+
+---
+
+## Day 59, part 2 — 2026-11-01 — The readers' test
+
+**Run** (yours, on 45266fd, the pre-registration committed first; 21 minutes; ledger:
+uncommitted changes false). Exactly right, the kind and the whole subject, of 90 (N-044):
+
+```
+the rules                  35   38.9%
+OllamaLLM    qwen2.5:7b    58   64.4%
+LangChainLLM qwen2.5:7b    60   66.7%   the door that stays: the rule; within luck
+LangChainLLM qwen3:8b      43   47.8%   qwen2.5:7b stays: 17 apart, more than luck
+```
+
+**Decided by the rule (D-024, D-074):** LangChainLLM is N3's door and qwen2.5:7b its model
+(digest 845dbda0ea48); qwen3:8b may be removed. The doors' gap is luck, as section 5 said
+it would be: they differ on two wordings, one where OllamaLLM's reply failed twice and the
+rules took over, one where the same request came back with another kind. The models' gap
+is not: qwen3:8b missed the number of balls 13 times.
+**Looked at after, to explain (deciding nothing):** the commonest mistake, for every model,
+is the kind. Of 18 cant_check wordings qwen2.5:7b read 14 as stats and 3 as predictions, so
+"Is Kohli injured?" would not take the honest decline (L-072). Smaller: "right now" read as
+right-handers; by rules "How" and "leaning" read as the players JM How and JA Leaning
+(L-073); all three wordings of "Kohli's average against Australia since 2020" failed the
+form twice and fell to the rules (why, the run did not keep: the next run should keep the
+reason); Rashid Khan once read as the batter; the number of balls missed twice; the two
+sweeps read in the other order.
+**Not done, on purpose:** fixing these and scoring the fixes on these 90. They chose the
+reader; tuned on them, they would only measure the tuning. The fixes go in next, measured
+on new questions.
+
+**For the paper:**
+- Numbers: N-044
+- Evidence: E-048 (practice questions; the exam gives the paper's numbers)
+- Decisions: D-024 and D-074 (decided)
+- Limitations: L-072, L-073
+- Section it feeds: Implementation (N3's reader)
+
+---
+
+## Day 59, part 3 — before the fixes — a fair test of them, set up first
+
+**Asked:** can the reader do better than 60 of 90, and can the honest decline be fixed? And
+better than a word list? **Answered:** the menu itself: the form asks which of the 22
+measures the question wants, or none; none means nothing can check it (D-080, planned).
+**The order, for fairness:** 30 new questions (90 wordings, none from the first set),
+written and fingerprinted before the fixes are coded (`thesis/practice/day59b_readings.jsonl`,
+SHA-256 `956994847959b1d51646b36b8196e8b61f9e910022e2448a22867156be5cafec`; all 90 reachable
+by a perfect form through the current reader); the rule written first
+(`thesis/prereg/day59b_fixes.md`, SHA-256
+`d05c277c5a7c3ca30bf00d34e6ef962d40570af8a897706efd36c973001d94c1`): the fixed reader stays
+only if it reads more wordings exactly right than the reader before, on this set. One group
+asks for a number no engine counts (Kohli's ODI centuries), expected to be declined; it is
+reported apart. `thesis/scripts/readers_day59b.py` runs a stage (before, then after),
+keeps every reading and its notes, and applies the rule. **Yours to run first:** the
+"before" stage, on the code as it is now.

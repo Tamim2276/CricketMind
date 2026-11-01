@@ -1,0 +1,5 @@
+reader,exactly right,of,share,stats,prediction,video,rules,cant_check,read by rules,mean seconds
+rules,35,90,0.3889,2,2,14,14,3,90,0.1
+OllamaLLM qwen2.5:7b,58,90,0.6444,12,13,15,18,0,4,5.16
+LangChainLLM qwen2.5:7b,60,90,0.6667,12,13,16,18,1,4,4.92
+LangChainLLM qwen3:8b,43,90,0.4778,9,4,17,12,1,5,3.58
