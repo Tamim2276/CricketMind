@@ -112,11 +112,14 @@ class Reading:
 
     subject: CricketSubject
     by: str  # "model" or "rules"
+    kind: str  # one of the five (Day 59): "stats", "prediction", "video", ...
     unknown: tuple[str, ...] = ()  # names nobody in the register has
     unsure: tuple[Unsure, ...] = ()  # names several players share
     not_in_question: tuple[str, ...] = ()  # what the model gave that the question lacks
     notes: tuple[str, ...] = ()  # "read as men's cricket: no gender named"
     asks: tuple[AskValue, ...] = ()  # "the next over": his next 6 balls?
+    # a register id in the subject -> who he is, for the read-back (Day 59)
+    shown: tuple[tuple[str, str], ...] = ()
 
 
 # the checks on a model's reading

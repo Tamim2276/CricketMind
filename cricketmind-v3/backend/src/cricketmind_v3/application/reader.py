@@ -17,6 +17,7 @@ from cricketmind_v3.application.ports import LLM, LLMError
 from cricketmind_v3.application.resolver import find_player
 from cricketmind_v3.domain.faith.gazetteer import BOWLER_TYPES, PHASES, SHOTS, Entry
 from cricketmind_v3.domain.grounds import Ground, find_grounds
+from cricketmind_v3.domain.kinds import KINDS, kind_by_rules
 from cricketmind_v3.domain.names import (
     MOST_PLAYED_BY,
     Clues,
@@ -53,6 +54,12 @@ class QuestionForm(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    kind: Literal[KINDS] = Field(
+        description="stats: what happened (records, averages, results); prediction: "
+        "what may happen next; video: a question about a clip; rules: the laws or "
+        "words of cricket; cant_check: injuries, money, private life, or anything no "
+        "ball-by-ball record holds"
+    )
     player: str | None = Field(description="the batter, written as in the question")
     bowler: str | None = Field(
         description="the bowler bowling to the batter, or the bowler the question is "
@@ -110,7 +117,8 @@ SYSTEM = (
     "the batter; the bowler bowls to him, or is the bowler the question is about. In "
     "'Would Bumrah or Starc get Smith out sooner?', Smith is the player, Bumrah the "
     "bowler and Starc the other bowler. Use null for anything the question does not "
-    "say. Never guess, and never add a name or a number."
+    "say. Never guess, and never add a name or a number. Always say which kind of "
+    "question it is."
 )
 
 # the words that say each allowed value; the model's value must be among the question's
@@ -132,21 +140,27 @@ def read_question(
     names: dict[str, list[Entry]],
     grounds: tuple[Ground, ...] = (),
     teams: tuple[Team, ...] = (),
+    clip: str | None = None,
 ) -> Reading:
     """The model reads, the code checks; without a model, or when its reply does not
-    fit twice, the rules read (Day 56)."""
+    fit twice, the rules read (Day 56). A clip makes it a video question (Day 59)."""
     if llm is None:
-        return Reading(subject=read_by_rules(question, names), by="rules")
+        return _by_rules(question, names, clip, ())
     try:
         form = _ask(llm, question)
     except LLMError as error:
         reason = str(error).splitlines()[0]
-        return Reading(
-            subject=read_by_rules(question, names),
-            by="rules",
-            notes=(f"read by rules: the model's reply did not fit twice ({reason})",),
-        )
-    return _check(form, question, players, llm, grounds, teams)
+        note = f"read by rules: the model's reply did not fit twice ({reason})"
+        return _by_rules(question, names, clip, (note,))
+    return _check(form, question, players, llm, grounds, teams, clip)
+
+
+def _by_rules(
+    question: str, names: dict[str, list[Entry]], clip: str | None, notes: tuple
+) -> Reading:
+    subject = read_by_rules(question, names)
+    kind = kind_by_rules(question, subject, clip is not None)
+    return Reading(subject=subject, by="rules", kind=kind, notes=notes)
 
 
 def _ask(llm: LLM, question: str) -> QuestionForm:
@@ -167,8 +181,10 @@ def _check(
     llm: LLM,
     grounds: tuple[Ground, ...],
     teams: tuple[Team, ...],
+    clip: str | None,
 ) -> Reading:
     fields = {}
+    shown = []
     unknown = []
     unsure = []
     not_in_question = []
@@ -312,6 +328,7 @@ def _check(
                     f"{found.player.name} given by his register id, "
                     f"{found.player.person_id}: several players have this name"
                 )
+                shown.append((fields[name], _who(found.player)))
         elif found.unsure is not None:
             unsure.append(found.unsure)
         else:
@@ -320,12 +337,36 @@ def _check(
     return Reading(
         subject=CricketSubject(**fields),
         by="model",
+        kind=_kind(form.kind, clip, notes),
         unknown=tuple(unknown),
         unsure=tuple(unsure),
         not_in_question=tuple(not_in_question),
         notes=tuple(notes),
         asks=tuple(asks),
+        shown=tuple(shown),
     )
+
+
+def _kind(kind: str, clip: str | None, notes: list[str]) -> str:
+    # a clip makes it a video question, whatever the model said; video without a
+    # clip is said, so the answer can ask for one
+    if clip is not None:
+        return "video"
+    if kind == "video":
+        notes.append("a question about a clip, but no clip came with it")
+    return kind
+
+
+def _who(player: Player) -> str:
+    # "Imran Khan (Pakistan, 1971-1992)": which of the players with his name
+    details = []
+    if player.teams:
+        details.append(player.teams[0])
+    if player.first_year is not None:
+        details.append(f"{player.first_year}-{player.last_year}")
+    if not details:
+        return player.name
+    return f"{player.name} ({', '.join(details)})"
 
 
 def _clearly_first(found: list) -> bool:

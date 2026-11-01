@@ -44,11 +44,17 @@ ARROWS = [
     ("faith_gate", "n12_report_synthesis"),
     ("n12_report_synthesis", "n13_final_output"),
     ("n13_final_output", END),
+    ("n3_question_reader", "n13_final_output"),
 ]
 for agent in nodes.AGENTS:
     ARROWS.append(("n10_supervisor_router", agent.__name__))
     ARROWS.append((agent.__name__, "faith_gate"))
-BRANCHES = [(START, "n1_video_input"), (START, "n3_question_reader")]
+BRANCHES = [
+    (START, "n1_video_input"),
+    (START, "n3_question_reader"),
+    ("n3_question_reader", "n6_shot_dna"),
+    ("n3_question_reader", "n13_final_output"),  # the honest decline (Day 59)
+]
 
 
 def run(clip: str | None = None) -> dict:
@@ -64,7 +70,10 @@ def node_names() -> list[str]:
 
 def test_the_graph_runs_end_to_end():
     state = run()
-    assert state["answer"] == "stub: nothing is answered yet"
+    assert state["answer"] == (
+        "I read this as: a prediction: V Kohli, out within 6 balls, T20, "
+        "the powerplay, against pace.\nstub: nothing is answered yet"
+    )
     assert state["question"] == QUESTION  # passed along untouched
     assert state["clip"] is None
 
@@ -98,7 +107,7 @@ def test_n3_reads_the_question():
 
 def test_n3_reads_with_the_model_when_it_has_one():
     reply = dict.fromkeys(QuestionForm.model_fields)
-    reply.update(player="Kohli", k=6)
+    reply.update(kind="prediction", player="Kohli", k=6)
     context = GraphContext(
         names=CONTEXT.names,
         llm=FakeLLM([json.dumps(reply)]),
@@ -152,3 +161,34 @@ def test_the_picture_names_every_node():
     picture = build_graph().get_graph().draw_mermaid()
     for name in node_names():
         assert name in picture
+
+
+# Day 59: a question nobody can check takes the short path
+
+
+def run_question(question: str, clip: str | None = None) -> dict:
+    return build_graph().invoke({"question": question, "clip": clip}, context=CONTEXT)
+
+
+def test_a_question_nobody_can_check_goes_straight_to_the_answer():
+    state = run_question("Is Kohli injured?")
+    assert state["reading"].kind == "cant_check"
+    assert state["visited"] == ["n3_question_reader", "n13_final_output"]
+    assert state["answer"].startswith(
+        "I read this as: a question no ball-by-ball record can answer: V Kohli."
+    )
+    assert "I can't check that" in state["answer"]
+    assert "You could ask instead: V Kohli's record" in state["answer"]
+
+
+def test_a_clip_makes_it_a_video_question():
+    state = run_question("Is Kohli injured?", "clip.mp4")
+    assert state["reading"].kind == "video"
+    assert state["visited"].count("n13_final_output") == 1
+
+
+def test_the_engines_and_agents_never_see_a_declined_question():
+    visited = run_question("Kohli's salary?")["visited"]
+    for name in node_names():
+        if name not in ("n3_question_reader", "n13_final_output"):
+            assert name not in visited

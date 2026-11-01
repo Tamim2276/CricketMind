@@ -9,3 +9,11 @@ def clip_or_text(state: GraphState) -> list[str]:
     if state.get("clip") is None:
         return ["n3_question_reader"]
     return ["n1_video_input", "n3_question_reader"]
+
+
+def after_reading(state: GraphState) -> list[str]:
+    """Day 59: a question no ball-by-ball record can answer goes straight to the honest
+    answer; the engines and the agents never see it."""
+    if state["reading"].kind == "cant_check":
+        return ["n13_final_output"]
+    return ["n6_shot_dna"]

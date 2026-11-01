@@ -1,6 +1,6 @@
 """The v4 flowchart, wired (Day 55). Every arrow here is one in the v4 figure. The
-branches come on their own days: clip or text (Day 56); the classifier's status (Day
-118), decline, regenerate and withhold later."""
+branches come on their own days: clip or text (Day 56); the honest decline (Day 59);
+the classifier's status (Day 118), regenerate and withhold later."""
 
 from langgraph.graph import END, START, StateGraph
 
@@ -30,7 +30,13 @@ def build_graph():
 
     graph.add_edge("confidence_gate", "n6_shot_dna")
     graph.add_edge("n2b_pose_estimator", "n6_shot_dna")
-    graph.add_edge("n3_question_reader", "n6_shot_dna")
+    # a branch (Day 59): a question nobody can check goes straight to the answer. A
+    # clip makes a question video, so Shot DNA never sees one
+    graph.add_conditional_edges(
+        "n3_question_reader",
+        routes.after_reading,
+        ["n6_shot_dna", "n13_final_output"],
+    )
     graph.add_edge("n6_shot_dna", "n7a_evidence_retrieval")
     graph.add_edge("n6_shot_dna", "n7b_context_retrieval")
     retrievers = ["n7a_evidence_retrieval", "n7b_context_retrieval"]

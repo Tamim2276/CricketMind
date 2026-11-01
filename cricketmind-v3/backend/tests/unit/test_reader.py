@@ -61,6 +61,7 @@ TEAMS = (
 def form(**given) -> str:
     """A reply as a model would send it: every field, null unless given."""
     values = dict.fromkeys(QuestionForm.model_fields)
+    values["kind"] = "stats"  # every form says its kind (Day 59)
     values.update(given)
     return json.dumps(values)
 
@@ -452,3 +453,55 @@ def test_a_name_several_players_share_goes_in_by_register_id():
 def test_a_name_one_player_has_goes_in_by_name():
     reading, _ = read("Kohli's strike rate?", form(player="Kohli"))
     assert reading.subject.player == "V Kohli"
+
+
+# Day 59: the kind of question
+
+
+def test_the_models_kind_is_kept():
+    reading, _ = read(
+        "Kohli out within 6 balls?", form(kind="prediction", player="Kohli", k=6)
+    )
+    assert reading.kind == "prediction"
+
+
+def test_a_kind_not_on_the_list_does_not_fit():
+    reading, llm = read(
+        "Kohli out within 6 balls?",
+        form(kind="guess", player="Kohli"),
+        form(kind="prediction", player="Kohli", k=6),
+    )
+    assert reading.kind == "prediction"
+    assert len(llm.asked) == 2  # asked again, with the reason
+
+
+def test_a_clip_makes_it_a_video_question():
+    llm = FakeLLM([form(kind="stats", shot="Cover Drive")])
+    reading = read_question(
+        "Is this a cover drive?", llm, PLAYERS, NAMES, GROUNDS, TEAMS, "clip.mp4"
+    )
+    assert reading.kind == "video"
+
+
+def test_video_without_a_clip_is_said():
+    reading, _ = read("Is this a cover drive?", form(kind="video", shot="Cover Drive"))
+    assert reading.kind == "video"
+    assert "a question about a clip, but no clip came with it" in reading.notes
+
+
+def test_the_rules_sort_it_when_the_model_cannot():
+    reading = read_question("Is Kohli injured?", None, PLAYERS, NAMES)
+    assert (reading.by, reading.kind) == ("rules", "cant_check")
+
+
+def test_a_shared_name_is_shown_as_who_he_is():
+    llm = FakeLLM([form(player="Imran Khan", team="Pakistan")])
+    reading = read_question(
+        "Imran Khan's strike rate for Pakistan?",
+        llm,
+        (IMRAN_PAKISTAN, IMRAN_KENT),
+        NAMES,
+        GROUNDS,
+        (Team(name="Pakistan", matches=1160),),
+    )
+    assert reading.shown == (("a1a1a1a1", "Imran Khan (Pakistan, 1971-1992)"),)

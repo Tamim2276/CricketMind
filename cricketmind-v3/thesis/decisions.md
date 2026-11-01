@@ -1602,3 +1602,27 @@ Template:
   the subject (every menu row would have to list it, D-048).
 - Status: built (Day 58, part 2c)
 - Paper section: Implementation (N3); Method (reading a question)
+
+## D-079 — The kind of question, the read-back, and the honest decline
+- Date: 2026-11-01
+- Decision: (1) every reading has one of five kinds: stats, prediction, video, rules,
+  cant_check. The model says it in a box with only those five values; a clip makes any
+  question a video question; a video question without a clip is said. Without the model,
+  plain rules sort it (a clip; words about injuries, money or private life; a law word
+  with nobody named; "will", "chance", "within", "next"; else stats). (2) Every answer
+  starts with the read-back, "I read this as: a prediction: V Kohli, out within 6 balls,
+  T20, the powerplay, against pace.", followed by what is asked back and who is unknown;
+  a register id is read back as who he is ("Imran Khan (Pakistan, 1971-1992)"). (3) A
+  cant_check question takes the v4 figure's short path, from N3 straight to N13: the
+  engines and the agents never see it, and the answer says what CricketMind cannot say
+  and what can be asked instead ("V Kohli's record, how many balls he has bowled in the
+  last four weeks, or the chance of getting out in the next few balls").
+- Why: the v4 design's five kinds and its decline arrow; the read-back makes a misreading
+  visible before anyone trusts a number (L-067, L-069, L-070); a question nothing can
+  check answered by agents anyway would invite an invented answer.
+- Alternatives considered: the rules sorting every question (the model reads wordings no
+  word list foresees; Day 59 measures both readers); a branch after Shot DNA for a declined
+  question with a clip (built, then removed: a clip makes a question video, so it could
+  never run).
+- Status: built (Day 59, part 1)
+- Paper section: Method (five kinds; honest decline); Implementation (N3, N13)

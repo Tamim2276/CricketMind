@@ -7,6 +7,7 @@ from langgraph.runtime import Runtime
 from cricketmind_v3.application.graph.context import GraphContext
 from cricketmind_v3.application.graph.state import GraphState
 from cricketmind_v3.application.reader import read_question
+from cricketmind_v3.domain.readback import cant_check_answer, read_back
 
 # A. the clip: its frames, the shot, how sure, the body
 
@@ -43,6 +44,7 @@ def n3_question_reader(state: GraphState, runtime: Runtime[GraphContext]) -> dic
         context.names,
         context.grounds,
         context.teams,
+        state.get("clip"),
     )
     return {
         "visited": ["n3_question_reader"],
@@ -145,7 +147,14 @@ def n12_report_synthesis(state: GraphState) -> dict:
 
 
 def n13_final_output(state: GraphState) -> dict:
-    return {"visited": ["n13_final_output"], "answer": "stub: nothing is answered yet"}
+    # every answer starts with what was read (Day 59); a question nobody can check
+    # gets the honest answer, and the rest a stub until Day 75
+    reading = state["reading"]
+    body = "stub: nothing is answered yet"
+    if reading.kind == "cant_check":
+        body = cant_check_answer(reading)
+    answer = read_back(reading) + "\n" + body
+    return {"visited": ["n13_final_output"], "answer": answer}
 
 
 AGENTS = (

@@ -2278,3 +2278,30 @@ ones said, and a shared name by its register id (2c); a second adapter (3).
 **For the paper:**
 - Decisions: D-024 and D-073 (status)
 - Section it feeds: Implementation (the LLM port, N3)
+
+---
+
+## Day 59, part 1 — 2026-11-01 — What kind of question, and "I read this as"
+
+**Split:** part 1, the kinds, the read-back and the honest decline; part 2, the 90 practice
+wordings, the scoring rule written first, and the two fair tests (D-024, D-074).
+**Built (D-079):** `domain/kinds.py`: the five kinds, and `kind_by_rules` for when no model
+reads (a clip; injury, money or private-life words; a law word with nobody named; "will",
+"chance", "within", "next"; else stats). The form gains a `kind` box with only those five;
+a clip makes any question video, and video without a clip is said. `domain/readback.py`:
+`read_back` ("I read this as: a prediction: V Kohli, out within 6 balls, T20, the powerplay,
+against pace."), then what is asked back and who is unknown, a register id read back as
+who he is; and `cant_check_answer`, what cannot be said and what can be asked instead. The
+graph: a branch after N3, the v4 figure's decline arrow; a cant_check question goes straight
+to N13 and nothing in between runs. N13 starts every answer with the read-back.
+**My mistake, found by a test:** I also built a branch after Shot DNA for a declined
+question that came with a clip; the second test showed it could never run, since a clip
+makes the question video. Removed: one arrow, not two.
+**Tested:** 17 new tests, 804 in all. Twelve deliberate mistakes; eleven caught. **Missed:**
+"a law word alone makes it a rules question": my test asked "How many wides…", and the word
+list has "wide", so the rule was never reached. Rewritten with "lbw", with Kohli and with
+nobody; caught.
+
+**For the paper:**
+- Decisions: D-079
+- Section it feeds: Method (five kinds; honest decline); Implementation (N3, N13)
