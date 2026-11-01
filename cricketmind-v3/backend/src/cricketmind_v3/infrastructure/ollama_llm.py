@@ -6,6 +6,7 @@ question asked again should get the same answer. The schema fixes the reply's fo
 its truth: what the model says is checked after it (Day 58 on).
 """
 
+import httpx
 import ollama
 from pydantic import BaseModel
 
@@ -13,6 +14,8 @@ from cricketmind_v3.application.ports import LLMError, read_reply
 
 SEED = 42
 TIMEOUT = 300  # seconds: the first question also loads the model into memory
+# what goes wrong on the way to Ollama: no such model; not running; too slow (Day 58)
+NO_ANSWER = (ollama.ResponseError, ConnectionError, httpx.HTTPError)
 
 
 class OllamaLLM:
@@ -36,7 +39,7 @@ class OllamaLLM:
                 options={"temperature": 0, "seed": SEED},
                 think=False,  # Qwen3 thinks aloud first; reading a question needs none
             )
-        except (ollama.ResponseError, ConnectionError) as error:
+        except NO_ANSWER as error:
             raise LLMError(
                 f"Ollama could not answer ({self.model}): {error}"
             ) from error

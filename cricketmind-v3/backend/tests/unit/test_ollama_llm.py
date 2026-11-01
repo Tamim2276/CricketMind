@@ -3,6 +3,7 @@ the reply. No model runs here."""
 
 from types import SimpleNamespace
 
+import httpx
 import ollama
 import pytest
 from pydantic import BaseModel
@@ -67,5 +68,12 @@ def test_an_unknown_model_is_an_llm_error():
 
 def test_no_server_is_an_llm_error():
     client = FakeClient(error=ConnectionError("Failed to connect to Ollama"))
+    with pytest.raises(LLMError, match="could not answer"):
+        OllamaLLM("qwen2.5:7b", client=client).answer("s", "p", Reading)
+
+
+def test_too_slow_is_an_llm_error():
+    # Day 58: a timeout is httpx's, not a ConnectionError
+    client = FakeClient(error=httpx.ReadTimeout("timed out"))
     with pytest.raises(LLMError, match="could not answer"):
         OllamaLLM("qwen2.5:7b", client=client).answer("s", "p", Reading)

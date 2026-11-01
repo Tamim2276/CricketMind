@@ -2235,3 +2235,46 @@ the runs by hand with both.
 - Decisions: D-078
 - Limitations: L-071 new; L-031 done
 - Section it feeds: Implementation (N3); Method (reading a question)
+
+---
+
+## Day 58, part 3 — 2026-11-01 — A second door, and the same answers
+
+**Built:** `infrastructure/langchain_llm.py`, `LangChainLLM`, behind the same `LLM` port
+(D-024): LangChain's own way of asking for a form (`with_structured_output`, the JSON
+schema, `include_raw`), its raw reply checked by our `read_reply`, exactly as OllamaLLM's.
+Installed: langchain-ollama 1.1.0. **Checked, not assumed:** the request LangChain builds
+was read before any run: the same form, `think` false, temperature 0, seed 42; it streams
+the answer, and the form is bound in its chain. **Found, and fixed:** LangChain streams, so
+Ollama not running raised httpx's `ConnectError`, not a `ConnectionError`; and a timeout in
+either adapter is httpx's too. Both would have crashed N3 instead of reading by rules; both
+adapters now turn every httpx error into an `LLMError` (D-073 status). `scripts/compare_
+adapters.py`: the same five questions through both. The Day 58 picture: `docs/graph/day58.md`
+(the graph itself unchanged since Day 56).
+**Tested:** 7 new tests, 787 in all (LangChain's form, words and checked reply; its own
+settings; no model, no server, a refused stream, a timeout; LangChain against a real closed
+port). Eight deliberate mistakes, all caught.
+**The run by hand** (yours; five questions; a first look, not Day 59's score):
+
+```
+                                   qwen2.5:7b                       qwen3:8b
+both adapters read the same        5 of 5                           5 of 5
+Kohli, within 6 balls, T20 pp      all of it                        k missed
+Australia's Smith, within 6, Tests all of it                        k missed
+Kamindu Mendis vs spin since 2022  the form failed twice: rules,    PHKD Mendis, since 2022;
+                                   so only "spin"                   "spin" missed
+India at Mirpur; Delhi Capitals    right                            right
+```
+
+The two doors give the same answers, as D-024 expected: same request, same model. The two
+models do not: qwen3:8b keeps leaving out the number of balls; qwen2.5:7b once could not fill
+the form at all, and the rules took over as designed. Neither is clearly better on five:
+Day 59's 90 wordings, with the rule written first, decide (D-074). The 13-14 s of the first
+question is the model loading, paid by whichever door asks first, not a door's speed.
+**Day 58 done:** N3 reads with the model and checks every box (part 1); finds players by a
+search that checks every step (2a); one ground, one name, in the data (2b); teams, renamed
+ones said, and a shared name by its register id (2c); a second adapter (3).
+
+**For the paper:**
+- Decisions: D-024 and D-073 (status)
+- Section it feeds: Implementation (the LLM port, N3)

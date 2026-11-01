@@ -354,7 +354,10 @@ Template:
   LLM libraries and makes the three-model experiment (D-023) one adapter per model.
 - Alternatives considered: LangChain only (more layers to understand and fake in tests);
   our adapter only, never compared (a reviewer may ask).
-- Status: designed (Days 57–59)
+- Status: built (Days 57 and 58): `OllamaLLM` and `LangChainLLM` behind the same port. On
+  Day 58 the request LangChain builds was read and matched OllamaLLM's (the same form,
+  temperature 0, seed 42, `think` false; it streams), and both check the raw reply with
+  the same `read_reply`. Day 59 scores them
 - Paper section: Implementation (only if the scores differ enough to matter; numbers.md row first)
 
 ## D-025 — Every shown number says what it counts, which way it points, and how sure it is
@@ -1447,7 +1450,9 @@ Template:
 - Alternatives considered: the port returning a dict (every caller would check it again);
   Ollama's HTTP API by hand (more code for the same request); a default model (a run that
   does not say which model answered).
-- Status: built (Day 57)
+- Status: built (Day 57). Day 58: a timeout, and LangChain's refused connection (it
+  streams, so the error is httpx's), were not `LLMError`s and would have crashed N3
+  instead of reading by rules; both adapters now turn every httpx error into one
 - Paper section: Implementation (the LLM port)
 
 ## D-074 — Day 59 also picks the local model, by the same test
