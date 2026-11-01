@@ -93,3 +93,10 @@ def test_the_honest_answer_says_what_can_be_asked_instead():
     assert "You could ask instead: V Kohli's record" in answer
     general = cant_check_answer(Reading(subject=NOBODY, by="model", kind="cant_check"))
     assert "a player's record, a ground, or a team's results" in general
+
+
+def test_a_number_no_engine_counts_gets_its_own_honest_answer():
+    read = Reading(subject=KOHLI, by="model", kind="cant_check", off_menu=True)
+    assert cant_check_answer(read).startswith(
+        "I can't count that: none of CricketMind's engines measures it"
+    )

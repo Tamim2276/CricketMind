@@ -107,7 +107,7 @@ def test_n3_reads_the_question():
 
 def test_n3_reads_with_the_model_when_it_has_one():
     reply = dict.fromkeys(QuestionForm.model_fields)
-    reply.update(kind="prediction", player="Kohli", k=6)
+    reply.update(kind="prediction", measure="p_dismissal_within_k", player="Kohli", k=6)
     context = GraphContext(
         names=CONTEXT.names,
         llm=FakeLLM([json.dumps(reply)]),

@@ -102,6 +102,13 @@ def cant_check_answer(reading: Reading) -> str:
             "ball, not injuries, money, or what players think or feel."
         )
     ]
+    if reading.off_menu:
+        lines = [
+            (
+                "I can't count that: none of CricketMind's engines measures it, so any "
+                "number I gave would be unchecked."
+            )
+        ]
     subject = reading.subject
     who = subject.player or subject.bowler
     if who is not None:

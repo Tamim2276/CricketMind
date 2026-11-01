@@ -138,3 +138,13 @@ def test_a_day_needs_its_year_month_and_day():
     assert not says_date("2024-04-12", "on 12 May 2024")  # another month
     assert not says_date("2024-04-12", "on 12 April 2023")  # another year
     assert not says_date("not a day", "on 12 April 2024")
+
+
+def test_a_common_word_is_not_a_surname():
+    # Day 59: by rules, "How" was read as JM How and "leaning" as JA Leaning
+    names = cricket_gazetteer(
+        {"JM How": ("How",), "JA Leaning": ("Leaning",), "V Kohli": ("Kohli",)}
+    )
+    assert read_by_rules("How often is Kohli out?", names).player == "V Kohli"
+    assert read_by_rules("Is he leaning forward here?", names) == CricketSubject()
+    assert read_by_rules("Leaning's strike rate?", names).player == "JA Leaning"

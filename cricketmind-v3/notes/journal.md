@@ -2380,3 +2380,27 @@ asks for a number no engine counts (Kohli's ODI centuries), expected to be decli
 reported apart. `thesis/scripts/readers_day59b.py` runs a stage (before, then after),
 keeps every reading and its notes, and applies the rule. **Yours to run first:** the
 "before" stage, on the code as it is now.
+
+---
+
+## Day 59, part 3 — the fixes, built between the two runs
+
+**The "before" run** (yours, on 27b51d8, before any fix): on the 90 new wordings the reader
+read 49 exactly right, and declined 1 of the 18 that nothing can check; the rules 17. Four
+replies failed the form twice; the note kept only the reason's first line. Two were "since
+2021" wordings with "1 validation error", like the first set's three "since 2020" ones;
+checked offline: the year written as a number (2021) gives exactly that error.
+**Built (D-080):** the form's `measure` box, the 22 measures in plain words or none; the kind
+from the measure (simulated: prediction; counted: stats; measured: video, said without a
+clip); none of them, for a stats or prediction question, is declined, with its own honest
+answer ("I can't count that: none of CricketMind's engines measures it"); cant_check and
+rules keep their kind. The prompt names the five kinds with an example each, says what
+"within 12 balls" means and that economy and wickets are about the bowler. A batting hand
+only from words about hands. The rules take a one-word surname only written with a capital
+and not as a question word. The whole reason kept when a reply fails. **Added after the
+"before" run, and said so:** a year written as a number is read as the text; the first set
+had already shown it, but it may change up to two or three of this set's wordings, so the
+verdict should be read with that in mind.
+**Tested:** 11 new tests, 815 in all; the perfect forms still give all 90 expected readings
+with the fixed reader. Eleven deliberate mistakes, all caught. **Yours to run next:** the
+"after" stage, on the committed fixes.

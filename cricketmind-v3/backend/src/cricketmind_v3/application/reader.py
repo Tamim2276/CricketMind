@@ -6,7 +6,9 @@ question's own words. Each name is found by a small agentic search (resolver.py)
 player is kept; several are told apart by the question's checked clues, or asked back,
 never guessed; nobody gets close spellings, offered. "The next over" and a day with no
 year are asked back too. A reply that does not fit is asked again once, with the
-reason; if it fails again, the rules read the question.
+reason; if it fails again, the rules read the question. The model also says which
+of the menu's measures the question wants, or none: none of them, and nothing can
+check it (Day 59, D-080).
 """
 
 from typing import Literal
@@ -25,6 +27,7 @@ from cricketmind_v3.domain.names import (
     register_name,
     shared_names,
 )
+from cricketmind_v3.domain.provenance import Provenance
 from cricketmind_v3.domain.reading import (
     FORMATS,
     MONTHS,
@@ -42,17 +45,58 @@ from cricketmind_v3.domain.reading import (
     says_number,
     words,
 )
+from cricketmind_v3.domain.registry import CLAIM_TYPES
 from cricketmind_v3.domain.subject import CricketSubject
 from cricketmind_v3.domain.teams import Team, find_teams, other_name
 
 PEOPLE = ("player", "bowler", "other_bowler")
 YEAR_OR_DAY = r"^\d{4}(-\d{2}-\d{2})?$"
 
+# the menu's measures in plain words, for the model (D-080); a test keeps them in
+# step with the registry
+MEASURE_WORDS = {
+    "strike_rate": "a batter's runs per 100 balls",
+    "dismissal_rate": "how often a batter is out, per ball",
+    "sr_difference": "the gap between a batter's strike rates on two shots",
+    "sr_vs_average": "a batter's strike rate against everyone else's",
+    "runs": "the runs a batter scored",
+    "batting_average": "a batter's runs per dismissal",
+    "boundary_share": "the share of a batter's runs in fours and sixes",
+    "dot_ball_share": "the share of balls a batter scored nothing from",
+    "wickets": "the wickets a bowler took",
+    "economy": "a bowler's runs given per over",
+    "bowling_strike_rate": "a bowler's balls per wicket",
+    "venue_first_innings_avg": "the average first-innings score at a ground",
+    "venue_chasing_win_share": "how often the side chasing wins at a ground",
+    "venue_wicket_share": "the share of a ground's wickets to pace or to spin",
+    "workload_ratio_flag": "how much a bowler has bowled lately",
+    "review_overturn_rate": "how often a team's reviews overturn the umpire",
+    "team_win_share": "how often a team wins",
+    "match_won_by_runs": "by how many runs a match was won",
+    "match_won_by_wickets": "by how many wickets a match was won",
+    "weight_transfer": "how a batter's weight moves in a clip",
+    "p_dismissal_within_k": "the chance a batter is out within N balls",
+    "matchup_difference": "which of two bowlers would get a batter out sooner",
+}
+MEASURES = []
+MADE_BY = {}  # a measure -> how its number is made: counted, simulated, measured
+for claim_type in CLAIM_TYPES:
+    MEASURES.append(claim_type.name)
+    MADE_BY[claim_type.name] = claim_type.provenance
+MEASURES.append("none")
+MEASURES = tuple(MEASURES)
+MEASURE_HELP = "the one measure the question asks for, or none if no measure here "
+MEASURE_HELP += "counts it: "
+for measure, said in MEASURE_WORDS.items():
+    MEASURE_HELP += f"{measure}: {said}; "
+
 
 class QuestionForm(BaseModel):
     """The form the model fills: one field for each thing a question can say."""
 
-    model_config = ConfigDict(extra="forbid")
+    # a year the model writes as a number (2021) is read as the text "2021": the
+    # first set's three "since 2020" wordings failed the form on it (Day 59)
+    model_config = ConfigDict(extra="forbid", coerce_numbers_to_str=True)
 
     kind: Literal[KINDS] = Field(
         description="stats: what happened (records, averages, results); prediction: "
@@ -60,6 +104,7 @@ class QuestionForm(BaseModel):
         "words of cricket; cant_check: injuries, money, private life, or anything no "
         "ball-by-ball record holds"
     )
+    measure: Literal[MEASURES] = Field(description=MEASURE_HELP)
     player: str | None = Field(description="the batter, written as in the question")
     bowler: str | None = Field(
         description="the bowler bowling to the batter, or the bowler the question is "
@@ -116,9 +161,15 @@ SYSTEM = (
     "question alone. Copy every name exactly as the question writes it. The player is "
     "the batter; the bowler bowls to him, or is the bowler the question is about. In "
     "'Would Bumrah or Starc get Smith out sooner?', Smith is the player, Bumrah the "
-    "bowler and Starc the other bowler. Use null for anything the question does not "
-    "say. Never guess, and never add a name or a number. Always say which kind of "
-    "question it is."
+    "bowler and Starc the other bowler. A question about economy, wickets or bowling "
+    "is about the bowler. Use null for anything the question does not say. Never guess, "
+    "and never add a name or a number. 'Within 12 balls' means k is 12. The kinds: stats "
+    "asks what happened ('Kohli's average against Australia'); prediction asks what may "
+    "happen next ('Kohli out within 6 balls?', 'who would get Smith out sooner?'); video "
+    "asks about a clip; rules asks what a law or a word of cricket means ('What is "
+    "LBW?'); cant_check asks what no ball-by-ball record holds: injuries, fitness, pay, "
+    "contracts, the captaincy, retirement, family, feelings, opinions. Then say which "
+    "measure the question asks for, or none if no measure on the list counts it."
 )
 
 # the words that say each allowed value; the model's value must be among the question's
@@ -128,7 +179,11 @@ SAID_BY = {
     "shot": SHOTS,
     "other_shot": SHOTS,
     "gender": {"female": WOMEN, "male": ("men", "mens", "male")},
-    "batting_hand": {"left": ("left",), "right": ("right",)},
+    # a batting hand only from words about hands: "right now" is not right-handers
+    "batting_hand": {
+        "left": ("left handers", "left hander", "left handed", "left hand", "lefties"),
+        "right": ("right handers", "right hander", "right handed", "right hand"),
+    },
     "side": {"batting": ("batting",), "fielding": ("fielding",)},
 }
 
@@ -149,7 +204,7 @@ def read_question(
     try:
         form = _ask(llm, question)
     except LLMError as error:
-        reason = str(error).splitlines()[0]
+        reason = " / ".join(str(error).split("\n"))[:600]  # all of it, kept (Day 59)
         note = f"read by rules: the model's reply did not fit twice ({reason})"
         return _by_rules(question, names, clip, (note,))
     return _check(form, question, players, llm, grounds, teams, clip)
@@ -196,7 +251,7 @@ def _check(
         value = getattr(form, name)
         if value is None:
             continue
-        if _says(value, said_by, question):
+        if _says(value, said_by, question, name != "batting_hand"):
             fields[name] = value
         else:
             not_in_question.append(f"{name}={value}")  # a filter nobody asked for
@@ -334,10 +389,16 @@ def _check(
         else:
             unknown.append(written)
 
+    kind = _kind(form.kind, form.measure, clip, notes)
+    measure = None
+    if form.measure != "none":
+        measure = form.measure
     return Reading(
         subject=CricketSubject(**fields),
         by="model",
-        kind=_kind(form.kind, clip, notes),
+        kind=kind,
+        measure=measure,
+        off_menu=kind == "cant_check" and form.kind in ("stats", "prediction"),
         unknown=tuple(unknown),
         unsure=tuple(unsure),
         not_in_question=tuple(not_in_question),
@@ -347,14 +408,27 @@ def _check(
     )
 
 
-def _kind(kind: str, clip: str | None, notes: list[str]) -> str:
-    # a clip makes it a video question, whatever the model said; video without a
-    # clip is said, so the answer can ask for one
+def _kind(kind: str, measure: str, clip: str | None, notes: list[str]) -> str:
+    """A clip makes it video; a question the model calls cant_check, or the rules,
+    stays so; else the measure settles stats or prediction, and none of the menu's
+    measures means nothing can check it (D-080)."""
     if clip is not None:
         return "video"
+    if kind in ("cant_check", "rules"):
+        return kind
+    if measure != "none":
+        made = MADE_BY[measure]
+        if made == Provenance.PREDICTIVE:
+            return "prediction"
+        if made == Provenance.MEASURED:
+            notes.append("a question about a clip, but no clip came with it")
+            return "video"
+        return "stats"
     if kind == "video":
         notes.append("a question about a clip, but no clip came with it")
-    return kind
+        return kind
+    notes.append("none of the menu's measures counts this (D-080)")
+    return "cant_check"
 
 
 def _who(player: Player) -> str:
@@ -429,9 +503,10 @@ def _overs_said(overs: int) -> str:
     return f"the next {overs} overs"
 
 
-def _says(value: str, said_by: dict, question: str) -> bool:
-    # the value itself, or one of its other names: "seamers" says pace
-    if appears_in(value, question):
+def _says(value: str, said_by: dict, question: str, bare: bool = True) -> bool:
+    # the value itself (unless bare is False), or one of its other names: "seamers"
+    # says pace
+    if bare and appears_in(value, question):
         return True
     for other in said_by.get(value, ()):
         if appears_in(other, question):

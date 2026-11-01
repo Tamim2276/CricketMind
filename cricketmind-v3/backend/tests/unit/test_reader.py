@@ -58,11 +58,16 @@ TEAMS = (
 )
 
 
+MEASURE_FOR = {"stats": "strike_rate", "prediction": "p_dismissal_within_k"}
+
+
 def form(**given) -> str:
     """A reply as a model would send it: every field, null unless given."""
     values = dict.fromkeys(QuestionForm.model_fields)
     values["kind"] = "stats"  # every form says its kind (Day 59)
     values.update(given)
+    if values["measure"] is None:  # and its measure (D-080): one that fits the kind
+        values["measure"] = MEASURE_FOR.get(values["kind"], "none")
     return json.dumps(values)
 
 
@@ -505,3 +510,102 @@ def test_a_shared_name_is_shown_as_who_he_is():
         (Team(name="Pakistan", matches=1160),),
     )
     assert reading.shown == (("a1a1a1a1", "Imran Khan (Pakistan, 1971-1992)"),)
+
+
+# Day 59, part 3 (D-080): the measure, and the fixes
+
+
+def test_a_question_no_measure_counts_is_declined():
+    reading, _ = read(
+        "How many centuries has Kohli scored in ODIs?",
+        form(kind="stats", measure="none", player="Kohli", match_format="ODI"),
+    )
+    assert (reading.kind, reading.off_menu, reading.measure) == (
+        "cant_check",
+        True,
+        None,
+    )
+    assert reading.subject == CricketSubject(player="V Kohli", match_format="ODI")
+    assert "none of the menu's measures counts this (D-080)" in reading.notes
+
+
+def test_the_measure_settles_stats_or_prediction():
+    reading, _ = read(
+        "Kohli out within 6 balls?",
+        form(kind="stats", measure="p_dismissal_within_k", player="Kohli", k=6),
+    )
+    assert (reading.kind, reading.measure) == ("prediction", "p_dismissal_within_k")
+    reading, _ = read(
+        "Kohli's average?",
+        form(kind="prediction", measure="batting_average", player="Kohli"),
+    )
+    assert reading.kind == "stats"
+
+
+def test_cant_check_and_rules_stay_whatever_the_measure():
+    reading, _ = read(
+        "Is Kohli injured?", form(kind="cant_check", measure="runs", player="Kohli")
+    )
+    assert (reading.kind, reading.off_menu) == ("cant_check", False)
+    reading, _ = read("What is an economy rate?", form(kind="rules", measure="economy"))
+    assert reading.kind == "rules"
+
+
+def test_a_measured_measure_without_a_clip_is_said():
+    reading, _ = read(
+        "Does Babar Azam move his weight forward?",
+        form(kind="stats", measure="weight_transfer", player="Babar Azam"),
+    )
+    assert reading.kind == "video"
+    assert "a question about a clip, but no clip came with it" in reading.notes
+
+
+def test_a_measure_not_on_the_menu_does_not_fit():
+    reading, llm = read(
+        "Kohli's centuries?",
+        form(kind="stats", measure="centuries", player="Kohli"),
+        form(kind="stats", measure="none", player="Kohli"),
+    )
+    assert len(llm.asked) == 2
+    assert reading.kind == "cant_check"
+
+
+def test_a_year_written_as_a_number_fits():
+    # the first set's "since 2020" wordings failed the form on it
+    reply = json.loads(form(player="Kohli", opposition="Australia"))
+    reply["since"] = 2020
+    reading, llm = read(
+        "Kohli's average against Australia since 2020?", json.dumps(reply)
+    )
+    assert reading.by == "model" and len(llm.asked) == 1
+    assert reading.subject.since == "2020"
+
+
+def test_right_now_is_not_right_handers():
+    reading, _ = read(
+        "Does Kohli have an injury right now?",
+        form(kind="cant_check", player="Kohli", batting_hand="right"),
+    )
+    assert reading.subject.batting_hand is None
+    assert "batting_hand=right" in reading.not_in_question
+    reading, _ = read(
+        "Bumrah against left-handers in T20s?",
+        form(bowler="Bumrah", batting_hand="left", match_format="T20"),
+    )
+    assert reading.subject.batting_hand == "left"
+
+
+def test_the_whole_reason_is_kept_when_the_model_fails():
+    reading, _ = read("Kohli's average?", "not json", "still not json")
+    assert reading.by == "rules"
+    assert " / " in reading.notes[0]  # every line of the reason, not the first alone
+
+
+def test_every_measure_on_the_menu_is_in_plain_words():
+    from cricketmind_v3.application.reader import MEASURE_WORDS
+    from cricketmind_v3.domain.registry import CLAIM_TYPES
+
+    names = []
+    for claim_type in CLAIM_TYPES:
+        names.append(claim_type.name)
+    assert list(MEASURE_WORDS) == names
