@@ -2305,3 +2305,21 @@ nobody; caught.
 **For the paper:**
 - Decisions: D-079
 - Section it feeds: Method (five kinds; honest decline); Implementation (N3, N13)
+
+---
+
+## Day 59, part 2 — before the run — the readers' test, pre-registered
+
+`thesis/prereg/day59_readers.md`, SHA-256
+`af1d59d002f00bf667d627c4098f6bf7b7c0141689da5421485fa840499ecd45`, committed before any model
+reads the set. The practice set, `thesis/practice/day59_readings.jsonl` (SHA-256
+`ff50793238791582acb04b299e3ba8ef9dec58cdcc30399d208733b3227f00d6`), written by
+`thesis/scripts/practice_day59.py`: 30 questions, 6 of each kind, 3 wordings each, never the
+exam's, each with its expected reading and the form a perfect model would fill. **Checked
+first:** the perfect forms through the real reader and registers give all 90 expected
+readings, so a wrong reading in the run is the reader's, not the set's. The score: exactly
+right, the kind and the whole subject. Adapters with qwen2.5:7b first, then the models with
+the door that stays; ties keep OllamaLLM and qwen2.5:7b; a gap of 9 or fewer wordings is
+within luck and will not be claimed as a difference. The rules reader is scored beside
+them, deciding nothing. `thesis/scripts/readers_day59.py` checks both fingerprints, keeps
+every reading in `data/day59_runs/` as it is made, and writes the results and the ledger.
