@@ -44,7 +44,7 @@ Asked again with today's engines; where an engine changed since (D-058 to D-066)
 | N-022 | Pakistan beat India, 24 October 2021, by wickets | N8.M5 | 10 | 1 |  | 35 |
 | N-022 | Bangladesh beat India, 3 November 2019, by wickets | N8.M5 | 7 | 1 |  | 36 |
 | N-022 | Bangladesh's T20I win share against India | N8.M5 | 0.05556 | 18 |  | 37 |
-| N-022 | Bangladesh's ODI win share at Mirpur | N8.M5 | 0.4898 | 98 |  | 38 |
+| N-022 | Bangladesh's ODI win share at Mirpur | N8.M5 | 0.4949 | 99 |  | 38 |
 | N-026 | Kohli out within 6 balls, T20 powerplay against pace | N9.T1 | 0.1794 | 2855 | 0.1503 to 0.2111 | 39 |
 | N-026 | Tamim Iqbal out within 6 balls, T20 powerplay against spin | N9.T1 | 0.1863 | 1001 | 0.1415 to 0.2379 | 40 |
 | N-026 | Bumrah batting, out within 6 balls, T20 | N9.T1 | 0.4596 | 107 | 0.3611 to 0.5592 | 41 |

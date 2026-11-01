@@ -2185,3 +2185,18 @@ engine report again: N-022 changes by one match, and its receipt with it.
 - Decisions: D-077
 - Limitations: L-028 updated
 - Section it feeds: Data (cleaning); Implementation (N3)
+
+---
+
+## Day 58, part 2b — the data built again
+
+**Run** (yours, on 0a8db97): the derived tables built again, the merge in the build:
+654 grounds, as on the check (711 names before). Then the engine report again: 194 of 194
+receipts confirmed on the new tables, and exactly one line changed: N-022, Bangladesh's
+ODI win share at Mirpur, from 0.4898 of 98 to 0.4949 of 99. The missing match, filed under
+"Sher-e-Bangla National Cricket Stadium", was a win. Every other number in the report came
+out the same, so the merge moved nothing it should not have. N-022 updated (49.5% of 99).
+
+**For the paper:**
+- Numbers: N-022 updated
+- Section it feeds: Data (cleaning)
