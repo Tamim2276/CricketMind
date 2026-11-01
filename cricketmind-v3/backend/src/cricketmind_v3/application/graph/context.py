@@ -4,7 +4,7 @@ the graph runs, so a test can give fakes."""
 
 from dataclasses import dataclass, field
 
-from cricketmind_v3.application.ports import LLM
+from cricketmind_v3.application.ports import LLM, DeliveryRepository
 from cricketmind_v3.domain.faith.gazetteer import Entry
 from cricketmind_v3.domain.grounds import Ground
 from cricketmind_v3.domain.names import Player
@@ -18,3 +18,4 @@ class GraphContext:
     players: tuple[Player, ...] = ()  # the register, for the model's names
     grounds: tuple[Ground, ...] = ()  # one name per ground (Day 58, part 2b)
     teams: tuple[Team, ...] = ()  # the team register (Day 58, part 2c)
+    deliveries: DeliveryRepository | None = None  # the balls, for N7a (Day 60)

@@ -1,5 +1,6 @@
 """Day 55: the v4 flowchart, run end to end. Day 56: the branch for a clip, and N3."""
 
+import dataclasses
 import json
 
 import pytest
@@ -8,14 +9,27 @@ from langgraph.graph import END, START
 from cricketmind_v3.application.graph import nodes
 from cricketmind_v3.application.graph.build import build_graph
 from cricketmind_v3.application.graph.context import GraphContext
-from cricketmind_v3.application.ports import FakeLLM
+from cricketmind_v3.application.ports import FakeDeliveryRepository, FakeLLM
 from cricketmind_v3.application.reader import QuestionForm
+from cricketmind_v3.application.retrieval import NO_DATABASE
+from cricketmind_v3.domain.balls import Ball
 from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer
 from cricketmind_v3.domain.names import Player
+from cricketmind_v3.domain.shot_dna import NO_CLIP, NOT_READ_YET
 from cricketmind_v3.domain.subject import CricketSubject
 
 QUESTION = "Kohli out within 6 balls in the T20 powerplay against pace?"
 CONTEXT = GraphContext(names=cricket_gazetteer({"V Kohli": ("Kohli", "Virat Kohli")}))
+BALL = Ball(
+    match_type="T20",
+    gender="male",
+    batter="V Kohli",
+    runs_batter=1,
+    wides=0,
+    noballs=0,
+    player_out=None,
+    wicket_kind=None,
+)
 VIDEO = (
     "n1_video_input",
     "n2_n5_shot_classifier",
@@ -103,6 +117,39 @@ def test_n3_reads_the_question():
     )
     assert run()["subject"] == expected
     assert run("clip.mp4")["subject"] == expected
+
+
+def test_n6_writes_the_shot_dna():
+    # Day 60: the subject N3 read, and why nothing is seen yet
+    text = run()["shot_dna"]
+    assert text.subject == run()["subject"]
+    assert text.empty_because == NO_CLIP
+    video = run("clip.mp4")["shot_dna"]
+    assert video.clip == "clip.mp4"
+    assert video.empty_because == NOT_READ_YET
+
+
+def test_n7a_files_the_balls_under_the_subject():
+    # Day 60: no database in CONTEXT, and so it says; with one, the balls come back
+    (found,) = run()["evidence"]
+    assert found.subject == CricketSubject(
+        player="V Kohli", match_format="T20", phase="powerplay", bowler_type="pace"
+    )
+    assert found.none_because == NO_DATABASE
+    repo = FakeDeliveryRepository()
+    repo.add(found.subject, [BALL, BALL])
+    context = dataclasses.replace(CONTEXT, deliveries=repo)
+    state = build_graph().invoke({"question": QUESTION, "clip": None}, context=context)
+    assert state["evidence"][0].count == 2
+
+
+def test_n7b_describes_who_the_question_is_about():
+    # Day 60: CONTEXT has no player register, so Kohli is not found in it
+    assert run()["context"].not_found == ("V Kohli",)
+    kohli = Player(person_id="ba607b88", name="V Kohli", teams=("India",))
+    context = dataclasses.replace(CONTEXT, players=(kohli,))
+    state = build_graph().invoke({"question": QUESTION, "clip": None}, context=context)
+    assert state["context"].people == ("V Kohli; India",)
 
 
 def test_n3_reads_with_the_model_when_it_has_one():

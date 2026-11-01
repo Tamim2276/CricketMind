@@ -7,7 +7,10 @@ from langgraph.runtime import Runtime
 from cricketmind_v3.application.graph.context import GraphContext
 from cricketmind_v3.application.graph.state import GraphState
 from cricketmind_v3.application.reader import read_question
+from cricketmind_v3.application.retrieval import retrieve
+from cricketmind_v3.domain.question_context import question_context
 from cricketmind_v3.domain.readback import cant_check_answer, read_back
+from cricketmind_v3.domain.shot_dna import stub_shot_dna
 
 # A. the clip: its frames, the shot, how sure, the body
 
@@ -54,18 +57,33 @@ def n3_question_reader(state: GraphState, runtime: Runtime[GraphContext]) -> dic
 
 
 def n6_shot_dna(state: GraphState) -> dict:
-    return {"visited": ["n6_shot_dna"]}
+    # Day 60: a stub, as nothing reads the clip until Phase 8
+    dna = stub_shot_dna(state["subject"], state.get("clip"))
+    return {"visited": ["n6_shot_dna"], "shot_dna": dna}
 
 
 # C. the evidence, and D. the engines
 
 
-def n7a_evidence_retrieval(state: GraphState) -> dict:
-    return {"visited": ["n7a_evidence_retrieval"]}
+def n7a_evidence_retrieval(state: GraphState, runtime: Runtime[GraphContext]) -> dict:
+    # Day 60: the balls of each side of the question, from the subject in the Shot DNA
+    context = runtime.context
+    if context is None:
+        raise ValueError("the graph was run without its context (a GraphContext)")
+    kind = state["reading"].kind
+    evidence = retrieve(state["shot_dna"].subject, kind, context.deliveries)
+    return {"visited": ["n7a_evidence_retrieval"], "evidence": evidence}
 
 
-def n7b_context_retrieval(state: GraphState) -> dict:
-    return {"visited": ["n7b_context_retrieval"]}
+def n7b_context_retrieval(state: GraphState, runtime: Runtime[GraphContext]) -> dict:
+    # Day 60: who the people are and where the ground is, in the registers' words
+    context = runtime.context
+    if context is None:
+        raise ValueError("the graph was run without its context (a GraphContext)")
+    found = question_context(
+        state["shot_dna"].subject, context.players, context.grounds, context.teams
+    )
+    return {"visited": ["n7b_context_retrieval"], "context": found}
 
 
 def n8_descriptive_engine(state: GraphState) -> dict:

@@ -1663,3 +1663,28 @@ Template:
   whatever its measure; the year written as a number (2021) was added after the "before"
   run, and said so
 - Paper section: Method (honest decline: the menu as the boundary); Implementation (N3)
+
+## D-081 — The Shot DNA before any perception, the balls of each side, and who is who
+- Date: 2026-11-01
+- Decision: (1) N6 builds the Shot DNA record as a stub: the subject N3 read, the clip's
+  path, and an empty label and posture, with the reason they are empty (no clip; or the
+  clip is not read until Phase 8). It never fills the label from the question's own shot.
+  (2) N7a is subject-keyed: the subject is split into one subject per side of a
+  comparison (two shots, or two bowlers), each without k, and each side's balls are filed
+  under that side's subject, kept as a tally with their count. It fetches only when a
+  person is named, and not for a rules question; when the database cannot apply a filter
+  (a shot, until Day 139), the reason is kept, and the filter is never quietly left out.
+  (3) N7b gives words from the registers: who each person is, the ground, a team and the
+  name it also played under. It gives no number of matches and no statistic; a name
+  none of the registers holds is listed.
+- Why: a stub that copied the question's shot would agree with the user without looking;
+  a number filed under the wrong subject is the fabrication v3 exists to stop (Kohli's
+  balls, Rohit's number); k looks ahead, so as a filter it would ask for balls that do not
+  exist; every ball of a ground is millions of rows, and the ground engines read their own
+  records; a statistic from N7b would be a number no engine computed.
+- Alternatives considered: the raw list of balls in the state (Kohli's 2,953 powerplay
+  balls against pace in T20s are 24 different balls); one merged evidence record for both
+  sides of a comparison (a number could be read off the wrong side); the register's
+  matches played in N7b (a number outside the engines).
+- Status: built (Day 60)
+- Paper section: Method (subject-keyed evidence); Implementation (N6, N7a, N7b)

@@ -2428,3 +2428,26 @@ and the scripts, so anyone can check the verdict; each reading is in `data/day59
 **The lesson:** "none of the menu" was good at saying no; tying the kind to the measure was
 the mistake. Any new try has to be judged on questions neither set has shown, since this
 set has now shaped the idea. **Next:** Day 60.
+
+---
+
+## Day 60 — 2026-11-01 — Shot DNA, the balls of each side, and who is who
+
+**Built (D-081):** three nodes made real. **N6 Shot DNA** (`domain/shot_dna.py`): one record
+of the shot the question is about, a stub until Phase 8: the subject, the clip's path, an
+empty label and posture, and why they are empty. With a clip it still never copies the
+question's shot as the label. **N7a evidence** (`domain/evidence.py`,
+`application/retrieval.py`): the subject split into its sides (Bumrah or Starc: two
+subjects), k taken out, each side's balls filed under its own subject as a tally with the
+count; nothing fetched without a person or for a rule, and a filter the database cannot
+apply yet (a shot) is kept as the reason (L-074). **N7b context**
+(`domain/question_context.py`): who each person is, the ground, a team and its other name,
+in the registers' words, never a statistic (L-075). The graph's context gains the ball
+database; the state gains `shot_dna`, `evidence` and `context`.
+**Tried on the real database (read-only):** Kohli in T20 powerplays against pace: 2,953
+balls, 24 different; Kohli against Bumrah or Starc: 109 and 705 balls; in ODIs, 0 against
+Bumrah (teammates) and 174 against Starc; cover drive or pull: "cannot pick balls by shot
+yet". Not paper numbers.
+**Tested:** 16 new tests, 820 in all; twelve deliberate mistakes, all caught. The graph is
+drawn in `docs/graph/day60.md` (no arrow changed), and the notebook gains a Day 60 section
+run on the real data.
