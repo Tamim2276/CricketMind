@@ -10,6 +10,7 @@ from cricketmind_v3.application.graph.context import GraphContext
 from cricketmind_v3.application.graph.state import GraphState
 from cricketmind_v3.application.reader import read_question
 from cricketmind_v3.application.retrieval import retrieve
+from cricketmind_v3.domain.capabilities import capable_agents
 from cricketmind_v3.domain.question_context import question_context
 from cricketmind_v3.domain.readback import cant_check_answer, read_back
 from cricketmind_v3.domain.shot_dna import stub_shot_dna
@@ -112,7 +113,11 @@ def n9_predictive_engine(state: GraphState, runtime: Runtime[GraphContext]) -> d
 
 
 def n10_supervisor_router(state: GraphState) -> dict:
-    return {"visited": ["n10_supervisor_router"]}
+    # Day 62: who can answer; every agent still runs until Day 73 sends only the chosen
+    capable = capable_agents(
+        state["reading"].kind, state.get("answers", []), state["shot_dna"]
+    )
+    return {"visited": ["n10_supervisor_router"], "capable": capable}
 
 
 def n11a_club_operations(state: GraphState) -> dict:

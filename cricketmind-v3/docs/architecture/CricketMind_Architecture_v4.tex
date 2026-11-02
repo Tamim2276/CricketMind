@@ -693,8 +693,9 @@ be recomputed by hand, and every receipt reproduces it.
   ratio's validity is disputed \cite{impellizzeri}, and match data omits training
   loads. M3 therefore emits a \emph{monitoring flag}, never an injury
   probability.
-\item[M4 --- DRS reviews] (backs N11i). Review counts and overturn rates by team
-  and by dismissal type.
+\item[M4 --- DRS reviews] (backs N11i). Review counts and overturn rates by team.
+  Cricsheet keeps no appeal kind, and the dismissal is known only when the batter
+  ended up out, so a rate by dismissal type would be lopsided.
 \end{description}
 
 \subsection{N9 Predictive Engine and Honest Uncertainty}
@@ -752,27 +753,35 @@ go to the Explainer, which counts as one of the four.
 \toprule
 \textbf{Stakeholder} & \textbf{Agent} & \textbf{Claim types it may assert} & \textbf{Prov.} \\
 \midrule
-Franchises / Boards & Club Operations (N11a) & strike rate, dismissal rate, sample size; venue profile & D \\
-Coaches & Tactical Analysis (N11b) & strike and dismissal rates; P(dismissal within $k$); matchup difference & D, P \\
-Players & Personal Performance (N11c) & strike rates; posture metrics & D, M \\
-Scouts & Global Scouting (N11d) & strike rate, career strike rate, league benchmark & D \\
-Fans & Fan Concierge (N11e) & venue strike rate, strike rate, recent form & D \\
-Stadiums / curators & Stadium Operations (N11f) & first-innings average, chasing share, pace and spin wicket share & D \\
-Bowlers / bowling coaches & Bowling Performance (N11g) & economy and dismissal rate by phase and batting hand; matchup difference & D, P \\
-Broadcasters / sponsors & Content Production (N11h) & strike rates; boundary counts as a visibility proxy & D \\
-Governing bodies / umpires & Match Officials (N11i) & review counts, overturn rate by team and dismissal type & D \\
-Academies & Talent Development (N11j) & strike rates; posture metrics & D, M \\
-Medical teams & Injury Management (N11k) & balls bowled (7 and 28 days), workload ratio flag & D \\
-Player agents & Player Representation (N11l) & strike rate, career strike rate & D \\
+Franchises / Boards & Club Operations (N11a) & \texttt{strike\_rate}, \texttt{dismissal\_rate}, \texttt{venue\_first\_innings\_avg}, \texttt{venue\_chasing\_win\_share}, \texttt{venue\_wicket\_share}, \texttt{team\_win\_share} & D \\
+Coaches & Tactical Analysis (N11b) & \texttt{strike\_rate}, \texttt{dismissal\_rate}, \texttt{sr\_difference}, \texttt{sr\_vs\_average}, \texttt{p\_dismissal\_within\_k}, \texttt{matchup\_difference} & D, P \\
+Players & Personal Performance (N11c) & \texttt{strike\_rate}, \texttt{sr\_difference}, \texttt{sr\_vs\_average}, \texttt{runs}, \texttt{batting\_average}, \texttt{boundary\_share}, \texttt{dot\_ball\_share}, \texttt{weight\_transfer} & D, M \\
+Scouts & Global Scouting (N11d) & \texttt{strike\_rate}, \texttt{sr\_vs\_average} & D \\
+Fans & Fan Concierge (N11e) & \texttt{strike\_rate}, \texttt{runs}, \texttt{batting\_average}, \texttt{team\_win\_share}, \texttt{match\_won\_by\_runs}, \texttt{match\_won\_by\_wickets} & D \\
+Stadiums / curators & Stadium Operations (N11f) & \texttt{venue\_first\_innings\_avg}, \texttt{venue\_chasing\_win\_share}, \texttt{venue\_wicket\_share} & D \\
+Bowlers / bowling coaches & Bowling Performance (N11g) & \texttt{wickets}, \texttt{economy}, \texttt{bowling\_strike\_rate}, \texttt{matchup\_difference} & D, P \\
+Broadcasters / sponsors & Content Production (N11h) & \texttt{strike\_rate}, \texttt{sr\_difference}, \texttt{sr\_vs\_average}, \texttt{boundary\_share} & D \\
+Governing bodies / umpires & Match Officials (N11i) & \texttt{review\_overturn\_rate} & D \\
+Academies & Talent Development (N11j) & \texttt{strike\_rate}, \texttt{sr\_difference}, \texttt{sr\_vs\_average}, \texttt{weight\_transfer} & D, M \\
+Medical teams & Injury Management (N11k) & \texttt{workload\_ratio\_flag} & D \\
+Player agents & Player Representation (N11l) & \texttt{strike\_rate} & D \\
 Anyone asking about rules & \textbf{Explainer (N11m)} & none: words only, labelled, no digits, no player names & --- \\
 \bottomrule
 \end{tabular}
 \caption{The Version~4 roster: Version~3's twelve agents and the
-Explainer. Every claim type in the third column is a registry entry backed by an
+Explainer, in the menu's own names. Every claim type in the third column is a registry entry backed by an
 engine metric (invariant I2), and every agent's tone words must now be backed by
 a checked comparison (C7).}
 \label{tab:roster}
 \end{table}
+
+\noindent A figure for a ground, a season or a recent period is one of these
+measures narrowed by a filter from the question: career, venue and recent strike
+rate are all \texttt{strike\_rate}, so an agent cannot choose its own window. A
+bowler's rate of taking wickets is \texttt{bowling\_strike\_rate}, and a boundary
+figure is a share of balls. Every count carries its sample size, so sample size is
+not a claim type of its own. The workload flag's sample is the balls bowled in four
+weeks; the week's balls appear only inside its ratio.
 
 % =====================================================================
 \section{The Claim Contract}
@@ -889,7 +898,8 @@ The measures of Section~\ref{sec:any} join it later, one row each.
 \bottomrule
 \end{tabular}
 \caption{The claim-type registry at its first build: the nine types of
-Version~3 and \texttt{sr\_vs\_average}.}
+Version~3 and \texttt{sr\_vs\_average}. The menu in the code has since grown to
+22 rows, and Table~\ref{tab:roster} gives every one of them to an agent.}
 \label{tab:registry}
 \end{table}
 

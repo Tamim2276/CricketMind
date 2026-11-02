@@ -2480,3 +2480,32 @@ Not paper numbers.
 summary, or take them out. Day 82's plan now says each question's run gets its own cursors.
 **Tested:** 24 new tests, 844 in all; seventeen deliberate mistakes, all caught. The graph is
 drawn in `docs/graph/day61.md` (no arrow changed), and the notebook gains a Day 61 section.
+
+---
+
+## Day 62 — 2026-11-03 — Who can answer, and a roster in the menu's own names
+
+**The list first (D-083):** `domain/roster.py`, which measures each agent may use, in menu
+names. The plan wrote it on Day 65, but the filter needs it now, and the architecture's table
+named things no menu row has (career strike rate, league benchmark, recent form). **Found:**
+seven measures had no agent, including `batting_average`, so the plan's own "Kohli's average
+against Australia since 2020?" had nobody allowed to answer it. Each now has an owner, and a
+test fails if one ever loses it. Those owners are judgments, for you to check.
+**The document (yours to ask):** the architecture's roster table and its M4 text now use the
+menu's words, and the PDF is compiled again (17 pages, no errors, the table checked by eye; the
+longer table leaves space at the foot of page 7). A test now compares the table with the code.
+**Built:** `domain/capabilities.py`. An agent can answer if the question has a real number for
+one of its measures; a posture must really be measured from a clip, so none until Phase 8; a
+small sample still counts (C3 allows it with a warning); a rule goes to the Explainer alone. N10
+writes `capable` to the state; every agent still runs until Day 73.
+**Tried on the real database (read-only; subjects written by hand, no model):**
+a batter's prediction: 8 agents; Bumrah in T20: Bowling Performance alone; Wankhede: Club and
+Stadium Operations; India men: Club Operations, Fan Concierge, Match Officials; who won a match:
+Fan Concierge; a workload with its date: Injury Management; two bowlers: 9 agents; a name
+nobody has: nobody; "What is LBW?": the Explainer. **"Kohli: cover drive or pull?": nobody**,
+as shots have no labels until Day 139 (L-074). Day 63 must say what happens then: the default
+pair would have nothing to say.
+**Limits written down:** the filter does not choose among those who can answer (L-077);
+"Is Bumrah overworked?" names no date, so the medical agent is not called (L-078).
+**Tested:** 32 new tests, 876 in all; fourteen deliberate mistakes, all caught. The graph is drawn
+in `docs/graph/day62.md` (no arrow changed), and the notebook gains a Day 62 section.

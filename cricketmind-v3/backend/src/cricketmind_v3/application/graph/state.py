@@ -31,6 +31,8 @@ class GraphState(TypedDict, total=False):
     # the fact surface: every number N8 and N9 gave for this question (Day 61); they
     # write side by side, so the reducer joins their lists
     answers: Annotated[list[Answer], operator.add]
+    # agent -> the measures it has numbers for; an agent left out cannot answer (Day 62)
+    capable: dict[str, tuple[str, ...]]
     # what the agents hand in, side by side; none writes here until Day 73
     findings: Annotated[list[Finding], operator.add]
     # (agent, claim) -> the receipt of the gate's own question, for N13 (D-052)

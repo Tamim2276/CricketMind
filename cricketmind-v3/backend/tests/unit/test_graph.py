@@ -236,6 +236,27 @@ def test_without_engines_or_findings_no_receipts():
     assert run()["receipts"] == {}
 
 
+def test_n10_says_who_can_answer():
+    # Day 62: from the numbers N8 and N9 really gave
+    past = CricketSubject(
+        player="V Kohli", match_format="T20", phase="powerplay", bowler_type="pace"
+    )
+    engines = FakeFactSource()
+    engines.add("runs", past, Fact(value=3724.0, n=2855))
+    context = dataclasses.replace(CONTEXT, engines=engines)
+    state = build_graph().invoke({"question": QUESTION, "clip": None}, context=context)
+    assert state["capable"] == {"N11c": ("runs",), "N11e": ("runs",)}
+
+
+def test_with_no_engines_nobody_can_answer():
+    assert run()["capable"] == {}
+
+
+def test_a_rule_reaches_the_explainer_through_the_filter():
+    state = run_question("What is LBW?")
+    assert state["capable"] == {"N11m": ()}
+
+
 def test_n3_reads_with_the_model_when_it_has_one():
     reply = dict.fromkeys(QuestionForm.model_fields)
     reply.update(kind="prediction", player="Kohli", k=6)

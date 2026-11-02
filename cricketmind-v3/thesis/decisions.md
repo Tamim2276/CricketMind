@@ -1719,3 +1719,38 @@ Template:
   own cursors, one for N7a and one for the engines (Day 82). Nothing reads N7a's stored
   balls yet, only their count: to be used by Day 64's evidence summary, or removed
 - Paper section: Implementation (the graph, the fact surface); Method (I1, receipts)
+
+## D-083 — The roster in the menu's own names, and which agents can answer
+- Date: 2026-11-03
+- Decision: (1) `domain/roster.py` says which measures each of the 13 agents may use, in
+  menu names only; C1 and the filter read it, and Day 65's prompt files will too. (2) The
+  architecture's table is mapped to it. Career, venue and recent strike rate are all
+  `strike_rate` with a filter from the question, so an agent cannot choose its own window.
+  League benchmark is `sr_vs_average`. Strike rates (plural) are `strike_rate`,
+  `sr_difference` and `sr_vs_average`. A bowler's dismissal rate is `bowling_strike_rate`:
+  the batter's row cannot be narrowed by batting hand. Boundary counts are `boundary_share`.
+  Sample size is dropped: every count carries it. Overturn rate is by team only (Day 42).
+  Balls bowled is the workload flag: the four weeks are its n; the week's balls appear only
+  inside its ratio. (3) Seven measures had no agent, and are given one: `runs`,
+  `batting_average` to N11c and N11e; `dot_ball_share` to N11c; `wickets` to N11g;
+  `team_win_share` to N11a and N11e; `match_won_by_runs` and `match_won_by_wickets` to N11e.
+  `boundary_share`, already N11h's, also goes to N11c. These are judgments, and can change.
+  (4) `capable_agents`:
+  an agent can answer if the question has a real number for at least one of its measures. A
+  posture counts only when measured from a clip (stricter than the plan's "needs a clip"),
+  so until Phase 8 no question supports one. A small sample still counts, as C3 lets it
+  through with a warning. A rule goes to the Explainer alone. N10 writes the result to the
+  state as `capable`; every agent still runs until Day 73. (5) The architecture's table and
+  its M4 text are corrected, the PDF compiled again, and a test fails if the table and the
+  code ever differ.
+- Why: the filter needs the list now, three days before the plan wrote it, and the table
+  named things no menu row has. Without an owner, C1 refuses a measure from every agent: the
+  plan's own "Kohli's average against Australia since 2020?" had nobody to say it. A real
+  number, not a subject that merely fits, is what an agent needs: "Kohli against Starc" fits
+  batting average, and there is none (no dismissals).
+- Alternatives considered: the list on Day 65, as planned (the filter would have nothing to
+  read); keeping the table's words (C1 checks menu names, so they could never pass); a
+  separate "recent form" row (an agent would pick its own window, which the question should
+  set); leaving out samples under C3's floor (the Faith Check allows them with a warning).
+- Status: built (Day 62). What to do when nobody can answer is Day 63's
+- Paper section: Method (the roster, invariant I2); Implementation (N10)
