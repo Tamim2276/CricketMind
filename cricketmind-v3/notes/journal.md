@@ -2451,3 +2451,32 @@ yet". Not paper numbers.
 **Tested:** 16 new tests, 820 in all; twelve deliberate mistakes, all caught. The graph is
 drawn in `docs/graph/day60.md` (no arrow changed), and the notebook gains a Day 60 section
 run on the real data.
+
+---
+
+## Day 61 — 2026-11-03 — The engines in the graph, and a bug that gave Kohli Rohit's balls
+
+**Found first:** LangGraph runs side-by-side nodes in different threads (checked), and N8 and
+N9 would share one DuckDB connection. Two threads on one connection, 40 queries each: Kohli's
+query came back with Rohit's balls 16 times, with no error, and 14 more failed outright. It
+was a test of the repository, not a run of the graph, and it never reached a number anyone
+saw. **Fixed:** one engine question at a time, a lock in `EngineFactSource.fact`; the same
+test through it gave 0 wrong and 0 errors in 80, and every number equal to the engine's alone.
+A test notices two queries running at once.
+**Built (D-082):** `application/fact_surface.py`. N8 and N9 ask for every menu row that fits
+(`fits` in the registry), the whole question and each side, with k and without; both write
+the page `answers`, the fact surface. A row with no number is kept as asked. The gate asks
+the engines again for each finding and keeps those receipts in the state, by agent and
+claim, for N13 (D-052); it checks nothing until Day 74. The graph's `findings` page exists
+for it, and a finding put in by hand travels through.
+**Said wrongly on the way, and corrected:** I first told you the kind chooses the engine (the
+menu's fit does), and that N8's receipts were the ones to keep (the gate's own are).
+**Tried on the real database (read-only):** "Kohli out within 6 balls in the T20 powerplay
+against pace?" asks 8 rows: strike rate 130.4 on 2,855 balls, the chance 17.9%; about 3 s. A
+what-if between two bowlers asks 23 rows; about 10 s (L-076). A claim of 999 about Kohli's T20
+strike rate: the gate's receipt says 135.1 on 9,841 balls, and it checks again as confirmed.
+Not paper numbers.
+**Open:** nothing reads N7a's stored balls yet, only their count; use them in Day 64's evidence
+summary, or take them out. Day 82's plan now says each question's run gets its own cursors.
+**Tested:** 24 new tests, 844 in all; seventeen deliberate mistakes, all caught. The graph is
+drawn in `docs/graph/day61.md` (no arrow changed), and the notebook gains a Day 61 section.

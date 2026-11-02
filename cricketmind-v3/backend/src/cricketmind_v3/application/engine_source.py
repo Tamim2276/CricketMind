@@ -2,6 +2,7 @@
 a receipt of every answer (Day 47)."""
 
 import dataclasses
+import threading
 from dataclasses import dataclass
 
 from cricketmind_v3.application.engines import (
@@ -54,6 +55,9 @@ class EngineFactSource:
 
     def __init__(self, repos: Repositories, data: str = "unnamed data") -> None:
         self.data = data  # the data snapshot's fingerprint, named by every receipt
+        # N8 and N9 run side by side on one connection: a query started in the middle
+        # of another swaps their rows (Day 61: Kohli's balls came back as Rohit's)
+        self.one_at_a_time = threading.Lock()
         self.engines = {
             # N8 M1: balls, any filters
             "strike_rate": (m1_rates.strike_rate, repos.deliveries),
@@ -100,7 +104,8 @@ class EngineFactSource:
         if found is None:
             return None  # not on the menu, or its engine is not built yet
         engine, repository = found
-        answer = engine(repository, subject)
+        with self.one_at_a_time:
+            answer = engine(repository, subject)
         if answer is None:
             return None
         source = lookup(metric).source

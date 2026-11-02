@@ -2,19 +2,35 @@
 
 import dataclasses
 import json
+from datetime import date
 
 import pytest
 from langgraph.graph import END, START
 
+from cricketmind_v3.application.engine_source import EngineFactSource, Repositories
+from cricketmind_v3.application.fact_surface import surface
 from cricketmind_v3.application.graph import nodes
 from cricketmind_v3.application.graph.build import build_graph
 from cricketmind_v3.application.graph.context import GraphContext
-from cricketmind_v3.application.ports import FakeDeliveryRepository, FakeLLM
+from cricketmind_v3.application.ports import (
+    FakeDeliveryRepository,
+    FakeFactSource,
+    FakeLLM,
+    FakeResultRepository,
+    FakeReviewRepository,
+    FakeVenueRepository,
+    FakeWorkloadRepository,
+)
 from cricketmind_v3.application.reader import QuestionForm
+from cricketmind_v3.application.receipt_checker import check_receipt
 from cricketmind_v3.application.retrieval import NO_DATABASE
 from cricketmind_v3.domain.balls import Ball
+from cricketmind_v3.domain.claims import Claim
+from cricketmind_v3.domain.facts import Fact
 from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer
+from cricketmind_v3.domain.findings import Finding
 from cricketmind_v3.domain.names import Player
+from cricketmind_v3.domain.provenance import Provenance
 from cricketmind_v3.domain.shot_dna import NO_CLIP, NOT_READ_YET
 from cricketmind_v3.domain.subject import CricketSubject
 
@@ -150,6 +166,74 @@ def test_n7b_describes_who_the_question_is_about():
     context = dataclasses.replace(CONTEXT, players=(kohli,))
     state = build_graph().invoke({"question": QUESTION, "clip": None}, context=context)
     assert state["context"].people == ("V Kohli; India",)
+
+
+def test_n8_and_n9_write_the_fact_surface_side_by_side():
+    # Day 61: both write the same page, and the reducer keeps both
+    past = CricketSubject(
+        player="V Kohli", match_format="T20", phase="powerplay", bowler_type="pace"
+    )
+    ahead = dataclasses.replace(past, k=6)
+    engines = FakeFactSource()
+    engines.add("strike_rate", past, Fact(value=130.4, n=2855))
+    engines.add(
+        "p_dismissal_within_k", ahead, Fact(value=0.18, n=2855, interval=(0.1, 0.3))
+    )
+    context = dataclasses.replace(CONTEXT, engines=engines)
+    state = build_graph().invoke({"question": QUESTION, "clip": None}, context=context)
+    assert surface(state["answers"]) in ((130.4, 0.18), (0.18, 130.4))
+
+
+def test_without_engines_the_surface_is_empty():
+    assert run()["answers"] == []
+
+
+def test_a_declined_question_asks_the_engines_nothing():
+    engines = FakeFactSource()
+    context = dataclasses.replace(CONTEXT, engines=engines)
+    state = build_graph().invoke(
+        {"question": "Is Kohli injured?", "clip": None}, context=context
+    )
+    assert state.get("answers", []) == []
+
+
+def test_the_gate_keeps_its_own_receipts_in_the_notebook():
+    # Day 61: a finding put in by hand, as no agent writes one until Day 67
+    kohli = CricketSubject(player="V Kohli")
+    repo = FakeDeliveryRepository()
+    repo.add(kohli, [BALL, BALL])
+    engines = EngineFactSource(
+        Repositories(
+            deliveries=repo,
+            venues=FakeVenueRepository(),
+            workload=FakeWorkloadRepository(date(2026, 10, 14)),
+            reviews=FakeReviewRepository(),
+            results=FakeResultRepository(),
+        ),
+        data="test data",
+    )
+    claim = Claim(
+        id="c1",
+        kind=Provenance.DESCRIPTIVE,
+        metric="strike_rate",
+        subject=kohli,
+        value=999.0,  # what the agent says; the receipt keeps what the engine says
+        n=2,
+    )
+    finding = Finding(agent="N11b", claims=(claim,), template="{c1}.")
+    context = dataclasses.replace(CONTEXT, engines=engines)
+    state = build_graph().invoke(
+        {"question": QUESTION, "clip": None, "findings": [finding]}, context=context
+    )
+    receipt = state["receipts"][("N11b", "c1")]
+    assert receipt.engine == "N8.M1"
+    assert receipt.value == 100.0
+    assert receipt.n == 2
+    assert check_receipt(receipt, engines) == []  # anyone can make it again
+
+
+def test_without_engines_or_findings_no_receipts():
+    assert run()["receipts"] == {}
 
 
 def test_n3_reads_with_the_model_when_it_has_one():

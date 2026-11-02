@@ -2015,7 +2015,7 @@ API      ←  { the full checked report }
 |---|---|---|---|
 | 80 | Contract first: decide the shapes before the code | Pydantic request and response schemas | Visible on the `/docs` page |
 | 81 | FastAPI basics: routes, path parameters, `TestClient`; the app factory; settings from `.env`; logging | `api/main.py`; `GET /api/health` | Test: health returns ok |
-| 82 | `Depends` (dependency injection) and the composition root: wire ports to adapters in one place | `infrastructure/container.py` | Test: fakes swapped in for tests |
+| 82 | `Depends` (dependency injection) and the composition root: wire ports to adapters in one place | `infrastructure/container.py`. Each question's run gets its own database cursors, one for N7a and one for the engines: queries side by side on one cursor swap rows (D-082) | Test: fakes swapped in for tests |
 | 83 | — | `POST /api/queries` for text questions, synchronous first | Test with fakes |
 | 84 | Background jobs: why slow work must not block a request | A job store; POST returns a job id; `GET /api/queries/{id}` | Tests |
 | 85 | Server-Sent Events: one-way live updates | `GET /api/queries/{id}/events` streams node progress | Stream test |

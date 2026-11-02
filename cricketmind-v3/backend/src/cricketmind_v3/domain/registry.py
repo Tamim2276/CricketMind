@@ -328,6 +328,11 @@ def extra_keys(claim_type: ClaimType, subject: Subject) -> list[str]:
     return extra
 
 
+def fits(claim_type: ClaimType, subject: Subject) -> bool:
+    """The subject has all this measure needs, and nothing it cannot be narrowed by."""
+    return not missing_keys(claim_type, subject) and not extra_keys(claim_type, subject)
+
+
 def is_empty(value) -> bool:
     # None, or "" from a model that left a box blank
     return value is None or value == ""

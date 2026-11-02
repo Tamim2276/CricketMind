@@ -1688,3 +1688,34 @@ Template:
   matches played in N7b (a number outside the engines).
 - Status: built (Day 60)
 - Paper section: Method (subject-keyed evidence); Implementation (N6, N7a, N7b)
+
+## D-082 — The fact surface: all that fits, one engine question at a time, the gate's receipts
+- Date: 2026-11-03
+- Decision: (1) N8 and N9 ask the engines for every menu row that fits the question, by the
+  registry's `fits` (nothing it needs is missing, nothing it cannot be narrowed by is
+  filled: the rule the engines already apply), for each way of asking: the whole question
+  and each side of it, with k and without. A rules question asks nothing. A row that fits
+  and gets no number is kept as asked, with no fact. (2) Both write one page, `answers`: each
+  row names its metric, the exact subject asked, and the fact with its receipt. This is the
+  fact surface; `surface()` is its numbers alone, all that v2's gate can look at. Agents
+  will read this list and never call an engine (I1). (3) `EngineFactSource.fact` takes one
+  question at a time, by a lock. (4) The gate asks the engines again for every finding and
+  keeps those receipts in the state, filed by agent and claim, for N13 (D-052). Until Day 74
+  it asks and keeps, and checks nothing.
+- Why: N3 picks no measure (D-080 failed its rule), so the agents choose from what can be
+  said. One fit rule means N8 cannot ask for what an engine would refuse. LangGraph runs
+  side-by-side nodes in threads (checked), and a DuckDB connection keeps one current result:
+  two threads on one connection, 40 queries each, gave Kohli's query Rohit's balls 16 times
+  with no error, and 14 errors besides. Through the lock, the same test gave 0 wrong and 0
+  errors in 80. A number from another player that raises nothing is the fabrication this
+  project exists to stop. Two agents can both write a c1, so a receipt needs the agent too.
+- Alternatives considered: N8 and N9 one after the other (not the figure's arrows); a cursor
+  per thread in all five repositories (more code for the same safety, and the numbers need
+  no parallel reads); only the engine of the question's kind (a prediction would lose the
+  past numbers beside it); counting from N7a's stored balls (a second way of counting beside
+  the one the gate asks again, and the two could disagree); a model choosing the measure
+  (tried, D-080); the receipts N8 and N9 already hold (D-052 says the gate's own).
+- Status: built (Day 61). A lock guards the engines only, so each question's run needs its
+  own cursors, one for N7a and one for the engines (Day 82). Nothing reads N7a's stored
+  balls yet, only their count: to be used by Day 64's evidence summary, or removed
+- Paper section: Implementation (the graph, the fact surface); Method (I1, receipts)

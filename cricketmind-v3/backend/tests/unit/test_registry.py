@@ -9,6 +9,7 @@ from cricketmind_v3.domain.registry import (
     RegistryError,
     check_registry,
     extra_keys,
+    fits,
     index_by_name,
     lookup,
     missing_keys,
@@ -334,3 +335,11 @@ def test_one_matchs_result_is_not_a_sample():
     assert not lookup("match_won_by_runs").sample
     assert lookup("team_win_share").sample
     assert lookup("team_win_share").unit == "matches"
+
+
+def test_a_subject_fits_when_nothing_is_missing_and_nothing_is_extra():
+    row = lookup("strike_rate")
+    assert fits(row, CricketSubject(player="V Kohli"))
+    assert fits(row, CricketSubject(player="V Kohli", phase="powerplay"))
+    assert not fits(row, CricketSubject(phase="powerplay"))  # no player
+    assert not fits(row, CricketSubject(player="V Kohli", k=6))  # k is not a filter

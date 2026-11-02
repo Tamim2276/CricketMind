@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from cricketmind_v3.domain.receipts import Receipt
+from cricketmind_v3.domain.subject import Subject
 
 
 class FactError(ValueError):
@@ -41,3 +42,14 @@ class Fact:
                 raise FactError(
                     f"value {self.value} is outside its own range {low} to {high}"
                 )
+
+
+@dataclass(frozen=True, kw_only=True)
+class Answer:
+    """One question to one engine, and what it said (Day 61): a row of the fact surface."""
+
+    metric: str  # "strike_rate"
+    subject: (
+        Subject  # exactly what was asked: the number is about this and nothing else
+    )
+    fact: Fact | None  # None: the menu allows it, and the engine has no answer

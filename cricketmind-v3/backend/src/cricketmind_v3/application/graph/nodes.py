@@ -4,6 +4,8 @@ its function's name."""
 
 from langgraph.runtime import Runtime
 
+from cricketmind_v3.application.fact_surface import ask_engines
+from cricketmind_v3.application.faith_check import receipts_of, recompute
 from cricketmind_v3.application.graph.context import GraphContext
 from cricketmind_v3.application.graph.state import GraphState
 from cricketmind_v3.application.reader import read_question
@@ -11,6 +13,14 @@ from cricketmind_v3.application.retrieval import retrieve
 from cricketmind_v3.domain.question_context import question_context
 from cricketmind_v3.domain.readback import cant_check_answer, read_back
 from cricketmind_v3.domain.shot_dna import stub_shot_dna
+
+
+def given(runtime: Runtime[GraphContext]) -> GraphContext:
+    """What the node was given; a graph run without it stops here, not later."""
+    if runtime.context is None:
+        raise ValueError("the graph was run without its context (a GraphContext)")
+    return runtime.context
+
 
 # A. the clip: its frames, the shot, how sure, the body
 
@@ -37,9 +47,7 @@ def n2b_pose_estimator(state: GraphState) -> dict:
 
 def n3_question_reader(state: GraphState, runtime: Runtime[GraphContext]) -> dict:
     # the model reads and the code checks (Day 58); without a model, the rules (Day 56)
-    context = runtime.context
-    if context is None:
-        raise ValueError("the graph was run without its context (a GraphContext)")
+    context = given(runtime)
     reading = read_question(
         state["question"],
         context.llm,
@@ -67,9 +75,7 @@ def n6_shot_dna(state: GraphState) -> dict:
 
 def n7a_evidence_retrieval(state: GraphState, runtime: Runtime[GraphContext]) -> dict:
     # Day 60: the balls of each side of the question, from the subject in the Shot DNA
-    context = runtime.context
-    if context is None:
-        raise ValueError("the graph was run without its context (a GraphContext)")
+    context = given(runtime)
     kind = state["reading"].kind
     evidence = retrieve(state["shot_dna"].subject, kind, context.deliveries)
     return {"visited": ["n7a_evidence_retrieval"], "evidence": evidence}
@@ -77,21 +83,29 @@ def n7a_evidence_retrieval(state: GraphState, runtime: Runtime[GraphContext]) ->
 
 def n7b_context_retrieval(state: GraphState, runtime: Runtime[GraphContext]) -> dict:
     # Day 60: who the people are and where the ground is, in the registers' words
-    context = runtime.context
-    if context is None:
-        raise ValueError("the graph was run without its context (a GraphContext)")
+    context = given(runtime)
     found = question_context(
         state["shot_dna"].subject, context.players, context.grounds, context.teams
     )
     return {"visited": ["n7b_context_retrieval"], "context": found}
 
 
-def n8_descriptive_engine(state: GraphState) -> dict:
-    return {"visited": ["n8_descriptive_engine"]}
+def n8_descriptive_engine(state: GraphState, runtime: Runtime[GraphContext]) -> dict:
+    # Day 61: every count that fits the question
+    context = given(runtime)
+    answers = ask_engines(
+        state["shot_dna"].subject, state["reading"].kind, "N8", context.engines
+    )
+    return {"visited": ["n8_descriptive_engine"], "answers": answers}
 
 
-def n9_predictive_engine(state: GraphState) -> dict:
-    return {"visited": ["n9_predictive_engine"]}
+def n9_predictive_engine(state: GraphState, runtime: Runtime[GraphContext]) -> dict:
+    # Day 61: every simulation that fits the question
+    context = given(runtime)
+    answers = ask_engines(
+        state["shot_dna"].subject, state["reading"].kind, "N9", context.engines
+    )
+    return {"visited": ["n9_predictive_engine"], "answers": answers}
 
 
 # E. the router, and F. the twelve agents and the Explainer
@@ -156,8 +170,16 @@ def n11m_explainer(state: GraphState) -> dict:
 # G. the checks, the report, the answer
 
 
-def faith_gate(state: GraphState) -> dict:
-    return {"visited": ["faith_gate"]}
+def faith_gate(state: GraphState, runtime: Runtime[GraphContext]) -> dict:
+    # Day 61: it asks the engines again and keeps the receipts; it checks nothing until
+    # Day 74
+    context = given(runtime)
+    receipts = {}
+    if context.engines is not None:
+        for finding in state.get("findings", []):
+            facts = recompute(finding, context.engines)
+            receipts.update(receipts_of(finding, facts))
+    return {"visited": ["faith_gate"], "receipts": receipts}
 
 
 def n12_report_synthesis(state: GraphState) -> dict:

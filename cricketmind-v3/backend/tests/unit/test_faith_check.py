@@ -1,11 +1,16 @@
 import dataclasses
 
-from cricketmind_v3.application.faith_check import faith_check, recompute
+from cricketmind_v3.application.faith_check import (
+    faith_check,
+    receipts_of,
+    recompute,
+)
 from cricketmind_v3.application.ports import FakeFactSource
 from cricketmind_v3.domain.facts import Fact
 from cricketmind_v3.domain.faith.c2_values import check_c2
 from cricketmind_v3.domain.faith.gate import Context
 from cricketmind_v3.domain.findings import Finding
+from cricketmind_v3.domain.receipts import Receipt
 from cricketmind_v3.domain.subject import CricketSubject
 from tests.examples import KOHLI_COVER_DRIVE, KOHLI_PULL, c1, c2
 
@@ -80,3 +85,40 @@ def test_kohlis_number_given_to_rohit_is_caught_f2():
         "the claim says 142.0, but the engine gives 118.0 for this subject",
         "the claim rests on 50, but the engine counts 44",
     ]
+
+
+# The receipts the graph keeps (Day 61)
+
+RECEIPT = Receipt(
+    data="d", engine="N8.M1", version="1", query="q", value=142.0, n=50, interval=None
+)
+
+
+def source_with_receipt() -> FakeFactSource:
+    source = FakeFactSource()
+    fact = Fact(value=142.0, n=50, receipt=RECEIPT)
+    source.add("strike_rate", KOHLI_COVER_DRIVE, fact)
+    return source
+
+
+def test_a_receipt_holds_the_engines_number_never_the_claims():
+    lie = dataclasses.replace(c1(), value=999.0)
+    finding = Finding(agent="N11b", claims=(lie,), template="{c1}.")
+    kept = receipts_of(finding, recompute(finding, source_with_receipt()))
+    assert kept == {("N11b", "c1"): RECEIPT}
+    assert kept[("N11b", "c1")].value == 142.0
+
+
+def test_two_agents_each_keep_their_own_c1():
+    source = source_with_receipt()
+    kept = {}
+    for agent in ("N11b", "N11c"):
+        finding = Finding(agent=agent, claims=(c1(),), template="{c1}.")
+        kept.update(receipts_of(finding, recompute(finding, source)))
+    assert list(kept) == [("N11b", "c1"), ("N11c", "c1")]
+
+
+def test_no_answer_and_no_receipt_keep_nothing():
+    finding = Finding(agent="N11b", claims=(c1(),), template="{c1}.")
+    assert receipts_of(finding, {"c1": None}) == {}
+    assert receipts_of(finding, {"c1": Fact(value=142.0, n=50)}) == {}
