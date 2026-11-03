@@ -3892,3 +3892,54 @@ added map is now normalised per channel before it joins; still no learned
 weights, and B01's own numbers still come first and unchanged. On real
 clips the added channels now sit at a spread of 0.4-0.7 next to B01's
 0.97. F01 starts again from scratch.
+
+## 2026-10-31 — Family W: tracks beat frozen features, not fine-tuning
+
+The bat track, ten numbers a frame, scored the same as 62,720 frozen image
+numbers through the same GRU: about 52%. Bat, ball and pose together, 114
+numbers, reached 67 / 70, fifteen points above that and seven to twelve
+below B01. So a compact physical description is a real signal, but it is
+not the publishable "within a few points of a deep model" the plan hoped
+for. The ball on its own got 23-26%, which is about what a detector that
+misses the ball in 60% of frames allows.
+
+Motion: plain frame differences beat RAFT flow by one to three points.
+Flow needed a download and a 7 GB cache and gave nothing back. Either
+kind of motion on its own comes within a few points of the same network
+on colour frames, which surprised me more than anything else in W.
+
+## 2026-11-03 — Family F: the head mattered, the extra image did not
+
+Each F model is B01 with one change, so each answers one question.
+Feeding the GRU more of the image (finer stages in F01, a second
+resolution in F04) did not help: a few points down on author, one or two
+up on grouped, a tie overall, and F04 cost twice as much. Swapping the
+GRU for a transformer (F02 against F01) gained five points on both
+splits, the biggest one-change jump in the family, and F02 is now third
+overall at 83.43 grouped. The GRU was the bottleneck all along: it
+reached 81% train in 41 epochs where the transformer reached 98% in 24.
+The clean version of that test, B01 with a transformer and nothing else
+changed, goes to Phase 4.
+
+F05, which lets B01's GRU look back at every step instead of only its
+last one, tied on author and gained three on grouped. F03, RGB and flow
+averaged, added under two points to the RGB network alone.
+
+## 2026-11-03 — Phase 3 closed
+
+All 68 ideas ran on both splits: 136 runs, about 279 GPU-hours, nothing
+skipped. The top five by grouped val are MViT, SlowFast, F02, X3D and
+VideoMAE, and places two to five are within a point of each other, so
+Phase 4's three seeds will decide them, not this table.
+
+Three things from reading the stretch families together. Pose and
+tracks match MViT on hooks and upper cuts and beat B01 on flicks, where
+the shape of the body is the shot, and fall far behind on down-the-wicket
+and straight drives, probably because the crop follows the batter and
+hides the movement. The plan's bet that the bat path separates pulls from
+hooks was wrong: the bat track is the worst model on pulls, and every
+model, MViT too, still mixes about one in seven of them. And Day 16's
+prediction that pose and tracks would show no author-grouped gap was
+half right: pose shows none, but the ball track does, because its
+position is measured in the broadcast camera's frame, so it reads the
+match after all.

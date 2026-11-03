@@ -5396,6 +5396,40 @@ F03 against C02: does motion add to an RGB 3D CNN?
    clip on the Arc (~1 h for all), every value finite, and the same clip
    run twice matched exactly (largest gap 0.000000).
 
+**Ran 2026-10-31, Family W** (val top-1 / macro-F1; train top-1 at the
+best epoch):
+
+| ID | author | grouped | train |
+| --- | --- | --- | --- |
+| W01 flow → r3d_18 | 74.18 / 0.727 | 76.04 / 0.762 | 99–100% |
+| W02 bat track → GRU-128 | 51.01 / 0.486 | 52.84 / 0.514 | ~52% |
+| W03 ball track → GRU-128 | 23.30 / 0.168 | 25.81 / 0.203 | ~22% |
+| W04 bat + ball + pose → GRU-128 | 67.05 / 0.650 | 70.24 / 0.700 | ~70% |
+| **W05 frame differences → r3d_18** | **75.25 / 0.730** | **78.59 / 0.779** | 99.8% |
+| A03 frozen RGB → GRU-128 | 51.96 | 54.11 | |
+| E01 pose → GRU-128 | 65.72 | 65.71 | |
+| C02 RGB → r3d_18 | 78.35 | 79.16 | |
+| B01 | 79.23 | 77.69 | |
+
+1. **Day 31's claim, half held.** The bat track (10 numbers a frame) ties
+   A03's 62,720 frozen numbers through the same head (−1.0, −1.3) but sits
+   27 points under B01. Bat + ball + pose (114 numbers) is +15 and +16 over
+   A03, and 12 and 7.5 under B01: a compact description competes with
+   frozen features, not with a fine-tuned network.
+2. **The ball alone is capped by its detector:** found in 40% of frames
+   (13% for Pull), and train sits at val's level, ~22%. Added to bat and
+   pose it is worth +1.3 and +4.5 over E01; only grouped clears the noise.
+3. **The tracks do not overfit**, like pose: train and val within a few
+   points. Both motion r3d_18s memorise, like C02.
+4. **Day 32's question: flow is not worth its extra step.** Plain frame
+   differences beat RAFT flow by +1.1 and +2.6, with no download and no
+   7 GB cache (though reading whole box clips makes each epoch twice as
+   long: 3.6 GPU-hours against 2.1 plus RAFT's ~1). Motion alone comes
+   within 0.6–3 points of the same network on RGB (W05 against C02).
+
+**Family W: done**, ~8 GPU-hours, plus ~1 for the flow cache and ~3 for
+the tracks.
+
 ## Day 33 — Family F, part 1: multi-scale and hybrid
 
 *Question: do a richer encoder or a richer head beat B01's plain recipe?*
@@ -5474,6 +5508,36 @@ python -m src.experiments.run --family F
 F03 is scored by fusion, not trained, so it takes seconds once C02 and W01
 exist.
 
+**Ran 2026-11-01 to 11-03** (val top-1 / macro-F1; train top-1 at the best
+epoch):
+
+| ID | the one change | author | grouped | train | GPU-h |
+| --- | --- | --- | --- | --- | --- |
+| B01 | (the parent) | 79.23 / 0.778 | 77.69 / 0.758 | 77–84% | 9.2 |
+| F01 multi-scale | + stages 3 and 5 on B01's grid | 76.14 / 0.738 | 78.14 / 0.761 | ~81% | 12.4 |
+| **F02** | F01 + transformer head | **80.68 / 0.790** | **83.43 / 0.829** | 98.5% | 8.0 |
+| F03 two-stream | C02 + W01, averaged | 79.61 / 0.776 | 80.94 / 0.804 | | 0 |
+| F04 multi-resolution | + the frame again at 112 | 76.58 / 0.752 | 79.60 / 0.785 | 85–94% | 19.4 |
+| F05 | attention over the GRU's steps | 78.91 / 0.770 | 81.13 / 0.795 | 81–88% | 9.8 |
+
+1. **More of the image did not help B01.** F01 −3.1 and +0.5, F04 −2.7
+   and +1.9: the sign flips between splits, a tie on average, at 1.3x and
+   2.1x B01's cost.
+2. **The head did. F02 against F01: +4.5 and +5.3**, three times the
+   noise and the family's largest one-change gain. The transformer reaches
+   98.5% train by epoch 24, while F01's GRU-128 is at 81% after 41: the GRU
+   is what holds the flattened grid back, as A08 against A03 showed on
+   frozen features (+14). F02 is two keys from B01, so the clean test, B01
+   with the transformer head and no extra stages, is a Phase 4 item.
+3. **F05, B01 reading every GRU step: −0.3 and +3.4**, a tie and a gain,
+   +1.6 on average. Part of the same last-state bottleneck, cheaply.
+4. **F03, motion added to an RGB 3D CNN: +1.3 and +1.8 over C02**, at the
+   edge of the noise, and +5 over W01 alone. W05 is the stronger motion
+   stream (Day 32), so Phase 4's ensembles should pair RGB with it.
+5. ~50 GPU-hours, as the probe's re-cost said (45–55); F04 alone took 19.
+
+**Family F: done.**
+
 ## Day 37 — Read the stretch families, and close Phase 3
 
 **Write down:**
@@ -5486,12 +5550,79 @@ exist.
    scene, so their author–grouped gap should be near zero, not the −3 of
    frozen RGB features.
 
+**Written 2026-11-03.**
+
+1. **Best of the stretch families: F02, 83.43 grouped, third overall.**
+   Phase 4's top 5 by grouped val:
+
+   | | ID | grouped | author |
+   | --- | --- | --- | --- |
+   | 1 | C06 MViT-v2-S | 84.51 | 83.40 |
+   | 2 | C04 SlowFast-R50 | 83.81 | 81.69 |
+   | 3 | **F02 multi-scale + transformer** | 83.43 | 80.68 |
+   | 4 | C05 X3D-M | 83.11 | 81.19 |
+   | 5 | C08 VideoMAE | 82.92 | 80.87 |
+
+   Places 2 to 5 sit within 0.9 points, under one run's noise, so the
+   three-seed re-runs decide them. The best of E (E03, 73.49) and of W
+   (W05, 78.59) are not close alone, but they see differently (2.).
+2. **Structure against pixels, per class** (grouped val F1; author agrees
+   on every point below):
+
+   | class | A03 frozen RGB | B01 | C06 | E01 pose | W02 bat | W04 bat+ball+pose |
+   | --- | --- | --- | --- | --- | --- | --- |
+   | Hook | 0.61 | 0.72 | 0.77 | **0.77** | 0.62 | 0.76 |
+   | Upper Cut | 0.28 | 0.70 | 0.77 | 0.67 | 0.47 | **0.79** |
+   | Flick | 0.67 | 0.85 | 0.92 | 0.82 | 0.69 | 0.86 |
+   | Pull | 0.51 | 0.69 | 0.74 | 0.58 | **0.40** | 0.64 |
+   | Down The Wicket | 0.50 | 0.78 | 0.88 | 0.59 | **0.36** | 0.62 |
+   | Straight Drive | 0.37 | 0.80 | 0.86 | 0.57 | 0.46 | 0.65 |
+   | Late Cut | 0.12 | 0.52 | 0.79 | 0.38 | 0.37 | 0.57 |
+
+   - **Structure is at its best where the body shape is the shot**, short
+     balls on the leg side: pose ties MViT on Hook (above B01), and bat +
+     ball + pose beats MViT on Upper Cut and B01 on Flick.
+   - **It is furthest behind where the batter travels or the ball goes**:
+     Down The Wicket, Straight Drive, the lofted shots, Late Cut. Down The
+     Wicket probably loses to the crop: it follows the batter, so a run
+     down the pitch hardly shows in body-relative numbers.
+   - **The pull-hook prediction failed.** W02 is the worst model of all on
+     Pull and mixes pull and hook the most (32 of the 202). No model
+     separates them: every one, MViT included, mixes 22–32. What splits
+     them is not in a 15-point bat path; most likely it is ball height,
+     and the ball is found in 13% of Pull frames. Day 42's error analysis
+     should watch these clips.
+3. **Day 16's prediction, half right.** Gap = author − grouped:
+
+   | | gap |
+   | --- | --- |
+   | E01 pose → GRU | **0.0** |
+   | E02 ST-GCN | −2.2 |
+   | W02 bat | −1.8 |
+   | W03 ball | −2.5 |
+   | W04 bat + ball + pose | −3.2 |
+   | frozen RGB (P, A, D, V), mean of 35 | −2.8 |
+   | fine-tuned B and C, mean of 16 | −1.3 |
+
+   Pose through a GRU has no gap at all, as predicted. The tracks do. The
+   ball is found on the raw broadcast frame, in the camera's coordinates,
+   and the same match means the same camera, so its position reads the
+   scene after all; W04 carries it and lands at the frozen-RGB level. With
+   ±1.2 of noise in one gap, only E01 against W04 and frozen RGB is
+   clearly apart; E02 under-fits (~50%), so its gap is the least sure.
+   Fine-tuned models pay about half the frozen price, not the nothing that
+   B01 alone suggested on Day 16.
+
 ### End of Phase 3
 
 **Run.** `python -m tools.leaderboard`, `python -m tools.figures`.
 
 **Check.** Every one of the 130 runs has a row, or a journal line saying why it
 could not run.
+
+**Checked 2026-11-03:** 68 IDs (P5 A14 D6 V10 B8 C8 R3 E4 W5 F5) on both
+splits, **136 runs, every one with a row**; none skipped. The rows log ~279
+GPU-hours: B 98, C 60, F 50, R 35, A 22, W 8, the rest under 3 each.
 
 **Commit and tag:**
 
