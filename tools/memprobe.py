@@ -107,6 +107,13 @@ def probe(entry, split="author", batches=3, overrides=None, device=None):
     return found
 
 
+def _no_training(entry):
+    """Fusion and the classical models fit once, with no training loop
+    to probe (F03 would crash the probe otherwise)."""
+    cfg = R.resolve(entry, "author")
+    return hasattr(methods.load(cfg["method"]), "fit")
+
+
 def describe(f):
     """One line a person can read."""
     if f["fits"] is False and f["peak_gb"] is None:
@@ -146,6 +153,10 @@ def main(argv=None):
         problem = R.status(entry)
         if problem != "ready":
             print(f"{exp_id:20s} not ready: {problem}")
+            continue
+        if _no_training(entry):
+            print(f"{exp_id:20s} trains nothing (its method fits once); "
+                  f"no probe")
             continue
         found = probe(entry, args.split, args.batches)
         print(describe(found), flush=True)

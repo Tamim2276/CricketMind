@@ -330,10 +330,26 @@ ENTRIES = [
      "why": "the cheapest motion signal, frame differences: W01's control"},
 
     # ---- F: multi-scale, hybrid and two-stream (Days 32-36) ----
+    # B01 with one change each, or F01 with one change
+    {"id": "F01_multiscale", "base": "mimic_author",
+     "cfg": {"scales": "multi"},
+     "why": "B01, with the fine and mid stages stacked onto its 7x7 grid: "
+            "do the finer details help?"},
+    {"id": "F02_multiscale_tf", "base": "mimic_author",
+     "cfg": {"scales": "multi", "head": "transformer", "layers": 2},
+     "why": "F01's encoder under a 2-layer transformer: F02 against F01 is "
+            "the head alone"},
     {"id": "F03_two_stream", "base": "fusion",
      "cfg": {"fuse": [["C02_r3d_18"], ["W01_flow_r3d"]]},
      "why": "the classic two-stream recipe: RGB r3d_18 and flow r3d_18, "
             "answers averaged. Does motion add to an RGB 3D CNN?"},
+    {"id": "F04_multires", "base": "mimic_author",
+     "cfg": {"extra_size": 112},
+     "why": "B01, with each frame seen again at 112 and joined: context "
+            "and detail from one network"},
+    {"id": "F05_gru_attn", "base": "mimic_author", "cfg": {"head": "gru_attn"},
+     "why": "B01, reading every GRU step through attention instead of the "
+            "last one"},
 ]
 
 _ID = re.compile(r"^([A-Z])\d\d_[a-z0-9_]+$")

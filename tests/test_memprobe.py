@@ -66,3 +66,11 @@ def test_too_close_to_full_is_not_called_a_fit():
              "peak_gb": 11.5, "reserved_gb": 11.9, "total_gb": 12.0,
              "sec_per_batch": 1.0, "steps": 1580, "params_m": 140.0}
     assert "TOO CLOSE" in describe(found)
+
+
+def test_a_method_that_fits_once_is_not_probed():
+    """F03 (fusion) and Family D (classical) have no training loop."""
+    from tools.memprobe import _no_training
+    assert _no_training(R.get("F03_two_stream"))
+    assert _no_training(R.get("D02_svm"))
+    assert not _no_training(R.get("F01_multiscale"))

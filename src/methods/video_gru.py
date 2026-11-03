@@ -18,15 +18,25 @@ NAME = "video_gru"
 # every config key this file acts on, beyond the loop's own
 READS = ("variant", "processed", "flip", "backbone", "pretrained", "freeze",
          "hidden", "dense", "dropout", "pool", "keras_dense",
-         "grad_checkpoint", "drop_path", "same_clips_as")
+         "grad_checkpoint", "drop_path", "same_clips_as", "scales",
+         "extra_size", "head", "layers", "attn_heads")
+
+# the heads an end-to-end run can end in (Family F adds the last two)
+HEADS = ("gru", "transformer", "gru_attn")
 
 
 def check(cfg):
     """Why this config cannot start yet, or None."""
-    from src.models.encoder import backbone_problem
+    from src.models.encoder import SCALES, TAPS, backbone_problem
     problem = backbone_problem(cfg["backbone"], cfg["pretrained"])
     if problem:
         return problem
+    if cfg["head"] not in HEADS:
+        return f"video_gru ends in one of {HEADS}, not {cfg['head']!r}"
+    if cfg["scales"] not in SCALES:
+        return f"scales must be one of {SCALES}"
+    if cfg["scales"] == "multi" and cfg["backbone"] not in TAPS:
+        return f"multi-scale knows the stages of {tuple(TAPS)} only"
     return data_problem(cfg)
 
 
@@ -99,4 +109,6 @@ def model(cfg, train_set, num_classes):
                        dropout=cfg["dropout"], pool=cfg["pool"],
                        keras_dense=cfg["keras_dense"],
                        grad_checkpoint=cfg["grad_checkpoint"],
-                       drop_path=cfg["drop_path"])
+                       drop_path=cfg["drop_path"], scales=cfg["scales"],
+                       extra_size=cfg["extra_size"], head=cfg["head"],
+                       layers=cfg["layers"], attn_heads=cfg["attn_heads"])

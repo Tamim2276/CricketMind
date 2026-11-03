@@ -1,4 +1,4 @@
-"""The registry: 64 experiments as data, checked before anything runs."""
+"""The registry: 68 experiments as data, checked before anything runs."""
 import io
 import os
 
@@ -9,7 +9,7 @@ from src.experiments import registry as R
 from src.experiments import run as runner
 from src.train import DEFAULTS, LOOP_READS, load_config
 
-COUNTS = {"P": 5, "A": 14, "D": 6, "V": 10, "B": 8, "C": 8, "R": 3, "E": 4, "W": 5, "F": 1}
+COUNTS = {"P": 5, "A": 14, "D": 6, "V": 10, "B": 8, "C": 8, "R": 3, "E": 4, "W": 5, "F": 5}
 
 
 def test_every_delta_key_is_a_config_key():
@@ -42,15 +42,15 @@ def test_every_entry_says_why():
 def test_every_family_has_its_count():
     for fam, n in COUNTS.items():
         assert len(R.entries(fam)) == n, fam
-    assert len(R.ENTRIES) == 64
+    assert len(R.ENTRIES) == 68
 
 
-def test_128_run_names_none_repeated():
+def test_136_run_names_none_repeated():
     names = set()
     for entry in R.ENTRIES:
         for split in R.SPLITS:
             names.add(R.run_name(entry["id"], split))
-    assert len(names) == 128
+    assert len(names) == 136
 
 
 def test_the_harness_owns_name_and_split():
@@ -135,10 +135,11 @@ def test_no_built_method_ignores_a_delta_key():
 
 
 def test_unread_key_is_caught(monkeypatch):
+    # video_gru reads "head" since Day 33; it still has no bidirectional GRU
     fake = {"id": "B99_fake", "base": "mimic_author",
-            "cfg": {"head": "lstm"}, "why": "x"}
-    assert R.unread_keys(fake) == ["head"]
-    assert R.status(fake) == "video_gru ignores head"
+            "cfg": {"bidirectional": True}, "why": "x"}
+    assert R.unread_keys(fake) == ["bidirectional"]
+    assert R.status(fake) == "video_gru ignores bidirectional"
 
 
 def test_status_names_what_is_missing():
@@ -166,10 +167,10 @@ def test_list_prints_every_id():
     out = io.StringIO()
     shown = runner.print_list(out=out)
     text = out.getvalue()
-    assert shown == 64
+    assert shown == 68
     for entry in R.ENTRIES:
         assert entry["id"] in text
-    assert "64 IDs, 128 runs" in text
+    assert "68 IDs, 136 runs" in text
 
 
 def test_list_one_family():

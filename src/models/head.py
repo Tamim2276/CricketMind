@@ -33,7 +33,7 @@ separately loses precision on confident predictions.
 import torch
 import torch.nn as nn
 
-__all__ = ["GRUHead", "LSTMHead", "LinearHead", "MLPHead", "PoolHead",
+__all__ = ["GRUHead", "GRUAttnHead", "LSTMHead", "LinearHead", "MLPHead", "PoolHead",
            "TransformerHead", "TCNHead", "AttnPoolHead", "NetVLADHead",
            "STGCNHead", "CrossAttnHead", "FrameNorm", "pool_frames", "POOLS",
            "WIDTH", "FRAMES", "CLUSTERS", "NUM_CLASSES", "HIDDEN", "DENSE"]
@@ -168,6 +168,36 @@ class GRUHead(nn.Module):
         else:
             summary = torch.cat([h[-2], h[-1]], dim=1)
 
+        out = self.norm(summary)
+        out = self.relu(self.fc1(out))
+        out = self.drop(out)
+        return self.fc2(out)
+
+
+class GRUAttnHead(GRUHead):
+    """GRUHead that reads every step's output through attention pooling,
+    instead of the last state alone (F05). The GRU, its Keras init and the
+    tail are GRUHead's own, so F05 against B01 changes one thing."""
+
+    def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES,
+                 hidden: int = HIDDEN, dense: int = DENSE,
+                 dropout: float = 0.0, keras_dense: bool = False):
+        super().__init__(in_dim, num_classes, hidden, dense, dropout,
+                         keras_dense=keras_dense)
+        self.score = nn.Sequential(nn.Linear(hidden, hidden // 2), nn.Tanh(),
+                                   nn.Linear(hidden // 2, 1))
+        self.last_weights = None
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.dim() != 3:
+            raise ValueError(f"expected (B, T, D), got {tuple(x.shape)}")
+        if x.shape[2] != self.in_dim:
+            raise ValueError(
+                f"head was built for {self.in_dim} features, got {x.shape[2]}")
+        steps, _ = self.gru(x)                       # (B, T, hidden)
+        w = torch.softmax(self.score(steps).squeeze(2), dim=1)
+        self.last_weights = w.detach()
+        summary = (w.unsqueeze(2) * steps).sum(dim=1)
         out = self.norm(summary)
         out = self.relu(self.fc1(out))
         out = self.drop(out)

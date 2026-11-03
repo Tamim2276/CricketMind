@@ -9,7 +9,8 @@ the tensor along:
 import torch.nn as nn
 
 from src.models.encoder import DEFAULT_BACKBONE, DEFAULT_SIZE, FrameEncoder
-from src.models.head import DENSE, HIDDEN, NUM_CLASSES, GRUHead
+from src.models.head import (DENSE, HIDDEN, NUM_CLASSES, GRUAttnHead,
+                             GRUHead, TransformerHead)
 
 __all__ = ["ShotModel", "build_model"]
 
@@ -33,7 +34,9 @@ def build_model(num_classes: int = NUM_CLASSES,
                 pool: str = "avg", size: int = DEFAULT_SIZE,
                 keras_dense: bool = False,
                 grad_checkpoint: bool = False,
-                drop_path=None) -> ShotModel:
+                drop_path=None, scales: str = "global", extra_size=None,
+                head: str = "gru", layers: int = 1,
+                attn_heads: int = 4) -> ShotModel:
     """The default stack. The head is sized from the encoder, never hardcoded.
 
     `pool="flatten"` reproduces the authors: the GRU sees the whole 7x7 grid
@@ -41,7 +44,18 @@ def build_model(num_classes: int = NUM_CLASSES,
     """
     encoder = FrameEncoder(backbone, pretrained, freeze, pool, size,
                            grad_checkpoint=grad_checkpoint,
-                           drop_path=drop_path)
-    head = GRUHead(encoder.out_dim, num_classes, hidden, dense, dropout,
-                   keras_dense=keras_dense)
-    return ShotModel(encoder, head)
+                           drop_path=drop_path, scales=scales,
+                           extra_size=extra_size)
+    if head == "transformer":
+        tail = TransformerHead(encoder.out_dim, num_classes, layers=layers,
+                               attn_heads=attn_heads, dense=dense,
+                               dropout=dropout)
+    elif head == "gru_attn":
+        tail = GRUAttnHead(encoder.out_dim, num_classes, hidden, dense,
+                           dropout, keras_dense=keras_dense)
+    elif head == "gru":
+        tail = GRUHead(encoder.out_dim, num_classes, hidden, dense, dropout,
+                       keras_dense=keras_dense)
+    else:
+        raise ValueError(f"unknown head {head!r}")
+    return ShotModel(encoder, tail)

@@ -60,6 +60,8 @@ DEFAULTS = {
     "fuse": None,             # fusion: streams of run IDs to average (29.1)
     "rgb_features": None,     # pose_rgb: the RGB cache beside the pose (29.2)
     "motion": None,           # motion: "flow" or "diff" into a 3D CNN (32.2)
+    "scales": "global",       # "multi": fine and mid stages join the grid (F01)
+    "extra_size": None,       # e.g. 112: the frame again, smaller, joined (F04)
     "head": "gru",            # the head on cached features; Families A, D, V
     "bidirectional": False,
     "layers": 1,
