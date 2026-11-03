@@ -3943,3 +3943,14 @@ prediction that pose and tracks would show no author-grouped gap was
 half right: pose shows none, but the ball track does, because its
 position is measured in the broadcast camera's frame, so it reads the
 match after all.
+
+## 2026-11-03 — Repeats with other seeds
+
+The top three on grouped val are less than a point apart, and one run
+can move by about one and a half. So before calling any of them the
+winner, each gets two more runs with different random seeds, on the
+grouped split only for now. A repeat is saved under its own name, with
+`__seed1` on the end, so the original run is never touched; the
+leaderboard shows every run and their mean and spread side by side. It
+costs about 28 GPU-hours, but the first pass alone, about 14, already
+gives each model a second run.

@@ -13,8 +13,8 @@ from src import methods
 from src.train import DEFAULTS, LOOP_READS, load_config
 
 __all__ = ["ADOPT", "BASES", "ENTRIES", "FAMILIES", "SPLITS", "entries",
-           "get", "family_of", "run_name", "resolve", "unread_keys",
-           "status", "config_differences"]
+           "get", "family_of", "run_name", "parse_name", "resolve",
+           "unread_keys", "status", "config_differences"]
 
 # forward slashes, as in the yamls and the ledger; both OSes accept them
 SPLITS = {
@@ -379,21 +379,44 @@ def get(exp_id):
     raise KeyError(f"no experiment {exp_id!r}; see --list")
 
 
-def run_name(exp_id, split):
+def run_name(exp_id, split, seed=None):
+    """'C06_mvitv2_s__grouped'; a repeat with another seed gets
+    '__seed1' on the end, so it sits beside the original (Days 38-40)."""
     if split not in SPLITS:
         raise ValueError(f"unknown split {split!r}; have {sorted(SPLITS)}")
-    return f"{exp_id}__{split}"
+    if seed is None:
+        return f"{exp_id}__{split}"
+    return f"{exp_id}__{split}__seed{seed}"
 
 
-def resolve(entry, split, overrides=None):
+def parse_name(name):
+    """run_name backwards: (id, split, seed), seed None for the original.
+    None when the name is not shaped like a run's."""
+    parts = name.split("__")
+    if len(parts) == 2:
+        return parts[0], parts[1], None
+    if len(parts) == 3:
+        tail = parts[2]
+        if tail.startswith("seed") and tail[4:].isdigit():
+            return parts[0], parts[1], int(tail[4:])
+    return None
+
+
+def resolve(entry, split, overrides=None, seed=None):
     """The full config one run trains with: defaults, base, delta, then
-    the name and split the harness owns. `overrides` is for tests."""
+    the name and split the harness owns. `overrides` is for tests.
+    `seed` makes a repeat of the run, under its own name."""
     base = BASES[entry["base"]]
     cfg = dict(DEFAULTS)
     cfg.update(load_config(base["config"]))
     cfg.update(base["set"])
     cfg.update(entry["cfg"])
-    cfg["name"] = run_name(entry["id"], split)
+    if seed is not None:
+        if seed == cfg["seed"]:
+            raise ValueError(f"seed {seed} is the original run's; a repeat "
+                             f"needs another")
+        cfg["seed"] = seed
+    cfg["name"] = run_name(entry["id"], split, seed)
     cfg["split"] = SPLITS[split]
     if overrides:
         cfg.update(overrides)

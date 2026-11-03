@@ -116,6 +116,44 @@ def test_unknown_split_and_id_fail_loudly():
         R.family_of("a01_mean")
 
 
+# ---- Days 38-40: a repeat with another seed ---------------------------------------
+
+def test_a_repeat_is_named_beside_the_original():
+    assert R.run_name("C06_mvitv2_s", "grouped") == "C06_mvitv2_s__grouped"
+    assert R.run_name("C06_mvitv2_s", "grouped", 1) == \
+        "C06_mvitv2_s__grouped__seed1"
+
+
+def test_names_read_back():
+    assert R.parse_name("C06_mvitv2_s__grouped") == \
+        ("C06_mvitv2_s", "grouped", None)
+    assert R.parse_name("C06_mvitv2_s__grouped__seed12") == \
+        ("C06_mvitv2_s", "grouped", 12)
+    for odd in ("mimic_author", "C06__grouped__try2", "a__b__seed", "a__b__c__d"):
+        assert R.parse_name(odd) is None, odd
+    # every real name survives the round trip
+    for entry in R.ENTRIES:
+        for split in R.SPLITS:
+            for seed in (None, 3):
+                name = R.run_name(entry["id"], split, seed)
+                assert R.parse_name(name) == (entry["id"], split, seed)
+
+
+def test_a_repeat_differs_from_the_original_in_seed_alone():
+    entry = R.get("F02_multiscale_tf")
+    original = R.resolve(entry, "grouped")
+    repeat = R.resolve(entry, "grouped", seed=1)
+    assert repeat["name"] == "F02_multiscale_tf__grouped__seed1"
+    assert repeat["seed"] == 1
+    assert R.config_differences(original, repeat) == ["seed"]
+
+
+def test_a_repeat_with_the_original_seed_is_refused():
+    entry = R.get("C06_mvitv2_s")
+    with pytest.raises(ValueError, match="original run's"):
+        R.resolve(entry, "grouped", seed=R.resolve(entry, "grouped")["seed"])
+
+
 def test_methods_declare_what_they_read():
     for name in methods.KNOWN:
         module = methods.load(name)

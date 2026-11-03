@@ -79,6 +79,36 @@ def test_sorting_puts_the_best_first():
     assert text.index("P04_videomae") < text.index("P01_effnetv2s")
 
 
+def test_repeats_are_kept_apart_and_averaged():
+    rows = [_row("C06_mvitv2_s__grouped", 0.845),
+            _row("C06_mvitv2_s__grouped__seed1", 0.835),
+            _row("C06_mvitv2_s__grouped__seed2", 0.840)]
+    data = L.collect(rows)
+    # the table still shows the original; the repeats sit beside it
+    assert data["runs"][("C06_mvitv2_s", "grouped")]["best_val_top1"] == 0.845
+    assert sorted(data["repeats"][("C06_mvitv2_s", "grouped")]) == [1, 2]
+    assert data["unknown"] == {}
+    text = L.render(data)
+    line = ""
+    for candidate in text.splitlines():
+        if candidate.strip().startswith("C06_mvitv2_s") and "grouped" in candidate:
+            line = candidate
+    # mean 84.00, sd 0.50 over 84.5, 83.5, 84.0
+    assert "84.00" in line and "0.50" in line
+    assert "84.50 83.50 84.00" in line
+
+
+def test_spread_is_the_sample_sd():
+    assert L.spread([84.5, 83.5, 84.0]) == (84.0, 0.5)
+    assert L.spread([80.0]) == (80.0, 0.0)
+
+
+def test_repeats_follow_the_family_filter():
+    rows = [_row("C06_mvitv2_s__grouped__seed1", 0.835)]
+    assert "repeats" not in L.render(L.collect(rows, "B"))
+    assert "repeats" in L.render(L.collect(rows, "C"))
+
+
 def test_the_real_ledger_renders():
     data = L.collect(read_results("experiments/results.jsonl"))
     text = L.render(data)

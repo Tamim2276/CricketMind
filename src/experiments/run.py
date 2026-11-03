@@ -5,6 +5,7 @@
     python -m src.experiments.run --exp B01_effnetv2s --split grouped
     python -m src.experiments.run --family P
     python -m src.experiments.run --family A --dry_run
+    python -m src.experiments.run --exp C06_mvitv2_s --split grouped --seeds 1 2
 
 Safe to re-run after a power cut: a finished run is skipped, an interrupted
 one (resume.pt there) is resumed, and a run trained but not yet scored is
@@ -106,9 +107,9 @@ def _missing_reports(cfg, ckpt, folder=None):
     return missing
 
 
-def plan(entry, split, force=False, overrides=None):
+def plan(entry, split, force=False, overrides=None, seed=None):
     """What run_one would do, without doing any of it."""
-    cfg = R.resolve(entry, split, overrides)
+    cfg = R.resolve(entry, split, overrides, seed)
     name = cfg["name"]
     rows = _rows_named(cfg, name)
     resume = os.path.exists(os.path.join(run_dir(cfg), "resume.pt"))
@@ -246,10 +247,11 @@ def _report_card(cfg, out):
 
 
 def run_one(entry, split, force=False, dry_run=False, overrides=None,
-            quiet=False, out=sys.stdout):
+            quiet=False, out=sys.stdout, seed=None):
     """One ID on one split. Returns what it did: 'skipped', 'trained',
-    'resumed', 'adopted', 'scored', or 'planned' for a dry run."""
-    step = plan(entry, split, force, overrides)
+    'resumed', 'adopted', 'scored', or 'planned' for a dry run. With a
+    seed, a repeat of that run under its own name."""
+    step = plan(entry, split, force, overrides, seed)
     if dry_run:
         _describe(step, entry, out)
         return "planned"
@@ -294,9 +296,10 @@ def run_one(entry, split, force=False, dry_run=False, overrides=None,
 
 
 def run_many(ids, splits, force=False, dry_run=False, overrides=None,
-             quiet=False, out=sys.stdout):
+             quiet=False, out=sys.stdout, seeds=None):
     """Several IDs, each on each split, in registry order. IDs that cannot
-    start are named up front and left out; a crash in one stops the rest."""
+    start are named up front and left out; a crash in one stops the rest.
+    With seeds, each run is repeated once per seed instead."""
     chosen = []
     waiting = []
     for exp_id in ids:
@@ -312,12 +315,18 @@ def run_many(ids, splits, force=False, dry_run=False, overrides=None,
         for exp_id, state in waiting:
             out.write(f"  {exp_id:<20} {state}\n")
 
+    # one pass per seed, so seed 1 of every ID finishes before any seed 2
+    passes = [None]
+    if seeds:
+        passes = list(seeds)
     done = {}
-    for entry in chosen:
-        for split in splits:
-            what = run_one(entry, split, force=force, dry_run=dry_run,
-                           overrides=overrides, quiet=quiet, out=out)
-            done[what] = done.get(what, 0) + 1
+    for seed in passes:
+        for entry in chosen:
+            for split in splits:
+                what = run_one(entry, split, force=force, dry_run=dry_run,
+                               overrides=overrides, quiet=quiet, out=out,
+                               seed=seed)
+                done[what] = done.get(what, 0) + 1
 
     parts = []
     for what in sorted(done):
@@ -340,6 +349,9 @@ def main(argv=None):
                     help="say what would run, and write nothing")
     ap.add_argument("--force", action="store_true",
                     help="train again even if a row exists (needs --exp)")
+    ap.add_argument("--seeds", type=int, nargs="+",
+                    help="repeat each run with these seeds, beside the "
+                         "original (needs --exp)")
     args = ap.parse_args(argv)
 
     if args.list:
@@ -357,12 +369,15 @@ def main(argv=None):
         return 0
     if args.force and not args.exp:
         raise SystemExit("--force retrains; name the IDs with --exp")
+    if args.seeds and not args.exp:
+        raise SystemExit("--seeds repeats whole runs; name the IDs with --exp")
 
     if args.split:
         splits = [args.split]
     else:
         splits = list(R.SPLITS)
-    run_many(ids, splits, force=args.force, dry_run=args.dry_run)
+    run_many(ids, splits, force=args.force, dry_run=args.dry_run,
+             seeds=args.seeds)
     return 0
 
 

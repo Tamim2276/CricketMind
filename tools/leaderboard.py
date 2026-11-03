@@ -33,6 +33,7 @@ def collect(rows, family=None):
         known.add(entry["id"])
 
     runs = {}            # (id, split) -> latest row
+    repeats = {}         # (id, split) -> {seed: latest row}, other seeds
     earlier = {}         # name -> [latest row, how many]
     unknown = {}
     smoke = 0
@@ -42,11 +43,17 @@ def collect(rows, family=None):
             smoke += 1
             continue
         if "__" in name:
-            exp_id, split = name.split("__", 1)
-            if exp_id in known and split in R.SPLITS:
+            parsed = R.parse_name(name)
+            if parsed is None:
+                unknown[name] = row
+                continue
+            exp_id, split, seed = parsed
+            if exp_id not in known or split not in R.SPLITS:
+                unknown[name] = row
+            elif seed is None:
                 runs[(exp_id, split)] = row
             else:
-                unknown[name] = row
+                repeats.setdefault((exp_id, split), {})[seed] = row
             continue
         if name in earlier:
             earlier[name] = [row, earlier[name][1] + 1]
@@ -63,9 +70,49 @@ def collect(rows, family=None):
             if (entry["id"], split) not in runs:
                 pending.append((entry["id"], split))
 
-    return {"runs": runs, "earlier": earlier, "unknown": unknown,
-            "smoke": smoke, "pending": pending, "total": total,
-            "family": family}
+    return {"runs": runs, "repeats": repeats, "earlier": earlier,
+            "unknown": unknown, "smoke": smoke, "pending": pending,
+            "total": total, "family": family}
+
+
+def spread(values):
+    """Mean and sample standard deviation (n - 1), in the values' units."""
+    mean = sum(values) / len(values)
+    if len(values) < 2:
+        return mean, 0.0
+    total = 0.0
+    for v in values:
+        total += (v - mean) ** 2
+    return mean, (total / (len(values) - 1)) ** 0.5
+
+
+def _repeat_lines(data):
+    """Each repeated run: the original first, then each seed, and the
+    mean and sd over all of them, in points. Empty if none to show."""
+    lines = []
+    for exp_id, split in sorted(data["repeats"]):
+        if data["family"] is not None and \
+                R.family_of(exp_id) != data["family"]:
+            continue
+        values = []
+        original = data["runs"].get((exp_id, split))
+        if original is not None:
+            values.append(100 * original["best_val_top1"])
+        seeds = data["repeats"][(exp_id, split)]
+        for seed in sorted(seeds):
+            values.append(100 * seeds[seed]["best_val_top1"])
+        mean, sd = spread(values)
+        each = ""
+        for v in values:
+            each += f" {v:.2f}"
+        lines.append(f"   {exp_id:<22}{split:>8}{len(values):>6}"
+                     f"{mean:>8.2f}{sd:>7.2f}  {each}")
+    if not lines:
+        return []
+    head = ["repeats: the same run with other seeds; mean and sd over all",
+            f"   {'id':<22}{'split':>8}{'runs':>6}{'mean':>8}{'sd':>7}"
+            f"   each (original first)"]
+    return head + lines
 
 
 def _cell(row):
@@ -128,6 +175,11 @@ def render(data, sort_by=None):
         if data["family"] is not None and fam != data["family"]:
             continue
         lines.extend(_family_lines(fam, data, sort_by))
+        lines.append("")
+
+    repeat = _repeat_lines(data)
+    if repeat:
+        lines.extend(repeat)
         lines.append("")
 
     pending = data["pending"]

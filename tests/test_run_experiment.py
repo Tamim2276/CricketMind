@@ -299,9 +299,10 @@ def test_every_real_ledger_row_still_means_what_it_meant():
         name = row.get("name", "")
         if "__" not in name:
             continue
-        exp_id, split = name.split("__", 1)
+        exp_id, split, seed = R.parse_name(name)
         entry = R.get(exp_id)
-        differ = R.config_differences(row["cfg"], R.resolve(entry, split))
+        differ = R.config_differences(row["cfg"],
+                                      R.resolve(entry, split, seed=seed))
         assert differ == [], (name, differ)
         checked += 1
     assert checked > 0
@@ -315,6 +316,50 @@ def test_a_different_seed_changes_the_numbers(harness):
     harness["over"]["seed"] = 7
     _run(harness, "X02_mlp", force=True)
     assert _history(harness, name) != first_history
+
+
+# ---- Days 38-40: repeats with other seeds ------------------------------------------
+
+def test_a_repeat_trains_beside_the_original_and_leaves_it_alone(harness):
+    _run(harness, "X02_mlp")
+    original = _ledger(harness)[-1]
+    first_history = _history(harness, "X02_mlp__author")
+
+    what, _ = _run(harness, "X02_mlp", seed=7)
+    assert what == "trained"
+    rows = _ledger(harness)
+    assert len(rows) == 2
+    assert rows[0] == original
+    repeat = rows[1]
+    assert repeat["name"] == "X02_mlp__author__seed7"
+    assert repeat["cfg"]["seed"] == 7
+    for part in ("val", "test"):
+        assert os.path.exists(os.path.join(
+            _folder(harness, "X02_mlp__author__seed7"), f"report_{part}.json"))
+    # the original's folder is untouched, and the seed did change the run
+    assert _history(harness, "X02_mlp__author") == first_history
+    assert _history(harness, "X02_mlp__author__seed7") != first_history
+
+    what, text = _run(harness, "X02_mlp", seed=7)
+    assert what == "skipped"
+    assert "X02_mlp__author__seed7: already done" in text
+
+
+def test_seeds_run_in_passes_and_skip_the_original(harness):
+    buf = io.StringIO()
+    runner.run_many(["X01_linear", "X02_mlp"], ["grouped"], dry_run=True,
+                    overrides=harness["over"], quiet=True, out=buf, seeds=[1, 2])
+    order = []
+    for line in buf.getvalue().splitlines():
+        if line.startswith("X0") and ": train" in line:
+            order.append(line.split(":")[0])
+    assert order == ["X01_linear__grouped__seed1", "X02_mlp__grouped__seed1",
+                     "X01_linear__grouped__seed2", "X02_mlp__grouped__seed2"]
+
+
+def test_seeds_need_named_ids():
+    with pytest.raises(SystemExit, match="--seeds"):
+        runner.main(["--family", "C", "--seeds", "1"])
 
 
 # ---- 9.5: the report card comes with the scores ---------------------------

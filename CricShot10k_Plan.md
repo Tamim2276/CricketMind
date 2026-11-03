@@ -5668,6 +5668,29 @@ seeds** and report mean ± std.
 
 **Check:** every tuning run is also a ledger row.
 
+**Built 2026-11-03: repeats with other seeds.** The top 3 by grouped val
+are C06 MViT-v2-S (84.51), C04 SlowFast (83.81) and F02 (83.43). C06's
+lead over C04 (0.7) and places 2 to 4 (0.7 apart) are all under one
+run's wobble of ~1.5. **Grouped only for now** (your call;
+author later if there is time). Seeds 1 and 2 join the original's 42.
+1. `registry.run_name(id, split, seed)` names a repeat
+   `C06_mvitv2_s__grouped__seed1`, beside the original, which is never
+   touched; `parse_name` reads a name back. `resolve(..., seed=)` refuses
+   the original's own seed, and a repeat differs from its original in
+   `seed` alone (tested).
+2. `run.py --seeds 1 2` (with `--exp` only, like `--force`): one pass per
+   seed, so every model has two runs before any has three. Resumable and
+   skippable like any run.
+3. `tools/leaderboard.py` prints a **repeats** table: each run's val, the
+   original first, then the mean and the sample sd.
+
+```bash
+python -m src.experiments.run --exp C06_mvitv2_s C04_slowfast_r50 F02_multiscale_tf --split grouped --seeds 1 2
+```
+
+Six runs, about **28 GPU-hours** (C06 ~5.6, C04 ~4.3, F02 ~4 each); the
+first pass, ~14 h, already gives every model two runs.
+
 ## Day 41 — Ensembles and test-time augmentation
 
 - Soft-vote the top 3 (different backbones ensemble better than similar ones)
