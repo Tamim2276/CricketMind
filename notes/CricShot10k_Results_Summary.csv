@@ -1,104 +1,115 @@
-﻿"CricShot10k: cricket shot classification, results summary"
-"15 shot classes; 10,091 clips from 534 source videos. All scores are top-1 accuracy (%)."
+﻿CricShot10k Cricket Shot Classification: Results Summary
+"15 shot classes | 10,091 video clips | 534 source videos | all scores are top-1 accuracy (%)"
 
-1. DATA SPLITS
-Item,Author split,Grouped split
-Definition,The split protocol of Dihan et al. (the published 89.09% baseline),A stricter split built for this study
-Grouping rule,"Clips of the same shot type from the same source video stay in one part; a source video's other shot types may appear in train, validation and test",Every source video (match) is placed wholly in one part
-Proportions,"64% train, 16% validation, 20% test","64% train, 16% validation, 20% test"
+SECTION 1: DATA SPLITS
+,Author split,Grouped split
+How clips are grouped,"Clips of one shot type from one source video are kept together; the same video's other shot types can appear in train, validation and test",All clips from one source video (match) are kept together in a single part
+Purpose,The protocol of Dihan et al.; directly comparable with their published 89.09%,Measures generalisation to matches never seen in training; the more reliable estimate
+Proportions (train / validation / test),64% / 16% / 20%,64% / 16% / 20%
 Clips (train / validation / test),"6,466 / 1,614 / 2,011","6,462 / 1,612 / 2,017"
 Source videos (train / validation / test),532 / 369 / 384,349 / 83 / 102
-Test source videos also present in training,382 of 384 (99.5%),0 of 102 (0%)
-What it measures,"Recognition of shots from matches already seen in training (same ground, batter, kit and camera)","Recognition of shots from matches never seen in training, i.e. generalisation to new footage"
-Why it is reported,Directly comparable with the published result,The more reliable estimate of real-world accuracy
+Test source videos also seen in training,382 of 384 (99.5%),0 of 102 (0%)
 
-2. MODEL FAMILIES
-Family,Name,Approach,Question addressed
-P,Linear probes,"A single linear layer trained on frozen features from five pretrained image, video and image-text networks",How much shot information do off-the-shelf features already contain?
-A,Temporal heads,"Frozen EfficientNetV2-S frame features; only the temporal model (pooling, GRU, LSTM, transformer, TCN, NetVLAD) is trained",Which method of combining the 15 frames over time works best?
-D,Classical classifiers,"Logistic regression, SVM, random forest, XGBoost, k-NN and MLP on frozen, frame-averaged EfficientNetV2-S features",Do classical machine-learning methods match neural heads on the same features?
-V,Frozen pretrained backbones,"Features from video models pretrained on Kinetics-400 and from image models (CLIP, DINOv2), frozen, with a small MLP classifier",Does video pretraining give better features than image pretraining?
-B,"Image CNNs, end to end","Eight image backbones fine-tuned end to end, each followed by the authors' GRU-128 head (CNN + GRU)",Which per-frame backbone works best when fully trained?
-C,"Video models, end to end","Eight 3D CNNs and video transformers pretrained on Kinetics-400, fine-tuned end to end",Do models that see motion directly outperform per-frame CNNs?
-R,Reproduction of the authors' method,"The authors' training recipe, ported from their published notebooks, run on a replica of their preprocessing and on ours; and our B01 training run on their preprocessing",Can the published method and result be reproduced?
-E,Pose,"MediaPipe body keypoints of the batter, classified alone or combined with RGB features",Does explicit body pose improve recognition?
-W,"Bat, ball and motion","Bat and ball trajectories from YOLO detectors, optical flow (RAFT) and frame differences",Can compact physical and motion signals compete with raw pixels?
-F,Multi-scale and hybrid,"The B01 baseline with one change each (multi-scale features, transformer head, second input resolution, attention over the GRU), and a two-stream RGB + optical-flow fusion",Does a richer encoder or head improve the CNN + GRU baseline?
+SECTION 2: MODEL FAMILIES
+Family,Approach,Question addressed
+P - Linear probes,"One linear layer trained on frozen features from five pretrained image, video and image-text networks",How much shot information do ready-made features contain?
+A - Temporal heads,Frozen EfficientNetV2-S frame features; only the model that combines the 15 frames over time is trained,Which way of combining frames over time works best?
+D - Classical classifiers,"Logistic regression, SVM, random forest, XGBoost, k-NN and MLP on frozen, frame-averaged EfficientNetV2-S features",Do classical methods match neural networks on the same features?
+V - Frozen pretrained backbones,"Frozen features from video models (Kinetics-400) and image models (CLIP, DINOv2), with a small MLP classifier",Does video pretraining give better features than image pretraining?
+"B - Image CNNs, end to end","Eight image backbones fine-tuned end to end, each with the authors' GRU-128 head (CNN + GRU)",Which per-frame backbone works best when fully trained?
+"C - Video models, end to end","Eight 3D CNNs and video transformers pretrained on Kinetics-400, fine-tuned end to end",Do models that see motion directly beat per-frame CNNs?
+R - Reproduction of the authors' method,"The authors' training recipe, ported from their published notebooks, on their preprocessing and on ours; and our B01 on their preprocessing",Can the published method and result be reproduced?
+E - Pose,"MediaPipe body keypoints of the batter, used alone or combined with RGB features",Does explicit body pose improve recognition?
+"W - Bat, ball and motion","Bat and ball trajectories from YOLO detectors, optical flow (RAFT) and frame differences",Can compact physical and motion signals compete with raw pixels?
+F - Multi-scale and hybrid,"The B01 baseline with one change each, and a two-stream RGB + optical flow fusion",Does a richer encoder or head improve the CNN + GRU baseline?
 
-"3. RESULTS (top-1 accuracy, %)"
-Family,ID,Model,Author split: Train,Author split: Validation,Author split: Test,Grouped split: Train,Grouped split: Validation,Grouped split: Test
-P,P01,Linear probe on EfficientNetV2-S features (ImageNet),50.95,40.66,Held out,53.80,44.42,Held out
-P,P02,Linear probe on ConvNeXt-T features (ImageNet),66.76,49.49,Held out,61.42,51.56,Held out
-P,P03,Linear probe on R3D-18 features (Kinetics-400),49.78,41.41,Held out,52.89,43.59,Held out
-P,P04,Linear probe on VideoMAE-B features (Kinetics-400),60.02,52.21,Held out,61.31,56.98,Held out
-P,P05,Linear probe on CLIP ViT-B/16 features,50.38,39.14,Held out,55.98,42.96,Held out
-A,A01,Mean pooling over frames,99.02,52.78,Held out,97.84,58.19,Held out
-A,A02,Max pooling over frames,98.53,56.19,Held out,95.65,59.27,Held out
-A,A03,"GRU, 128 units (the authors' head)",66.11,51.96,Held out,66.39,54.11,Held out
-A,A04,"GRU, 64 units",68.35,52.53,Held out,58.39,49.52,Held out
-A,A05,"Bidirectional GRU, 128 units",69.95,55.93,Held out,70.63,56.15,Held out
-A,A06,"LSTM, 64 units",70.36,47.92,Held out,79.38,52.77,Held out
-A,A07,"Bidirectional LSTM, 64 units",72.99,53.09,Held out,77.98,49.78,Held out
-A,A08,"Transformer, 2 layers, 4 heads",94.18,66.22,Held out,96.69,68.96,Held out
-A,A09,"Transformer, 4 layers, 8 heads",97.67,68.81,Held out,97.84,70.11,Held out
-A,A10,Temporal convolutional network (TCN),96.30,67.17,Held out,94.61,69.66,Held out
-A,A11,Attention pooling,87.23,64.90,Held out,93.45,68.13,Held out
-A,A12,NetVLAD,95.93,65.03,Held out,90.00,63.54,Held out
-A,A13,GRU-128 with layer-normalised features,57.64,49.43,Held out,60.21,52.71,Held out
-A,A14,GRU-128 on average-pooled features,88.24,62.44,Held out,88.96,63.10,Held out
-D,D01,Logistic regression,100.00,42.49,Held out,99.98,45.70,Held out
-D,D02,Support vector machine (RBF kernel),79.72,34.79,Held out,78.32,40.47,Held out
-D,D03,Random forest,100.00,27.21,Held out,99.98,29.32,Held out
-D,D04,XGBoost,100.00,36.17,Held out,99.98,41.56,Held out
-D,D05,k-nearest neighbours,43.10,18.50,Held out,42.11,23.07,Held out
-D,D06,Multilayer perceptron,93.83,39.39,Held out,93.17,44.17,Held out
-V,V01,R3D-18 (Kinetics-400),71.85,45.58,Held out,70.85,46.91,Held out
-V,V02,MC3-18 (Kinetics-400),66.28,52.71,Held out,69.27,55.07,Held out
-V,V03,R(2+1)D-18 (Kinetics-400),68.01,45.90,Held out,65.85,49.59,Held out
-V,V04,S3D (Kinetics-400),63.43,41.48,Held out,61.96,46.21,Held out
-V,V05,Video Swin-T (Kinetics-400),87.50,55.74,Held out,76.61,57.43,Held out
-V,V06,MViTv2-S (Kinetics-400),61.88,51.70,Held out,61.75,54.49,Held out
-V,V07,VideoMAE-B (Kinetics-400),81.41,61.68,Held out,80.43,67.18,Held out
-V,V08,TimeSformer-B (Kinetics-400),91.31,50.51,Held out,97.78,57.81,Held out
-V,V09,"CLIP ViT-B/16, per frame",77.90,46.46,Held out,72.89,49.71,Held out
-V,V10,"DINOv2-B, per frame",88.04,61.36,Held out,88.79,64.18,Held out
-B,B01,EfficientNetV2-S + GRU-128 (the authors' architecture; baseline),83.51,79.23,78.14,77.33,77.69,75.23
-B,B02,EfficientNetV2-B3 + GRU-128,91.00,77.02,Held out,86.32,78.84,Held out
-B,B03,Xception + GRU-128,98.37,79.92,Held out,96.80,80.82,Held out
-B,B04,ConvNeXt-T + GRU-128,99.35,80.24,Held out,98.12,81.52,Held out
-B,B05,MobileNetV3-L + GRU-128,98.72,75.00,Held out,97.76,77.76,Held out
-B,B06,ResNet-50 + GRU-128,98.94,77.53,Held out,98.28,80.18,Held out
-B,B07,RegNetY-16GF + GRU-128,98.58,77.90,Held out,98.55,79.67,Held out
-B,B08,Swin-T + GRU-128,86.90,78.41,Held out,89.87,79.54,Held out
-C,C01,R(2+1)D-18,99.60,80.49,Held out,94.76,79.67,Held out
-C,C02,R3D-18,99.79,78.35,Held out,99.64,79.16,Held out
-C,C03,I3D (ResNet-50),98.53,77.90,Held out,99.84,80.62,Held out
-C,C04,SlowFast (ResNet-50),100.00,81.69,Held out,99.98,83.81,Held out
-C,C05,X3D-M,99.98,81.19,Held out,99.86,83.11,Held out
-C,C06,MViTv2-S,99.73,83.40,Held out,99.73,84.51,Held out
-C,C07,Video Swin-T,99.16,81.31,Held out,99.89,82.03,Held out
-C,C08,VideoMAE-B,99.40,80.87,Held out,100.00,82.92,Held out
-R,R01,Authors' recipe (ported) on a replica of their preprocessing,86.85,76.77,Held out,85.41,77.44,Held out
-R,R02,Authors' recipe (ported) on our preprocessing,88.01,79.17,Held out,88.01,78.65,Held out
-R,R03,Our B01 training on a replica of their preprocessing,85.47,75.44,Held out,88.86,78.14,Held out
-E,E01,Pose keypoints + GRU-128,66.58,65.72,Held out,64.56,65.71,Held out
-E,E02,ST-GCN (spatial-temporal graph network) on pose keypoints,46.01,48.67,Held out,47.03,50.86,Held out
-E,E03,"Late fusion of A09 (RGB) and E01 (pose), averaged probabilities",n/a,72.73,Held out,n/a,73.49,Held out
-E,E04,Cross-attention between pose and RGB features,86.93,63.83,Held out,88.06,68.07,Held out
-W,W01,Optical flow (RAFT) + R3D-18,99.91,74.18,Held out,99.05,76.04,Held out
-W,W02,Bat trajectory + GRU-128,53.29,51.01,Held out,51.06,52.84,Held out
-W,W03,Ball trajectory + GRU-128,21.28,23.30,Held out,23.11,25.81,Held out
-W,W04,"Bat, ball and pose trajectories + GRU-128",68.58,67.05,Held out,72.24,70.24,Held out
-W,W05,Frame differences + R3D-18,99.81,75.25,Held out,99.72,78.59,Held out
-F,F01,B01 + multi-scale features (three EfficientNetV2-S stages),81.60,76.14,Held out,80.68,78.14,Held out
-F,F02,"F01 with a transformer head (2 layers, 4 heads)",98.59,80.68,Held out,98.52,83.43,Held out
-F,F03,"Two-stream fusion of C02 (RGB) and W01 (optical flow), averaged probabilities",n/a,79.61,Held out,n/a,80.94,Held out
-F,F04,B01 + a second input resolution (224 and 112 pixels),84.95,76.58,Held out,93.61,79.60,Held out
-F,F05,B01 + attention over all GRU steps,88.40,78.91,Held out,80.87,81.13,Held out
+"SECTION 3: RESULTS (top-1 accuracy, %)"
+,Author split,,,Grouped split,,
+Model,Train,Validation,Test,Train,Validation,Test
+P - Linear probes
+P01 - Linear probe on EfficientNetV2-S features (ImageNet),50.95,40.66,Held out,53.80,44.42,Held out
+P02 - Linear probe on ConvNeXt-T features (ImageNet),66.76,49.49,Held out,61.42,51.56,Held out
+P03 - Linear probe on R3D-18 features (Kinetics-400),49.78,41.41,Held out,52.89,43.59,Held out
+P04 - Linear probe on VideoMAE-B features (Kinetics-400),60.02,52.21,Held out,61.31,56.98,Held out
+P05 - Linear probe on CLIP ViT-B/16 features,50.38,39.14,Held out,55.98,42.96,Held out
+A - Temporal heads
+A01 - Mean pooling over frames,99.02,52.78,Held out,97.84,58.19,Held out
+A02 - Max pooling over frames,98.53,56.19,Held out,95.65,59.27,Held out
+"A03 - GRU, 128 units (the authors' head)",66.11,51.96,Held out,66.39,54.11,Held out
+"A04 - GRU, 64 units",68.35,52.53,Held out,58.39,49.52,Held out
+"A05 - Bidirectional GRU, 128 units",69.95,55.93,Held out,70.63,56.15,Held out
+"A06 - LSTM, 64 units",70.36,47.92,Held out,79.38,52.77,Held out
+"A07 - Bidirectional LSTM, 64 units",72.99,53.09,Held out,77.98,49.78,Held out
+"A08 - Transformer, 2 layers, 4 heads",94.18,66.22,Held out,96.69,68.96,Held out
+"A09 - Transformer, 4 layers, 8 heads",97.67,68.81,Held out,97.84,70.11,Held out
+A10 - Temporal convolutional network (TCN),96.30,67.17,Held out,94.61,69.66,Held out
+A11 - Attention pooling,87.23,64.90,Held out,93.45,68.13,Held out
+A12 - NetVLAD,95.93,65.03,Held out,90.00,63.54,Held out
+A13 - GRU-128 with layer-normalised features,57.64,49.43,Held out,60.21,52.71,Held out
+A14 - GRU-128 on average-pooled features,88.24,62.44,Held out,88.96,63.10,Held out
+D - Classical classifiers
+D01 - Logistic regression,100.00,42.49,Held out,99.98,45.70,Held out
+D02 - Support vector machine (RBF kernel),79.72,34.79,Held out,78.32,40.47,Held out
+D03 - Random forest,100.00,27.21,Held out,99.98,29.32,Held out
+D04 - XGBoost,100.00,36.17,Held out,99.98,41.56,Held out
+D05 - k-nearest neighbours,43.10,18.50,Held out,42.11,23.07,Held out
+D06 - Multilayer perceptron,93.83,39.39,Held out,93.17,44.17,Held out
+V - Frozen pretrained backbones
+V01 - R3D-18 (Kinetics-400),71.85,45.58,Held out,70.85,46.91,Held out
+V02 - MC3-18 (Kinetics-400),66.28,52.71,Held out,69.27,55.07,Held out
+V03 - R(2+1)D-18 (Kinetics-400),68.01,45.90,Held out,65.85,49.59,Held out
+V04 - S3D (Kinetics-400),63.43,41.48,Held out,61.96,46.21,Held out
+V05 - Video Swin-T (Kinetics-400),87.50,55.74,Held out,76.61,57.43,Held out
+V06 - MViTv2-S (Kinetics-400),61.88,51.70,Held out,61.75,54.49,Held out
+V07 - VideoMAE-B (Kinetics-400),81.41,61.68,Held out,80.43,67.18,Held out
+V08 - TimeSformer-B (Kinetics-400),91.31,50.51,Held out,97.78,57.81,Held out
+"V09 - CLIP ViT-B/16, per frame",77.90,46.46,Held out,72.89,49.71,Held out
+"V10 - DINOv2-B, per frame",88.04,61.36,Held out,88.79,64.18,Held out
+"B - Image CNNs, end to end"
+"B01 - EfficientNetV2-S + GRU-128 (the authors' architecture, baseline)",83.51,79.23,78.14,77.33,77.69,75.23
+B02 - EfficientNetV2-B3 + GRU-128,91.00,77.02,Held out,86.32,78.84,Held out
+B03 - Xception + GRU-128,98.37,79.92,Held out,96.80,80.82,Held out
+B04 - ConvNeXt-T + GRU-128,99.35,80.24,Held out,98.12,81.52,Held out
+B05 - MobileNetV3-L + GRU-128,98.72,75.00,Held out,97.76,77.76,Held out
+B06 - ResNet-50 + GRU-128,98.94,77.53,Held out,98.28,80.18,Held out
+B07 - RegNetY-16GF + GRU-128,98.58,77.90,Held out,98.55,79.67,Held out
+B08 - Swin-T + GRU-128,86.90,78.41,Held out,89.87,79.54,Held out
+"C - Video models, end to end"
+C01 - R(2+1)D-18,99.60,80.49,Held out,94.76,79.67,Held out
+C02 - R3D-18,99.79,78.35,Held out,99.64,79.16,Held out
+C03 - I3D (ResNet-50),98.53,77.90,Held out,99.84,80.62,Held out
+C04 - SlowFast (ResNet-50),100.00,81.69,Held out,99.98,83.81,Held out
+C05 - X3D-M,99.98,81.19,Held out,99.86,83.11,Held out
+C06 - MViTv2-S,99.73,83.40,Held out,99.73,84.51,Held out
+C07 - Video Swin-T,99.16,81.31,Held out,99.89,82.03,Held out
+C08 - VideoMAE-B,99.40,80.87,Held out,100.00,82.92,Held out
+R - Reproduction of the authors' method
+R01 - Authors' recipe (ported) on a replica of their preprocessing,86.85,76.77,Held out,85.41,77.44,Held out
+R02 - Authors' recipe (ported) on our preprocessing,88.01,79.17,Held out,88.01,78.65,Held out
+R03 - Our B01 training on a replica of their preprocessing,85.47,75.44,Held out,88.86,78.14,Held out
+E - Pose
+E01 - Pose keypoints + GRU-128,66.58,65.72,Held out,64.56,65.71,Held out
+E02 - ST-GCN (spatial-temporal graph network) on pose keypoints,46.01,48.67,Held out,47.03,50.86,Held out
+"E03 - Fusion of A09 (RGB) and E01 (pose), averaged probabilities",n/a,72.73,Held out,n/a,73.49,Held out
+E04 - Cross-attention between pose and RGB features,86.93,63.83,Held out,88.06,68.07,Held out
+"W - Bat, ball and motion"
+W01 - Optical flow (RAFT) + R3D-18,99.91,74.18,Held out,99.05,76.04,Held out
+W02 - Bat trajectory + GRU-128,53.29,51.01,Held out,51.06,52.84,Held out
+W03 - Ball trajectory + GRU-128,21.28,23.30,Held out,23.11,25.81,Held out
+"W04 - Bat, ball and pose trajectories + GRU-128",68.58,67.05,Held out,72.24,70.24,Held out
+W05 - Frame differences + R3D-18,99.81,75.25,Held out,99.72,78.59,Held out
+F - Multi-scale and hybrid
+F01 - B01 + multi-scale features (three EfficientNetV2-S stages),81.60,76.14,Held out,80.68,78.14,Held out
+"F02 - F01 with a transformer head (2 layers, 4 heads)",98.59,80.68,Held out,98.52,83.43,Held out
+"F03 - Fusion of C02 (RGB) and W01 (optical flow), averaged probabilities",n/a,79.61,Held out,n/a,80.94,Held out
+F04 - B01 + a second input resolution (224 and 112 pixels),84.95,76.58,Held out,93.61,79.60,Held out
+F05 - B01 + attention over all GRU steps,88.40,78.91,Held out,80.87,81.13,Held out
 
 NOTES
 Train,"Accuracy on the training clips at the epoch whose weights were kept, measured during training with random horizontal flips. Classical models (D): accuracy of the fitted model on the training clips. E03 and F03 are not trained; they average the outputs of two trained models (n/a)."
 Validation,"Accuracy on the validation clips. Every model choice (early stopping, kept weights, fusion members) was made on validation only."
-Test,"Scored once per model and held out until the final model is selected, so that the reported test result is unbiased. B01's test result is shown because it is the reproduction of the published baseline."
+Test,"Scored once per model and held out until the final model is selected, so that the reported test result is unbiased. B01's test result is shown because it reproduces the published baseline."
+Bold,"In the spreadsheet version, the best validation score within each family is shown in bold."
 Variation,Each model was trained once (one random seed). Differences of less than about 1.5 points between two models are within run-to-run variation.
 Excluded clips,Clips in which no batter could be detected (about 2%) are excluded by every model.
+Source,All numbers come from the project's experiment records: the results ledger and each run's validation report and training history.
