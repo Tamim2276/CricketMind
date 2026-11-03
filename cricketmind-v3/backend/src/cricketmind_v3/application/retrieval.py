@@ -1,7 +1,6 @@
 """N7a: the balls each side of a question is about (Day 60)."""
 
 from cricketmind_v3.application.ports import DeliveryRepository, FilterError
-from cricketmind_v3.domain.balls import tally
 from cricketmind_v3.domain.evidence import Evidence, sides
 from cricketmind_v3.domain.registry import is_empty
 from cricketmind_v3.domain.subject import CricketSubject
@@ -40,4 +39,4 @@ def _one_side(
         return Evidence(subject=side, none_because=str(error))
     if not balls:
         return Evidence(subject=side, none_because=NO_BALLS)
-    return Evidence(subject=side, count=len(balls), balls=tally(balls))
+    return Evidence(subject=side, count=len(balls))

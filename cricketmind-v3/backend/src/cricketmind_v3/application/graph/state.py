@@ -12,6 +12,7 @@ from cricketmind_v3.domain.findings import Finding
 from cricketmind_v3.domain.question_context import QuestionContext
 from cricketmind_v3.domain.reading import Reading
 from cricketmind_v3.domain.receipts import Receipt
+from cricketmind_v3.domain.routing import Routing
 from cricketmind_v3.domain.shot_dna import ShotDNA
 from cricketmind_v3.domain.subject import CricketSubject
 
@@ -33,6 +34,7 @@ class GraphState(TypedDict, total=False):
     answers: Annotated[list[Answer], operator.add]
     # agent -> the measures it has numbers for; an agent left out cannot answer (Day 62)
     capable: dict[str, tuple[str, ...]]
+    routing: Routing  # who answers, at most four, and why (N10, Day 63)
     # what the agents hand in, side by side; none writes here until Day 73
     findings: Annotated[list[Finding], operator.add]
     # (agent, claim) -> the receipt of the gate's own question, for N13 (D-052)

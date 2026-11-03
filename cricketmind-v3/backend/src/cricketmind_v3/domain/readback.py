@@ -4,6 +4,7 @@ check: what it cannot say, and what can be asked instead.
 """
 
 from cricketmind_v3.domain.reading import Reading
+from cricketmind_v3.domain.subject import CricketSubject
 
 KIND_WORDS = {
     "stats": "a question about what happened",
@@ -25,11 +26,13 @@ INNINGS_WORDS = {
 }
 
 
-def read_back(reading: Reading) -> str:
-    """ "I read this as: a prediction: V Kohli, out within 6 balls, T20, the powerplay,
-    against pace." Then what is asked back, and who is unknown."""
-    subject = reading.subject
-    shown = dict(reading.shown)  # a register id -> who he is
+def subject_words(
+    subject: CricketSubject, shown: dict[str, str] | None = None
+) -> list[str]:
+    """A subject in words: V Kohli, out within 6 balls, T20, the powerplay, against pace.
+    `shown` says who a register id is."""
+    if shown is None:
+        shown = {}
     parts = []
     if subject.player is not None:
         parts.append(shown.get(subject.player, subject.player))
@@ -77,7 +80,13 @@ def read_back(reading: Reading) -> str:
         parts.append(f"on {subject.date}")
     if subject.side is not None:
         parts.append(f"reviews by the {subject.side} side")
+    return parts
 
+
+def read_back(reading: Reading) -> str:
+    """ "I read this as: a prediction: V Kohli, out within 6 balls, T20, the powerplay,
+    against pace." Then what is asked back, and who is unknown."""
+    parts = subject_words(reading.subject, dict(reading.shown))
     lines = []
     if parts:
         lines.append(f"I read this as: {KIND_WORDS[reading.kind]}: {', '.join(parts)}.")

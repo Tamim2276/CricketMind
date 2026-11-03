@@ -31,6 +31,7 @@ from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer
 from cricketmind_v3.domain.findings import Finding
 from cricketmind_v3.domain.names import Player
 from cricketmind_v3.domain.provenance import Provenance
+from cricketmind_v3.domain.routing import BY_MODEL, DEFAULT, NOBODY, PROPOSED
 from cricketmind_v3.domain.shot_dna import NO_CLIP, NOT_READ_YET
 from cricketmind_v3.domain.subject import CricketSubject
 
@@ -255,6 +256,77 @@ def test_with_no_engines_nobody_can_answer():
 def test_a_rule_reaches_the_explainer_through_the_filter():
     state = run_question("What is LBW?")
     assert state["capable"] == {"N11m": ()}
+
+
+def test_n10_chooses_from_those_who_can_answer():
+    # Day 63: the default pair, as nothing in the words points elsewhere
+    past = CricketSubject(
+        player="V Kohli", match_format="T20", phase="powerplay", bowler_type="pace"
+    )
+    engines = FakeFactSource()
+    engines.add("strike_rate", past, Fact(value=130.4, n=2855))
+    context = dataclasses.replace(CONTEXT, engines=engines)
+    state = build_graph().invoke({"question": QUESTION, "clip": None}, context=context)
+    assert state["routing"].chosen == ("N11b", "N11c")
+    assert state["routing"].how == DEFAULT
+
+
+def test_the_words_of_the_question_reach_the_router():
+    past = CricketSubject(player="V Kohli")
+    engines = FakeFactSource()
+    engines.add("strike_rate", past, Fact(value=130.4, n=2855))
+    context = dataclasses.replace(CONTEXT, engines=engines)
+    state = build_graph().invoke(
+        {"question": "Is Kohli a fantasy pick?", "clip": None}, context=context
+    )
+    assert state["routing"].chosen == ("N11e",)
+    assert state["routing"].how == PROPOSED
+
+
+def test_with_no_numbers_the_router_chooses_nobody():
+    routing = run()["routing"]
+    assert routing.chosen == ()
+    assert routing.how == NOBODY
+
+
+def test_a_rule_is_routed_to_the_explainer():
+    assert run_question("What is LBW?")["routing"].chosen == ("N11m",)
+
+
+def test_the_model_reads_the_question_and_then_proposes_who_answers():
+    # Day 64: one model, two jobs: N3's reading first, then N10's proposal
+    reading = dict.fromkeys(QuestionForm.model_fields)
+    reading.update(kind="stats", player="Kohli")
+    proposal = {"reason": "a fan's question", "agents": ["N11e", "N11k"]}
+    engines = FakeFactSource()
+    engines.add(
+        "strike_rate", CricketSubject(player="V Kohli"), Fact(value=130.4, n=2855)
+    )
+    llm = FakeLLM([json.dumps(reading), json.dumps(proposal)])
+    context = GraphContext(
+        llm=llm,
+        players=(Player(person_id="ba607b88", name="V Kohli", matches=600),),
+        engines=engines,
+    )
+    state = build_graph().invoke(
+        {"question": "Would you start Kohli in my team?", "clip": None}, context=context
+    )
+    routing = state["routing"]
+    assert routing.by == BY_MODEL
+    assert routing.chosen == ("N11e",)
+    assert routing.no_number == ("N11k",)
+    assert routing.reason == "a fan's question"
+    assert len(llm.asked) == 2
+    assert "Would you start Kohli in my team?" in llm.asked[1][1]
+    # the reason is for us: no answer shows it
+    assert "a fan's question" not in state["answer"]
+
+
+def test_every_agent_still_runs_until_day_73():
+    # the choice is only written down for now
+    visited = run()["visited"]
+    for agent in nodes.AGENTS:
+        assert agent.__name__ in visited
 
 
 def test_n3_reads_with_the_model_when_it_has_one():

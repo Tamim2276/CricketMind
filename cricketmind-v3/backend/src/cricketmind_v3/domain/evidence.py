@@ -1,13 +1,12 @@
-"""Evidence (N7a): the balls a subject is about, filed under that subject (Day 60).
+"""Evidence (N7a): how many balls a subject is about, filed under that subject (Day 60).
 
-Subject-keyed: Kohli's balls are filed under Kohli's subject, so a number counted from
-them can never be passed off as Rohit's.
+Subject-keyed: Kohli's count is filed under Kohli's subject, so it can never be passed off
+as Rohit's. The engines fetch their own balls; the router reads this count (Day 64).
 """
 
 import dataclasses
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from cricketmind_v3.domain.balls import Ball
 from cricketmind_v3.domain.registry import is_empty
 from cricketmind_v3.domain.subject import CricketSubject
 
@@ -16,8 +15,6 @@ from cricketmind_v3.domain.subject import CricketSubject
 class Evidence:
     subject: CricketSubject  # the key: exactly what these balls fit
     count: int = 0  # how many balls, wides included
-    # each different ball, and how often it happened (tally, Day 39)
-    balls: dict[Ball, int] = field(default_factory=dict)
     none_because: str | None = None  # why there are no balls, when there are none
 
 

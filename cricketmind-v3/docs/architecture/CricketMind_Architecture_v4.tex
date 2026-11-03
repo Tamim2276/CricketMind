@@ -736,9 +736,14 @@ reliability diagrams and the Brier score \cite{brier}.
 \subsection{N10 Supervisor Router}
 
 The router keeps Version~3's evidence summary, its capability filter, the cap of
-four active agents and the default pair. It now also routes by kind: stats,
-prediction and video questions go to the stakeholder agents, and rules questions
-go to the Explainer, which counts as one of the four.
+four active agents and the default pair. The language model proposes who should
+answer and fixed rules decide, so the cap and the filter hold whichever router
+proposed; if the model's reply does not fit twice, keywords in the question
+propose instead. The default pair answers only if it has numbers for the question:
+otherwise whoever can answer does, up to four. If no agent has a number, no agent
+runs, and the answer says so. The router also routes by kind: stats, prediction
+and video questions go to the stakeholder agents, and rules questions go to the
+Explainer, which counts as one of the four.
 
 \subsection{The Agents}
 

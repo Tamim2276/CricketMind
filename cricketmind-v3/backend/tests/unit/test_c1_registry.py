@@ -8,7 +8,7 @@ from cricketmind_v3.domain.provenance import Provenance
 from cricketmind_v3.domain.subject import CricketSubject
 from tests.examples import DOCUMENT_TEMPLATE, KOHLI_COVER_DRIVE, c1, c2
 
-# N11b (Tactical Analysis) may say these; passed in by hand until the agent specs (Day 65)
+# a short list by hand, so each test shows one thing; the real one is domain/roster.py
 ROSTER = Context(
     allowed={
         "N11b": (

@@ -8,7 +8,7 @@ from cricketmind_v3.application.harness import ROSTER as SYNTHETIC_ROSTER
 from cricketmind_v3.domain.provenance import Provenance
 from cricketmind_v3.domain.registry import CLAIM_TYPES, check_registry, lookup
 from cricketmind_v3.domain.render import METRICS
-from cricketmind_v3.domain.roster import ROSTER
+from cricketmind_v3.domain.roster import NAMES, ROSTER, STAKEHOLDERS
 
 D = Provenance.DESCRIPTIVE
 M = Provenance.MEASURED
@@ -111,6 +111,22 @@ def test_the_synthetic_harness_asks_only_for_what_the_real_roster_allows():
     for agent, names in SYNTHETIC_ROSTER.items():
         for name in names:
             assert name in ROSTER[agent], (agent, name)
+
+
+def test_every_agent_has_a_name_and_people_it_works_for():
+    assert set(NAMES) == set(ROSTER)
+    assert set(STAKEHOLDERS) == set(ROSTER)
+
+
+def test_the_names_are_the_architecture_documents():
+    root = Path(__file__).resolve().parents[3]
+    source = root / "docs" / "architecture" / "CricketMind_Architecture_v4.tex"
+    table = source.read_text(encoding="utf-8")
+    for agent in ROSTER:
+        if agent == "N11m":
+            assert "Anyone asking about rules & \\textbf{Explainer (N11m)}" in table
+        else:
+            assert f"{STAKEHOLDERS[agent]} & {NAMES[agent]} ({agent})" in table, agent
 
 
 def test_the_architecture_document_says_the_same_as_the_code():

@@ -62,8 +62,6 @@ def test_the_balls_are_filed_under_their_own_subject():
     (found,) = retrieve(KOHLI, "stats", repo)
     assert found.subject == KOHLI  # never Rohit's
     assert found.count == 4
-    assert found.balls[ball(0)] == 2  # the same ball twice, counted once with 2
-    assert len(found.balls) == 3
     assert found.none_because is None
     assert repo.asked == [KOHLI]
 

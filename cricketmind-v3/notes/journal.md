@@ -2509,3 +2509,63 @@ pair would have nothing to say.
 "Is Bumrah overworked?" names no date, so the medical agent is not called (L-078).
 **Tested:** 32 new tests, 876 in all; fourteen deliberate mistakes, all caught. The graph is drawn
 in `docs/graph/day62.md` (no arrow changed), and the notebook gains a Day 62 section.
+
+---
+
+## Day 63 — 2026-11-03 — Who should answer: a proposal ranks, the rules decide
+
+**Built:** `domain/routing.py` (D-084). Two stages, as in v2: a proposal says who should answer,
+best first, and fixed rules decide. Today the words of the question propose.
+**Changed from v2, each for a reason:** the default pair must have numbers, as "Bumrah in T20" has
+none for either; nobody with a number means nobody woken, which settles Day 62's open question;
+whole words only, as "form" was found in "format"; the lists are written again, as two roles have
+changed; and the record says why: who was chosen, how, and who was wanted but has no number.
+**Tried on the real database (read-only; subjects by hand, no model):** Kohli out within 6 balls:
+the default pair, of 8 who can answer. "Should I pick Kohli as my fantasy captain?": Fan Concierge.
+Bumrah in T20: Bowling Performance, the only one who can. **"Is Bumrah overworked in T20?": Bowling
+Performance, and it writes down that Injury Management was wanted but has no number (L-078).** A
+workload with its date: Injury Management. "Kohli: cover drive or pull?": nobody. "What is LBW?":
+the Explainer.
+**Found by the break-it run:** 20 of 21 caught. The miss showed that nothing tested the Explainer
+staying alone, and a rules question wrongly said a number was missing. Both are fixed and tested.
+**Tested:** 918 in all when the day ended. The plan's Days 73 and 75 now say what happens when
+nobody is chosen. The architecture's N10 text is corrected and the PDF compiled again (no errors).
+
+---
+
+## Day 64 — 2026-11-03 — The model proposes; the rules still decide
+
+**Built:** `application/router.py` (D-085). The model reads the question and an evidence summary,
+and fills a form of a reason and agents. The rules of Day 63 then decide, so it cannot wake anyone
+with no number or more than four. A reply that does not fit is asked again once, with the reason;
+then the words propose, and a note says so. With fewer than two to choose from, the model is not
+asked.
+**The summary:** the balls of each side, and each specialist's measures with numbers. No number
+from an engine is in it, by a test. A specialist with no numbers stays on the list, so a model can
+say the question is for it.
+**Open item settled:** nothing read N7a's tally of balls, so it keeps only the count.
+**Not done, and said plainly:** tested with a scripted fake, as the plan asks. **No real model has
+routed a question yet (L-080).** `scripts/route_questions.py` is written for the user to run when
+the GPU is free; it prints the model's choice beside the words', and scores nothing.
+**Tested:** 948 in all when the day ended; 23 deliberate mistakes, all caught.
+
+---
+
+## Day 65 — 2026-11-03 — What an agent is told
+
+**Built:** twelve files in `backend/prompts/`, one per agent (D-086), in four parts: who you work
+for, what they want, how you sound, what you never say. `shared_rules.txt` teaches the checks in
+plain words. `domain/agent_spec.py` joins them, and the measures come only from the roster.
+**Learned, on the real prompts:** say who the reader is, not only the task. Say what must never be
+said, as that is where v2 went wrong ("supports the current salary band"). Keep numbers and tone
+words out of a prompt, since a model copies what it sees. Keep one list of measures.
+**A real choice:** the rules first said "never type a number", but a chance's slot does not say how
+many balls it covers, so an honest sentence needs "within six balls". The rule now forbids figures
+and allows a number the question itself gave.
+**Promises kept:** L-020 (numbers in words, reduced, not closed), L-021 (no abbreviations), L-022
+(the judged side first), L-036 (the medical agent never gives an injury chance, and never says
+normal or safe).
+**Not done yet:** no model has read these prompts (L-081). Day 66 builds the factory, Day 67 is the
+first real run. A word limit I first put in a test was removed, as I had no evidence for any limit.
+**Tested:** 983 in all; 27 deliberate mistakes, all caught. The graphs are drawn in `docs/graph/day63.md`,
+`day64.md` and `day65.md` (no arrow changed), and the notebook gains a section for each day.

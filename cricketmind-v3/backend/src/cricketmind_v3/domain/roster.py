@@ -65,3 +65,35 @@ ROSTER: dict[str, tuple[str, ...]] = {
     # anyone asking about rules: words only
     "N11m": (),
 }
+
+# each agent's name, and the people it works for (Day 64)
+NAMES: dict[str, str] = {
+    "N11a": "Club Operations",
+    "N11b": "Tactical Analysis",
+    "N11c": "Personal Performance",
+    "N11d": "Global Scouting",
+    "N11e": "Fan Concierge",
+    "N11f": "Stadium Operations",
+    "N11g": "Bowling Performance",
+    "N11h": "Content Production",
+    "N11i": "Match Officials",
+    "N11j": "Talent Development",
+    "N11k": "Injury Management",
+    "N11l": "Player Representation",
+    "N11m": "Explainer",
+}
+STAKEHOLDERS: dict[str, str] = {
+    "N11a": "Franchises / Boards",
+    "N11b": "Coaches",
+    "N11c": "Players",
+    "N11d": "Scouts",
+    "N11e": "Fans",
+    "N11f": "Stadiums / curators",
+    "N11g": "Bowlers / bowling coaches",
+    "N11h": "Broadcasters / sponsors",
+    "N11i": "Governing bodies / umpires",
+    "N11j": "Academies",
+    "N11k": "Medical teams",
+    "N11l": "Player agents",
+    "N11m": "Anyone asking about rules",
+}

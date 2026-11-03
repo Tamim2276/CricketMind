@@ -1754,3 +1754,79 @@ Template:
   set); leaving out samples under C3's floor (the Faith Check allows them with a warning).
 - Status: built (Day 62). What to do when nobody can answer is Day 63's
 - Paper section: Method (the roster, invariant I2); Implementation (N10)
+
+## D-084 — N10: a proposal ranks, fixed rules decide, and nobody with numbers means nobody
+- Date: 2026-11-03
+- Decision: (1) N10 keeps v2's two stages: a proposal says who should answer, best first, and
+  fixed rules decide, the same whoever proposed. (2) The rules: only agents with a real number
+  for this question (D-083); at most four; a rules question to the Explainer alone. If nobody
+  proposed has a number, the default pair (N11b, N11c), but only those of the pair with numbers;
+  if neither has, whoever can answer, in roster order. If no agent has a number, nobody. (3) The
+  keyword proposal matches whole words, from lists written again for the v4 roster, and ranks by
+  the most different words, a tie in roster order. (4) `Routing` records who was chosen, how, who
+  proposed, the whole proposal, and who was wanted but has no number. Every agent still runs
+  until Day 73; the honest text when nobody can answer comes on Day 75.
+- Why: v2's "if nobody is left the default pair answers" would wake two agents with nothing to
+  say on "Bumrah in T20" and on "Kohli: cover drive or pull?". v2 matched parts of words, so
+  "form" was found in "format" and "performance". v2's lists name Sponsorship and Compliance,
+  since replaced (Bowling Performance, Match Officials). Writing down who was wanted gives Day 75
+  what it needs to say "name a date" for "Is Bumrah overworked?" (L-078).
+- Alternatives considered: copying v2's lists and matching; waking the default pair regardless;
+  scoring agents by their measures (the filter already does that, and a batter's question would
+  tie eight agents); using words to block an agent (the user objected to that on Day 59: here they
+  only rank, and cannot make a number or stop an answer).
+- Status: built (Day 63). The lists are judgments, and weak on reworded questions (L-079)
+- Paper section: Method (N10)
+
+## D-085 — N10 part 2: the model proposes from an evidence summary; N7a keeps the count
+- Date: 2026-11-03
+- Decision: (1) With a model, it reads the question and an evidence summary and fills a form: a
+  reason, and agents from the twelve ids, best first. The Explainer is not on the form: the kind
+  sends a rule there. D-084's rules then decide. (2) The summary gives the balls found for each
+  side, and each specialist's measures with numbers, or "no numbers". It holds no number from an
+  engine. A specialist with no numbers stays on the list, so a model can say the question is for
+  it, and that is written down. (3) A reply that does not fit is asked again once, with the
+  reason; if it fails again, the question's words propose, and a note says so. (4) With fewer than
+  two agents to choose from, the model is not asked: a call saved. The words still run, so who was
+  wanted is still written down. (5) The model's reason is kept for us; no answer shows it, as it
+  is unchecked. (6) This settles D-082's open item: N7a keeps its count and drops the tally of
+  balls, as nothing reads it. The engines fetch their own.
+- Why: N-006: in v2, on 12 reworded prompts, the model woke the intended agent 9 times and the
+  keywords 0. The rules running after the proposal mean a bad or misled model can cost a good
+  choice, but cannot wake an agent with no number or more than four.
+- Alternatives considered: showing the model only those with numbers (it could then never say a
+  question is for the medical team, which L-078 needs); capping the list in the form (a reply
+  with five is still useful, and the rule cuts it); keeping the tally "in case" (nothing planned
+  reads it).
+- Status: built (Day 64), tested with a scripted fake only, as the plan asks. No real model has
+  routed a question yet: `scripts/route_questions.py` is there for the user to run (L-080).
+  Measured on Days 170-173
+- Paper section: Method (N10); Evaluation (Days 170-173)
+
+## D-086 — The agents' prompts: a file for the voice, the roster for the measures
+- Date: 2026-11-03
+- Decision: (1) `backend/prompts/` has one plain text file for each of the twelve agents, named
+  after its node, in four parts: who you work for, what they want, how you sound, what you never
+  say. The Explainer's comes with it on Day 72. (2) The name and the stakeholder live in
+  `domain/roster.py`, as the router needs them too; the measures come only from the roster, so a
+  file can never widen what an agent may say. (3) `shared_rules.txt` teaches the checks in plain
+  words: C3, C4, C5, C6, C7, and the promises of L-020, L-021 and L-022. It says what the slot
+  already shows, so a sentence does not say it twice. A number from the question may be repeated
+  in words ("within six balls"), because a chance's slot does not say how many balls. (4)
+  `system_prompt` joins them, listing only the agent's measures with numbers for this question,
+  each with what its slot will say. (5) Tests: no digit, no tone word and no menu name in a voice;
+  the rules' example words are ones the checks accept, so a changed check fails the test; a file
+  missing, doubled or empty stops the program at the start.
+- Why: a number in a prompt is a number a model can copy into an answer. A tone word in a prompt
+  teaches a word C7 will reject. A second list of measures would drift from the roster. v2's
+  templates show the need: "supports the current salary band", "a strong captaincy pick" and "no
+  soft-tissue risk flag raised" all say what no data supports, so each agent now says what it
+  must never say. Files, not code, so a prompt can be read and tuned (Days 78, 177) with no
+  change to the program.
+- Alternatives considered: listing the measures in each file (two lists); the name and stakeholder
+  at the top of each file (the router would have to read the files); worked examples with made-up
+  numbers (a model copies them; to try on Day 78 if the rules alone are not enough); `.md` files
+  (the editor flags plain text as bad Markdown); a word limit on each voice (no evidence for any
+  limit: Day 78 can trim with real runs).
+- Status: built (Day 65). All twelve files written. No model has read them yet (L-081)
+- Paper section: Method (the agents; invariant I2)
