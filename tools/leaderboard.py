@@ -65,7 +65,7 @@ def collect(rows, family=None):
     for entry in R.ENTRIES:
         if family is not None and R.family_of(entry["id"]) != family:
             continue
-        for split in R.SPLITS:
+        for split in R.splits_of(entry):
             total += 1
             if (entry["id"], split) not in runs:
                 pending.append((entry["id"], split))
@@ -115,7 +115,9 @@ def _repeat_lines(data):
     return head + lines
 
 
-def _cell(row):
+def _cell(row, entry=None, split=None):
+    if entry is not None and split not in R.splits_of(entry):
+        return "- "             # this entry never runs on that split
     if row is None:
         return "pending "
     mark = " "                  # keeps the column straight
@@ -163,8 +165,10 @@ def _family_lines(fam, data, sort_by):
         if author is not None and grouped is not None:
             points = 100 * (author["best_val_top1"] - grouped["best_val_top1"])
             gap = f"{points:+.2f}"
-        lines.append(f"   {exp_id:<22}{_cell(author):>10}{_cell(grouped):>10}"
-                     f"{gap:>8}")
+        entry = R.get(exp_id)
+        left = _cell(author, entry, "author")
+        right = _cell(grouped, entry, "grouped")
+        lines.append(f"   {exp_id:<22}{left:>10}{right:>10}{gap:>8}")
     return lines
 
 
@@ -193,7 +197,7 @@ def render(data, sort_by=None):
         for exp_id, split in pending:
             seen.setdefault(exp_id, []).append(split)
         for exp_id in seen:
-            if len(seen[exp_id]) == len(R.SPLITS):
+            if len(seen[exp_id]) == len(R.splits_of(R.get(exp_id))):
                 both.append(exp_id)
             else:
                 one.append(f"{exp_id} ({seen[exp_id][0]})")

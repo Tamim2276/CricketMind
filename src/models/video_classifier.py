@@ -36,9 +36,12 @@ from src.models.video_encoder import (HF_KIND, HF_VIDEO, input_spec,
                                       is_video, needed_frames,
                                       resample_frames)
 
-__all__ = ["VideoClassifier", "PYTORCHVIDEO", "known_video"]
+__all__ = ["VideoClassifier", "PYTORCHVIDEO", "TUNABLE", "known_video"]
 
 ATTENTION = "eager"
+
+# whose dropout and stochastic depth can be set; MViT's own are 0.5 and 0.2
+TUNABLE = ("mvit_v2_s",)
 
 # pytorchvideo's hub models: (frames, size) they were trained on. Their
 # heads pool with a fixed kernel sized for exactly this input
@@ -70,12 +73,12 @@ def _swap_linear(parent, attr, num_classes):
                      f"Linear")
 
 
-def _torchvision(name, num_classes, pretrained):
+def _torchvision(name, num_classes, pretrained, extra):
     if pretrained:
         weights = "DEFAULT"
     else:
         weights = None
-    model = get_model(name, weights=weights)
+    model = get_model(name, weights=weights, **extra)
     if hasattr(model, "fc"):
         _swap_linear(model, "fc", num_classes)        # the ResNet3Ds
     elif hasattr(model, "head"):
@@ -123,10 +126,19 @@ def _transformers(name, num_classes, pretrained):
 class VideoClassifier(nn.Module):
     """A video model with a new last layer. (B, T, 3, H, W) -> (B, classes)."""
 
-    def __init__(self, name, num_classes, pretrained=True):
+    def __init__(self, name, num_classes, pretrained=True, head_dropout=None,
+                 drop_path=None):
         super().__init__()
         self.name = name
         self.library = "torchvision"
+        extra = {}
+        if head_dropout is not None:
+            extra["dropout"] = head_dropout
+        if drop_path is not None:
+            extra["stochastic_depth_prob"] = drop_path
+        if extra and name not in TUNABLE:
+            raise ValueError(f"head_dropout and drop_path are for {TUNABLE}, "
+                             f"not {name}")
         if name in HF_VIDEO:
             self.library = "transformers"
             built = _transformers(name, num_classes, pretrained)
@@ -134,7 +146,7 @@ class VideoClassifier(nn.Module):
             self.library = "pytorchvideo"
             built = _pytorchvideo(name, num_classes, pretrained)
         elif is_video(name):
-            built = _torchvision(name, num_classes, pretrained)
+            built = _torchvision(name, num_classes, pretrained, extra)
         else:
             raise ValueError(f"{name} is not a video model this knows")
         self.backbone, self.frames, self.size, mean, std = built
@@ -152,6 +164,20 @@ class VideoClassifier(nn.Module):
                              persistent=False)
         self.register_buffer("shift", torch.tensor(shift).view(1, 1, 3, 1, 1),
                              persistent=False)
+
+    def last_layer(self):
+        """The new Linear, the one part not pretrained. backbone_lr slows
+        down everything else."""
+        if self.library == "pytorchvideo":
+            return self.backbone.blocks[-1].proj
+        if self.library == "transformers":
+            return self.backbone.classifier
+        if hasattr(self.backbone, "fc"):
+            return self.backbone.fc
+        head = self.backbone.head
+        if isinstance(head, nn.Sequential):
+            return head[-1]
+        return head
 
     def prepare(self, x):
         """Our clip as the weights expect it: (B, frames, 3, size, size)."""

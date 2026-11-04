@@ -19,7 +19,8 @@ NAME = "video_gru"
 READS = ("variant", "processed", "flip", "backbone", "pretrained", "freeze",
          "hidden", "dense", "dropout", "pool", "keras_dense",
          "grad_checkpoint", "drop_path", "same_clips_as", "scales",
-         "extra_size", "head", "layers", "attn_heads")
+         "extra_size", "head", "layers", "attn_heads", "colour_jitter",
+         "random_crop", "time_jitter")
 
 # the heads an end-to-end run can end in (Family F adds the last two)
 HEADS = ("gru", "transformer", "gru_attn")
@@ -90,7 +91,10 @@ def datasets(cfg):
     train_set = CricShotDataset(os.path.join(cfg["split"], "train.csv"),
                                 variant=cfg["variant"],
                                 processed=cfg["processed"],
-                                transform=build_transform(cfg["flip"]),
+                                transform=build_transform(
+                                    cfg["flip"], colour=cfg["colour_jitter"],
+                                    crop=cfg["random_crop"],
+                                    time=cfg["time_jitter"]),
                                 same_clips_as=cfg["same_clips_as"])
     val_set = eval_set(cfg, os.path.join(cfg["split"], "val.csv"))
     return train_set, val_set

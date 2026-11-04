@@ -112,6 +112,9 @@ def test_repeats_follow_the_family_filter():
 def test_the_real_ledger_renders():
     data = L.collect(read_results("experiments/results.jsonl"))
     text = L.render(data)
-    assert data["total"] == 2 * len(R.ENTRIES)
+    total = 0
+    for entry in R.ENTRIES:
+        total += len(R.splits_of(entry))
+    assert data["total"] == total
     assert "mimic_author" in text
     assert "79.23%" in text

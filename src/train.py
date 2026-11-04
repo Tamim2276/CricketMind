@@ -23,6 +23,7 @@ import time
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader, Subset
 
 from src import methods
@@ -55,7 +56,8 @@ DEFAULTS = {
     "dropout": 0.0,
     "keras_dense": False,     # Keras' Dense init in the GRU head (7.7)
     "grad_checkpoint": False, # recompute backbone stages to save memory (B07)
-    "drop_path": None,        # timm's stochastic depth; None keeps its default
+    "drop_path": None,        # stochastic depth; None keeps the model's default
+    "head_dropout": None,     # video3d's last dropout; None keeps MViT's 0.5
     "same_clips_as": None,    # only clips this variant also has, e.g. "box"
     "fuse": None,             # fusion: streams of run IDs to average (29.1)
     "rgb_features": None,     # pose_rgb: the RGB cache beside the pose (29.2)
@@ -69,6 +71,11 @@ DEFAULTS = {
     "feature_norm": "none",   # or "layer", LayerNorm before the head (A13)
     "pool": "avg",            # "flatten" is what the authors did
     "flip": 0.0,              # horizontal flip probability on train clips
+    "colour_jitter": 0.0,     # brightness, contrast, saturation +- this
+    "random_crop": 0.0,       # keep at least this share of the area, e.g. 0.9
+    "time_jitter": 0,         # a frame may swap with one this far away
+    "label_smoothing": 0.0,   # the share of each target spread over all classes
+    "class_balanced": False,  # a rare class's mistakes cost more
     "optimizer": "adam",
     "lr": 1e-4,
     "backbone_lr": None,      # None gives the backbone the same lr as the head
@@ -98,7 +105,7 @@ DEFAULTS = {
 # or changing it changes nothing but the ledger row.
 LOOP_READS = ("name", "method", "split", "seed", "optimizer", "lr",
               "backbone_lr", "weight_decay", "clip_grad", "scheduler",
-              "monitor", "adam_eps",
+              "monitor", "adam_eps", "label_smoothing", "class_balanced",
               "lr_factor", "lr_patience", "min_lr", "batch_size", "accum",
               "epochs", "patience", "workers", "deterministic", "limit_clips",
               "max_train_batches", "max_val_batches", "out", "figures")
@@ -204,17 +211,30 @@ def _param_groups(cfg, model):
     `backbone_lr: null` keeps the single group, so every earlier result still
     reproduces exactly.
     """
-    groups = [{"params": None, "lr": cfg["lr"], "name": "all"}]
     backbone_lr = cfg.get("backbone_lr")
-    encoder = getattr(model, "encoder", None)
-    head = getattr(model, "head", None)
+    if backbone_lr is None:
+        return [{"params": _trainable(model), "lr": cfg["lr"], "name": "all"}]
 
-    if backbone_lr is None or encoder is None or head is None:
-        groups[0]["params"] = _trainable(model)
-        return groups
+    if hasattr(model, "last_layer"):
+        # a whole video model: only its new last layer keeps the full lr
+        head = model.last_layer()
+        new = set()
+        for p in head.parameters():
+            new.add(id(p))
+        backbone = []
+        for p in _trainable(model):
+            if id(p) not in new:
+                backbone.append(p)
+    else:
+        encoder = getattr(model, "encoder", None)
+        head = getattr(model, "head", None)
+        if encoder is None or head is None:
+            # ignoring it would waste a whole run on no change at all
+            raise ValueError(f"backbone_lr: {type(model).__name__} has no "
+                             f"pretrained half to slow down")
+        backbone = _trainable(encoder)
 
     groups = [{"params": _trainable(head), "lr": cfg["lr"], "name": "head"}]
-    backbone = _trainable(encoder)
     if backbone:
         groups.append({"params": backbone, "lr": backbone_lr,
                        "name": "backbone"})
@@ -237,6 +257,54 @@ def _make_optimizer(cfg, model):
         return torch.optim.SGD(groups, lr=cfg["lr"], momentum=0.9,
                                weight_decay=cfg["weight_decay"])
     raise ValueError(f"unknown optimizer: {cfg['optimizer']}")
+
+
+class BalancedLoss(nn.Module):
+    """Cross-entropy where a clip counts by how rare its class is.
+
+    Not CrossEntropyLoss(weight=...): its mean divides by the batch's own
+    weights, so four Reverse Sweeps in a batch would cost no more than four
+    of anything else, and at batch 4 that undoes most of the point."""
+
+    def __init__(self, weights, smoothing=0.0):
+        super().__init__()
+        self.register_buffer("weights", weights)
+        self.smoothing = smoothing
+
+    def forward(self, logits, y):
+        losses = F.cross_entropy(logits.float(), y, weight=self.weights,
+                                 label_smoothing=self.smoothing,
+                                 reduction="none")
+        return losses.mean()
+
+
+def _class_weights(dataset, num_classes):
+    """clips / (classes x that class's clips). Averaged over the clips this
+    is exactly 1, so the loss keeps its size and the lr still means the same."""
+    items = getattr(dataset, "items", None)
+    if items is None:
+        # limit_clips wraps the dataset in a Subset
+        items = []
+        for i in dataset.indices:
+            items.append(dataset.dataset.items[i])
+    counts = [0] * num_classes
+    for item in items:
+        counts[item[1]] += 1
+    weights = []
+    for count in counts:
+        if count == 0:
+            weights.append(0.0)
+        else:
+            weights.append(len(items) / (num_classes * count))
+    return torch.tensor(weights, dtype=torch.float32)
+
+
+def _make_criterion(cfg, train_set, num_classes):
+    """The training loss. Validation always scores with the plain one."""
+    if cfg["class_balanced"]:
+        return BalancedLoss(_class_weights(train_set, num_classes),
+                            cfg["label_smoothing"])
+    return nn.CrossEntropyLoss(label_smoothing=cfg["label_smoothing"])
 
 
 def _saturation(model):
@@ -354,7 +422,9 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
     optimizer = _make_optimizer(cfg, model)
     scheduler = _make_scheduler(cfg, optimizer)
     scaler = make_scaler(device)
-    criterion = nn.CrossEntropyLoss()
+    criterion = _make_criterion(cfg, train_set, len(classes)).to(device)
+    # plain, so val loss still compares across every run in the ledger
+    val_criterion = nn.CrossEntropyLoss()
 
     history = []
     best_top1 = 0.0                 # of the epoch kept as best.pt
@@ -410,7 +480,7 @@ def train(config=None, fresh: bool = False, quiet: bool = False) -> dict:
                              clip_grad=cfg["clip_grad"],
                              max_batches=cfg["max_train_batches"],
                              on_batch=_ticker(f"  epoch {epoch:3d} train ", quiet))
-            va = evaluate(model, val_loader, criterion, device,
+            va = evaluate(model, val_loader, val_criterion, device,
                           max_batches=cfg["max_val_batches"],
                           on_batch=_ticker(f"  epoch {epoch:3d}   val ", quiet))
             _clear_line()

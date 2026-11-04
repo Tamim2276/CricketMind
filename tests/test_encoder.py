@@ -199,9 +199,28 @@ def test_drop_path_gives_the_keras_rates():
     assert _skip_rates(port) == keras
 
 
-def test_drop_path_is_timm_only():
-    with pytest.raises(ValueError, match="timm-only"):
+def test_drop_path_is_refused_where_it_cannot_be_set():
+    with pytest.raises(ValueError, match="drop_path works on"):
         FrameEncoder("resnet50", pretrained=False, drop_path=0.2)
+
+
+def test_drop_path_reaches_a_torchvision_efficientnet():
+    """F02 tunes it (Days 38-40). No weights change, so old checkpoints and
+    the pretrained file still fit."""
+    def rates(encoder):
+        found = []
+        for module in encoder.modules():
+            if type(module).__name__ == "StochasticDepth":
+                found.append(module.p)
+        return found
+
+    plain = FrameEncoder("efficientnet_v2_s", pretrained=False, pool="flatten")
+    tuned = FrameEncoder("efficientnet_v2_s", pretrained=False, pool="flatten",
+                         drop_path=0.4)
+    # the rate climbs towards the setting: 0.195 of 0.2, 0.39 of 0.4
+    assert max(rates(plain)) == pytest.approx(0.195)
+    assert max(rates(tuned)) == pytest.approx(0.39)
+    assert list(plain.state_dict()) == list(tuned.state_dict())
 
 
 def test_torchvision_wins_a_name_both_libraries_have():

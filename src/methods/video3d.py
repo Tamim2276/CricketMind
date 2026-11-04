@@ -10,13 +10,14 @@ frame count, size and colours its weights were trained on
 (`VideoClassifier.prepare`).
 """
 from src.methods import video_gru
-from src.models.video_classifier import (PYTORCHVIDEO, VideoClassifier,
-                                         known_video)
+from src.models.video_classifier import (PYTORCHVIDEO, TUNABLE,
+                                         VideoClassifier, known_video)
 
 NAME = "video3d"
 
 READS = ("variant", "processed", "flip", "backbone", "pretrained",
-         "same_clips_as")
+         "same_clips_as", "head_dropout", "drop_path", "colour_jitter",
+         "random_crop", "time_jitter")
 
 
 def _pytorchvideo_problem():
@@ -40,6 +41,9 @@ def check(cfg):
     name = cfg["backbone"]
     if not known_video(name):
         return f"{name} is not a video model video3d knows"
+    if cfg["head_dropout"] is not None or cfg["drop_path"] is not None:
+        if name not in TUNABLE:
+            return f"head_dropout and drop_path are for {TUNABLE}, not {name}"
     if name in PYTORCHVIDEO:
         problem = _pytorchvideo_problem()
         if problem:
@@ -63,4 +67,6 @@ def eval_set(cfg, split_csv, classes=None):
 
 def model(cfg, train_set, num_classes):
     return VideoClassifier(cfg["backbone"], num_classes,
-                           pretrained=cfg["pretrained"])
+                           pretrained=cfg["pretrained"],
+                           head_dropout=cfg["head_dropout"],
+                           drop_path=cfg["drop_path"])

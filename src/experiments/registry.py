@@ -4,7 +4,9 @@ An entry names its base and a delta. The delta is the experiment, so "one
 variable at a time" is something you can read off the entry, and test.
 
 The run name and the split are never written here. The harness adds both,
-so no experiment can be run on one split only by accident.
+so no experiment can be run on one split only by accident. Family T alone
+names its split, on purpose: tuning chooses on grouped, and the recipe it
+picks then runs on both.
 """
 import os
 import re
@@ -14,7 +16,7 @@ from src.train import DEFAULTS, LOOP_READS, load_config
 
 __all__ = ["ADOPT", "BASES", "ENTRIES", "FAMILIES", "SPLITS", "entries",
            "get", "family_of", "run_name", "parse_name", "resolve",
-           "unread_keys", "status", "config_differences"]
+           "splits_of", "unread_keys", "status", "config_differences"]
 
 # forward slashes, as in the yamls and the ledger; both OSes accept them
 SPLITS = {
@@ -35,6 +37,7 @@ FAMILIES = {
     "E": ("the batter's pose instead of pixels", "28-29"),
     "W": ("bat, ball and motion: small physical signals", "30-32"),
     "F": ("multi-scale, hybrid and two-stream models", "32-36"),
+    "T": ("tuning C06 and F02, one change at a time, grouped only", "38-40"),
 }
 
 MAX_DELTA = 3
@@ -107,11 +110,26 @@ BASES = {
         "config": os.path.join("configs", "authors_port.yaml"),
         "set": {},
     },
+    # C06 and F02 exactly, so a tuning entry's delta is the one change
+    "tune_c06": {
+        "config": os.path.join("configs", "mimic_author.yaml"),
+        "set": {"method": "video3d", "backbone": "mvit_v2_s"},
+    },
+    "tune_f02": {
+        "config": os.path.join("configs", "mimic_author.yaml"),
+        "set": {"scales": "multi", "head": "transformer", "layers": 2},
+    },
 }
 
 
 def _cache(name):
     return "data/features/" + name
+
+
+def _tune(exp_id, base, cfg, why):
+    """A tuning entry: grouped only, chosen on val."""
+    return {"id": exp_id, "base": base, "cfg": cfg, "why": why,
+            "splits": ("grouped",)}
 
 
 ENTRIES = [
@@ -350,6 +368,64 @@ ENTRIES = [
     {"id": "F05_gru_attn", "base": "mimic_author", "cfg": {"head": "gru_attn"},
      "why": "B01, reading every GRU step through attention instead of the "
             "last one"},
+
+    # ---- T: one change from C06 or F02, the best pair to ensemble (38-40) ----
+    # MViT overfits (train 99.9, val 85) with flip its only augmentation
+    _tune("T01_c06_lr3e5", "tune_c06", {"lr": 3e-5},
+          "a slower lr: VideoMAE needed 1e-5, does MViT want less too?"),
+    _tune("T02_c06_lr3e4", "tune_c06", {"lr": 3e-4},
+          "a faster lr: the plan's other side of 1e-4"),
+    _tune("T03_c06_blr01", "tune_c06", {"backbone_lr": 1e-5},
+          "the pretrained part at 0.1x, the new last layer at full lr"),
+    _tune("T04_c06_blr05", "tune_c06", {"backbone_lr": 5e-5},
+          "the pretrained part at 0.5x"),
+    _tune("T05_c06_ls005", "tune_c06", {"label_smoothing": 0.05},
+          "softer targets, for shots that really do look alike"),
+    _tune("T06_c06_ls010", "tune_c06", {"label_smoothing": 0.1},
+          "softer still: MViT's own paper trains with 0.1"),
+    _tune("T07_c06_balanced", "tune_c06", {"class_balanced": True},
+          "rare shots count more; a test, as rare shots are not its worst"),
+    _tune("T08_c06_sd04", "tune_c06", {"drop_path": 0.4},
+          "skip blocks twice as often as MViT's own 0.2"),
+    _tune("T09_c06_drop07", "tune_c06", {"head_dropout": 0.7},
+          "hide more before the last layer than MViT's own 0.5"),
+    _tune("T10_c06_wd005", "tune_c06",
+          {"optimizer": "adamw", "weight_decay": 0.05},
+          "weight decay, off so far; 0.05 is MViT's own paper's"),
+    _tune("T11_c06_colour", "tune_c06", {"colour_jitter": 0.2},
+          "day and night matches, different broadcasters"),
+    _tune("T12_c06_crop", "tune_c06", {"random_crop": 0.9},
+          "a mildly different box each time, for imperfect YOLO crops"),
+    _tune("T13_c06_time", "tune_c06", {"time_jitter": 1},
+          "frames moved by one: the same shot, timed slightly differently"),
+
+    _tune("T14_f02_lr3e5", "tune_f02", {"lr": 3e-5},
+          "a slower lr"),
+    _tune("T15_f02_lr3e4", "tune_f02", {"lr": 3e-4},
+          "a faster lr"),
+    _tune("T16_f02_blr01", "tune_f02", {"backbone_lr": 1e-5},
+          "EfficientNet at 0.1x, the new head at full lr"),
+    _tune("T17_f02_blr05", "tune_f02", {"backbone_lr": 5e-5},
+          "EfficientNet at 0.5x"),
+    _tune("T18_f02_ls005", "tune_f02", {"label_smoothing": 0.05},
+          "softer targets"),
+    _tune("T19_f02_ls010", "tune_f02", {"label_smoothing": 0.1},
+          "softer still"),
+    _tune("T20_f02_balanced", "tune_f02", {"class_balanced": True},
+          "rare shots count more"),
+    _tune("T21_f02_sd04", "tune_f02", {"drop_path": 0.4},
+          "skip EfficientNet's blocks twice as often as its own 0.2"),
+    _tune("T22_f02_drop03", "tune_f02", {"dropout": 0.3},
+          "dropout in the head, which has none"),
+    _tune("T23_f02_wd001", "tune_f02",
+          {"optimizer": "adamw", "weight_decay": 0.01},
+          "weight decay, off so far; lighter than MViT's for this CNN"),
+    _tune("T24_f02_colour", "tune_f02", {"colour_jitter": 0.2},
+          "day and night matches, different broadcasters"),
+    _tune("T25_f02_crop", "tune_f02", {"random_crop": 0.9},
+          "a mildly different box each time"),
+    _tune("T26_f02_time", "tune_f02", {"time_jitter": 1},
+          "frames moved by one"),
 ]
 
 _ID = re.compile(r"^([A-Z])\d\d_[a-z0-9_]+$")
@@ -377,6 +453,11 @@ def get(exp_id):
         if entry["id"] == exp_id:
             return entry
     raise KeyError(f"no experiment {exp_id!r}; see --list")
+
+
+def splits_of(entry):
+    """The splits this entry runs on: both, unless it says otherwise."""
+    return entry.get("splits", tuple(SPLITS))
 
 
 def run_name(exp_id, split, seed=None):

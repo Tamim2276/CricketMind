@@ -6,6 +6,7 @@
     python -m src.experiments.run --family P
     python -m src.experiments.run --family A --dry_run
     python -m src.experiments.run --exp C06_mvitv2_s --split grouped --seeds 1 2
+    python -m src.experiments.run --family T
 
 Safe to re-run after a power cut: a finished run is skipped, an interrupted
 one (resume.pt there) is resumed, and a run trained but not yet scored is
@@ -34,6 +35,7 @@ PARTS = ("val", "test")
 def print_list(family=None, out=sys.stdout):
     ready = 0
     shown = 0
+    runs = 0
     for fam in R.FAMILIES:
         if family is not None and fam != family:
             continue
@@ -45,8 +47,8 @@ def print_list(family=None, out=sys.stdout):
             if state == "ready":
                 ready += 1
             shown += 1
+            runs += len(R.splits_of(entry))
             out.write(f"  {entry['id']:<20} {state:<37} {entry['why']}\n")
-    runs = shown * len(R.SPLITS)
     out.write(f"\n{shown} IDs, {runs} runs ({', '.join(R.SPLITS)}), "
               f"{ready} IDs ready now\n")
     return shown
@@ -323,6 +325,8 @@ def run_many(ids, splits, force=False, dry_run=False, overrides=None,
     for seed in passes:
         for entry in chosen:
             for split in splits:
+                if split not in R.splits_of(entry):
+                    continue
                 what = run_one(entry, split, force=force, dry_run=dry_run,
                                overrides=overrides, quiet=quiet, out=out,
                                seed=seed)

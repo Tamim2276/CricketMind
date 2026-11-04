@@ -98,6 +98,10 @@ def backbone_problem(name: str, pretrained: bool = True):
             f"{hosted[0]} --include \"*.json\" --include \"{hosted[1]}\"")
 
 
+# torchvision backbones whose stochastic depth can be set (Days 38-40)
+DROP_PATH_TORCHVISION = ("efficientnet_v2_s",)
+
+
 def _timm_backbone(name: str, pretrained: bool, pool: str, drop_path=None):
     """A timm model without its classifier, and the colours it was trained on.
 
@@ -257,14 +261,18 @@ class FrameEncoder(nn.Module):
             self.backbone, mean, std = _timm_backbone(name, pretrained, pool,
                                                       drop_path)
         else:
+            extra = {}
             if drop_path is not None:
                 # torchvision bakes its own in (0.2 for EfficientNetV2-S)
-                raise ValueError("drop_path is timm-only for now")
+                if name not in DROP_PATH_TORCHVISION:
+                    raise ValueError(f"drop_path works on timm backbones and "
+                                     f"{DROP_PATH_TORCHVISION}, not {name}")
+                extra["stochastic_depth_prob"] = drop_path
             if pretrained:
                 weights = "DEFAULT"
             else:
                 weights = None
-            self.backbone = get_model(name, weights=weights)
+            self.backbone = get_model(name, weights=weights, **extra)
             _strip_classifier(self.backbone)
             if pool == "flatten":
                 _strip_pooling(self.backbone)

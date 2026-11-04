@@ -3980,3 +3980,33 @@ more patience helps, but tuning can test it.
 
 Test stays unread. From here a single C06 tuning run has to reach about
 86.1 to count, and anything closer gets repeated first.
+
+## 2026-11-05 — Family T: what building the tuning runs turned up
+
+Averaging the finished runs on val showed C06 and F02 are the best pair
+(87.06 for their six runs), so both get tuned, not only the winner: 26 runs,
+grouped only, one change each. That is about 130 GPU-hours, more than the 90
+to 120 I first said.
+
+Reading the code before writing any of it found four things. `backbone_lr`
+did nothing on C06: the loop looks for `encoder` and `head`, a video model has
+neither, and it quietly carried on. That would have thrown away two runs of
+about 6.5 hours each, so now a model with no split stops with an error. C06's
+config says `dropout: 0.0`, but that key never reached MViT, whose own 0.5 was
+on all along; the config is not the model. Every stored clip has exactly 15
+frames, so temporal jitter can only swap neighbours, and trying 20 or 25
+frames on F02 needs the clips rebuilt, which is its own step later. And C06 was
+trained with no weight decay and flip as its only augmentation, which were
+never on the plan's list; with train at 99.9 and val at 85 they should be, so
+I added them.
+
+I had also said to add a stop at a low learning rate, going by the nine repeat
+runs. Replaying it on all 126 finished runs changed my mind: it saves 5% of the
+epochs and costs 8 runs up to 0.32 points, and needing a 0.2-point gain saves
+7% and costs 12 runs up to 2.29. Neither pays, and tuning runs have to stop the
+way their baselines did to compare with them. So the rule stays.
+
+Both models ran a tiny epoch on the Arc with every new setting on at once, and
+each checkpoint reloaded and scored all of val. That proves the settings reach
+the model, not that any of them helps; the runs decide that. None of this has
+run on CUDA yet.

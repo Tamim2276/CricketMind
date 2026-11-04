@@ -5715,7 +5715,8 @@ interrupted runs resumed. Grouped val top-1:
    under C06's mean, so they do not change the winner.
 6. **For the early-stopping item above:** 2 of the 9 runs peaked at lr 1e-6
    (C04's original +0.06, F02 seed 1 +0.25) and none below it, so stopping
-   once lr falls under 1e-6 would have lost nothing here.
+   once lr falls under 1e-6 would have lost nothing here. Across all runs it
+   does lose a little; see the replay under "Built 2026-11-05".
 
 Two rules follow. A single C06 tuning run counts as a gain only at about
 **86.1** (mean + 2 SD); anything closer gets repeated before it is believed.
@@ -5732,9 +5733,9 @@ results change that.
 
 | Model | Runs | GPU-hours |
 |---|---|---|
-| C06 | 9 to 12 | 60 to 80 |
-| F02 | 9 to 12 | 30 to 40 |
-| **Total** | **18 to 24** | **90 to 120, or 4 to 5 days nonstop** |
+| C06 | 13 | ~85 |
+| F02 | 13 | ~45 |
+| **Total** | **26** | **~130, or about 5.5 days nonstop** |
 
 This replaces the ~39 GPU-hours above. Most of the settings live in shared
 training code, so the second model adds little building, but F02's settings
@@ -5766,6 +5767,52 @@ then the ensembles (Day 41), then test once.
    The answer tells us whether the problem is the model or the data, which
    could change what is worth tuning.
 2. **Do the code walkthrough,** part by part from 10.2.
+
+**Built 2026-11-05: Family T.** 26 runs on grouped only, each one change from
+C06 or F02, so a run's delta in the registry is the whole experiment. Weight
+decay and the three augmentations are additions to the list above: C06 trains
+to 99.9% with no weight decay and flip as its only augmentation.
+
+| Change | C06 | F02 | What it needed |
+|---|---|---|---|
+| lr 3e-5, 3e-4 (now 1e-4) | T01, T02 | T14, T15 | Nothing |
+| Backbone lr 0.1x, 0.5x | T03, T04 | T16, T17 | C06 was **silently ignored**; `VideoClassifier.last_layer()` fixes it, and a model with no split now fails loudly |
+| Label smoothing 0.05, 0.1 | T05, T06 | T18, T19 | New `label_smoothing`; val loss stays plain |
+| Class-balanced loss | T07 | T20 | New `BalancedLoss` |
+| Stochastic depth 0.4 (own 0.2) | T08 | T21 | MViT's and EfficientNet's own setting made reachable |
+| Dropout | T09: 0.7 (own 0.5) | T22: 0.3 (head has none) | New `head_dropout` for MViT |
+| Weight decay with AdamW | T10: 0.05 | T23: 0.01 | Nothing |
+| Colour jitter 0.2 | T11 | T24 | New `ClipColour` |
+| Random crop, at least 90% of the area | T12 | T25 | New `ClipCrop` |
+| Time jitter, 1 frame | T13 | T26 | New `ClipTimeJitter` |
+
+Two items from the list above did not become runs:
+
+- **Frames 15, 20, 25.** C06 cannot use them: MViT's weights take exactly 16.
+  F02 could, but every stored clip has exactly 15 frames and the transformer
+  head's position table stops at 15, so it needs the clips rebuilt. That is
+  its own step after these runs, and it would also give C06's time jitter real
+  spare frames.
+- **Early stopping.** Replayed on the histories of all 126 finished runs, with
+  no training. Stopping when lr falls under 1e-6 saves 255 of 5,150 epochs
+  (5%), and 8 runs lose up to 0.32 points. Needing a 0.2-point gain saves 380
+  (7%), and 12 runs lose up to 2.29. Neither is worth it, and tuning runs have
+  to stop the way their baselines did to compare with them. So the rule stays
+  as it is.
+
+```bash
+python -m src.experiments.run --family T
+python -m tools.tuning
+```
+
+`tools/tuning.py` answers both of the questions above for every finished run:
+is it over its mark alone, and how does it do beside all of the other model's
+runs against each of its own runs in the same place? Add `--score` for the team
+column when nothing is training; it uses the GPU for about a minute per run.
+
+**After these runs:** the changes that counted are combined into one recipe per
+model, because each was tried alone and they may not add up. Then the order
+above carries on.
 
 ## Day 41 — Ensembles and test-time augmentation
 
