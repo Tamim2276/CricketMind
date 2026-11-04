@@ -5653,7 +5653,8 @@ seeds** and report mean ± std.
 > A 0.4% gap with ±0.8% std is not an improvement. This is the single most common
 > way student papers get rejected.
 
-**Then tune**, only the winner, one axis at a time:
+**Then tune**, one axis at a time (first written as the winner only; now
+C06 and F02, see "Decided 2026-11-05" below):
 
 - learning rate: 3e-5, 1e-4, 3e-4
 - frames: 15, 20, 25
@@ -5720,6 +5721,51 @@ Two rules follow. A single C06 tuning run counts as a gain only at about
 **86.1** (mean + 2 SD); anything closer gets repeated before it is believed.
 And at the end the test score is reported as the mean and SD of all C06
 seeds, not the best seed's alone.
+
+**Decided 2026-11-05: tune C06 and F02, not only the winner.** Tuning only
+the winner was there to save time, and time is no longer the limit. C06 and
+F02 are the best pair to ensemble: their six runs, averaged with equal
+weights, score **87.06** on grouped val, and that is the baseline for rule 1
+below. It was picked after seeing val, so it flatters. C04 stays out because
+adding it gave nothing (87.00 with it, 87.06 without); it comes back if later
+results change that.
+
+| Model | Runs | GPU-hours |
+|---|---|---|
+| C06 | 9 to 12 | 60 to 80 |
+| F02 | 9 to 12 | 30 to 40 |
+| **Total** | **18 to 24** | **90 to 120, or 4 to 5 days nonstop** |
+
+This replaces the ~39 GPU-hours above. Most of the settings live in shared
+training code, so the second model adds little building, but F02's settings
+still need checking, as C06's did.
+
+Two more rules:
+
+1. **Judge each change by the ensemble as well as the model.** Combining
+   works because the models make different mistakes. A tuned model can score
+   higher alone but add less to the team, so keep whichever version gives the
+   better C06 and F02 ensemble on val.
+2. **F02 has its own mark.** A single tuned F02 run counts as a gain only at
+   about **84.5** (83.39 + 2 x 0.54). Its own SD of 0.04 cannot be trusted, so
+   the mark borrows C06's spread.
+
+**After tuning, the order stays the same:** three seeds of the best recipes,
+then the ensembles (Day 41), then test once.
+
+**While the tuning runs train:**
+
+1. **Watch the clips C06 gets wrong** (Day 42's job, done early). Only a
+   person can do this. All three C06 runs get about 130 val clips wrong. List
+   the 20 where it is most confident and wrong, starting with Pull and Late
+   Cut, and check each one:
+   - Is the label itself wrong?
+   - Did the crop miss the batter or bat?
+   - Is the shot hard to tell even for a person?
+
+   The answer tells us whether the problem is the model or the data, which
+   could change what is worth tuning.
+2. **Do the code walkthrough,** part by part from 10.2.
 
 ## Day 41 — Ensembles and test-time augmentation
 
