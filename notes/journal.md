@@ -3954,3 +3954,29 @@ grouped split only for now. A repeat is saved under its own name, with
 leaderboard shows every run and their mean and spread side by side. It
 costs about 28 GPU-hours, but the first pass alone, about 14, already
 gives each model a second run.
+
+## 2026-11-05 — Three seeds: MViT wins, second place is a tie
+
+All six repeats finished, in 25.4 GPU-hours. On grouped val, C06 MViT
+averages 85.06 (sd 0.54), F02 83.39 (0.04) and C04 SlowFast 83.00 (0.80).
+C06 wins cleanly: its worst run, 84.51, beats the best run of either
+other model, 83.81.
+
+The single runs had misled in both directions. C06's original was the
+lowest of its three and C04's the highest of its three, so a lead of 0.7
+was really about 2. F02 and C04 swapped places, but about 0.4 between
+them is a tie.
+
+I don't trust F02's sd of 0.04. Its three runs land one clip apart, yet
+they stopped at 34, 38 and 21 epochs and peaked at different points, so
+that looks like coincidence, and three runs can't measure a spread that
+small anyway.
+
+C06 seed 2 ran 48 epochs where the other two ran 25 and 28, and it scored
+highest. Its val sat around 85.1 for the last stretch at lr 1e-5, with
+85.60 as the peak. Every score here is a best-of-epochs, so each is a
+little flattering, for all three models alike. One run can't show that
+more patience helps, but tuning can test it.
+
+Test stays unread. From here a single C06 tuning run has to reach about
+86.1 to count, and anything closer gets repeated first.

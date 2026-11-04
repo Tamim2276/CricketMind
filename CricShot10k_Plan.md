@@ -5691,6 +5691,36 @@ python -m src.experiments.run --exp C06_mvitv2_s C04_slowfast_r50 F02_multiscale
 Six runs, about **28 GPU-hours** (C06 ~5.6, C04 ~4.3, F02 ~4 each); the
 first pass, ~14 h, already gives every model two runs.
 
+**Result 2026-11-05: C06 wins.** All six ran, 25.4 GPU-hours, and two
+interrupted runs resumed. Grouped val top-1:
+
+| Model | Seed 42 (original) | Seed 1 | Seed 2 | Mean | SD |
+|---|---|---|---|---|---|
+| C06 MViT-v2-S | 84.51 | 85.09 | 85.60 | **85.06** | 0.54 |
+| F02 transformer head | 83.43 | 83.37 | 83.37 | 83.39 | 0.04 |
+| C04 SlowFast | 83.81 | 82.98 | 82.22 | 83.00 | 0.80 |
+
+1. **C06 is the winner.** Its mean leads by about 1.7, and its worst run
+   (84.51) beats the best run of either other model (83.81). The single runs
+   had undersold the gap: 0.7 over C04 then, about 2.1 now.
+2. **F02 and C04 tie for second.** They are about 0.4 apart with C04's SD at
+   0.80, so the original order between them was wobble.
+3. **F02's SD of 0.04 is not stability.** Its three scores are 1309, 1308
+   and 1308 of 1569 clips, but the runs took 34, 38 and 21 epochs and peaked
+   at epochs 24, 28 and 11. Three runs are too few to trust an SD.
+4. **One run's wobble of ~1.5 held:** C04's runs span about 1.6, C06's
+   about 1.1.
+5. **X3D (83.11) and VideoMAE (82.92) were not repeated.** They sit about 2
+   under C06's mean, so they do not change the winner.
+6. **For the early-stopping item above:** 2 of the 9 runs peaked at lr 1e-6
+   (C04's original +0.06, F02 seed 1 +0.25) and none below it, so stopping
+   once lr falls under 1e-6 would have lost nothing here.
+
+Two rules follow. A single C06 tuning run counts as a gain only at about
+**86.1** (mean + 2 SD); anything closer gets repeated before it is believed.
+And at the end the test score is reported as the mean and SD of all C06
+seeds, not the best seed's alone.
+
 ## Day 41 — Ensembles and test-time augmentation
 
 - Soft-vote the top 3 (different backbones ensemble better than similar ones)
