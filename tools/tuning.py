@@ -47,13 +47,13 @@ def _ledger(rows):
     return latest
 
 
-def base_names(exp_id, latest):
-    """The original run and every repeat of it on grouped, original first."""
+def base_names(exp_id, latest, split=SPLIT):
+    """The original run and every repeat of it on one split, original first."""
     names = []
     seeds = []
     for name in latest:
         parsed = R.parse_name(name)
-        if parsed is None or parsed[0] != exp_id or parsed[1] != SPLIT:
+        if parsed is None or parsed[0] != exp_id or parsed[1] != split:
             continue
         if parsed[2] is None:
             names.append(name)
@@ -77,7 +77,7 @@ def mark(mean, sd):
     return mean + 2 * sd
 
 
-def val_probs(name, out, score=False):
+def val_probs(name, out, score=False, split=SPLIT):
     """A run's val probabilities, kept beside its checkpoint. None if they are
     not there yet and score is off."""
     folder = os.path.join(out, name)
@@ -90,7 +90,7 @@ def val_probs(name, out, score=False):
     if not fresh:
         if not score:
             return None
-        part = probabilities(ckpt, os.path.join(R.SPLITS[SPLIT], "val.csv"),
+        part = probabilities(ckpt, os.path.join(R.SPLITS[split], "val.csv"),
                              batch_size=4)
         np.savez(cache, clips=np.asarray(part["clips"]),
                  labels=np.asarray(part["labels"]), probs=part["probs"],
