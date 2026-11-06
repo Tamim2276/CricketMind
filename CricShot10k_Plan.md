@@ -5871,15 +5871,26 @@ clip review. The vote's true shot is second on 146 of its 198 misses, and the
 most missed are Lofted Offside (29), Lofted Legside (28), Pull (26) and
 Square Cut (19).
 
-A third model is cheap to test: about a minute of GPU per run, then
-`python -m tools.ensemble --stream C06_mvitv2_s --stream F02_multiscale_tf
---stream C05_x3d_m --score`. C04 added nothing on 2026-11-05.
+**A third model adds nothing, tried 2026-11-06.** C04 had already added nothing
+on 2026-11-05. Each third model below is one run beside C06's and F02's three:
+
+| Third model | Alone | Equal vote | Weights, held out | Its fitted weight |
+|---|---|---|---|---|
+| None (C06 + F02) | | **87.06** | 86.62 | |
+| C05 X3D, RGB video | 83.11 | 86.68 | 86.36 | 0.05 |
+| W05 frame differences | 78.59 | 86.36 | 86.23 | 0.10 |
+| W01 optical flow | 76.04 | 86.42 | 86.30 | 0.05 |
+
+Every one lowers the vote, and the fitted weights all but switch it off. Even
+the models that see motion instead of colour get wrong the clips C06 and F02
+get wrong, so another model will not reach 89. The tuned runs and the clip
+review are what is left.
 
 **The order once T has finished:**
 
 ```bash
 python -m tools.tuning --score          # which changes count, alone and in the team
-python -m tools.ensemble --score        # then --tta flip, and any third model
+python -m tools.ensemble --score        # then --tta flip, with tuned streams
 python -m tools.gradcam                 # and --run F02_multiscale_tf__grouped
 python -m tools.final save G01 --tta flip   # whatever val chose
 python -m tools.final test G01_final__grouped   # last of all: test, once

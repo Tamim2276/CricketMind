@@ -4041,3 +4041,10 @@ On `Upper Cut/vid232_3.avi`, which both models call a Square Cut at 100%, the
 map for the answer is blank. That means Grad-CAM could not place the evidence,
 not that the model looked at nothing, and that clip is already on the review
 list.
+
+Later the same day I tried a third model beside the pair, one run each: X3D,
+then the two that see motion instead of colour, frame differences (W05) and
+optical flow (W01). Every one lowered the equal vote (86.68, 86.36, 86.42
+against 87.06), and fitted weights gave them 0.05 to 0.10, which is close to
+switching them off. Even motion makes the same mistakes here, so the ensemble
+stays C06 and F02.
