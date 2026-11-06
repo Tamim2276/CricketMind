@@ -129,14 +129,16 @@ def _restore(ckpt_path, split_csv, variant=None, processed=None, device=None):
 
 
 def probabilities(ckpt_path: str, split_csv: str, batch_size: int = 6,
-                  device=None, workers: int = 0) -> dict:
+                  device=None, workers: int = 0, on_batch=None) -> dict:
     """Per clip, in the split's order: its name, its true label, and the
-    model's probabilities. What fusion averages (29.1)."""
+    model's probabilities. What fusion averages (29.1). `on_batch` is
+    evaluate's progress callback."""
     device = device or get_device()
     _, data, model, _ = _restore(ckpt_path, split_csv, device=device)
     loader = DataLoader(data, batch_size=batch_size, shuffle=False,
                         num_workers=workers)
-    stats = run_eval(model, loader, device=device, collect=True)
+    stats = run_eval(model, loader, device=device, collect=True,
+                     on_batch=on_batch)
     clips = []
     for item in data.items:
         clips.append(item[2])

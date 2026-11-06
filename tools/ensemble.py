@@ -3,6 +3,7 @@
     python -m tools.ensemble            what is already scored; no GPU
     python -m tools.ensemble --score    first scores what is missing, on val
     python -m tools.ensemble --stream C06_mvitv2_s --stream T05_c06_ls005
+    python -m tools.ensemble --tta all  each run's answers come from tools.tta
 
 A stream is one model. Its ID brings in all its seeds, and they are averaged
 before anything else, so a model with more seeds gets no extra votes.
@@ -13,7 +14,6 @@ before anything else, so a model with more seeds gets no extra votes.
 
 G02 and G04 learn from val, so a score on the clips they learned from flatters
 them. They are also scored held out: five folds, each match whole in one fold.
-G03, test-time augmentation, changes how a run is scored, not how runs combine.
 
 Val only. Test stays closed (rule 5). Use --score when nothing is training.
 """
@@ -23,11 +23,13 @@ import os
 import sys
 
 import numpy as np
+import torch
 from sklearn.linear_model import LogisticRegression
 
 from src.experiments import registry as R
 from src.methods.fusion import _average
 from src.utils.checkpoint import RESULTS_PATH, read_results
+from tools.tta import VIEW_SETS, top1, tta_part
 from tools.tuning import SPLIT, _ledger, base_names, val_probs
 
 __all__ = ["load_stream", "align", "matches_of", "vote", "top1", "loss_of",
@@ -40,7 +42,7 @@ STEP = 0.05
 FOLDS = 5
 
 
-def load_stream(exp_id, split, latest, out, score=False):
+def load_stream(exp_id, split, latest, out, score=False, tta=None, device=None):
     """(stream, missing). One model's runs averaged, or the runs not scored."""
     names = base_names(exp_id, latest, split)
     if not names:
@@ -48,7 +50,10 @@ def load_stream(exp_id, split, latest, out, score=False):
     parts = []
     missing = []
     for name in names:
-        part = val_probs(name, out, score, split)
+        if tta:
+            part = tta_part(name, out, tta, score, split, device)
+        else:
+            part = val_probs(name, out, score, split, device)
         if part is None:
             missing.append(name)
         else:
@@ -99,10 +104,6 @@ def vote(stacks, weights=None):
     for stack, weight in zip(stacks, weights):
         total = total + weight * stack
     return total
-
-
-def top1(probs, labels):
-    return float(np.mean(np.argmax(probs, axis=1) == labels))
 
 
 def loss_of(probs, labels):
@@ -259,8 +260,11 @@ def main(argv=None):
     ap.add_argument("--stream", action="append",
                     help="an experiment ID; give it once per model")
     ap.add_argument("--split", choices=list(R.SPLITS), default=SPLIT)
+    ap.add_argument("--tta", choices=list(VIEW_SETS),
+                    help="average each run over these views first")
     ap.add_argument("--score", action="store_true",
                     help="score what is missing on val; needs the GPU")
+    ap.add_argument("--device", help="cpu scores beside training, slowly")
     ap.add_argument("--results", default=RESULTS_PATH)
     ap.add_argument("--out", default="experiments")
     args = ap.parse_args(argv)
@@ -268,24 +272,32 @@ def main(argv=None):
     ids = args.stream or STREAMS
     if len(ids) < 2:
         raise SystemExit("an ensemble needs at least two streams")
+    device = None
+    if args.device:
+        device = torch.device(args.device)
     latest = _ledger(read_results(args.results))
     streams = []
     missing = []
     for exp_id in ids:
         stream, absent = load_stream(exp_id, args.split, latest, args.out,
-                                     args.score)
+                                     args.score, args.tta, device)
         if stream is not None:
             streams.append(stream)
         for name in absent:
             missing.append(name)
     if missing:
+        hint = "python -m tools.ensemble --score"
+        if args.tta:
+            hint += f" --tta {args.tta}"
         print("not scored yet: " + ", ".join(missing))
-        print("When nothing is training: python -m tools.ensemble --score")
+        print("When nothing is training: " + hint)
         return 1
 
     clips, labels, stacks = align(streams)
     folds = match_folds(matches_of(clips, args.split))
     scores = score_all(labels, stacks, folds)
+    if args.tta:
+        print(f"each run averaged over: {' '.join(VIEW_SETS[args.tta])}")
     for line in render(streams, scores, args.split, len(clips)):
         print(line)
     return 0

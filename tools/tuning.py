@@ -26,6 +26,7 @@ import numpy as np
 from src.evaluate import probabilities, scores_report
 from src.experiments import registry as R
 from src.methods.fusion import _average
+from src.train import _clear_line, _ticker
 from src.utils.checkpoint import RESULTS_PATH, read_results
 from tools.leaderboard import spread
 
@@ -77,7 +78,7 @@ def mark(mean, sd):
     return mean + 2 * sd
 
 
-def val_probs(name, out, score=False, split=SPLIT):
+def val_probs(name, out, score=False, split=SPLIT, device=None):
     """A run's val probabilities, kept beside its checkpoint. None if they are
     not there yet and score is off."""
     folder = os.path.join(out, name)
@@ -91,7 +92,10 @@ def val_probs(name, out, score=False, split=SPLIT):
         if not score:
             return None
         part = probabilities(ckpt, os.path.join(R.SPLITS[split], "val.csv"),
-                             batch_size=4)
+                             batch_size=4, device=device,
+                             on_batch=_ticker(f"  scoring {name} ", False))
+        _clear_line()
+        print(f"  scored {name}")
         np.savez(cache, clips=np.asarray(part["clips"]),
                  labels=np.asarray(part["labels"]), probs=part["probs"],
                  classes=np.asarray(part["classes"]))

@@ -241,7 +241,8 @@ def test_one_stream_is_not_an_ensemble(tmp_path, monkeypatch):
 def test_only_val_is_scored_on_the_chosen_split(tmp_path, monkeypatch):
     seen = []
 
-    def fake_probabilities(ckpt, split_csv, batch_size):
+    def fake_probabilities(ckpt, split_csv, batch_size, device=None,
+                           on_batch=None):
         seen.append(split_csv)
         return {"clips": ["x"], "labels": [0], "probs": np.ones((1, 2)) / 2,
                 "classes": ["a", "b"]}
@@ -252,3 +253,23 @@ def test_only_val_is_scored_on_the_chosen_split(tmp_path, monkeypatch):
     U.val_probs("M01_one__author", out, score=True, split="author")
     assert len(seen) == 1
     assert seen[0] == os.path.join(R.SPLITS["author"], "val.csv")
+
+
+def test_a_chosen_device_reaches_the_scoring(tmp_path, monkeypatch, capsys):
+    out, results, names = _finished_runs(tmp_path, monkeypatch)
+    os.remove(os.path.join(out, names[2], U.CACHE))
+    seen = []
+
+    def fake_probabilities(ckpt, split_csv, batch_size, device=None,
+                           on_batch=None):
+        seen.append(device)
+        saved = np.load(os.path.join(out, names[0], U.CACHE))
+        return {"clips": list(saved["clips"]), "labels": saved["labels"],
+                "probs": saved["probs"], "classes": list(saved["classes"])}
+
+    monkeypatch.setattr(U, "probabilities", fake_probabilities)
+    code = E.main(["--stream", "M01_one", "--stream", "M02_two", "--score",
+                   "--device", "cpu", "--out", out, "--results", results])
+    assert code == 0
+    assert len(seen) == 1
+    assert str(seen[0]) == "cpu"
