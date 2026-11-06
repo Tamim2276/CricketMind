@@ -4010,3 +4010,34 @@ Both models ran a tiny epoch on the Arc with every new setting on at once, and
 each checkpoint reloaded and scored all of val. That proves the settings reach
 the model, not that any of them helps; the runs decide that. None of this has
 run on CUDA yet.
+
+## 2026-11-06 — Ensembles, test-time augmentation and Grad-CAM, built while T trains
+
+While T trains, the code that does not need its results came first:
+`tools/ensemble.py`, `tools/tta.py`, `tools/gradcam.py` and `tools/final.py`.
+T was paused for about an hour so the GPU could score the six C06 and F02 runs
+on val.
+
+Two checks came out exact. Equal vote reproduced 87.06, and every run's plain
+score matched its ledger row. Then the answers: equal vote is the best way to
+combine these two. Fitted weights came out 0.50 / 0.50 anyway and scored 86.62
+held out; stacking scored 86.23. Of the views, only flip helps, and only a
+little: 87.38 for the vote, about five clips more. The slid views, which stand
+in for temporal crops because every clip has exactly 15 frames, hurt F02.
+
+The first two tuning runs both lose. T01 (lr 3e-5) ended at 84.58 after 56
+epochs, under C06's mean, and lost 0.62 in the team. T02 (lr 3e-4) sat near
+chance for three epochs and ended at 72.15. So 1e-4 stays.
+
+Can it reach 89? Not with these two as they are. At least one of them is right
+on 90.82% of val, which caps any way of combining them, and 89 would need 26 of
+the 54 clips where one is right and the vote is wrong. Getting there needs
+members that get new clips right: the tuned runs, a third model that sees
+differently, or crops and labels fixed after the clip review.
+
+Grad-CAM worked on both models. On a correct Cover Drive C06 looks at the bat;
+on a Pull it calls Down The Wicket, it looks at the batter's feet as he steps.
+On `Upper Cut/vid232_3.avi`, which both models call a Square Cut at 100%, the
+map for the answer is blank. That means Grad-CAM could not place the evidence,
+not that the model looked at nothing, and that clip is already on the review
+list.

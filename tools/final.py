@@ -31,13 +31,13 @@ import torch
 from src.evaluate import file_fingerprint, probabilities, scores_report
 from src.experiments import registry as R
 from src.methods.fusion import _average
-from src.train import _clear_line, _ticker
+from src.train import _ticker
 from src.utils.checkpoint import RESULTS_PATH, atomic_write_json, read_results
 from tools.ensemble import (STREAMS, align, fit_stack, fit_weights,
                             load_stream, match_folds, matches_of, score_all,
                             vote)
 from tools.tta import VIEW_SETS, VIEWS, averaged, top1, view_probs
-from tools.tuning import SPLIT, _ledger, base_names
+from tools.tuning import SPLIT, _ledger, base_names, clear_line
 
 __all__ = ["METHODS", "honest", "recipe_of", "apply", "save", "test_part",
            "test", "main"]
@@ -186,7 +186,7 @@ def test_part(ckpt, sha256, split_csv, tta, cache, device=None):
             run = os.path.basename(os.path.dirname(os.path.abspath(ckpt)))
             found = probabilities(ckpt, split_csv, batch_size=4, device=device,
                                   on_batch=_ticker(f"  {run} ", False))
-            _clear_line()
+            clear_line()
             arrays = {"clips": np.asarray(found["clips"]),
                       "labels": np.asarray(found["labels"]),
                       "classes": np.asarray(found["classes"]),

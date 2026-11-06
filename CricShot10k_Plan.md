@@ -451,9 +451,11 @@ changes the code you are about to write.
 | frame rate | **30 fps**, all 10,091 |
 | total size | 3.94 GB |
 
-Every file opens and every frame decodes. There is also a pristine copy of the
+Every file opens and every frame decodes. There was also a pristine copy of the
 original archive at `data/unnecessary/raw/CricShoot10kShootDataset.rar` (3.6 GB),
-so even a damaged extraction would not need a download.
+but it was deleted on 2026-11-05 to free disk space. The extracted folder may
+now be the only copy on this PC, so a damaged extraction would need a download:
+keep a copy elsewhere before deleting anything from it.
 
 ### But the clips are not all 24 frames
 
@@ -5814,7 +5816,78 @@ column when nothing is training; it uses the GPU for about a minute per run.
 model, because each was tried alone and they may not add up. Then the order
 above carries on.
 
+**Built 2026-11-06: Day 41 and 42's tools, while T trains.** None of them needs
+T's results. All read val only; test stays closed until the last command.
+
+| Tool | What it does |
+|---|---|
+| `tools/ensemble.py` | G01 equal vote, G02 a weight per model fitted on val, G04 stacking. A model's seeds are averaged first, so more seeds give no extra votes. G02 and G04 are also scored held out: five folds, each match whole in one fold |
+| `tools/tta.py` | G03: each run scored under four views (plain, flip, early, late), reported as the sets flip, time and all |
+| `tools/gradcam.py` | Day 42's Grad-CAM: MViT from the tokens entering its last block, frame CNNs from EfficientNet's last stage. 5 right and 5 wrong per model, or chosen clips |
+| `tools/final.py` | Freezes the chosen ensemble with every checkpoint's SHA-256, refuses one that does not beat its best model on val, and reads test once |
+
+Scoring can run on the CPU beside training (`--device cpu`), and every scoring
+command shows a progress bar.
+
+**The plan's "2 temporal crops" cannot be done as written.** Every stored clip
+has 15 frames, so there is nothing spare to crop. `early` and `late` slide the
+clip by two frames and repeat the edge frame instead. Real crops need the clip
+rebuild that F02's frames step needs too.
+
+**First results, grouped val, 2026-11-06.** T was paused while the GPU scored.
+Equal vote reproduced 87.06 and every run's plain score matched its ledger
+row, so the scoring is right.
+
+| Combining, no TTA | Val |
+|---|---|
+| C06's 3 runs averaged | 85.66 |
+| F02's 3 runs averaged | 84.64 |
+| G01 equal vote | **87.06** |
+| G02 weights, held out | 86.62 (fitted on all val: 0.50 / 0.50) |
+| G04 stacking, held out | 86.23 |
+
+| Views averaged | C06, one run (mean) | F02, one run (mean) | G01 equal vote |
+|---|---|---|---|
+| None | 85.06 | 83.39 | 87.06 |
+| Plain + flip | 85.21 | 83.66 | **87.38** |
+| Plain + early + late | 85.21 | 82.94 | 86.87 |
+| All four | 85.09 | 83.28 | 86.93 |
+
+1. **Equal vote is the best way to combine.** Fitting the weights or a stacking
+   head scored lower held out; with two models it adds noise, not skill.
+2. **Flip adds 0.32 to the ensemble, about 5 clips.** The slid views hurt F02.
+   Flip is the val pick, and a small one.
+3. **T01 and T02 lose, alone and in the team** (-0.62 and -3.93 beside F02's
+   runs), so the learning rate stays 1e-4. T02 at 3e-4 sat near chance for its
+   first three epochs.
+
+**How far can C06 and F02 go together?** On val at least one of them is right
+on 1,425 of 1,569 clips (90.82%), so no way of combining these two can pass
+that. The ensemble gets 1,371 (87.38). 89% needs 1,397: 26 more of the 54 clips
+where one model is right and the vote is wrong, and G02 and G04 already tried
+to find those and did worse. So 89 needs models that get new clips right: tuned
+runs, a third model that sees differently, or better crops and labels from the
+clip review. The vote's true shot is second on 146 of its 198 misses, and the
+most missed are Lofted Offside (29), Lofted Legside (28), Pull (26) and
+Square Cut (19).
+
+A third model is cheap to test: about a minute of GPU per run, then
+`python -m tools.ensemble --stream C06_mvitv2_s --stream F02_multiscale_tf
+--stream C05_x3d_m --score`. C04 added nothing on 2026-11-05.
+
+**The order once T has finished:**
+
+```bash
+python -m tools.tuning --score          # which changes count, alone and in the team
+python -m tools.ensemble --score        # then --tta flip, and any third model
+python -m tools.gradcam                 # and --run F02_multiscale_tf__grouped
+python -m tools.final save G01 --tta flip   # whatever val chose
+python -m tools.final test G01_final__grouped   # last of all: test, once
+```
+
 ## Day 41 — Ensembles and test-time augmentation
+
+*Built early, with first results: see "Built 2026-11-06" above.*
 
 - Soft-vote the top 3 (different backbones ensemble better than similar ones)
 - TTA: horizontal flip + 2 temporal crops
@@ -5823,6 +5896,8 @@ above carries on.
 **Check:** the ensemble beats its best member on val before you touch test.
 
 ## Day 42 — Error analysis
+
+*Grad-CAM is built: `tools/gradcam.py`, see "Built 2026-11-06" above.*
 
 - Full 15×15 confusion matrix for the best model
 - The 20 worst-misclassified clips — **watch them**

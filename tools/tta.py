@@ -24,10 +24,10 @@ from torch.utils.data import DataLoader
 from src.data.dataset import CricShotDataset
 from src.evaluate import _restore, run_eval
 from src.experiments import registry as R
-from src.train import _clear_line, _ticker
+from src.train import _ticker
 from src.utils.checkpoint import RESULTS_PATH, read_results
 from src.utils.device import get_device
-from tools.tuning import SPLIT, _ledger, base_names
+from tools.tuning import SPLIT, _ledger, base_names, clear_line
 
 __all__ = ["VIEWS", "VIEW_SETS", "View", "view_probs", "tta_scores", "averaged",
            "tta_part", "top1", "rows_for", "render", "main"]
@@ -90,7 +90,7 @@ def view_probs(ckpt, split_csv, batch_size=4, device=None):
                             num_workers=0)
         stats = run_eval(model, loader, device=device, collect=True,
                          on_batch=_ticker(f"  {run} {name:<5} ", False))
-        _clear_line()
+        clear_line()
         views[name] = torch.softmax(torch.from_numpy(stats.logits), dim=1).numpy()
         labels = stats.labels
     return {"clips": clips, "labels": labels, "classes": list(data.classes),
