@@ -27,6 +27,9 @@ CricShoot10kModels/
 # CricShot commits never pick it up
 cricketmind-v3/
 
+# private draft, never committed
+notes/email_to_authors.md
+
 # LaTeX build files; the .tex and .pdf are what we keep
 paper/*.aux
 paper/*.log
