@@ -38,11 +38,14 @@ def subject_words(
         parts.append(shown.get(subject.player, subject.player))
     if subject.bowler is not None:
         bowler = shown.get(subject.bowler, subject.bowler)
+        facing = "facing "
+        if subject.player is None:
+            facing = "the bowler "  # nobody is facing him: he is who it is about
         if subject.other_bowler is not None:
             other = shown.get(subject.other_bowler, subject.other_bowler)
-            parts.append(f"facing {bowler} or {other}")
+            parts.append(f"{facing}{bowler} or {other}")
         else:
-            parts.append(f"facing {bowler}")
+            parts.append(f"{facing}{bowler}")
     if subject.team is not None:
         parts.append(subject.team)
     if subject.opposition is not None:

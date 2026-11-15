@@ -8,10 +8,12 @@ from typing import Annotated, TypedDict
 
 from cricketmind_v3.domain.evidence import Evidence
 from cricketmind_v3.domain.facts import Answer
+from cricketmind_v3.domain.faith.gate import Failure, Withheld
 from cricketmind_v3.domain.findings import Finding
 from cricketmind_v3.domain.question_context import QuestionContext
 from cricketmind_v3.domain.reading import Reading
 from cricketmind_v3.domain.receipts import Receipt
+from cricketmind_v3.domain.report import Report
 from cricketmind_v3.domain.routing import Routing
 from cricketmind_v3.domain.shot_dna import ShotDNA
 from cricketmind_v3.domain.subject import CricketSubject
@@ -35,8 +37,14 @@ class GraphState(TypedDict, total=False):
     # agent -> the measures it has numbers for; an agent left out cannot answer (Day 62)
     capable: dict[str, tuple[str, ...]]
     routing: Routing  # who answers, at most four, and why (N10, Day 63)
-    # what the agents hand in, side by side; none writes here until Day 73
+    # what the agents hand in, side by side: every try is kept, and the last one counts
     findings: Annotated[list[Finding], operator.add]
     # (agent, claim) -> the receipt of the gate's own question, for N13 (D-052)
     receipts: dict[tuple[str, str], Receipt]
+    # the gate's own pages (Day 74). No reducer on these: each check replaces them
+    failures: tuple[Failure, ...]  # why the last check failed: agents read their own
+    verified: tuple[Finding, ...]  # passed every check; never checked again
+    withheld: tuple[Withheld, ...]  # budget spent: listed in the answer, never shown
+    checks_run: int  # how many times the gate has checked
+    report: Report  # the verified findings, joined (N12, Day 75)
     answer: str  # what N13 shows

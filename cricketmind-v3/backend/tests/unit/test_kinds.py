@@ -62,7 +62,7 @@ def test_the_read_back_says_what_it_asks_and_does_not_know():
         unknown=("Zorro",),
     )
     assert read_back(read).split("\n") == [
-        "I read this as: a prediction: facing JJ Bumrah or MA Starc.",
+        "I read this as: a prediction: the bowler JJ Bumrah or MA Starc.",
         "Which Smith? several players have this name (3).",
         "About the next over: his next 6 balls?",
         "I do not know Zorro.",

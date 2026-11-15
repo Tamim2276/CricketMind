@@ -1,3 +1,5 @@
+import pytest
+
 from cricketmind_v3.domain.claims import Claim
 from cricketmind_v3.domain.faith.c7_tone import check_c7
 from cricketmind_v3.domain.faith.gate import Context
@@ -94,3 +96,31 @@ def test_sentences_without_tone_words_pass():
 def test_a_word_inside_a_longer_phrase_is_read_once():
     # "out of form" is one judgment, not also "form"
     assert reasons("He is out of form: {c1}.", BELOW) == []
+
+
+# The words people ask with (Day 76): the plan's own "Why is Kohli bad against spin?"
+
+
+@pytest.mark.parametrize(
+    "word", ["good", "great", "best", "bad", "worst", "terrible", "awful", "struggle"]
+)
+def test_a_word_people_ask_with_needs_a_comparison_too(word):
+    finding = Finding(agent="N11b", claims=(c1(),), template=f"He is {word}: {{c1}}.")
+    (failure,) = check_c7(finding, Context())
+    assert failure.check == "C7"
+
+
+# A superlative is never backed (D-096)
+
+
+@pytest.mark.parametrize("word", ["best", "worst", "strongest", "weakest"])
+def test_a_superlative_fails_even_beside_a_comparison_that_points_its_way(word):
+    for comparison in (ABOVE, BELOW):
+        template = "He is the " + word + ": {" + comparison.id + "}."
+        assert reasons(template, comparison) == [
+            f"'{word}' ranks a player against all others, and no measure here does that"
+        ]
+
+
+def test_a_plain_tone_word_is_still_backed():
+    assert reasons("He is strong: {" + ABOVE.id + "}.", ABOVE) == []

@@ -4,6 +4,7 @@ Numbers
 - Never type a figure, in digits or in words. Each figure comes from a claim, and you write the claim's slot where it goes: {c1}.
 - The slot already says what the figure is, and shows its sample size or its range. Write "The cover drive returns {c1}", not "a strike rate of {c1}".
 - You may repeat a number the question itself gave, in words, as in "within six balls".
+- Do not write a year or a date. The answer already says them above your words.
 - Use only the measures on your list below. If they do not answer the question, say so, and never reach for another figure.
 
 Names
@@ -23,6 +24,7 @@ Differences
 
 Judgments
 - Words of praise or blame, such as strong, weak, struggles or in form, need a comparison in the same sentence that points the same way. Without one, leave them out.
+- Do not write best, worst, strongest or weakest. No measure ranks a player against everyone.
 
 Sentences
 - Do not use abbreviations with full stops, such as e.g. or i.e. or vs. A full stop ends a sentence for the checker.

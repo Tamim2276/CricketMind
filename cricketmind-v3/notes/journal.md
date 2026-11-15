@@ -2569,3 +2569,157 @@ normal or safe).
 first real run. A word limit I first put in a test was removed, as I had no evidence for any limit.
 **Tested:** 983 in all; 27 deliberate mistakes, all caught. The graphs are drawn in `docs/graph/day63.md`,
 `day64.md` and `day65.md` (no arrow changed), and the notebook gains a section for each day.
+
+---
+
+## After Day 65 — 2026-11-03 — The router meets the real model
+
+**Run by hand:** `scripts/route_questions.py`, qwen2.5:7b, 13 of my own questions, 3 to 13 seconds
+each. Eight reached the model's router. It never fell back to the words, and nobody it named lacked
+a number. The script does not print its whole proposal, so I cannot say whether the cap cut one. It
+scores nothing and is not for the paper; Days 170-173 measure the routers.
+**How it chose, by my own opinion of who each question is for:** the agent I expected was among its
+choices on 6 of the 8 (fantasy captain, setting up to get Kohli out, scoring faster, the TV line,
+young batters, a plain strike rate). It missed recruiting and the manager (it chose Tactical
+Analysis for both). The words also got 6 of 8, but 3 of those only because the default pair held
+the agent; no word matched. This run does not repeat N-006's gap. On a plain strike rate it woke
+four, though its prompt says one or two is usually enough; the cap held.
+**Three questions got nobody, and the router was not the cause: N3 misread them (L-082).** Each by
+its own way: "null" and "another T20 season" in the date boxes made the reply not fit, twice, and the
+rules cannot choose among six Kohlis; "up to 4 January 2025" went into both `since` and `date`; and
+"India's men" finds no team. With the date alone, N11k can answer; with `India` the team is found
+among two. No wrong number came of any of it: on the third question the checks threw out 12 things
+the model invented (7 filters, the word "null" 5 times).
+**My mistake, and the fix:** the script printed the router's note and not the reader's, so I first
+said nothing had fallen back. The reader had. It now prints what N3 read, what was thrown out, and
+both notes.
+**Not fixed today, on purpose:** D-080 showed that a fix to the reader can make it worse, so these go
+through a pre-registered test on new wordings by Day 78.
+
+---
+
+## The exam's lock — 2026-11-03
+
+The user will have the 120 questions tomorrow. **Built:** `pipeline/lock_exam.py` (D-087): it joins the
+friends' files and prints only counts, row numbers and the SHA-256, so nobody reads the exam to lock it.
+The guide gains a 60-row sheet. The real-answer scripts refuse to run before the lock.
+**Asked and answered:** can models write the exam instead? No: the builder would write their prompt.
+Models may write practice questions.
+
+---
+
+## Day 66 — 2026-11-03 — The agent factory
+
+**Built:** `application/agent_factory.py`, and the rest of `domain/agent_spec.py` (D-088). **The choice:**
+the model fills one box, the sentence, with slots like {c1}. The code makes the claims from what the
+engines said. A number that never passes through a model cannot be mistyped.
+**Found before any model ran:** the real register has "ball", "chance", "to", "more" and 26 other everyday
+words as players (N-047). C6 matched in lower case, so it would have rejected almost every honest
+sentence on Day 67. A name now needs its capital (D-089). This is why I checked against the real
+register before trusting tests with three players in them.
+**Tested:** with scripted words, as the plan asks.
+
+---
+
+## Days 68-71 — 2026-11-03 — The twelve agents
+
+**Built:** each node asks the one factory; only its prompt file and roster row differ (D-090). A test for
+each agent: an honest finding passes all seven real checks, and it is offered only its own measures.
+N11k's words follow the flag, as part three of C4; the tag now says "in four weeks". The menu is checked
+each time the graph is built (E-023).
+**Not done, on purpose:** Day 67's real run. `scripts/first_agent.py` is ready for after the lock.
+
+---
+
+## Day 72 — 2026-11-03 — The Explainer
+
+**Built:** its voice, and a rule in C6: an agent with no measures names no player (D-091). "A ball is called
+wide..." passes, though "ball" is a player's name; "LBW is how Kohli was out" does not. The label is always
+in front. **Not built:** retrieval over the Laws: no permission from MCC.
+
+---
+
+## Day 73 — 2026-11-03 — Fan-out
+
+**Learned:** a branch can return a list of nodes, and they run side by side. They finish together, so the
+gate after them runs once. **Built:** only the chosen agents run; with nobody chosen, straight to N13, a new
+arrow. **For tests:** nodes side by side ask in any order, so `FakeLLMByWho` files replies by who asks.
+
+---
+
+## Day 74 — 2026-11-03 — A bounded loop
+
+**Built:** the gate for real (D-092). Lie once: fixed. Lie always: three tries, then withheld. It never runs
+a fourth time. Only the failing agent goes back, told only its own reasons. An agent that passed is neither
+run nor checked again. Every try stays in the notebook, for Day 78.
+
+---
+
+## Day 75 — 2026-11-03 — The report and the answer
+
+**Built:** N12 and N13 (D-093). One finding needs no model. With several, the model joins them; it must keep
+every slot and pass C3 to C7, or they go out in order. N13's parts: the read-back, the judgment, the report,
+what was missing, what was withheld, the receipts. **L-078 settled:** "Injury Management could answer with a
+date, and without a format", worked out from the menu. A withheld finding's reasons never show: one can quote
+a number nobody checked.
+
+---
+
+## Day 76 — 2026-11-03 — Questions that hide a judgment
+
+**Built:** N3 marks one by C7's own words, in plain code, as a new box for the model made its reading worse
+once (D-080). N10 writes the test, and the gate checks it like any finding (D-094). "Bad" was not on C7's
+list, though the plan's own example uses it; it is now. **A trick:** the same numbers as the plain question,
+and a model that obeys is stopped. **Limit:** "Why can't Kohli play spin?" is not marked (L-086).
+
+---
+
+## Day 77 — 2026-11-03 — End to end, with fakes
+
+**Built:** the six scenarios, and the graph on the real engines with the tiny database.
+**Then, read-only on the real database, with a scripted writer that follows the prompt's hints** (not a real
+answer: the words are scripted, and nothing was saved): 12 runs of 10 different questions. On "Why is Kohli bad against spin in
+T20s?": On "bad": The numbers point the other way: +5.8 from the average batter, range +1.2 to +10.4.
+**It found three more problems the fakes could not:** "Lanka" in "Sri Lanka" is a player (the gate now knows
+teams and grounds, D-089); "a 18% chance" (now "an"); and the read-back said "facing JJ Bumrah" of a bowler
+asked about alone.
+**Worth remembering:** both name problems were invisible in tests with made-up names. Real data finds what
+my test world does not hold.
+
+---
+
+## Day 78 — waits for the lock
+
+`scripts/real_runs.py` and ten practice questions are ready. Every try and reason is saved.
+
+---
+
+## Day 79 — 2026-11-03 — Counting cost
+
+**Built:** `domain/cost.py` (N-046, D-095): 13 supersteps, 12 agent runs, at most 26 model calls for a question
+in words. Tests make every part fail as often as it can, and reach 13 and 12. `scripts/ask.py` is the terminal
+for M3. **M3 is not reached:** that needs the real runs.
+**Tested, for Days 66-79:** 1313 in all. 82 deliberate mistakes: 79 caught, and the three missed were worth more
+than the rest. One showed **a real leak in the exam's lock**: it printed the kind column, in lower case, and my
+test looked for the secret word in capitals, so it passed. A friend's stray text could have been shown; only
+known kinds are printed now, and the group column is held to the same rule. One was a test that said what must
+not be printed and never what must. One was a guard behind another guard. All tightened, and caught on the second
+run. **A small fix on the way:** the flag and a question back said "his", and the data has women's cricket: they
+now say "their". N3's prompts keep their words, as a changed prompt needs a fair test first (D-080).
+
+---
+
+## Review of Days 66-79 — 2026-11-15
+
+Nothing was committed since Day 65, and the exam is not locked yet. All 1313 tests still passed.
+**Found, in my own Day 76:** "best" and "worst", which I had added to C7's list, were backed by a number
+above the average batter: "Is Kohli the best?" would have been answered "the numbers back that". And
+"Who is better, Kohli or Rohit?" was judged by Kohli against the average. Both fixed (D-096): a superlative
+is never backed, and a word that compares two is tested only by a difference between two.
+**The plan, changed in five rows:** Day 78 now holds the reader's fixes (L-082), by a pre-registered
+test; Day 80's response carries the answer's parts; Day 162 says its lies are injected; Baseline 2 (Day
+180) lets the model write numbers freely, or it would not show what slots and the gate prevent; Day 182
+counts word lies and number lies apart. All four follow from D-088.
+**The architecture:** two stale lines corrected (the premise, the risk table) and C7's text. Still
+version 4: the nodes, the checks and the invariants are the same, and what changed is how they are
+built. A version 5 would be for a new design, such as a learned engine with receipts (Phase 9c).

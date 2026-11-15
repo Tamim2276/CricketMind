@@ -14,6 +14,7 @@ from cricketmind_v3.application.graph.build import build_graph
 from cricketmind_v3.application.graph.context import GraphContext
 from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer
 from cricketmind_v3.domain.names import name_list
+from cricketmind_v3.domain.readback import read_back
 from cricketmind_v3.domain.routing import BY_KEYWORDS, decide, propose_by_keywords
 from cricketmind_v3.infrastructure.duckdb_engines import engines_on
 from cricketmind_v3.infrastructure.duckdb_repo import DuckDBDeliveryRepository
@@ -42,6 +43,7 @@ QUESTIONS = [
 def main(database: str, model: str) -> None:
     db = duckdb.connect(database, read_only=True)
     players = tuple(load_players(db))
+    # no prompt files in here: an agent asks no model, so nothing is answered (D-070)
     context = GraphContext(
         names=cricket_gazetteer(name_list(list(players))),
         llm=LangChainLLM(model),  # the door that stayed (D-024)
@@ -56,6 +58,14 @@ def main(database: str, model: str) -> None:
         started = time.time()
         state = graph.invoke({"question": question, "clip": None}, context=context)
         print(f"{time.time() - started:5.1f}s  {question}")
+        reading = state["reading"]
+        print(f"        read by {reading.by}")
+        for line in read_back(reading).splitlines():
+            print(f"        {line}")
+        if reading.not_in_question:
+            print(f"        thrown out: {', '.join(reading.not_in_question)}")
+        for note in reading.notes:
+            print(f"        reader's note: {note}")
         routing = state.get("routing")
         if routing is None:
             print("        no router: the question went straight to the answer")
@@ -71,7 +81,7 @@ def main(database: str, model: str) -> None:
         if routing.reason:
             print(f"        its reason: {routing.reason}")
         if routing.note:
-            print(f"        note: {routing.note}")
+            print(f"        router's note: {routing.note}")
     db.close()
 
 

@@ -10,16 +10,22 @@ UP = (
     "strong",
     "stronger",
     "strongest",
+    "good",
+    "great",
     "better",
+    "best",
     "dominant",
+    "dominate",
     "dominates",
     "dominated",
     "excellent",
+    "excel",
     "excels",
     "outstanding",
     "impressive",
     "superb",
     "brilliant",
+    "thrive",
     "thrives",
     "prolific",
     "commanding",
@@ -29,6 +35,7 @@ UP = (
 
 # tone words that say a player does worse
 DOWN = (
+    "struggle",
     "struggles",
     "struggled",
     "struggling",
@@ -36,17 +43,26 @@ DOWN = (
     "weaker",
     "weakest",
     "weakness",
+    "bad",
     "worse",
+    "worst",
+    "terrible",
+    "awful",
     "vulnerable",
     "poor",
     "troubled",
     "fragile",
     "susceptible",
     "liability",
+    "falter",
     "falters",
     "uncomfortable",
     "out of form",
 )
+
+# these rank a player against everyone, and no measure does: "+12 against the average
+# batter" is not "the best". Never backed (found in the review after Day 79, D-096)
+SUPERLATIVES = ("best", "worst", "strongest", "weakest")
 
 # a word just before a tone word turns it around: "not strong" says worse
 NEGATIONS = ("not", "never", "hardly", "isnt", "arent", "wasnt", "werent", "no")
@@ -59,8 +75,15 @@ def check_c7(finding: Finding, context: Context) -> list[Failure]:
         words = tokens(sentence)
         comparisons = _comparisons(claims_in(sentence, finding))
         for phrase, start in find_phrases(words, UP + DOWN):
+            if phrase in SUPERLATIVES:
+                reason = (
+                    f"'{phrase}' ranks a player against all others, and no measure "
+                    "here does that"
+                )
+                failures.append(_fail(finding, "", reason))
+                continue
             better = phrase in UP
-            if _negated(words, start):
+            if negated(words, start):
                 better = not better
             if not _backed(better, comparisons):
                 failures.append(_why(finding, phrase, better, comparisons))
@@ -77,7 +100,7 @@ def _comparisons(claims: list[Claim]) -> list[Claim]:
     return found
 
 
-def _negated(words: list[str], start: int) -> bool:
+def negated(words: list[str], start: int) -> bool:
     # look one and two words back: "not strong", "not very strong"
     for i in (start - 1, start - 2):
         if i >= 0 and words[i] in NEGATIONS:

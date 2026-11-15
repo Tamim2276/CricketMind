@@ -1966,6 +1966,10 @@ code into `docs/graph/dayN.md`, and `notebooks/graph_walkthrough.ipynb` runs one
 through it, node by node. The exam is written meanwhile, by friends only, and locked before
 Day 67 (D-070).
 
+**The order (D-095):** everything that needs no real answer was built first, with fakes, on
+2026-11-03. Days 67 and 78 and M3 run after the lock, with `scripts/first_agent.py`,
+`real_runs.py` and `ask.py`, which refuse to start before it.
+
 | Day | Learn | Build | Done when |
 |---|---|---|---|
 | 55 | LangGraph basics: state, nodes, edges, reducers | `application/graph/state.py`; the full skeleton with every node as a stub (node name = function name) | Test: the graph compiles and runs end to end |
@@ -1979,7 +1983,7 @@ Day 67 (D-070).
 | 63 | — | N10 router part 1: keyword rules, capability filter, cap of 4, default pair | Tests |
 | 64 | — | N10 router part 2: the LLM proposes, using an evidence summary; rules as the fallback | Tests with a scripted `FakeLLM` |
 | 65 | Writing good prompts | Agent spec: stakeholder and voice, with the allowed claim types read from the roster of Day 62 (D-083); one file per agent in `prompts/` | All 12 prompt files written |
-| 66 | — | Agent factory: LLM → `Finding` (claims + template) under a JSON schema | Tests with scripted findings |
+| 66 | — | Agent factory: LLM → `Finding` (claims + template) under a JSON schema. The model fills only the words; the code fills the claims (D-088) | Tests with scripted findings |
 | 67 | — | The first real agent: Tactical Analysis (N11b), with the real LLM | 5 real findings pass C1–C7; journal notes |
 | 68 | — | N11a Club Operations, N11c Personal Performance, N11d Global Scouting | Tests |
 | 69 | — | N11e Fan Concierge, N11f Stadium Operations (uses M2), N11g Bowling Performance (new, uses T2) | Tests |
@@ -1991,7 +1995,7 @@ Day 67 (D-070).
 | 75 | — | The withhold path; N12 synthesis (claim references only) with a fallback; N13 provenance tags; the honest answer when nobody can answer, saying what was missing (D-084, L-078) | Tests |
 | 76 | Questions that hide a judgment | False premises and trick attempts: N3 marks a judgment hidden in a question ("Why is Kohli bad against spin?"); the answer checks it like a tone word (C7) and says plainly when the premise is wrong. Text inside a question ("ignore your rules") is read as a question, never obeyed | Tests: a false premise is corrected with checked facts; a trick attempt changes nothing |
 | 77 | — | End-to-end tests: 6 text-only scenarios with fakes | All pass |
-| 78 | — | 10 runs with the real LLM; fix prompts | Journal: what failed and why |
+| 78 | — | 10 runs with the real LLM; fix prompts. N3's three misreadings from the router's run (L-082) are fixed here too, each fix judged on new wordings by a rule written down first, as on Day 59 (D-080) | Journal: what failed and why; the reader's fixes kept or taken out by their rule |
 | 79 | Counting cost | Count steps and agent calls; write the worst-case bound; test it | **M3:** text answers work in the terminal |
 
 ---
@@ -2013,7 +2017,7 @@ API      ←  { the full checked report }
 
 | Day | Learn | Build | Done when |
 |---|---|---|---|
-| 80 | Contract first: decide the shapes before the code | Pydantic request and response schemas | Visible on the `/docs` page |
+| 80 | Contract first: decide the shapes before the code | Pydantic request and response schemas. The response carries the answer's parts, not one string: the read-back, the test of a judgment, the report, what was withheld, what was missing, the receipts (`domain/answer.py`, D-093) | Visible on the `/docs` page |
 | 81 | FastAPI basics: routes, path parameters, `TestClient`; the app factory; settings from `.env`; logging | `api/main.py`; `GET /api/health` | Test: health returns ok |
 | 82 | `Depends` (dependency injection) and the composition root: wire ports to adapters in one place | `infrastructure/container.py`. Each question's run gets its own database cursors, one for N7a and one for the engines: queries side by side on one cursor swap rows (D-082) | Test: fakes swapped in for tests |
 | 83 | — | `POST /api/queries` for text questions, synchronous first | Test with fakes |
@@ -2248,7 +2252,7 @@ models, tested on someone else's questions (CricBench), and rated by people.
 | Day | Learn | Build | Done when |
 |---|---|---|---|
 | 161 | Designing experiments | The evaluation plan: question, method, pass rule for each, including the baselines (and Day 54's ML baseline for N9, D-062), the ablation, the AI checkers, the three models, CricBench and the human study. Every result gets a confidence range, every comparison a significance test, and anything random is run several times | Written |
-| 162 | — | Fabrication containment F1–F8: v2 mode, v3-design mode (no C7), the full gate, and the full gate with each check turned off in turn (ablation) | Catch-rate table; which lies get through with each check off; E-016 verified |
+| 162 | — | Fabrication containment F1–F8: v2 mode, v3-design mode (no C7), the full gate, and the full gate with each check turned off in turn (ablation). The lies are injected into real findings: the model types no number (D-088), so F1, F2a and F7 cannot come from it, and the paper says so (L-085) | Catch-rate table; which lies get through with each check off; E-016 verified |
 | 163 | Can an AI check an AI? | AI checker 1, an AI judge: the language model reads a finding and the facts and says pass or fail, on the same 8-lie test | Its catch rate per lie type |
 | 164 | — | AI checker 2, Chain-of-Verification: the model writes its own check questions and answers them | Its catch rate per lie type |
 | 165 | — | AI checker 3, a small hallucination detector: an open model made for this (LettuceDetect, MiniCheck or HHEM-2.1) reads each finding beside its facts, on the same 8-lie test | Its catch rate per lie type; time per finding |
@@ -2266,9 +2270,9 @@ models, tested on someone else's questions (CricBench), and rated by people.
 | 177 | Letting the computer write the prompts | DSPy (its GEPA optimizer) tunes the agents' prompts on the practice set; against the hand-written prompts: lies before the gate, honest declines, cost. Whichever wins on the practice set is used in the final exam, decided today, before it is opened; prompts tuned for one model are tuned again for each model (L-056) | `results/dspy_prompts.csv`; E-040 |
 | 178 | Testing once, honestly | The final exam: open the locked set from Day 15, check its checksum, run it once. How many were proved, explained or declined; every wrong answer; the same checked facts for every wording? | `results/coverage_final.csv`; E-013 verified |
 | 179 | What a baseline is, and why it must be fair | Baseline 1, plain AI: the same local model, with no data and no checks, answers the locked set; every answer saved, resumable. If you can, a large online model as well | All answers saved |
-| 180 | — | Baseline 2, AI with facts but no checks: the agents get the engine's facts, but the Faith Check is switched off; it answers the locked set. Baseline 3, agentic RAG: the same local model writes SQL on the same DuckDB, grades what comes back, rewrites and tries again (at most three rounds, LangGraph's agentic RAG pattern), with no Faith Check; it answers the locked set too (D-055) | All answers saved |
+| 180 | — | Baseline 2, AI with facts but no checks: the same model gets the engine's facts and writes its answer freely, numbers and all, with no slots and no Faith Check (CricketMind's own agents cannot type a number, D-088, so switching the gate off alone would not show what the gate and the slots prevent); it answers the locked set. Baseline 3, agentic RAG: the same local model writes SQL on the same DuckDB, grades what comes back, rewrites and tries again (at most three rounds, LangGraph's agentic RAG pattern), with no Faith Check; it answers the locked set too (D-055) | All answers saved |
 | 181 | — | Score all four systems: check every number each one states against the engine; count wrong numbers, unchecked numbers and honest declines | `results/baselines.csv`; E-014 verified |
-| 182 | One method, many models | Three models, part 1: a second local model and one online model (key in `.env`, a spending limit, version and date recorded); the 8-lie test before the gate with each | How often each model lies before checking |
+| 182 | One method, many models | Three models, part 1: a second local model and one online model (key in `.env`, a spending limit, version and date recorded); the 8-lie test before the gate with each: in its findings, the lies a model can make in words (F2b, F3 to F6, F8); in free answers as in Baseline 2, the number lies too (F1, F2a, F7), which slots rule out (D-088) | How often each model lies before checking, in words and in numbers |
 | 183 | — | Three models, part 2: the locked exam with each model; does every number stay checked whatever the model? | `results/three_models.csv`; E-018 verified |
 | 184 | — | The 20 tricky questions in the locked exam (false premises, trick attempts): premises corrected, tricks resisted | `results/tricky.csv`; E-019 verified |
 | 185 | Testing on someone else's questions | CricBench, part 1: load its released English questions (check the licence and their Cricsheet snapshot) and sort each into the five kinds. If it is still unreleased, the paper says so (L-016) and these three days are buffer | Questions loaded, or the gap recorded |

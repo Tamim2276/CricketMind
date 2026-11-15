@@ -130,16 +130,19 @@ def test_one_innings_stays_innings():
 def test_a_workload_ratio():
     claim = dataclasses.replace(c1(), metric="workload_ratio_flag", value=1.6, n=312)
     # the flag's words come from the number, never an injury chance (Day 41)
+    # and the four weeks' balls always show (Day 71, L-036)
     assert render_claim(claim) == (
-        "a workload ratio of 1.60, a spike above his usual week [D, 312 balls]"
+        "a workload ratio of 1.60, a spike above their usual week "
+        "[D, 312 balls in four weeks]"
     )
     usual = dataclasses.replace(claim, value=1.5)
     assert render_claim(usual) == (
-        "a workload ratio of 1.50, close to his usual week [D, 312 balls]"
+        "a workload ratio of 1.50, close to their usual week [D, 312 balls in four weeks]"
     )
     low = dataclasses.replace(claim, value=0.5)
     assert render_claim(low) == (
-        "a workload ratio of 0.50, well below his usual week [D, 312 balls]"
+        "a workload ratio of 0.50, well below their usual week "
+        "[D, 312 balls in four weeks]"
     )
 
 
@@ -198,3 +201,19 @@ def test_counted():
     assert counted(1, "innings") == "1 innings"
     assert counted(1, "reviews") == "1 review"
     assert counted(1, "wickets") == "1 wicket"  # Day 40
+
+
+def test_a_chance_takes_the_right_article():
+    # found on Day 77: "a 18% chance" reads wrong
+    for value, words in (
+        (0.18, "an 18% chance"),
+        (0.08, "an 8% chance"),
+        (0.11, "an 11% chance"),
+        (0.85, "an 85% chance"),
+        (0.41, "a 41% chance"),
+        (0.03, "a 3% chance"),
+        (0.28, "a 28% chance"),
+        (1.0, "a 100% chance"),
+    ):
+        claim = dataclasses.replace(c2(), value=value, interval=(0.0, 1.0))
+        assert render_claim(claim).startswith(words)

@@ -29,6 +29,8 @@ class Finding:
     agent: str  # "N11b"
     claims: tuple[Claim, ...]
     template: str  # "Kohli's cover drive returns {c1}."
+    # why the model's reply could not be read (Day 66): nothing to show, and C1 says why
+    unreadable: str | None = None
 
     def __post_init__(self):
         # rule 1: a tuple cannot grow, so no claim can be slipped in later
@@ -48,3 +50,11 @@ class Finding:
                 raise FindingError(
                     f"{self.agent}: the sentence uses {slot}, but no claim has that id"
                 )
+
+
+def latest_findings(findings: list[Finding]) -> list[Finding]:
+    """Each agent's last try: every try is kept in the notebook, the last one counts."""
+    latest = {}
+    for finding in findings:
+        latest[finding.agent] = finding
+    return list(latest.values())

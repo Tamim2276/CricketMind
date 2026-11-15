@@ -19,6 +19,7 @@ from cricketmind_v3.domain.wording import (
     needs_hedge,
     vocabulary,
 )
+from cricketmind_v3.domain.workload import NEVER_ABOUT_LOAD, OVERWORKED, SPIKE
 
 
 def check_c4(finding: Finding, context: Context) -> list[Failure]:
@@ -27,6 +28,7 @@ def check_c4(finding: Finding, context: Context) -> list[Failure]:
     for sentence in sentences(finding.template):
         failures.extend(_chances(finding, sentence))
         failures.extend(_differences(finding, sentence))
+    failures.extend(_load(finding))
     return failures
 
 
@@ -161,6 +163,33 @@ def _differences(finding: Finding, sentence: str) -> list[Failure]:
                 "detectable, so do not say there is none"
             )
             failures.append(_fail(finding, claim.id, reason))
+    return failures
+
+
+# Part 3: a bowler's load (Day 71, L-036)
+
+
+def _load(finding: Finding) -> list[Failure]:
+    """The whole finding's words follow the workload flag: "overworked" only with a
+    spike, and never "normal", "safe" or a chance of injury."""
+    failures = []
+    words = tokens(finding.template)
+    for claim in finding.claims:
+        if claim.metric != "workload_ratio_flag":
+            continue
+        for phrase, _ in find_phrases(words, NEVER_ABOUT_LOAD):
+            reason = (
+                f"'{phrase}' is more than the flag can say: it compares a bowler only "
+                "with themselves, and the data has no injuries"
+            )
+            failures.append(_fail(finding, claim.id, reason))
+        if claim.value <= SPIKE:
+            for phrase, _ in find_phrases(words, OVERWORKED):
+                reason = (
+                    f"'{phrase}' needs a spike, and the ratio is "
+                    f"{shown(claim.metric, claim.value)}"
+                )
+                failures.append(_fail(finding, claim.id, reason))
     return failures
 
 

@@ -35,7 +35,7 @@ def calendar() -> list[Spell]:
 def test_the_made_up_calendar():
     found = workload_ratio(calendar(), date(2025, 3, 1))
     assert found == Fact(value=2.0, n=240)  # 120 / (240 / 4)
-    assert flag(found.value) == "a spike above his usual week"
+    assert flag(found.value) == "a spike above their usual week"
 
 
 def test_the_windows_include_the_day_asked_about():
@@ -79,11 +79,11 @@ def test_a_boxing_day_test_counts_in_the_week_after():
 
 
 def test_the_flag_follows_the_ratio():
-    assert flag(1.51) == "a spike above his usual week"
-    assert flag(1.5) == "close to his usual week"
-    assert flag(1.0) == "close to his usual week"
-    assert flag(0.8) == "close to his usual week"
-    assert flag(0.79) == "well below his usual week"
+    assert flag(1.51) == "a spike above their usual week"
+    assert flag(1.5) == "close to their usual week"
+    assert flag(1.0) == "close to their usual week"
+    assert flag(0.8) == "close to their usual week"
+    assert flag(0.79) == "well below their usual week"
 
 
 # No answer
@@ -94,6 +94,6 @@ def test_no_balls_in_four_weeks_gives_no_answer():
 
 
 def test_a_newcomer_has_no_usual_week():
-    # all his balls inside the four weeks: his usual week is unknown, not zero
+    # all his balls inside the four weeks: their usual week is unknown, not zero
     newcomer = [one_day(date(2025, 2, 20), 24), one_day(date(2025, 2, 27), 24)]
     assert workload_ratio(newcomer, date(2025, 3, 1)) is None

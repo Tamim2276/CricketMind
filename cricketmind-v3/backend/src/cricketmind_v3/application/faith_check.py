@@ -32,6 +32,21 @@ def receipts_of(
     return receipts
 
 
+def check_with_receipts(
+    finding: Finding, source: FactSource | None, context: Context
+) -> tuple[list[Failure], dict[tuple[str, str], Receipt]]:
+    """What the gate does with one finding (Day 74): ask the engines again once, keep the
+    receipts, run the seven checks. With no engines nothing is re-checked, so C2 stops
+    every number: fail closed."""
+    facts = {}
+    receipts = {}
+    if source is not None:
+        facts = recompute(finding, source)
+        receipts = receipts_of(finding, facts)
+    checked = dataclasses.replace(context, facts=facts)
+    return run_checks(finding, checked, ALL_CHECKS), receipts
+
+
 def faith_check(
     finding: Finding,
     source: FactSource,

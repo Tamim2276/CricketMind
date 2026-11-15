@@ -5,6 +5,9 @@ from cricketmind_v3.domain.registry import lookup, missing_keys
 
 def check_c1(finding: Finding, context: Context) -> list[Failure]:
     """C1: is each claim on the menu, allowed for this agent, complete, from its engine?"""
+    if finding.unreadable is not None:
+        return [_fail(finding, "", finding.unreadable)]
+
     allowed = context.allowed.get(finding.agent)
     if allowed is None:
         return [_fail(finding, "", f"{finding.agent} is not an agent on the roster")]

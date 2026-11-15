@@ -15,6 +15,35 @@ FOUR_WEEKS = 28  # the usual week is a quarter of these
 SPIKE = 1.5  # above: far more than his usual week
 UNDERLOAD = 0.8  # below: far less
 
+# words a workload flag can never back: the ratio compares a bowler only with themselves and
+# the data has no injuries (L-036). C4 reads these (Day 71)
+NEVER_ABOUT_LOAD = (
+    "normal",
+    "safe",
+    "fine",
+    "healthy",
+    "no risk",
+    "low risk",
+    "high risk",
+    "injury risk",
+    "risk of injury",
+    "chance of injury",
+    "injury chance",
+    "injured",
+    "break down",
+    "breaking down",
+)
+# only with a spike
+OVERWORKED = (
+    "overworked",
+    "overwork",
+    "overbowled",
+    "overloaded",
+    "overload",
+    "too much",
+    "too many",
+)
+
 
 @dataclass(frozen=True, kw_only=True)
 class Spell:
@@ -79,10 +108,10 @@ def flag(ratio: float) -> str:
     weeks (found on Day 41); the four weeks' balls show beside the ratio.
     """
     if ratio > SPIKE:
-        return "a spike above his usual week"
+        return "a spike above their usual week"
     if ratio < UNDERLOAD:
-        return "well below his usual week"
-    return "close to his usual week"
+        return "well below their usual week"
+    return "close to their usual week"
 
 
 def _bowled_before(by_day: dict[date, int], day: date) -> bool:

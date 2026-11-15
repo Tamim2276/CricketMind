@@ -22,10 +22,6 @@ from cricketmind_v3.infrastructure.prompt_files import (
 
 SPECS = read_specs()
 RULES = read_rules()
-TWELVE = []
-for name in ROSTER:
-    if name != "N11m":
-        TWELVE.append(name)
 
 
 def has_digit(text: str) -> bool:
@@ -38,20 +34,19 @@ def has_digit(text: str) -> bool:
 # The files
 
 
-def test_there_is_a_prompt_file_for_each_of_the_twelve():
-    assert list(SPECS) == TWELVE
-    assert len(SPECS) == 12
+def test_there_is_a_prompt_file_for_each_of_the_thirteen():
+    assert list(SPECS) == list(ROSTER)
+    assert len(SPECS) == 13
 
 
 def test_each_file_is_named_after_its_node():
     expected = {RULES_FILE}
     for node in nodes.AGENTS:
-        if node.__name__ != "n11m_explainer":
-            expected.add(node.__name__ + ".txt")
+        expected.add(node.__name__ + ".txt")
     found = set()
     for path in PROMPTS.iterdir():
         found.add(path.name)
-    assert found == expected  # the Explainer's file comes with it (Day 72)
+    assert found == expected
 
 
 def test_each_voice_has_its_four_parts_in_order():
@@ -63,7 +58,7 @@ def test_each_voice_has_its_four_parts_in_order():
         assert places == sorted(places), agent
 
 
-@pytest.mark.parametrize("agent", TWELVE)
+@pytest.mark.parametrize("agent", list(ROSTER))
 def test_each_voice_says_something_in_each_part(agent):
     lines = SPECS[agent].voice.splitlines()
     assert len(lines) == len(VOICE_PARTS)
@@ -124,6 +119,7 @@ def test_the_rules_examples_pass_the_checks():
 
 def test_the_rules_keep_what_was_promised():
     assert "abbreviations" in RULES  # L-021
+    assert "best, worst, strongest or weakest" in RULES  # D-096
     assert "judging first" in RULES  # L-022
     assert "{c1}" in RULES  # C5
     assert "in digits or in words" in RULES  # L-020: C5 cannot see a number in words
@@ -171,6 +167,23 @@ def test_only_the_measures_with_numbers_are_listed():
     prompt = system_prompt(spec, RULES, ("strike_rate",))
     assert "- strike_rate:" in prompt
     assert "- dismissal_rate:" not in prompt
+
+
+def test_the_explainer_is_told_words_only():
+    # Day 72: it has no slots, so the rules about slots are not for it
+    spec = SPECS["N11m"]
+    prompt = system_prompt(spec, RULES, ())
+    assert prompt.startswith("You are Explainer, a cricket specialist.")
+    assert spec.voice in prompt
+    assert "{c1}" not in prompt
+    assert "Your measures" not in prompt
+
+
+def test_the_explainer_keeps_what_was_promised():
+    voice = SPECS["N11m"].voice
+    assert "digits" in voice
+    assert "name of any player" in voice
+    assert "only part of the question" in voice
 
 
 def test_the_measures_keep_the_rosters_order():

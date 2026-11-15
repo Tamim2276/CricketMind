@@ -345,6 +345,10 @@ section is an implementation of one of them.
                 -- (18.5,-30.4) -- (n13.south);
 \node[elab] at (7.0,-30.4) {can't check: honest decline, with what can be asked};
 
+% ---- nobody can answer: no agent runs (D-084, D-092)
+\draw[withhold] (n10.south east) |- (27.8,-16.0) -- (27.8,-27.2) -- (n13.east);
+\node[elab] at (21.5,-15.7) {nobody can answer: what was missing};
+
 % ---- Shot DNA -> both retrievers
 \draw[bus]  (n6.south) -- (15.4,-5.7);
 \draw[bus]  (6.2,-5.7) -- (15.4,-5.7);
@@ -444,8 +448,10 @@ descriptive (counted from history), P for predictive (simulated). N3 gives every
 question one of five kinds (Table~\ref{tab:kinds}). A question nothing can check
 goes straight to the output with an honest decline; for a rules question the
 evidence and engine nodes pass the state through unchanged and N10 sends it to
-the Explainer, N11m. Agents emit claim tuples rather than numbers; the Faith
-Check re-queries the engines for each tuple, keeps the receipt of that
+the Explainer, N11m. If no agent has a number, none runs, and the output says what
+was missing. A language model writes each finding's words, with slots; the code
+makes the claims from what the engines said. The Faith
+Check re-queries the engines for each claim, keeps the receipt of that
 re-query, and runs checks C1--C7 (Figure~\ref{fig:faith-v4}) against the static
 claim-type registry. Failing agents are regenerated with the reasons, at most
 twice, after which the finding is withheld and listed in the report. The
@@ -563,8 +569,11 @@ name resolved against the player register and an unknown player reported as
 such. It adds three outputs: the \emph{kind} of question (Section~\ref{sec:any});
 the \emph{read-back}; and any \emph{premise}, a judgment the question takes for
 granted. ``Why is Kohli bad against spin?'' presupposes that he is worse than
-average against spin. A marked premise becomes a comparison the agents must cite
-and C7 must check (Section~\ref{sec:faith}). Text inside a question is only ever
+average against spin. A marked premise is tested by a checked comparison, written
+as a finding by code and passed through the gate (Section~\ref{sec:faith}). A word
+that sets two things side by side (``better'') is tested only by a difference
+between the two, and a superlative (``best'') by nothing: no measure ranks a player
+against everyone. Text inside a question is only ever
 read as a question, never as an instruction to the system.
 
 \subsection{N6 Shot DNA}
@@ -793,7 +802,10 @@ weeks; the week's balls appear only inside its ratio.
 \label{sec:claims}
 
 An agent finding is a list of claims and a prose template. The claim is the unit
-of verification:
+of verification. As built, the language model fills in only the template: it never
+types a number, a measure or a subject. The code makes each claim from what the
+engines said, and keeps those the template uses, so a number never passes through a
+model (I3). The gate still re-queries every claim, and fails closed:
 
 \medskip
 {\footnotesize
@@ -972,7 +984,8 @@ classes of Table~\ref{tab:fab}. C1--C6 come from Version~3; C7 is new.}
 \end{figure}
 
 \begin{description}[leftmargin=1.2em,style=nextline,itemsep=2pt]
-\item[C1 --- Schema and registry.] The finding parses; each claim type exists
+\item[C1 --- Schema and registry.] The finding parses (a reply that cannot be read
+  fails here, and can be regenerated); each claim type exists
   and this agent is allowed to assert it; the claim names its source.
 \item[C2 --- Subject-bound value.] The gate re-queries the named source with the
   claim's subject and compares the result within rounding, including the
@@ -986,20 +999,25 @@ classes of Table~\ref{tab:fab}. C1--C6 come from Version~3; C7 is new.}
   the band of Table~\ref{tab:lexicon} that contains its point estimate; if the
   interval crosses a band boundary, a hedge naming the evidence is required. A
   comparative claim whose difference interval contains zero must say \emph{no
-  detectable difference}.
+  detectable difference}. A workload flag's words follow the flag: ``overworked''
+  only above the spike, and never ``normal'', ``safe'' or a chance of injury.
 \item[C5 --- No orphan numbers.] Apart from claim references and a small
   allowlist (``T20'', ``U-19''), the template contains no digits.
-\item[C6 --- Prose subjects agree.] Using a gazetteer of players, the fifteen
-  shot names and their synonyms, phases, bowler types and venues, every entity
+\item[C6 --- Prose subjects agree.] Using a gazetteer of players, teams, grounds,
+  the fifteen shot names and their synonyms, phases and bowler types, every entity
   named in a sentence that contains a claim reference must agree with that
-  claim's subject.
+  claim's subject. A proper name counts only when written with a capital, as
+  everyday words are also players in the register (``ball'', ``chance'', ``to'').
+  An agent with no measures, the Explainer, may name no player in any sentence.
 \item[C7 --- Tone words backed (new).] Tone words carry a direction
   (``strong'', ``dominates'', ``excellent'' point up; ``struggles'', ``weak'',
   ``vulnerable'' point down). A tone word in a sentence about a player must be
   backed by a comparison claim in the same sentence (\texttt{sr\_vs\_average},
   or a difference between two subjects) whose whole 95\% interval lies on the
   side of zero the word points to. A tone word with no comparison, with one
-  pointing the other way, or with an interval containing zero, fails.
+  pointing the other way, or with an interval containing zero, fails. A
+  superlative (``best'', ``worst'') always fails: no measure ranks a player
+  against all others.
 \end{description}
 
 \paragraph{C7 by example} (an invented illustration). Suppose
@@ -1010,11 +1028,13 @@ the pull'' fails if the pull's comparison interval contains zero. ``He
 struggles'' with no comparison claim fails, because the judgment has no evidence
 behind it.
 
-\paragraph{False premises and trick attempts.} When N3 marks a premise (``Why is
-Kohli bad against spin?''), the agents must cite the comparison that tests it,
-and C7 checks their words against it. If the comparison does not support the
-premise, the answer says so before anything else; if the evidence is too thin
-for any judgment (C3), it says that instead. A trick attempt inside a question
+\paragraph{False premises and trick attempts.} N3 marks a premise (``Why is
+Kohli bad against spin?'') by C7's own words. The comparison that tests it is
+written as a finding by code, not a model, and goes through the gate, so it has a
+receipt; agents are told not to repeat the word, and C7 checks them if they do. If
+the comparison does not support the premise, the answer says so before anything
+else; if the evidence is too thin for any judgment (C3), it says that instead. A
+trick attempt inside a question
 changes nothing: questions are never read as instructions, and every number must
 still pass C1--C7.
 
@@ -1057,11 +1077,13 @@ acceptable rendering is ``about as likely as not, though on 4 dismissals in 50
 balls the estimate is very uncertain''. ``Will probably get him out'' fails C4.
 
 \paragraph{N12 and N13.} N12 composes the report from verified findings only and
-is held to the same rule: it references claims and types no numbers, and its
-output passes C5, C6 and C7. If it fails, the report falls back to the verified
+is held to the same rule: it references claims and types no numbers, it keeps every
+slot, and its output passes C3 to C7, since joining sentences can lose a warning.
+A single finding needs no joining. If it fails, the report falls back to the verified
 findings in fixed order. N13 shows the read-back, every number with its
-provenance tag and receipt, any explanation with its label, and the withheld
-findings.
+provenance tag and receipt, any explanation with its label, the withheld
+findings by name and check, never their reasons (a reason can quote a number nobody
+checked), and what was missing for an agent that was wanted but has no number.
 
 % =====================================================================
 \section{Generality: a Sport-Neutral Core}
@@ -1114,8 +1136,10 @@ $4 \times (1 + 2) = 12$, independent of roster size. The premise is marked insid
 N3 and checked inside the Faith Check, receipts are kept by C2's existing
 re-query, and C7 runs inside the single Faith Check node, so no new loop or node
 is added on the agent path. A can't-check question skips the agents entirely.
-The superstep bound must still be re-derived from the closed-form cost model and
-re-measured before it is claimed.
+For a question in words the worst case is a sum: $5 + 2 \times 3 + 2 = 13$
+supersteps, 12 agent runs, and at most $2 + 3 \times 3 + 2 + 12 + 1 = 26$ calls to
+the language model. Tests with fakes that fail at every step reach 13 and 12. The
+bound for a clip is derived when its retry loop is built (Phase 8).
 
 % =====================================================================
 \section{Evaluation Plan}
@@ -1254,7 +1278,7 @@ not commitments.}
 \midrule
 No licensed commentary corpus with match and ball keys & O3 impossible & hand-label an evaluation set; shot-keyed claims only on it \\
 Bridge labels too noisy ($\kappa < 0.61$) & wrong shot statistics & disable the shot filter on real data; report the bridge as a negative result \\
-A 7B model breaks the claim schema & findings do not parse & constrained decoding; parse failures count as C1 rejections and regenerate \\
+A 7B model breaks the claim schema & findings do not parse & the model fills one field, the words, and the code builds the claims; a reply that still cannot be read counts as a C1 rejection and regenerates \\
 Pose fails on low-resolution clips & no posture & metrics failing validation leave the registry; agents degrade to D claims \\
 Workload ratio validity disputed & misleading medical advice & worded as a monitoring flag; never a probability \\
 Bowling type missing for some players & filters silently shrink $n$ & $n$ is always reported; C3 floor \\

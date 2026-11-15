@@ -1798,8 +1798,8 @@ Template:
   question is for the medical team, which L-078 needs); capping the list in the form (a reply
   with five is still useful, and the rule cuts it); keeping the tally "in case" (nothing planned
   reads it).
-- Status: built (Day 64), tested with a scripted fake only, as the plan asks. No real model has
-  routed a question yet: `scripts/route_questions.py` is there for the user to run (L-080).
+- Status: built (Day 64), tested with a scripted fake, as the plan asks. The user ran
+  `scripts/route_questions.py` once by hand (2026-11-03, journal), which scores nothing (L-080).
   Measured on Days 170-173
 - Paper section: Method (N10); Evaluation (Days 170-173)
 
@@ -1830,3 +1830,185 @@ Template:
   limit: Day 78 can trim with real runs).
 - Status: built (Day 65). All twelve files written. No model has read them yet (L-081)
 - Paper section: Method (the agents; invariant I2)
+
+## D-087 — The exam's lock: a script that shows no question, and no real answer before it
+- Date: 2026-11-03
+- Decision: (1) `pipeline/lock_exam.py` joins every CSV in `thesis/exam/raw/` into
+  `thesis/exam/final_exam.csv` and prints only counts, row numbers and the SHA-256. It writes
+  nothing if a row has no question or handling, a Part A group is not four wordings of one kind,
+  a question is repeated or lifted from the guide, or the parts are not 80, 20 and 20. It will
+  not write a locked exam again. (2) The exam stays 120 rows, whoever writes it: D-070's four
+  friends at 30 rows or, as the user now plans, two at 60 (the guide gains a 60-row sheet, and
+  loses "I'll fill them in", since the user never opens the file). The script prints how many
+  files there were. (3) `scripts/first_agent.py`, `real_runs.py` and `ask.py` refuse to start until
+  the file exists. (4) `thesis/exam/.gitattributes` keeps the file's bytes the same on any machine
+  (this repository converts line endings, which would change the SHA-256), and `.ignore` keeps
+  search tools out of the folder, so Claude cannot read it by accident.
+- Why: D-070 needs an exam nobody reads, so nobody can read it to check it. A wrong row must still
+  be found, by its number. The guard turns a rule that relied on memory into one that cannot be
+  forgotten.
+- Alternatives considered: models writing the exam (asked by the user on 2026-11-03: the builder
+  would write their prompt, so what the engines can answer leaks in, as D-070 says; kept for
+  practice questions only); shrinking the exam to 60 rows (fewer questions, wider ranges); a
+  guard only in the journal (it can be forgotten).
+- Status: built and tested on made-up files. The lock itself is the user's to run. Once it prints
+  the SHA-256, E-013 takes it, and how many wrote the exam is set down (L-083)
+- Paper section: Evaluation (the locked exam)
+
+## D-088 — The agent factory: the model writes only words, the code fills in the numbers
+- Date: 2026-11-03
+- Decision: (1) The model fills one box: the sentence, with a slot where each number goes. It never
+  types a number, a measure, a subject or a source. (2) `offered_claims` makes each number the agent
+  may use into a ready claim, from what the engines said and the roster's measures, numbered the
+  same whichever engine finished first; the finding keeps those its sentence uses. (3) Each number
+  in the prompt comes with what the checks will ask of its sentence, worked out by the same
+  functions: a small sample, the band's words for a chance, a wide range, a range across zero. (4)
+  One call for each try, so the bound stays simple. A reply that does not fit, an unknown slot, or a
+  sentence with no slot still becomes a Finding, marked unreadable; C1 reports it and the gate can
+  ask again, as the architecture's risk table says. (5) An agent must say at least one number:
+  words alone would pass every check.
+- Why: I3 says agents never type numbers. The design's claim tuple held a value, which a 7B model
+  would have to copy digit for digit, subject and all. A number that never passes through a model
+  cannot be mistyped. The gate still asks the engines again, keeps its receipts and fails closed.
+- Alternatives considered: the model filling whole claims, as the architecture's first text had it
+  (more to break, and every slip costs a regeneration); the model choosing a claim by number and
+  the code writing the sentence (no voice, and no agent); no numbers in the prompt (it could not
+  pick the words for a chance, or know a range crosses zero); asking again inside the factory (a
+  second count of model calls beside the gate's).
+- Status: built (Day 66). Tested with scripted words only (L-081). This narrows what C1 and C2 can
+  catch on real runs (L-085): the user should check this choice
+- Paper section: Method (I3, the claim contract)
+
+## D-089 — C6 reads a name as written, and the gate knows teams and grounds
+- Date: 2026-11-03
+- Decision: (1) A player's, team's or ground's name counts only when written with a capital. (2) At
+  the start of a sentence, where every word has one, a short list of everyday words stays a word.
+  (3) On a real run the gate's list also has every team and ground (`gate_gazetteer`); N3's rules
+  keep the shorter list.
+- Why: found on Day 66, before any model ran: in the real register, 30 of the 274 everyday words I tried
+  are a way of saying a player (N-047): "ball" is JT Ball, "chance" E Chance, "to" YS To, "more" VV
+  More. C6 matched in lower case, so almost any honest sentence would have been rejected. Found on
+  Day 77, on the real database: "Lanka" in "Sri Lanka" is a player too. The architecture promised
+  venues; the shared rules already say to name only those the claim is about.
+- Alternatives considered: a dictionary of English words (a dependency, and many surnames are in it);
+  dropping surnames from the list (then "Rohit returns {c1}" about Kohli passes, lie F2b); teams on
+  N3's list as well (it would change the reader the fair test of Day 59 measured, N-044).
+- Status: built (Days 66, 77). A name in lower case is not read (L-084)
+- Paper section: Method (C6)
+
+## D-090 — The twelve agents, and a flag's words
+- Date: 2026-11-03
+- Decision: (1) Each agent's node asks the one factory; what differs is its prompt file and its row
+  of the roster. (2) N11k's words follow the flag, checked as part three of C4 on the whole finding:
+  "overworked" and its like only above the spike, and never "normal", "safe" or a chance of injury.
+  The renderer now writes "[D, 626 balls in four weeks]". (3) `check_the_menu` runs in
+  `build_graph`: a measure with no engine or no words stops the build (I2, D-007, E-023). N6 is let
+  through until Phase 8.
+- Why: L-036: on the day Bumrah broke down his ratio was 1.32, "close to his usual week", so the words
+  must never say safe. D-007 said the check would run on the real graph from Day 71.
+- Alternatives considered: an eighth check for one agent (the paper has seven, and the registry's
+  table already puts a flag's wording under the wording check); twelve factories.
+- Status: built (Days 68-71). Day 67's real run of N11b waits for the lock (D-095)
+- Paper section: Method (the agents, I2)
+
+## D-091 — The Explainer: words only, and no names
+- Date: 2026-11-03
+- Decision: (1) N11m has a voice like the others and no measures. It is told no rules about slots.
+  (2) An agent with no measures may name no player, in any sentence (part of C6); digits still fail
+  C5, and tone words C7. (3) Its text always goes out under "General explanation, not checked
+  against data". (4) Retrieval over the Laws is not built: MCC's permission has not come, so it stays
+  future work (D-055, L-014).
+- Why: any statement about a player needs data. A number in words stays allowed here, since a rule
+  needs "six balls".
+- Alternatives considered: a separate check (C6 already reads names); a word list of rules terms (a
+  list of what may be said, which no list can cover).
+- Status: built (Day 72), with scripted words
+- Paper section: Method (the Explainer)
+
+## D-092 — Who runs, and a loop with a budget
+- Date: 2026-11-03
+- Decision: (1) A branch after N10: only the chosen agents run; with nobody chosen, straight to N13, a
+  new arrow in the figure. (2) `faith_gate` checks each agent's last try. An agent that passes is not
+  checked or run again. Every try stays in the notebook. (3) A branch after the gate: only the agents
+  that failed go back, each told only its own reasons; at most two regenerations (I6). (4) After
+  that, what still fails is withheld. An answer names the agent and the checks, never the reasons,
+  since a reason can quote a number nobody checked.
+- Why: the plan's Days 73 and 74, and the figure's loop. v2's extra nodes for this (`regen_prep`,
+  `drop_unfaithful`) are not needed: the gate counts its own checks, and the branch reads the count.
+- Alternatives considered: the Send API (the state is shared, so a list of names is enough); a reducer
+  that replaces an agent's old finding, as v2 had (the tries are useful evidence for Day 78).
+- Status: built (Days 73, 74)
+- Paper section: Method (control loops, I6)
+
+## D-093 — N12 and N13
+- Date: 2026-11-03
+- Decision: (1) N12 reports only what passed, in the router's order. One finding goes out as it stands
+  with no call to the model. With several, the model joins them, all under one set of slots, one
+  number said twice being one slot. (2) Its reply must keep every slot and pass C3 to C7, one try;
+  anything wrong and the findings go out in order, with a note. (3) N13 shows the read-back, the test
+  of a judgment, the report with its tags, what was missing, what was withheld, and a receipt for
+  every number shown. (4) What was missing comes from the menu: of the wanted agent's measures, the
+  nearest to fitting says what the question lacks or has in the way: "Injury Management could answer
+  with a date, and without a format". This settles L-078: say what is missing, not ask back.
+- Why: the architecture names C5, C6 and C7 for N12; C3 and C4 are added, since joining sentences can
+  lose "on only a few balls", and the numbers are already checked. Words from the menu hold for every
+  measure, with no text to write for each.
+- Alternatives considered: asking the user back for the date (a second turn; the answer's words let
+  them ask again); regenerating N12 (a second loop for little gain, with a sound fallback there).
+- Status: built (Day 75). The user can still choose to ask back instead (L-078)
+- Paper section: Method (N12, N13)
+
+## D-094 — A judgment hidden in a question, and trick attempts
+- Date: 2026-11-03
+- Decision: (1) N3 marks a judgment by looking for C7's own words, by plain code, with C7's rule for
+  "not". C7's list gains the words people ask with: good, great, best, bad, worst, terrible, awful,
+  and the plain forms struggle, dominate, excel, thrive, falter. (2) N10, the first node with the
+  numbers, writes the test as a finding filed under N3: the same as C7's, a counted comparison whose
+  whole range lies on the word's side of zero. Too few balls says that instead; a range across zero
+  says no detectable difference. The sentence is the code's, and goes through the gate, so it has a
+  receipt. (3) N13 says it first: On "bad": The numbers point the other way: ... With nothing to test
+  it, it says so. (4) Agents are told not to repeat the word; C7 catches them if they do. (5) A trick
+  is only part of the question: the same subject gives the same numbers, and a model that obeys types
+  a number C5 stops, or a judgment C7 stops.
+- Why: D-022 and I7. Adding a box to the model's form made its reading worse once (D-080), so N3's form
+  is not touched, and the reader's measured score stands. "Bad" was not on C7's list, though the plan's
+  own example uses it: an agent could have repeated it unchecked.
+- Alternatives considered: asking the model to mark it (needs a pre-registered test first); testing
+  with a matchup (a what-if about two bowlers says nothing of how a player has done); a list kept only
+  for questions (two lists that could differ).
+- Status: built (Day 76). Scored on the exam's tricky questions (Day 184). What it cannot see is L-085
+- Paper section: Method (I7); Results (Day 184)
+
+## D-095 — Phase 5's order, and the worst case
+- Date: 2026-11-03
+- Decision: (1) All of Phase 5 that needs no real answer was built before the lock, with fakes, at the
+  user's request. Day 67 (5 real findings), Day 78 (10 real runs) and M3 come after it, and their
+  scripts are ready. Nothing is skipped: only the order changed. (2) The worst case for a question in
+  words is a sum (`domain/cost.py`, N-046): 13 supersteps, 12 agent runs, at most 26 model calls. Tests
+  run it with fakes and reach 13 and 12. The bound for a clip is written with Phase 8.
+- Why: D-070's date guards the first real answer, not the first line of code. Building with fakes before
+  it keeps that. The user asked not to stop while the exam is being written.
+- Alternatives considered: waiting (a day lost for no gain in fairness); building Days 68-71 only.
+- Status: built (Day 79), and M3 is not reached until the real runs pass
+- Paper section: Method (I6); Implementation
+
+## D-096 — A superlative is never backed, and a judgment is tested by the comparison that fits its word
+- Date: 2026-11-15
+- Decision: (1) C7 always fails "best", "worst", "strongest" and "weakest": they rank a player
+  against everyone, and no measure does. The shared rules tell the agents so. (2) In a question, a
+  plain judgment ("bad", "strong") is tested by the player against the average batter
+  (`sr_vs_average`); a word that sets two things side by side ("better", "worse", "stronger",
+  "weaker") only by a difference between two (`sr_difference`); a superlative by nothing, and the
+  answer says "nothing I can count tests that". A test fails if a new counted comparison joins the
+  menu without being put in one list or the other.
+- Why: found in the review after Day 79. "Is Kohli the best T20 batter?" would have been answered
+  "The numbers back that: +5.8 from the average batter", and an agent could write "he is the best"
+  beside the same number: above average is not the best. "Who is better, Kohli or Rohit?" would
+  have been judged by Kohli against the average batter, which says nothing about Rohit. Both
+  overclaims came from Day 76's own additions to the word list (D-094), and "strongest" and
+  "weakest" had been on it since D-017.
+- Alternatives considered: leaving superlatives to the agents' prompts (a prompt is not a check);
+  not marking comparatives in questions at all (an agent would then not be told to leave the word
+  alone); a ranking measure (a new engine: future work).
+- Status: built (2026-11-15), with tests; C7 on real findings is measured on Days 162 and 168
+- Paper section: Method (C7, I7)

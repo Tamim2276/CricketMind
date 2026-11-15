@@ -24,16 +24,32 @@ def sentences(template: str) -> list[str]:
 def tokens(text: str) -> list[str]:
     """Lower-case words without punctuation: "Kohli's cover-drive!" -> kohli cover drive."""
     words = []
+    for cleaned, _ in _words(text):
+        words.append(cleaned)
+    return words
+
+
+def written_tokens(text: str) -> list[str]:
+    """The same words, one for one, as they were written: Kohli's cover drive."""
+    words = []
+    for _, written in _words(text):
+        words.append(written)
+    return words
+
+
+def _words(text: str) -> list[tuple[str, str]]:
+    # each word twice: cleaned, and as written
+    found = []
     word = ""
-    for char in text.lower().replace("’", "'") + " ":
+    for char in text.replace("’", "'") + " ":
         if char.isalnum() or char == "'":
             word += char
         elif word:
-            cleaned = _clean(word)
+            cleaned = _clean(word.lower())
             if cleaned:
-                words.append(cleaned)
+                found.append((cleaned, word))
             word = ""
-    return words
+    return found
 
 
 def _clean(word: str) -> str:

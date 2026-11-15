@@ -6,6 +6,7 @@ from datetime import date
 
 import pytest
 from langgraph.graph import END, START
+from langgraph.runtime import Runtime
 
 from cricketmind_v3.application.engine_source import EngineFactSource, Repositories
 from cricketmind_v3.application.fact_surface import surface
@@ -72,7 +73,6 @@ ARROWS = [
     ("n7b_context_retrieval", "n9_predictive_engine"),
     ("n8_descriptive_engine", "n10_supervisor_router"),
     ("n9_predictive_engine", "n10_supervisor_router"),
-    ("faith_gate", "n12_report_synthesis"),
     ("n12_report_synthesis", "n13_final_output"),
     ("n13_final_output", END),
     ("n3_question_reader", "n13_final_output"),
@@ -80,12 +80,28 @@ ARROWS = [
 for agent in nodes.AGENTS:
     ARROWS.append(("n10_supervisor_router", agent.__name__))
     ARROWS.append((agent.__name__, "faith_gate"))
+ARROWS.append(("faith_gate", "n12_report_synthesis"))
+ARROWS.append(
+    ("n10_supervisor_router", "n13_final_output")
+)  # nobody can answer (Day 73)
+FORWARD = list(ARROWS)  # in the order things run; the loop below goes back (Day 74)
+for agent in nodes.AGENTS:
+    ARROWS.append(("faith_gate", agent.__name__))
 BRANCHES = [
     (START, "n1_video_input"),
     (START, "n3_question_reader"),
     ("n3_question_reader", "n6_shot_dna"),
     ("n3_question_reader", "n13_final_output"),  # the honest decline (Day 59)
+    ("n10_supervisor_router", "n13_final_output"),  # nobody can answer (Day 73)
+    ("faith_gate", "n12_report_synthesis"),
 ]
+for agent in nodes.AGENTS:
+    BRANCHES.append(("n10_supervisor_router", agent.__name__))  # who answers (Day 73)
+    BRANCHES.append(("faith_gate", agent.__name__))  # sent back (Day 74)
+# with no engines nobody can answer, so these never run
+AFTER_THE_ROUTER = ["faith_gate", "n12_report_synthesis"]
+for agent in nodes.AGENTS:
+    AFTER_THE_ROUTER.append(agent.__name__)
 
 
 def run(clip: str | None = None) -> dict:
@@ -103,7 +119,9 @@ def test_the_graph_runs_end_to_end():
     state = run()
     assert state["answer"] == (
         "I read this as: a prediction: V Kohli, out within 6 balls, T20, "
-        "the powerplay, against pace.\nstub: nothing is answered yet"
+        "the powerplay, against pace.\n"
+        "Nothing is answered: no agent has a checked number for this question.\n"
+        "Why: no ball database was given."
     )
     assert state["question"] == QUESTION  # passed along untouched
     assert state["clip"] is None
@@ -114,16 +132,20 @@ def test_the_twelve_agents_and_the_explainer():
     assert len(nodes.EVERY_NODE) == 27  # 11 before the agents, 13, and 3 after
 
 
-def test_with_a_clip_every_node_runs_exactly_once():
+def test_with_a_clip_every_node_up_to_the_router_runs_exactly_once():
     # once: Shot DNA waits for whoever is still coming, not once per arrow; and all of
     # them: the reducer keeps every signature written side by side
-    assert sorted(run("clip.mp4")["visited"]) == sorted(node_names())
+    expected = []
+    for name in node_names():
+        if name not in AFTER_THE_ROUTER:
+            expected.append(name)
+    assert sorted(run("clip.mp4")["visited"]) == sorted(expected)
 
 
 def test_without_a_clip_the_video_nodes_never_run():
     expected = []
     for name in node_names():
-        if name not in VIDEO:
+        if name not in VIDEO and name not in AFTER_THE_ROUTER:
             expected.append(name)
     assert sorted(run()["visited"]) == sorted(expected)
 
@@ -199,7 +221,7 @@ def test_a_declined_question_asks_the_engines_nothing():
 
 
 def test_the_gate_keeps_its_own_receipts_in_the_notebook():
-    # Day 61: a finding put in by hand, as no agent writes one until Day 67
+    # Day 61: a claim of 999, and the receipt keeps what the engine says
     kohli = CricketSubject(player="V Kohli")
     repo = FakeDeliveryRepository()
     repo.add(kohli, [BALL, BALL])
@@ -223,18 +245,16 @@ def test_the_gate_keeps_its_own_receipts_in_the_notebook():
     )
     finding = Finding(agent="N11b", claims=(claim,), template="{c1}.")
     context = dataclasses.replace(CONTEXT, engines=engines)
-    state = build_graph().invoke(
-        {"question": QUESTION, "clip": None, "findings": [finding]}, context=context
-    )
-    receipt = state["receipts"][("N11b", "c1")]
+    written = nodes.faith_gate({"findings": [finding]}, Runtime(context=context))
+    receipt = written["receipts"][("N11b", "c1")]
     assert receipt.engine == "N8.M1"
     assert receipt.value == 100.0
     assert receipt.n == 2
     assert check_receipt(receipt, engines) == []  # anyone can make it again
 
 
-def test_without_engines_or_findings_no_receipts():
-    assert run()["receipts"] == {}
+def test_without_engines_no_receipts():
+    assert run().get("receipts", {}) == {}
 
 
 def test_n10_says_who_can_answer():
@@ -322,13 +342,6 @@ def test_the_model_reads_the_question_and_then_proposes_who_answers():
     assert "a fan's question" not in state["answer"]
 
 
-def test_every_agent_still_runs_until_day_73():
-    # the choice is only written down for now
-    visited = run()["visited"]
-    for agent in nodes.AGENTS:
-        assert agent.__name__ in visited
-
-
 def test_n3_reads_with_the_model_when_it_has_one():
     reply = dict.fromkeys(QuestionForm.model_fields)
     reply.update(kind="prediction", player="Kohli", k=6)
@@ -375,7 +388,7 @@ def test_the_arrows_are_the_v4_figure():
 def test_no_node_runs_before_the_ones_it_waits_for():
     for clip in ("clip.mp4", None):
         visited = run(clip)["visited"]
-        for before, after in ARROWS:
+        for before, after in FORWARD:
             if before not in visited or after not in visited:
                 continue  # START, END, and the video without a clip
             assert visited.index(before) < visited.index(after), (clip, before, after)

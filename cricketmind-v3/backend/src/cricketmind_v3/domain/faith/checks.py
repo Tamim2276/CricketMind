@@ -12,6 +12,10 @@ from cricketmind_v3.domain.faith.v2_mode import check_v2
 # the Faith Check of the v4 design
 ALL_CHECKS = (check_c1, check_c2, check_c3, check_c4, check_c5, check_c6, check_c7)
 
+# what N12's words must pass (Day 75): its numbers are already checked, so no C1 or C2.
+# The architecture names C5, C6, C7; C3 and C4 too, as joining sentences can lose a warning
+REPORT_CHECKS = (check_c3, check_c4, check_c5, check_c6, check_c7)
+
 # the v3 design document's gate: no tone check
 V3_DESIGN_CHECKS = (check_c1, check_c2, check_c3, check_c4, check_c5, check_c6)
 

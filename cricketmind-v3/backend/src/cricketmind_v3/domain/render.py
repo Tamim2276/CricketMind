@@ -126,6 +126,16 @@ def _range(interval: tuple[float, float], style: str, places: int) -> str:
     )
 
 
+def _with_article(text: str) -> str:
+    # "a 18% chance" reads wrong: eight, eleven, eighteen and the eighties take "an"
+    if not text.startswith("a "):
+        return text
+    number = text.split()[1]
+    if number.startswith("8") or number in ("11%", "18%"):
+        return "an" + text[1:]
+    return text
+
+
 def render_claim(claim: Claim) -> str:
     """One claim as words plus its tag: 'a strike rate of 142.0 [D, 50 balls]'."""
     if claim.metric not in METRICS:
@@ -134,12 +144,14 @@ def render_claim(claim: Claim) -> str:
     if claim_type is None:
         raise RenderError(f"{claim.id}: '{claim.metric}' is not on the menu")
     words, style, places = METRICS[claim.metric]
-    text = words.format(_number(claim.value, style, places))
+    text = _with_article(words.format(_number(claim.value, style, places)))
     if claim.metric == "workload_ratio_flag":
         text += ", " + flag(claim.value)  # the words come from the number (Day 41)
 
     if claim.kind == Provenance.DESCRIPTIVE:
         tag = "[D, " + counted(claim.n, claim_type.unit)
+        if claim.metric == "workload_ratio_flag":
+            tag += " in four weeks"  # never without them (L-036)
         if claim.interval is not None:
             tag += ", " + _range(claim.interval, style, places)  # a comparison
         tag += "]"

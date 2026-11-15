@@ -16,6 +16,42 @@ class Failure:
     reason: str  # one plain sentence the agent can act on
 
 
+# how many times the gate sends an agent back (I6): three tries in all (Day 74)
+MAX_REGENERATIONS = 2
+
+
+@dataclass(frozen=True, kw_only=True)
+class Withheld:
+    """A finding that still failed with its budget spent: listed, and never shown."""
+
+    agent: str  # "N11b"
+    checks: tuple[str, ...]  # the checks it failed: an answer may name these
+    # for us only: a reason can quote a number nobody checked ("it typed '150'")
+    reasons: tuple[str, ...]
+
+
+def withheld_from(failures: list[Failure]) -> tuple[Withheld, ...]:
+    """One line for each agent that still fails."""
+    agents = []
+    for failure in failures:
+        if failure.agent not in agents:
+            agents.append(failure.agent)
+    found = []
+    for agent in agents:
+        checks = []
+        reasons = []
+        for failure in failures:
+            if failure.agent != agent:
+                continue
+            reasons.append(failure.reason)
+            if failure.check not in checks:
+                checks.append(failure.check)
+        found.append(
+            Withheld(agent=agent, checks=tuple(checks), reasons=tuple(reasons))
+        )
+    return tuple(found)
+
+
 @dataclass(frozen=True, kw_only=True)
 class Context:
     """What the checks may look at besides the finding itself."""

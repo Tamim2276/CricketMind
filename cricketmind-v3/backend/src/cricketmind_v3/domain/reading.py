@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from cricketmind_v3.domain.faith.gazetteer import Entry
 from cricketmind_v3.domain.faith.text import find_phrases, tokens
+from cricketmind_v3.domain.premise import Premise
 from cricketmind_v3.domain.subject import CricketSubject
 
 # the format names of D-047, as people type them
@@ -120,6 +121,7 @@ class Reading:
     asks: tuple[AskValue, ...] = ()  # "the next over": his next 6 balls?
     # a register id in the subject -> who he is, for the read-back (Day 59)
     shown: tuple[tuple[str, str], ...] = ()
+    premise: Premise | None = None  # a judgment the question holds (Day 76)
 
 
 # the checks on a model's reading

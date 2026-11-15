@@ -1,0 +1,2 @@
+# the locked exam: its SHA-256 must never change with line endings (D-070)
+*.csv -text

@@ -306,3 +306,28 @@ class FakeLLM:
         if isinstance(reply, LLMError):
             raise reply
         return read_reply(reply, shape)  # checked like a real model's
+
+
+class FakeLLMByWho:
+    """Replies filed under words in the system prompt ("Tactical Analysis"), for nodes that
+    run side by side: which of them asks first differs from run to run (Day 73)."""
+
+    def __init__(self, replies: dict[str, list[str | LLMError]]) -> None:
+        self.replies = {}
+        for who, theirs in replies.items():
+            self.replies[who] = list(theirs)
+        self.asked: list[tuple[str, str, str]] = []  # system, prompt, the shape's name
+
+    def answer[Shape: BaseModel](
+        self, system: str, prompt: str, shape: type[Shape]
+    ) -> Shape:
+        self.asked.append((system, prompt, shape.__name__))
+        for who, theirs in self.replies.items():
+            if who in system:
+                if not theirs:
+                    raise LLMError(f"the fake has no reply left for {who}")
+                reply = theirs.pop(0)
+                if isinstance(reply, LLMError):
+                    raise reply
+                return read_reply(reply, shape)
+        raise LLMError("the fake has no replies for this prompt")

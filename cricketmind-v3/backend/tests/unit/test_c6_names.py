@@ -3,9 +3,10 @@ import dataclasses
 from cricketmind_v3.domain.claims import Claim
 from cricketmind_v3.domain.faith.c6_names import check_c6
 from cricketmind_v3.domain.faith.gate import Context
-from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer
+from cricketmind_v3.domain.faith.gazetteer import cricket_gazetteer, gate_gazetteer
 from cricketmind_v3.domain.findings import Finding
 from cricketmind_v3.domain.provenance import Provenance
+from cricketmind_v3.domain.subject import CricketSubject
 from tests.examples import DOCUMENT_TEMPLATE, KOHLI_COVER_DRIVE, KOHLI_PULL, c1, c2
 
 PLAYERS = {
@@ -131,3 +132,128 @@ def test_case_and_possessives_do_not_matter():
 def test_a_name_not_in_the_list_is_not_judged_a_known_gap():
     # nicknames come with the register on Day 33 (L-019)
     assert reasons("King's cover drive returns {c1}.", c1()) == []
+
+
+# Everyday words are also people in the real register (found on Day 66)
+
+CROWDED = Context(
+    names=cricket_gazetteer(
+        {
+            "V Kohli": ("Kohli",),
+            "JT Ball": ("Ball",),
+            "E Chance": ("Chance",),
+            "YS To": ("To",),
+            "VV More": ("More",),
+            "M Short": ("Short",),
+            "S Hook": ("Hook",),
+        }
+    )
+)
+
+
+def crowded(template: str) -> list[str]:
+    return reasons(template, c1(), context=CROWDED)
+
+
+def test_an_everyday_word_is_not_a_players_name():
+    assert crowded("Kohli's chance to score on each ball is {c1}.") == []
+
+
+def test_more_at_the_start_of_a_sentence_is_the_word():
+    assert crowded("More often than not Kohli's cover drive returns {c1}.") == []
+
+
+def test_short_at_the_start_of_a_sentence_is_the_word():
+    assert crowded("Short balls to Kohli's cover drive return {c1}.") == []
+
+
+def test_an_everyday_name_with_a_capital_in_the_middle_is_the_player():
+    assert crowded("Against pace, Short's cover drive returns {c1}.") == [
+        "the sentence names 'short', but c1 is about player V Kohli"
+    ]
+
+
+def test_a_name_at_the_start_of_a_sentence_is_still_a_name():
+    assert reasons("Rohit returns {c1}.", c1()) == [
+        "the sentence names 'rohit', but c1 is about player V Kohli"
+    ]
+
+
+def test_a_word_that_is_a_shot_and_a_name_is_the_shot_without_a_capital():
+    # hook is a shot, and S Hook a player: lower case, only the shot is meant
+    assert crowded("Kohli's hook returns {c1}.") == [
+        "the sentence names 'hook', but c1 is about shot Cover Drive"
+    ]
+
+
+def test_a_name_written_in_lower_case_is_not_read_a_known_gap():
+    # a lower-case surname cannot be told from a word (L-083)
+    assert reasons("rohit returns {c1}.", c1()) == []
+
+
+def test_a_shot_needs_no_capital():
+    assert reasons("Kohli's pull returns {c1}.", c1()) != []
+
+
+# Teams and grounds on a real run (found on Day 77: "Lanka" read as a player)
+
+ON_A_REAL_RUN = Context(
+    names=gate_gazetteer(
+        {"V Kohli": ("Kohli",), "D Lanka": ("Lanka",), "BCJ Heat": ("Heat",)},
+        ("India", "Sri Lanka", "Pakistan", "Brisbane Heat", "Heat"),
+        ("Eden Gardens, Kolkata", "Wankhede Stadium"),
+    )
+)
+
+
+def team_claim(**fields) -> Claim:
+    return dataclasses.replace(c1(), subject=CricketSubject(**fields))
+
+
+def real_run(template: str, claim: Claim) -> list[str]:
+    return reasons(template, claim, context=ON_A_REAL_RUN)
+
+
+def test_a_team_with_a_players_surname_in_it_is_the_team():
+    claim = team_claim(team="Pakistan", opposition="Sri Lanka")
+    assert real_run("Against Sri Lanka, Pakistan won at {c1}.", claim) == []
+
+
+def test_a_team_the_claim_is_not_about_is_stopped():
+    claim = team_claim(team="Pakistan", opposition="Sri Lanka")
+    expected = (
+        "the sentence names 'india', but c1 is about team Pakistan and "
+        "opposition Sri Lanka"
+    )
+    assert real_run("Against India, Pakistan won at {c1}.", claim) == [expected]
+
+
+def test_a_team_cannot_narrow_a_players_number():
+    claim = team_claim(player="V Kohli")
+    assert real_run("For India, Kohli returns {c1}.", claim) == [
+        "the sentence names 'india', but c1 is about every team"
+    ]
+
+
+def test_a_ground_the_claim_is_about_passes_by_either_name():
+    long_name = team_claim(venue="Eden Gardens, Kolkata")
+    assert real_run("Eden Gardens gives {c1}.", long_name) == []
+    assert (
+        real_run("At Eden Gardens, Kolkata the first innings gives {c1}.", long_name)
+        == []
+    )
+
+
+def test_another_ground_is_stopped():
+    claim = team_claim(venue="Wankhede Stadium")
+    assert real_run("Eden Gardens gives {c1}.", claim) != []
+
+
+def test_an_everyday_word_is_not_a_team():
+    claim = team_claim(player="V Kohli")
+    assert real_run("In this heat, Kohli returns {c1}.", claim) == []
+
+
+def test_the_readers_list_stays_as_it_was():
+    # N3's rules read `cricket_gazetteer`: the fair test of the readers ran on it (N-044)
+    assert "india" not in cricket_gazetteer({"V Kohli": ("Kohli",)})

@@ -5,6 +5,7 @@ from cricketmind_v3.domain.faith.text import (
     sentence_of,
     sentences,
     tokens,
+    written_tokens,
 )
 from cricketmind_v3.domain.findings import Finding
 from tests.examples import DOCUMENT_TEMPLATE, c1, c2
@@ -89,3 +90,15 @@ def test_the_claims_in_a_sentence():
     finding = Finding(agent="N11b", claims=(c1(), c2()), template=DOCUMENT_TEMPLATE)
     first = sentences(DOCUMENT_TEMPLATE)[0]
     assert claims_in(first, finding) == [c1()]
+
+
+def test_written_tokens_keep_the_capitals_and_match_one_for_one():
+    text = "Kohli's Cover-Drive isn't bad!"
+    assert written_tokens(text) == ["Kohli's", "Cover", "Drive", "isn't", "bad"]
+    assert tokens(text) == ["kohli", "cover", "drive", "isnt", "bad"]
+
+
+def test_written_tokens_leave_out_what_tokens_leave_out():
+    # a word of apostrophes alone is no word, in either list
+    text = "the ' ball"
+    assert len(written_tokens(text)) == len(tokens(text)) == 2

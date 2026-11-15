@@ -5,7 +5,6 @@ through a question."""
 from pathlib import Path
 
 from cricketmind_v3.domain.agent_spec import AgentSpec, make_spec
-from cricketmind_v3.domain.capabilities import EXPLAINER
 from cricketmind_v3.domain.roster import ROSTER
 
 PROMPTS = Path(__file__).resolve().parents[3] / "prompts"
@@ -21,11 +20,9 @@ def read_rules(folder: Path = PROMPTS) -> str:
 
 
 def read_specs(folder: Path = PROMPTS) -> dict[str, AgentSpec]:
-    """Every stakeholder agent's spec. The Explainer's file comes with it (Day 72)."""
+    """Every agent's spec, the Explainer's too (Day 72)."""
     specs = {}
     for agent in ROSTER:
-        if agent == EXPLAINER:
-            continue
         found = list(folder.glob(f"{agent.lower()}_*.txt"))
         if len(found) != 1:
             raise PromptFileError(f"{agent}: {len(found)} prompt files in {folder}")

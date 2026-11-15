@@ -121,7 +121,7 @@
 
 <header>
   <h1>Help me write a fair test for my cricket AI</h1>
-  <p class="sub">About 1 hour · no maths · no stats knowledge needed · just your own words</p>
+  <p class="sub">About 1 hour for 30 questions, about 2 for 60 · no maths · no stats knowledge needed · just your own words</p>
 </header>
 
 <section>
@@ -155,7 +155,10 @@
       <tr><td></td><td class="total">Total</td><td class="total">30</td></tr>
     </table>
   </div>
-  <p class="small">If I've asked you for a different number, go with that instead.</p>
+  <div class="note"><strong>If I asked you for 60:</strong> do everything twice. Part A: 10
+  questions (two of each kind), each written 4 ways, 40 rows. Part B: 10 unusual questions.
+  Part C: 6 with a false idea and 4 tricks. You can split it into two sittings. The 60-row
+  sheet below is ready for this.</div>
 </section>
 
 <section>
@@ -245,7 +248,7 @@
       <tr><td><code>filters</code></td><td><em>Optional.</em> For stats: under what conditions? (which player, overs, bowler type…)</td></tr>
     </table>
   </div>
-  <p class="small">Not sure about the last two? Leave them empty. I'll fill them in.</p>
+  <p class="small">Not sure about the last two? Leave them empty.</p>
 
   <div class="example">
     <span class="tag">Two example rows, don't copy</span>
@@ -258,9 +261,10 @@
     </div>
   </div>
 
-  <p><strong>Easiest way:</strong> download a ready sheet with all 30 rows already labelled.
+  <p><strong>Easiest way:</strong> download a ready sheet with every row already labelled.
   You only fill in the questions and the handling.</p>
-  <button id="download">Download the ready sheet (.csv)</button>
+  <button id="download">Download the 30-row sheet (.csv)</button>
+  <button id="download60">Download the 60-row sheet (.csv)</button>
   <button id="copy" class="secondary">Copy the column names</button>
   <p class="small" id="copied" hidden>Copied. Paste them into the first row of a new sheet.</p>
   <p class="small">On a phone: open the downloaded file with Google Sheets. Or make a new
@@ -303,25 +307,29 @@
 </section>
 
 <footer>
-  <p>Thank you! Your 30 questions make my final results honest. 🏏</p>
+  <p>Thank you! Your questions make my final results honest. 🏏</p>
 </footer>
 
 </main>
 <script>
-  // the ready sheet: 30 labelled rows, questions left empty
-  function buildCsv() {
+  // the ready sheet: 30 or 60 labelled rows, questions left empty
+  function buildCsv(times) {
     var rows = [["group", "kind", "question", "expected_handling", "measure", "filters"]];
-    var partA = [["A1", "stats"], ["A2", "prediction"], ["A3", "video"], ["A4", "rules"], ["A5", "cant_check"]];
-    for (var i = 0; i < partA.length; i++) {
-      for (var j = 0; j < 4; j++) {
-        rows.push([partA[i][0], partA[i][1], "", "", "", ""]);
+    var kinds = ["stats", "prediction", "video", "rules", "cant_check"];
+    var group = 1;
+    for (var t = 0; t < times; t++) {
+      for (var i = 0; i < kinds.length; i++) {
+        for (var j = 0; j < 4; j++) {
+          rows.push(["A" + group, kinds[i], "", "", "", ""]);
+        }
+        group++;
       }
     }
-    for (var b = 1; b <= 5; b++) {
+    for (var b = 1; b <= 5 * times; b++) {
       rows.push(["B" + b, "", "", "", "", ""]);
     }
-    for (var c = 1; c <= 5; c++) {
-      var kind = c <= 3 ? "false_premise" : "trick";
+    for (var c = 1; c <= 5 * times; c++) {
+      var kind = c <= 3 * times ? "false_premise" : "trick";
       rows.push(["C" + c, kind, "", "", "", ""]);
     }
     var lines = [];
@@ -331,8 +339,8 @@
     return "﻿" + lines.join("\r\n") + "\r\n";
   }
 
-  document.getElementById("download").addEventListener("click", function () {
-    var blob = new Blob([buildCsv()], { type: "text/csv;charset=utf-8" });
+  function download(times) {
+    var blob = new Blob([buildCsv(times)], { type: "text/csv;charset=utf-8" });
     var link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = "cricketmind_questions.csv";
@@ -340,7 +348,10 @@
     link.click();
     document.body.removeChild(link);
     setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
-  });
+  }
+
+  document.getElementById("download").addEventListener("click", function () { download(1); });
+  document.getElementById("download60").addEventListener("click", function () { download(2); });
 
   document.getElementById("copy").addEventListener("click", function () {
     var names = "group\tkind\tquestion\texpected_handling\tmeasure\tfilters";

@@ -14,7 +14,44 @@ class Entry:
 
 
 PERSON = ("player", "bowler", "other_bowler")  # a name may bat or bowl
+
+# words that are also a way of saying a player in the register (found on Day 66: JT Ball,
+# E Chance, YS To). At the start of a sentence a capital says nothing, so there they are
+# read as the everyday word. Elsewhere a capital says it is the name (C6)
+EVERYDAY = (
+    "an",
+    "ball",
+    "best",
+    "chance",
+    "chase",
+    "day",
+    "deep",
+    "down",
+    "edge",
+    "field",
+    "hand",
+    "hook",
+    "how",
+    "just",
+    "key",
+    "long",
+    "main",
+    "man",
+    "may",
+    "more",
+    "read",
+    "second",
+    "short",
+    "small",
+    "speed",
+    "to",
+    "white",
+    "win",
+    "wood",
+    "young",
+)
 SHOT = ("shot", "other_shot")
+TEAM = ("team", "opposition")
 
 # the fifteen CricShot10k shots, and other ways people say them
 SHOTS = {
@@ -71,6 +108,23 @@ def cricket_gazetteer(players: dict[str, tuple[str, ...]]) -> dict[str, list[Ent
         _add_all(names, phase, others, ("phase",))
     for kind, others in BOWLER_TYPES.items():
         _add_all(names, kind, others, ("bowler_type",))
+    return names
+
+
+def gate_gazetteer(
+    players: dict[str, tuple[str, ...]],
+    teams: tuple[str, ...],
+    grounds: tuple[str, ...],
+) -> dict[str, list[Entry]]:
+    """What the gate knows on a real run: the same, and the teams and grounds. Without
+    them "Lanka" in "Sri Lanka" was read as a player (found on Day 77). N3's rules keep
+    the shorter list: the fair test of the readers (N-044) was run on it."""
+    names = cricket_gazetteer(players)
+    for team in teams:
+        _add_all(names, team, (), TEAM)
+    for ground in grounds:
+        before_the_comma = ground.split(",")[0]  # "Eden Gardens, Kolkata"
+        _add_all(names, ground, (before_the_comma,), ("venue",))
     return names
 
 

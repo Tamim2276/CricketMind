@@ -254,7 +254,7 @@ def test_the_next_over_is_asked_back_never_guessed():
         AskValue(
             field="k",
             written="the next over",
-            why="an over is six balls, but he may face fewer: his next 6 balls?",
+            why="an over is six balls, but they may face fewer: their next 6 balls?",
             suggestion="6",
         ),
     )

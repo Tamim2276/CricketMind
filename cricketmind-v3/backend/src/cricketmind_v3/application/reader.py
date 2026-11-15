@@ -25,6 +25,7 @@ from cricketmind_v3.domain.names import (
     register_name,
     shared_names,
 )
+from cricketmind_v3.domain.premise import hidden_judgment
 from cricketmind_v3.domain.reading import (
     FORMATS,
     MONTHS,
@@ -160,7 +161,13 @@ def _by_rules(
 ) -> Reading:
     subject = read_by_rules(question, names)
     kind = kind_by_rules(question, subject, clip is not None)
-    return Reading(subject=subject, by="rules", kind=kind, notes=notes)
+    return Reading(
+        subject=subject,
+        by="rules",
+        kind=kind,
+        notes=notes,
+        premise=hidden_judgment(question),
+    )
 
 
 def _ask(llm: LLM, question: str) -> QuestionForm:
@@ -227,7 +234,7 @@ def _check(
             AskValue(
                 field="k",
                 written=_overs_said(overs),
-                why=f"an over is six balls, but he may face fewer: his next {balls} balls?",
+                why=f"an over is six balls, but they may face fewer: their next {balls} balls?",
                 suggestion=str(balls),
             )
         )
@@ -344,6 +351,7 @@ def _check(
         notes=tuple(notes),
         asks=tuple(asks),
         shown=tuple(shown),
+        premise=hidden_judgment(question),
     )
 
 
