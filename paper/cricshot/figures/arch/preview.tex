@@ -28,22 +28,26 @@ in the camera shot with the most detections. The boxes are the ones the
 pipeline produced on frame 8.}
 
 \fig{fig_frame_models.pdf}{Frame models. An image backbone describes each
-frame on its own, a temporal head reads the 15 frame vectors in order, and a
-classifier gives a score for each of the 15 shots. The panels list what fills
-each slot, with the experiments that use it. Frozen backbones (families A, D,
-P and V) run once and their frame vectors are stored.}
+frame on its own, a temporal head reads the 15 frame vectors, and a classifier
+gives a score for each of the 15 shots. The tables open up the two boxes:
+(a)~every backbone, frozen or fine-tuned, with the experiments that use it;
+(b)~how a frame becomes one vector; (c)~every temporal head, grouped by how it
+treats time; (d)~the models that replace head and classifier. Frozen backbones
+run once and their frame vectors are stored.}
 
-\fig{fig_video_models.pdf}{Video models read the whole clip at once. Top: the
-clip is resampled to the frame count, size and colours the Kinetics-400 weights
-were trained on, and a new classifier reads the backbone's clip vector. Bottom:
-R3D-18 reads motion instead of colour, either optical flow (W01) or frame
-differences (W05).}
+\fig{fig_video_models.pdf}{Video models. (a)~The clip is resampled to the
+frame count, size and colours the Kinetics-400 weights were trained on; the
+backbone sees space and time together, and a new classifier reads its clip
+vector. The table gives each backbone's input and the three ways it was used.
+(b)~R3D-18 reads motion instead of colour: optical flow (W01) or frame
+differences (W05). F03 averages C02 and W01.}
 
-\fig{fig_pose_tracks.pdf}{Pose and object tracks instead of pixels. MediaPipe
-gives 33 joints per frame for E01 and E02; in E04 each pose frame draws on the
-RGB frames through cross-attention; E03 averages the answers of an RGB model and
-a pose model. The dataset authors' detector gives the bat and ball tracks for
-W02--W04. Every extractor is frozen; only the heads train.}
+\fig{fig_pose_tracks.pdf}{Pose and object tracks instead of pixels. (a)~The
+33 MediaPipe joints of every frame, read by a GRU (E01) or a graph network
+(E02). (b)~The pose beside the pixels: each pose frame draws on the RGB frames
+through cross-attention (E04), or the answers of an RGB model and a pose model
+are averaged (E03). (c)~Bat and ball tracks from the dataset authors' detector
+(W02--W04). Every extractor is frozen; only the heads train.}
 
 \fig{fig_f02.pdf}{F02 in full. Each frame passes through EfficientNetV2-S; the
 maps after stages 3 and 5 are normalised, pooled to the last 7\,$\times$\,7 grid

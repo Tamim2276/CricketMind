@@ -1,110 +1,96 @@
-% Figure: the video-model template. Families C, V01-V08, P03-P04, W01, W05.
+% Figure: the video-model template. Families C, V01-V08, P03-P04, W01, W05, F03.
 % Build: pdflatex fig_video_models.tex
 \documentclass[border=2pt]{standalone}
 \input{archstyle}
 
 \begin{document}
-\begin{tikzpicture}[
-  slot/.style={densely dotted, line width=0.6pt, draw=opEdge},
-  panel/.style={font=\scriptsize, text=note, anchor=north west, inner sep=0pt}]
+\begin{tikzpicture}
 
-% ---- colour: the clip as a whole ----
+% ---- (a) colour: the clip as a whole ----
+\node[letter, anchor=south west] (la) at (0,1.12) {(a)\enspace The whole clip at once};
 \clipdeck{clip}{0.8,0}{1.35cm}
-\node[anchor=south, inner sep=2pt, align=center] at ([yshift=1mm]clip.north)
-  {Clip\\[-1pt]{\scriptsize\color{note}15\by224\by224\by3}};
 
-\node[op, text width=2.35cm, right=1.0cm of clip] (fit)
+\node[op, text width=2.1cm, right=1.05cm of clip] (fit)
   {\textbf{Match the weights}\\[1pt]
-   {\scriptsize resample frames,\\resize, recolour}};
-\node[pre, text width=2.5cm, right=1.2cm of fit] (bb)
+   {\scriptsize resample the frames, resize, recolour}};
+\node[pre, text width=2.35cm, right=1.5cm of fit] (bb)
   {\textbf{Video backbone}\\[1pt]
-   {\scriptsize Kinetics-400, all frames at once}\\[2pt]
-   {\scriptsize\frozen~P, V\quad\trained~C}};
-\node[new, text width=1.9cm, right=1.2cm of bb] (cls)
+   {\scriptsize Kinetics-400; space and time together}};
+\node[new, text width=1.85cm, right=1.3cm of bb] (cls)
   {\textbf{Classifier}\\[1pt]
-   {\scriptsize one linear layer, or an MLP}\\[1pt]{\scriptsize\trained}};
-\node[right=0.5cm of cls, align=center, inner sep=1pt] (out)
-  {\textbf{Cover Drive}\\[-1pt]{\scriptsize\color{note}softmax over}\\[-2pt]
-   {\scriptsize\color{note}15 shots}};
+   {\scriptsize new linear layer, or an MLP}};
+\node[right=0.45cm of cls, align=center, inner sep=1pt] (out)
+  {\textbf{Cover}\\\textbf{Drive}\\[-1pt]{\scriptsize\color{note}top score}};
 
-\draw[flow] (clip.east |- fit.west) -- (fit.west);
-\draw[flow] (fit) -- node[size, above] {\textit{T}\by\textit{S}\by\textit{S}} (bb);
-\draw[flow] (bb) -- node[size, above] {1\by\textit{D}} (cls);
+\draw[flow] (clip.east |- fit.west) -- node[dim] {15\by224\sq} (fit.west);
+\draw[flow] (fit) -- node[dim] {\textit{T}\by\textit{S}\sq} (bb);
+\draw[flow] (bb) -- node[dim] {1\by\textit{D}} (cls);
 \draw[flow] (cls) -- (out);
 
-% ---- what fills each slot ----
-\node[panel] (pb) at ([xshift=-7mm, yshift=-8mm]fit.west |- bb.south) {%
-  \begin{tabular}{@{}l@{\hspace{1em}}l@{\hspace{1em}}l@{}}
-  \multicolumn{3}{@{}l@{}}{\textbf{\color{ink}Video backbones}, and the
-    input each one takes}\\[1pt]
-  & \textit{T} @ \textit{S} & \\
-  R3D-18 & 15 @ 112 & C02, V01, P03\\
-  MC3-18 & 15 @ 112 & V02\\
-  R(2+1)D-18 & 15 @ 112 & C01, V03\\
-  S3D & 15 @ 224 & V04\\
-  I3D-R50 & 8 @ 224 & C03\\
-  SlowFast-R50 & 32 + 8 @ 224 & C04\\
-  X3D-M & 16 @ 224 & C05\\
-  MViTv2-S & 16 @ 224 & C06, V06\\
-  Swin3D-T & 15 @ 224 & C07, V05\\
-  VideoMAE-B & 16 @ 224 & C08, V07, P04\\
-  TimeSformer-B & 8 @ 224 & V08\\[3pt]
-  \multicolumn{3}{@{}p{6.4cm}@{}}{\raggedright
-    15 frames become 16 by repeating the middle one, and 8 by keeping
-    every other one. SlowFast reads the clip twice: 32 frames (fast) and
-    8 (slow).}
-  \end{tabular}};
+\card{cb}{$(fit.south west)+(-0.45,-1.15)$}{preFill}{preEdge}
+  {Video backbones: their input, and how each was used}{%
+\cardtable{l c c c c c}{%
+\rowcolor{white} & frames & size & \trained\ fine-tuned, & \frozen\ frozen, & \frozen\ frozen,\\
+\rowcolor{white} & \textit{T} & \textit{S}, px & new linear & MLP & one linear\\ \cardrule
+\grouprow{6}{3D CNNs}
+R3D-18 & 15 & 112 & C02 & V01 & P03\\
+MC3-18 & 15 & 112 & & V02 & \\
+R(2+1)D-18 & 15 & 112 & C01 & V03 & \\
+S3D & 15 & 224 & & V04 & \\
+I3D-R50 & 8 & 224 & C03 & & \\
+SlowFast-R50 & 32\,+\,8\textsuperscript{1} & 224 & C04 & & \\
+X3D-M & 16 & 224 & C05 & & \\
+\grouprow{6}{Video transformers}
+MViTv2-S & 16 & 224 & C06 & V06 & \\
+Swin3D-T & 15 & 224 & C07 & V05 & \\
+VideoMAE-B & 16 & 224 & C08 & V07 & P04\\
+TimeSformer-B & 8 & 224 & & V08 &
+}}
+\node[size, anchor=north west, text width=8.6cm, align=left] (fn)
+  at ([yshift=-0.5mm]cb.south west)
+  {Our 15 frames become 16 by repeating the middle one, and 8 by keeping
+   every other one. \textsuperscript{1}\,SlowFast reads the clip twice:
+   32 frames on its fast path, 8 on its slow one.};
+\zoomto{bb}{cb}{preFill}
 
-\node[panel] (pc) at ([xshift=7mm]pb.north east) {%
-  \begin{tabular}{@{}l@{\hspace{1em}}l@{}}
-  \multicolumn{2}{@{}l@{}}{\textbf{\color{ink}Classifiers}}\\[1pt]
-  New linear layer, backbone & C01--C08\\
-  \quad fine-tuned with it & \\
-  MLP, 1,024 hidden, on the & V01--V08\\
-  \quad frozen clip vector & \\
-  One linear layer, frozen & P03, P04\\[3pt]
-  \multicolumn{2}{@{}l@{}}{\textbf{\color{ink}Late fusion}, no new weights}\\[1pt]
-  Probabilities averaged & F03 = C02\,+\,W01\\[3pt]
-  \multicolumn{2}{@{}p{5.6cm}@{}}{\raggedright
-    Flow: RAFT-small between neighbouring frames at 224 px, shrunk to
-    112. The rebuilt first convolution starts from the mean of the
-    pretrained RGB filters.}
-  \end{tabular}};
-
-\draw[slot] (bb.south) -- (bb.south |- pb.north);
-\draw[slot] (cls.south) -- (cls.south |- pc.north);
-
-% ---- motion instead of colour, below the panels ----
-\path (0,0 |- pb.south) ++(0,-9mm) coordinate (m0);
-\node[anchor=north west, inner sep=0pt, font=\footnotesize\bfseries] (mtitle) at (m0)
-  {Motion instead of colour};
-\clipdeck{clip2}{$(mtitle.south west)+(0.8,-1.75)$}{1.35cm}
-\node[pre, text width=2.6cm, align=left, font=\scriptsize, anchor=south] (flow)
+% ---- (b) motion instead of colour ----
+\node[letter, anchor=north west] (lb) at ($(0,0 |- fn.south)+(0,-0.55)$)
+  {(b)\enspace Motion instead of colour};
+\clipdeck{clip2}{$(lb.south west)+(0.8,-1.75)$}{1.35cm}
+\node[pre, text width=2.75cm, align=left, font=\scriptsize, anchor=south] (flow)
   at ([yshift=0.8mm]fit |- clip2.center)
-  {Optical flow (RAFT-small)\hfill\frozen\\W01: 14\by2\by112\by112};
-\node[op, text width=2.6cm, align=left, font=\scriptsize, anchor=north] (diff)
+  {\textbf{\footnotesize Optical flow}\hfill\frozen\\RAFT-small; 2 channels};
+\node[op, text width=2.75cm, align=left, font=\scriptsize, anchor=north] (diff)
   at ([yshift=-0.8mm]fit |- clip2.center)
-  {Frame differences\\W05: 14\by3\by112\by112};
+  {\textbf{\footnotesize Frame differences}\\each frame minus the one before; 3 channels};
 \begin{scope}[on background layer]
   \node[group, fit=(flow)(diff), inner sep=4pt] (motion) {};
 \end{scope}
 \node[grouplabel, anchor=south] at (motion.north) {one of};
-\node[pre, text width=2.5cm, at=(bb |- motion)] (r3d)
+\node[pre, text width=2.35cm, at=(bb |- motion)] (r3d)
   {\textbf{R3D-18}\\[1pt]
-   {\scriptsize first conv.\ rebuilt for 2 or 3 channels}\\[1pt]{\scriptsize\trained}};
-\node[new, text width=1.9cm, at=(cls |- motion)] (cls2)
-  {\textbf{New linear}\\[1pt]{\scriptsize 512\,\arrowto\,15}\\[1pt]{\scriptsize\trained}};
+   {\scriptsize Kinetics-400; first conv.\ rebuilt for 2 or 3 channels}\\[1pt]
+   {\scriptsize\trained}};
+\node[new, text width=1.85cm, at=(cls |- motion)] (cls2)
+  {\textbf{New linear}\\[1pt]{\scriptsize 512\,\arrowto\,15}};
 \node[align=center, inner sep=1pt, at=(out |- motion)] (out2)
-  {\textbf{Cover Drive}};
-
+  {\textbf{Cover}\\\textbf{Drive}};
 \draw[flow] (clip2.east |- motion.west) -- (motion.west);
-\draw[flow] (motion) -- (r3d);
-\draw[flow] (r3d) -- node[size, above] {1\by512} (cls2);
+\draw[flow] (motion) -- node[dim] {14\by112\sq} (r3d);
+\draw[flow] (r3d) -- node[dim] {1\by512} (cls2);
 \draw[flow] (cls2) -- (out2);
+
+\node[size, anchor=north west, align=left, text width=4.3cm] (wids)
+  at ([yshift=-2.5mm]motion.south west)
+  {\textbf{\color{ink}W01} optical flow,\enspace \textbf{\color{ink}W05} frame
+   differences. Flow is computed at 224~px, then shrunk to 112.};
+\node[op, text width=4.5cm, align=left, font=\scriptsize, anchor=north east]
+  (f03) at ([yshift=-2.5mm]out2.east |- r3d.south)
+  {\textbf{\footnotesize F03, two streams:} the probabilities of C02 (colour)
+   and W01 (flow) averaged; no new weights};
 
 % ---- legend ----
 \node[legend, anchor=north] at ($(current bounding box.south)+(0,-1.5mm)$)
-  {\archlegend\qquad \textit{T}, \textit{S}: frames, size in px;
-   \textit{D}: clip-vector length};
+  {\archlegend\qquad \textit{D}: clip-vector length};
 \end{tikzpicture}
 \end{document}

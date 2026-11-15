@@ -4,95 +4,109 @@
 \input{archstyle}
 
 \begin{document}
-\begin{tikzpicture}[
-  slot/.style={densely dotted, line width=0.6pt, draw=opEdge},
-  panel/.style={font=\scriptsize, text=note, anchor=north west, inner sep=0pt}]
+\begin{tikzpicture}
 
 % ---- the template, left to right ----
 \clipdeck{clip}{0.8,0}{1.35cm}
 \node[anchor=south, inner sep=2pt, align=center] at ([yshift=1mm]clip.north)
-  {Clip\\[-1pt]{\scriptsize\color{note}15\by224\by224\by3}};
+  {Clip\\[-1pt]{\scriptsize\color{note}15 frames}};
 
-\node[pre, text width=2.45cm, right=1.0cm of clip] (bb)
+\node[pre, text width=2.15cm, right=1.05cm of clip] (bb)
   {\textbf{Image backbone}\\[1pt]
-   {\scriptsize EfficientNetV2-S\\and 9 others}\\[2pt]
-   {\scriptsize\frozen~A, D, P, V\\\trained~B, F, R}};
-\node[op, text width=1.95cm, right=1.05cm of bb] (pool)
+   {\scriptsize EfficientNetV2-S or one of 9 others}};
+\node[op, text width=1.75cm, right=1.5cm of bb] (pool)
   {\textbf{Frame vector}\\[1pt]
-   {\scriptsize flatten the map,\\or average it}};
+   {\scriptsize the map flattened or averaged}};
 \begin{scope}[on background layer]
   \node[group, fit=(bb)(pool), inner sep=5pt] (each) {};
 \end{scope}
 \node[grouplabel, anchor=south] at (each.north)
-  {each frame alone, one set of weights for all 15};
+  {each frame on its own; the same weights for all 15};
 
-\node[new, text width=1.75cm, right=0.95cm of each] (head)
+\node[new, text width=1.7cm, right=1.25cm of each] (head)
   {\textbf{Temporal head}\\[1pt]
-   {\scriptsize reads the 15 frame vectors in order}\\[1pt]{\scriptsize\trained}};
+   {\scriptsize reads the 15 frame vectors}};
 \node[new, text width=1.85cm, right=0.55cm of head] (cls)
   {\textbf{Classifier}\\[1pt]
-   {\scriptsize BatchNorm\\FC 1,024, ReLU\\FC 15}\\[1pt]{\scriptsize\trained}};
-\node[right=0.5cm of cls, align=center, inner sep=1pt] (out)
-  {\textbf{Cover Drive}\\[-1pt]{\scriptsize\color{note}softmax over}\\[-2pt]
-   {\scriptsize\color{note}15 shots}};
+   {\scriptsize BatchNorm\\FC 1,024, ReLU\\FC 15}};
+\node[right=0.45cm of cls, align=center, inner sep=1pt] (out)
+  {\textbf{Cover}\\\textbf{Drive}\\[-1pt]{\scriptsize\color{note}top score}};
 
-\draw[flow] (clip.east |- bb.west) -- (bb.west);
-\draw[flow] (bb) -- node[size, above] {7\by7\by\textit{C}} (pool);
-\draw[flow] (each.east |- head.west) -- node[size, above] {15\by\textit{D}} (head);
+\draw[flow] (clip.east |- bb.west) -- node[dim] {224\sq} (bb.west);
+\draw[flow] (bb) -- node[dim] {7\by7\by\textit{C}} (pool);
+\draw[flow] (each.east |- head.west) -- node[dim] {15\by\textit{D}} (head);
 \draw[flow] (head) -- (cls);
 \draw[flow] (cls) -- (out);
 
-% ---- what fills each slot ----
-\node[panel] (pb) at ([yshift=-8mm]0,0 |- each.south) {%
-  \begin{tabular}{@{}l@{\hspace{1em}}l@{}}
-  \multicolumn{2}{@{}l@{}}{\textbf{\color{ink}Image backbones}
-    (ImageNet, unless noted)}\\[1pt]
-  EfficientNetV2-S & A01--A14, D01--D06, P01,\\
-                   & B01, F01--F05, R01--R03\\
-  EfficientNetV2-B3 & B02\\
-  Xception & B03\\
-  ConvNeXt-T & B04, P02\\
-  MobileNetV3-L & B05\\
-  ResNet-50 & B06\\
-  RegNetY-16GF & B07\\
-  Swin-T & B08\\
-  CLIP ViT-B/16 (image--text pairs) & P05, V09\\
-  DINOv2-B (self-supervised) & V10\\[3pt]
-  \multicolumn{2}{@{}p{6.3cm}@{}}{\raggedright
-    Frame vector of EfficientNetV2-S: \textit{D}\,=\,62,720 when its
-    7\by7\by1,280 map is flattened (A, B, F, R), 1,280 when it is averaged
-    (A14, D, P, V). F01 and F02 also tap two inner stages (see the F02
-    figure); F04 adds each frame again at 112 px.}
-  \end{tabular}};
+% ---- (a) what the backbone can be ----
+\card{cb}{0,-2.2}{preFill}{preEdge}{(a)\enspace Image backbones}{%
+\cardtable{l P{2.35cm} P{2.65cm}}{%
+\rowcolor{white} & \frozen\ frozen: frame vectors stored once
+  & \trained\ fine-tuned end to end\\ \cardrule
+\grouprow{3}{CNNs, pretrained on ImageNet}
+EfficientNetV2-S & A01--A14, D01--D06, P01 & B01, F01--F05, R01--R03\\
+EfficientNetV2-B3 & & B02\\
+Xception & & B03\\
+ConvNeXt-T & P02 & B04\\
+MobileNetV3-L & & B05\\
+ResNet-50 & & B06\\
+RegNetY-16GF & & B07\\
+\grouprow{3}{Vision transformers}
+Swin-T, ImageNet & & B08\\
+CLIP ViT-B/16\textsuperscript{1} & P05, V09 & \\
+DINOv2-B\textsuperscript{2} & V10 &
+}}
+\node[size, anchor=north west] (fn) at ([yshift=-0.5mm]cb.south west)
+  {\textsuperscript{1}\,400 M image--text pairs\quad
+   \textsuperscript{2}\,self-supervised, no labels};
 
-\node[panel] (ph) at ([xshift=6mm]pb.north east) {%
-  \begin{tabular}{@{}l@{\hspace{1em}}l@{}}
-  \multicolumn{2}{@{}l@{}}{\textbf{\color{ink}Temporal heads},
-    each followed by the classifier}\\[1pt]
-  GRU-128, last state & A03, B01--B08, R01--R03\\
-  \quad LayerNorm first / on 1,280 & A13 / A14\\
-  GRU-64 / BiGRU-128 & A04 / A05\\
-  LSTM-64 / BiLSTM-64 & A06 / A07\\
-  Mean / max over frames & A01 / A02\\
-  Transformer, 2 layers, 4 heads & A08, F02\\
-  Transformer, 4 layers, 8 heads & A09\\
-  Dilated temporal conv.\ (1, 2, 4) & A10\\
-  Attention pooling & A11\\
-  NetVLAD, 8 centres & A12\\
-  GRU-128, attention over steps & F05\\[3pt]
-  \multicolumn{2}{@{}l@{}}{\textbf{\color{ink}Instead of head and classifier},
-    on the mean frame}\\[1pt]
-  One linear layer & P01, P02, P05\\
-  MLP, 1,024 hidden & V09, V10\\
-  Logistic regression, RBF SVM, & D01--D06\\
-  \quad random forest, XGBoost, 10-NN, MLP &
-  \end{tabular}};
+% ---- (b) what a frame vector is ----
+\card{cv}{$(fn.south west)+(0,-0.3)$}{white}{opEdge}{(b)\enspace Frame vector}{%
+\cardtable{P{4.85cm} l}{%
+\rowcolor{white} for EfficientNetV2-S & experiments\\ \cardrule
+7\by7\by1,280 map, flattened: 62,720 & A, B, F, R\\
+the same map, averaged: 1,280 & A14, D, P, V\\
+plus two inner stages, flattened: 73,696 & F01, F02\\
+plus the frame again at 112 px & F04
+}}
 
-\draw[slot] (bb.south) -- (bb.south |- pb.north);
-\draw[slot] (head.south) -- (head.south |- ph.north);
+% ---- (c) what the head can be ----
+\card{ch}{8.2,-2.2}{newFill}{newEdge}{(c)\enspace Temporal heads}{%
+\cardtable{l l}{%
+\rowcolor{white} & experiments\\ \cardrule
+\grouprow{2}{Recurrent: read the frames in order}
+GRU-128, last state & A03, B01--B08, R01--R03\\
+GRU-64\,/\,BiGRU-128 & A04\,/\,A05\\
+LSTM-64\,/\,BiLSTM-64 & A06\,/\,A07\\
+GRU-128 after a LayerNorm & A13\\
+GRU-128 on averaged maps & A14\\
+GRU-128, attention over steps & F05\\
+\grouprow{2}{Attention: each frame looks at all 15}
+Transformer, 2 layers \by\ 4 heads & A08, F02\\
+Transformer, 4 layers \by\ 8 heads & A09\\
+\grouprow{2}{Convolution over time}
+Dilated, rates 1, 2, 4 & A10\\
+\grouprow{2}{Pooling: frame order ignored}
+Mean\,/\,max over frames & A01\,/\,A02\\
+Attention pooling & A11\\
+NetVLAD, 8 learned centres & A12
+}}
+
+% ---- (d) or no head at all ----
+\card{cx}{$(ch.south west)+(0,-0.35)$}{newFill}{newEdge}
+  {(d)\enspace Or, in place of head and classifier}{%
+\cardtable{P{4.55cm} l}{%
+\rowcolor{white} on the frame vectors averaged over time & experiments\\ \cardrule
+One linear layer, a probe & P01, P02, P05\\
+MLP, 1,024 hidden & V09, V10\\
+Logistic regression, RBF SVM, random forest, XGBoost, 10-NN, MLP & D01--D06
+}}
+
+\zoomto{bb}{cb}{preFill}
+\zoomto{head}{ch}{newFill}
 
 % ---- legend ----
 \node[legend, anchor=north] at ($(current bounding box.south)+(0,-1.5mm)$)
-  {\archlegend\qquad \textit{C}, \textit{D}: channels, frame-vector length};
+  {\archlegend\qquad \textit{C}: channels\quad \textit{D}: frame-vector length};
 \end{tikzpicture}
 \end{document}

@@ -14,7 +14,7 @@
 \begin{document}
 \begin{tikzpicture}[
   model/.style={pre, text width=2.5cm, align=center},
-  avg/.style={op, text width=1.75cm, font=\scriptsize}]
+  avg/.style={op, text width=2.1cm, font=\scriptsize}]
 
 % ---- the clip, and its two views ----
 \clipdeck{clip}{0.8,0}{1.35cm}
@@ -44,9 +44,11 @@
 \draw[flow] (views.east) -- ++(0.45,0) |- (b.west);
 
 \node[avg, right=0.6cm of a] (ma)
-  {average of 3 runs \by\ 2 views\\[1pt]\arrowto\ \textit{p}\textsubscript{C06}, 15 numbers};
+  {\textbf{\footnotesize Average}\\of 6 answers:\\3~runs~\by~2~views\\[1pt]
+   = \textit{p}\textsubscript{C06}};
 \node[avg, right=0.6cm of b] (mb)
-  {average of 3 runs \by\ 2 views\\[1pt]\arrowto\ \textit{p}\textsubscript{F02}, 15 numbers};
+  {\textbf{\footnotesize Average}\\of 6 answers:\\3~runs~\by~2~views\\[1pt]
+   = \textit{p}\textsubscript{F02}};
 \draw[flow] (a) -- (ma);
 \draw[flow] (b) -- (mb);
 

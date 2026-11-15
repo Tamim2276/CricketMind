@@ -20,28 +20,36 @@
 \node[size, anchor=north, align=center] at (img.south)
   {one frame\\3\by224\textsuperscript{2}};
 
-\node[stage, minimum height=1.25cm, right=0.75cm of img] (s13) {Stem and\\stages 1--3};
-\node[stage, minimum height=0.95cm, right=1.35cm of s13] (s45) {Stages 4--5};
-\node[stage, minimum height=0.75cm, right=1.35cm of s45] (s67) {Stages 6--7};
+% every box states the size of what leaves it, in grey
+\node[stage, minimum height=1.3cm, right=0.75cm of img] (s13)
+  {Stem and\\stages 1--3\\[1pt]{\color{note}64\by28\sq}};
+\node[stage, minimum height=1.05cm, right=1.35cm of s13] (s45)
+  {Stages 4--5\\[1pt]{\color{note}160\by14\sq}};
+\node[stage, minimum height=0.85cm, right=1.35cm of s45] (s67)
+  {Stages 6--7\\[1pt]{\color{note}1,280\by7\sq}};
 \draw[flow] (img) -- (s13);
-\draw[flow] (s13) -- node[size, above] {64\by28\textsuperscript{2}} coordinate[pos=0.42] (t3) (s45);
-\draw[flow] (s45) -- node[size, above] {160\by14\textsuperscript{2}} coordinate[pos=0.42] (t5) (s67);
+\draw[flow] (s13) -- coordinate[pos=0.42] (t3) (s45);
+\draw[flow] (s45) -- coordinate[pos=0.42] (t5) (s67);
 
 % the two inner maps, normalised and shrunk to the last grid
-\node[tap, anchor=north] (tapA) at ([yshift=-0.95cm]t3) {BatchNorm, no scale;\\pool to 7\by7};
-\node[tap, anchor=north] (tapB) at ([yshift=-0.95cm]t5) {BatchNorm, no scale;\\pool to 7\by7};
+\node[tap, anchor=north] (tapA) at ([yshift=-0.95cm]t3)
+  {BatchNorm, no scale;\\pool to 7\by7\\[1pt]{\color{note}64\by7\sq}};
+\node[tap, anchor=north] (tapB) at ([yshift=-0.95cm]t5)
+  {BatchNorm, no scale;\\pool to 7\by7\\[1pt]{\color{note}160\by7\sq}};
+\node[op, font=\scriptsize, minimum height=7mm, inner sep=2pt, text width=1.3cm,
+  anchor=center] (cat) at ([xshift=1.35cm]s67.east |- tapB.center)
+  {stack the\\channels\\[1pt]{\color{note}1,504\by7\sq}};
 \node[op, font=\scriptsize, minimum height=7mm, inner sep=2pt, text width=1.15cm,
-  anchor=center] (cat) at ([xshift=1.35cm]s67.east |- tapB.center) {concat\\channels};
-\node[op, font=\scriptsize, minimum height=7mm, inner sep=2pt, right=1.25cm of cat] (flat) {flatten};
+  right=0.9cm of cat] (flat) {flatten\\[1pt]{\color{note}73,696}};
 \fill[ink] (t3) circle (1.1pt);
 \fill[ink] (t5) circle (1.1pt);
 \draw[flow] (t3) -- (tapA);
 \draw[flow] (t5) -- (tapB);
-\draw[flow] (tapB) -- node[size, above] {160\by7\textsuperscript{2}} (cat);
+\draw[flow] (tapB) -- (cat);
 \coordinate (dip) at ([yshift=-0.4cm]tapA.south);
-\draw[flow] (tapA.south) -- (dip) -| node[size, below, pos=0.25] {64\by7\textsuperscript{2}} (cat.south);
-\draw[flow] (s67.east) -| node[size, above, pos=0.3] {1,280\by7\textsuperscript{2}} (cat.north);
-\draw[flow] (cat) -- node[size, above] {1,504\by7\textsuperscript{2}} (flat);
+\draw[flow] (tapA.south) -- (dip) -| (cat.south);
+\draw[flow] (s67.east) -| (cat.north);
+\draw[flow] (cat) -- (flat);
 
 \begin{scope}[on background layer]
   \node[group, fit=(img)(s13)(s67)(tapA)(cat)(flat)(dip), inner sep=6pt,
@@ -54,30 +62,30 @@
 \node[layer, text width=1.9cm, anchor=north west] (proj)
   at ([yshift=-1.0cm]enc.south west)
   {\textbf{Linear}\\73,696\,\arrowto\,256\\{\color{note}18.9 M weights}};
-\node[sum, right=0.95cm of proj] (addpos) {$+$};
+\node[sum, right=1.35cm of proj] (addpos) {$+$};
 \node[layer, text width=1.75cm, below=0.4cm of addpos] (pos)
   {a learned position for each frame};
 \node[layer, text width=2.1cm, minimum height=1.2cm, right=0.6cm of addpos] (encl)
   {\textbf{\footnotesize Transformer\\encoder layer}\\pre-norm, 4 heads};
 \node[font=\footnotesize\bfseries, anchor=west, inner sep=1pt] (x2) at (encl.east) {\,\by2};
 \node[op, font=\scriptsize, text width=1.4cm, minimum height=7mm, inner sep=2pt,
-  right=1.05cm of x2] (mean) {mean over\\the 15 frames};
-\node[layer, text width=1.95cm, right=0.6cm of mean] (cls)
+  right=1.5cm of x2] (mean) {mean over\\the 15 frames};
+\node[layer, text width=1.95cm, right=1.0cm of mean] (cls)
   {\textbf{Classifier}\\BatchNorm\\FC 1,024, ReLU\\FC 15};
 \node[right=0.45cm of cls, align=center, inner sep=1pt] (out) {\textbf{Cover}\\\textbf{Drive}};
 
-\draw[flow] (flat.south) |- node[size, above, pos=0.75] {15\by73,696 (the 15 frames, in order)}
+\draw[flow] (flat.south) |- node[dim, pos=0.75] {all 15 frames, in order: 15\by73,696}
   ([yshift=5mm]proj.north) -- (proj.north);
-\draw[flow] (proj) -- node[size, above] {15\by256} (addpos);
+\draw[flow] (proj) -- node[dim] {15\by256} (addpos);
 \draw[flow] (pos) -- (addpos);
 \draw[flow] (addpos) -- (encl);
-\draw[flow] (x2) -- node[size, above] {15\by256} (mean);
-\draw[flow] (mean) -- node[size, above] {256} (cls);
+\draw[flow] (x2) -- node[dim] {15\by256} (mean);
+\draw[flow] (mean) -- node[dim] {256} (cls);
 \draw[flow] (cls) -- (out);
 
 % ---- one encoder layer, enlarged ----
 \node[layer, anchor=north west, text width=1.22cm] (ln1)
-  at ([xshift=0.75cm, yshift=-1.6cm]encl.south west) {LayerNorm};
+  at ([xshift=1.05cm, yshift=-1.6cm]encl.south west) {LayerNorm};
 \node[layer, right=0.38cm of ln1, text width=1.55cm] (mhsa) {self-attention\\4 heads};
 \node[sum, right=0.38cm of mhsa] (r1) {$+$};
 \node[layer, right=0.5cm of r1, text width=1.22cm] (ln2) {LayerNorm};
@@ -100,8 +108,12 @@
 \end{scope}
 \node[grouplabel, anchor=north] at (zoombox.south)
   {one encoder layer, enlarged; ReLU, no dropout};
-\draw[zoom] (encl.south west) -- (zoombox.north west);
-\draw[zoom] (encl.south east) -- (zoombox.north east);
+\begin{scope}[on background layer]
+  \fill[cone=newFill] ([xshift=2mm]encl.south west) -- ([xshift=-2mm]encl.south east)
+    -- (zoombox.north east) -- (zoombox.north west) -- cycle;
+\end{scope}
+\draw[zoom] ([xshift=2mm]encl.south west) -- (zoombox.north west);
+\draw[zoom] ([xshift=-2mm]encl.south east) -- (zoombox.north east);
 
 % ---- legend ----
 \node[legend, anchor=north, align=center] at ($(current bounding box.south)+(0,-1.5mm)$)
