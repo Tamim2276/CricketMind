@@ -1,0 +1,76 @@
+% Figure: from a broadcast clip to the 15 frames every model reads.
+% Build: pdflatex fig_pipeline.tex
+\documentclass[border=2pt]{standalone}
+\input{archstyle}
+
+\begin{document}
+\begin{tikzpicture}[
+  stage/.style={text width=4.75cm, align=left, minimum height=5mm,
+    inner sep=2pt, font=\scriptsize,
+    execute at begin node={\hyphenpenalty=10000\exhyphenpenalty=10000}}]
+
+% ---- the broadcast frame, boxes from the real run ----
+\node[frame, anchor=north west] (raw) at (0,0)
+  {\includegraphics[width=4.0cm]{img/raw.jpg}};
+\begin{scope}[shift={(raw.north west)}, x=4.0cm, y=-3.068cm]
+  \draw[cropBox, line width=1.1pt, dashed] (0.3423,0.2148) rectangle (0.8196,0.8370);
+  \draw[strikerBox, line width=1.0pt] (0.4567,0.3249) rectangle (0.7003,0.7402);
+  \draw[batBox, line width=1.0pt] (0.3751,0.4070) rectangle (0.5052,0.5817);
+  \node[tag, text=cropBox, fill=white, anchor=south west] at (0.3423,0.2148) {crop};
+  \node[tag, text=strikerBox, fill=white, anchor=south east] at (0.7003,0.3249) {striker};
+  \node[tag, text=batBox, fill=white, anchor=east] at (0.3751,0.4943) {bat};
+\end{scope}
+\node[anchor=south, inner sep=2pt, align=center] at (raw.north)
+  {Broadcast clip\\[-1pt]{\scriptsize\color{note}28 frames, 896\by540 px}};
+\node[size, anchor=north, align=center] at (raw.south)
+  {frame 8 of the 15 kept;\\boxes from the real run};
+
+% ---- the steps: numbered, so no arrows between them ----
+\node[op, stage, anchor=north west] (s1) at (4.95,-0.12)
+  {\textbf{1}\enspace Drop repeated frames\hfill 28\,\arrowto\,24};
+\node[pre, stage, below=1.5mm of s1] (s2)
+  {\textbf{2}\enspace Detect striker and bat: YOLO11x-seg,\\
+   \phantom{\textbf{2}}\enspace the dataset authors' weights\hfill\frozen};
+\node[op, stage, below=1.5mm of s2] (s3)
+  {\textbf{3}\enspace Follow the striker, in two passes};
+\node[op, stage, below=1.5mm of s3] (s4)
+  {\textbf{4}\enspace Keep the best camera shot\hfill 24\,\arrowto\,15};
+\node[op, stage, below=1.5mm of s4] (s5)
+  {\textbf{5}\enspace Smooth, square and pad the box};
+\node[op, stage, below=1.5mm of s5] (s6)
+  {\textbf{6}\enspace Sample 15 evenly, resize to 224 px};
+\begin{scope}[on background layer]
+  \node[group, fit=(s1)(s6), inner sep=4pt] (steps) {};
+\end{scope}
+\node[anchor=south, inner sep=2pt, align=center] at (steps.north)
+  {Preprocessing\\[-1pt]{\scriptsize\color{note}once per clip, before any model}};
+
+% ---- the clip that comes out ----
+\foreach \t in {1,...,15} {
+  \pgfmathtruncatemacro{\col}{mod(\t-1,5)}
+  \pgfmathtruncatemacro{\row}{(\t-1)/5}
+  \ifnum\t<10 \edef\name{0\t}\else\edef\name{\t}\fi
+  \node[frame, anchor=north west] (f\t) at (11.3+\col*0.87, -0.12-\row*0.87)
+    {\includegraphics[width=0.83cm]{img/crop\name.jpg}};
+  \node[font=\tiny, text=white, fill=ink, fill opacity=0.65,
+    text opacity=1, inner sep=0.7pt, anchor=north west] at (f\t.north west) {\t};
+}
+\draw[cropBox, line width=1.1pt, dashed] (f8.north west) rectangle (f8.south east);
+\node[anchor=south, inner sep=2pt, align=center]
+  at ($(f1.north west)!0.5!(f5.north east)$)
+  {The clip every model reads\\[-1pt]{\scriptsize\color{note}15\by224\by224\by3, in time order}};
+\node[size, anchor=north, align=center] at ($(f11.south west)!0.5!(f15.south east)$)
+  {read row by row};
+
+% ---- flow ----
+\draw[flow] (raw.east) -- (steps.west |- raw.east);
+\draw[flow] (steps.east |- f8.west) -- (f6.west |- f8.west);
+
+% ---- legend ----
+\node[legend, anchor=north] at ($(current bounding box.south)+(0,-1mm)$)
+  {\swatch{preEdge}{preFill}~pretrained weights\quad
+   \swatch{opEdge}{white}~no weights\quad \frozen~frozen\qquad
+   on the frames: {\color{strikerBox}striker}, {\color{batBox}bat},
+   {\color{cropBox}crop}};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,60 @@
+% Every architecture figure on its own page, with a draft caption.
+% Build the figures first, then: pdflatex preview.tex
+% In the paper: \includegraphics[width=\textwidth]{figures/arch/fig_f02.pdf}
+\documentclass[11pt]{article}
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage[labelfont=bf, font=small]{caption}
+\pagestyle{empty}
+
+\newcommand{\fig}[2]{%
+  \begin{figure}[p]
+    \centering
+    \includegraphics[width=\linewidth, height=0.8\textheight, keepaspectratio]{#1}
+    \caption{#2}
+  \end{figure}
+  \clearpage}
+
+\begin{document}
+
+\fig{fig_pipeline.pdf}{Preprocessing. Every clip becomes 15 frames of
+224\,$\times$\,224 px centred on the striker. Steps 1--6 run once per clip,
+before any model; only step 2 has learned weights, the dataset authors'
+YOLO11x-seg detector, kept frozen. The example is a validation Cover Drive
+(vid533\_0): 28 broadcast frames, 24 after removing repeated frames, and 15
+in the camera shot with the most detections. The boxes are the ones the
+pipeline produced on frame 8.}
+
+\fig{fig_frame_models.pdf}{Frame models. An image backbone describes each
+frame on its own, a temporal head reads the 15 frame vectors in order, and a
+classifier gives a score for each of the 15 shots. The panels list what fills
+each slot, with the experiments that use it. Frozen backbones (families A, D,
+P and V) run once and their frame vectors are stored.}
+
+\fig{fig_video_models.pdf}{Video models read the whole clip at once. Top: the
+clip is resampled to the frame count, size and colours the Kinetics-400 weights
+were trained on, and a new classifier reads the backbone's clip vector. Bottom:
+R3D-18 reads motion instead of colour, either optical flow (W01) or frame
+differences (W05).}
+
+\fig{fig_pose_tracks.pdf}{Pose and object tracks instead of pixels. MediaPipe
+gives 33 joints per frame for E01 and E02; in E04 each pose frame draws on the
+RGB frames through cross-attention; E03 averages the answers of an RGB model and
+a pose model. The dataset authors' detector gives the bat and ball tracks for
+W02--W04. Every extractor is frozen; only the heads train.}
+
+\fig{fig_f02.pdf}{F02 in full. Each frame passes through EfficientNetV2-S; the
+maps after stages 3 and 5 are normalised, pooled to the last 7\,$\times$\,7 grid
+and stacked with it, giving 1,504 channels, or 73,696 numbers per frame. A
+linear layer shrinks each frame to 256, a learned position is added, two
+pre-norm transformer encoder layers mix the 15 frames, and their mean goes to
+the classifier. 40.4\,M weights, half of them new.}
+
+\fig{fig_ensemble.pdf}{The final system, chosen on the validation set before
+the test set was read. The three runs of C06 and of F02 each score the clip as
+filmed and mirrored; each model's six answers are averaged, and the two models
+vote with equal weight.}
+
+\end{document}

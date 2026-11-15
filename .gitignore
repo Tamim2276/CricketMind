@@ -34,3 +34,6 @@ notes/email_to_authors.md
 paper/*.aux
 paper/*.log
 paper/*.out
+paper/**/*.aux
+paper/**/*.log
+paper/**/*.out

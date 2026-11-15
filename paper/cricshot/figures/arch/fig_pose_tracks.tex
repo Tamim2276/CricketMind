@@ -1,0 +1,89 @@
+% Figure: pose and object tracks instead of pixels. E01-E04, W02-W04.
+% Build: pdflatex fig_pose_tracks.tex
+\documentclass[border=2pt]{standalone}
+\input{archstyle}
+
+\begin{document}
+\begin{tikzpicture}[
+  head/.style={new, text width=3.4cm, align=left},
+  ext/.style={pre, text width=2.7cm, align=left},
+  runid/.style={font=\footnotesize\bfseries, anchor=west, inner sep=1pt}]
+
+% ---- frame 8, its real pose and bat ----
+\node[frame, anchor=north west] (img) at (0,0)
+  {\includegraphics[width=2.6cm]{img/crop08.jpg}};
+\begin{scope}[shift={(img.north west)}, x=2.6cm, y=-2.6cm]
+  \input{img/pose08.tex}
+  \draw[batBox, line width=1.0pt] (0.0686,0.3089) rectangle (0.3413,0.5896);
+  \node[tag, text=batBox, fill=white, anchor=north west] at (0.0686,0.5896) {bat};
+\end{scope}
+\node[anchor=south, inner sep=2pt, align=center] at (img.north)
+  {Frame 8 of the clip\\[-1pt]{\scriptsize\color{note}and the pose found in it}};
+\node[size, anchor=north, align=center] (cap) at (img.south)
+  {dashed: joints MediaPipe\\only guessed};
+
+% ---- row 1: the pose alone ----
+\node[ext, anchor=north west] (mp) at (3.4,-0.05)
+  {\textbf{MediaPipe Pose}\hfill\frozen\\[1pt]
+   {\scriptsize 33 joints \by\ (x, y, visibility), centred on the hips,
+    scaled by the torso}};
+\node[head, anchor=north west] (gru1) at ($(mp.north east)+(1.35,0.15)$)
+  {\textbf{GRU-128}\hfill\trained};
+\node[head, below=2mm of gru1] (gcn)
+  {\textbf{ST-GCN}, 3 graph blocks\hfill\trained\\[-1pt]
+   {\scriptsize 64, 64, 128 channels; bones as edges}};
+\node[runid] at ([xshift=2mm]gru1.east) {E01};
+\node[runid] at ([xshift=2mm]gcn.east) {E02};
+\draw[flow] (img.east |- mp.west) -- (mp.west);
+\coordinate (fork) at ($(mp.east)+(0.6,0)$);
+\draw[line width=0.75pt, draw=ink] (mp.east) -- node[size, above] {15\by99} (fork);
+\draw[flow] (fork) |- (gru1.west);
+\draw[flow] (fork) |- (gcn.west);
+
+% ---- row 2: the pose beside the pixels ----
+\node[ext, below=1.2cm of mp] (rgb)
+  {\textbf{EfficientNetV2-S}\hfill\frozen\\[1pt]
+   {\scriptsize each frame averaged to 1,280 numbers}};
+\node[head, text width=4.2cm, anchor=west] (xatt) at ($(rgb.east)+(1.35,0)$)
+  {\textbf{Cross-attention}, 4 heads\hfill\trained\\[-1pt]
+   {\scriptsize each pose frame (query) takes from all 15 RGB frames
+    (keys, values); both shrunk to 256 with a position each; a shortcut,
+    LayerNorm, the mean over frames}};
+\node[runid] at ([xshift=2mm]xatt.east) {E04};
+\draw[flow] (fork) |- ([yshift=3.5mm]xatt.west);
+\draw[flow] ([yshift=-3.5mm]rgb.east) -- node[size, above] {15\by1,280}
+  ([yshift=-3.5mm]rgb.east -| xatt.west);
+\node[op, below=2.5mm of xatt, text width=4.2cm, align=left] (avg)
+  {\textbf{Average of probabilities}\\[-1pt]
+   {\scriptsize A09 (RGB transformer) with the better of E01 and E02
+    on val; no new weights}};
+\node[runid] at ([xshift=2mm]avg.east) {E03};
+
+% ---- row 3: bat and ball ----
+\node[ext, anchor=north] (yolo) at ([yshift=-0.9cm]mp |- avg.south)
+  {\textbf{YOLO11x-seg}\hfill\frozen\\[1pt]
+   {\scriptsize the dataset authors' weights}};
+\node[op, text width=3.1cm, align=left, font=\scriptsize, anchor=west]
+  (tracks) at ($(yolo.east)+(1.35,0)$)
+  {\textbf{\footnotesize Track features}, per frame\\
+   bat: found, centre, size, angle, mask flag, step\hfill 10\\
+   ball: found, x, y, step\hfill 5};
+\node[head, right=0.8cm of tracks, text width=1.7cm, align=center] (gru2)
+  {\textbf{GRU-128}\\\trained};
+\node[size, align=left, anchor=north] at ([yshift=-1.5mm]gru2.south)
+  {\textbf{\color{ink}W02}\enspace bat, 15\by10\\
+   \textbf{\color{ink}W03}\enspace ball, 15\by5\\
+   \textbf{\color{ink}W04}\enspace bat, ball and\\
+   \phantom{\textbf{W04}}\enspace pose, 15\by114};
+\draw[flow] (yolo) -- (tracks);
+\draw[flow] (tracks) -- (gru2);
+
+% the clip feeds every extractor
+\draw[flow] (cap.south) |- (rgb.west);
+\draw[flow] (cap.south) |- (yolo.west);
+
+% ---- legend ----
+\node[legend, anchor=north, align=center] at ($(current bounding box.south)+(0,-1.5mm)$)
+  {\archlegend\\each head ends in the classifier of the frame-model figure};
+\end{tikzpicture}
+\end{document}
