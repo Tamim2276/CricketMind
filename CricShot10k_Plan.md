@@ -5896,6 +5896,65 @@ python -m tools.final save G01 --tta flip   # whatever val chose
 python -m tools.final test G01_final__grouped   # last of all: test, once
 ```
 
+**Result 2026-11-15: Family T, nothing counts yet.** All 26 runs finished
+on 2026-11-13, each stopped early, and `tools.tuning --score` scored the
+team for every one. "Team" is one run beside the mean of the other model's
+three, against the same for the model's own three runs.
+
+| Change | C06 alone | C06 team | F02 alone | F02 team |
+|---|---|---|---|---|
+| None: mean of three runs | 85.06 (counts from 86.15) | 86.02 | 83.39 (counts from 84.47) | 86.13 |
+| lr 3e-5 | 84.58 | -0.62 | 81.26 | -0.98 |
+| lr 3e-4 | 72.15 | -3.93 | 82.54 | -0.21 |
+| Backbone lr 0.1x | 82.54 | -0.93 | 79.22 | -1.30 |
+| Backbone lr 0.5x | 85.28 | -0.04 | 81.71 | -1.10 |
+| Label smoothing 0.05 | 85.09 | +0.08 | 83.17 | **+0.93** |
+| Label smoothing 0.1 | 85.53 | -0.17 | 82.60 | +0.74 |
+| Class-balanced loss | **85.79** | **+0.98** | 83.17 | +0.81 |
+| Stochastic depth 0.4 | 85.15 | -0.62 | 83.11 | +0.23 |
+| Dropout (C06 0.7, F02 0.3) | 84.13 | -0.04 | 82.09 | -0.34 |
+| Weight decay (C06 0.05, F02 0.01) | 85.40 | +0.53 | **83.68** | +0.36 |
+| Colour jitter 0.2 | 84.32 | +0.08 | 82.60 | +0.23 |
+| Random crop 0.9 | 84.83 | -0.23 | 83.56 | +0.55 |
+| Time jitter 1 | 84.51 | -0.42 | 82.92 | +0.11 |
+
+1. **No run reaches its mark alone.** The best are T07, class-balanced C06
+   (85.79, +0.72), and T23, F02 with weight decay (83.68, +0.30).
+2. **The best team gains are about what luck gives.** C06's own three runs
+   score 85.40, 86.04 and 86.62 in the team, an SD of 0.61. The best of 13
+   runs with no real effect would sit about 1.7 SD, or 1.0, above the mean,
+   and T07's +0.98 is right there. F02's own three team scores (86.23, 86.17,
+   85.98) are too few for an SD, the same problem as its 0.04 alone.
+3. **One to one, the tuned runs do not stand out.** One C06 seed beside one
+   F02 seed scores 85.09 to 86.93 over the nine pairs (mean 85.95). The best
+   tuned pair, T07 with T25, scores 86.87, inside that range. T18 beside each
+   C06 seed in turn averages 86.08, only 0.13 over the seeds' pairs.
+4. **As extra members they add a few clips.** C06's three runs plus T07
+   beside F02's three plus T18: 87.13. Adding T10 to C06 and T20, T19 and
+   T25 to F02 as well: 87.25. Against 87.06, that is 1 to 3 clips, about
+   what more seeds give.
+5. **A pattern worth one more look, not a result.** Label smoothing and
+   class balancing lower F02 alone but raise it in the team, and balancing
+   helps both models. A model that is less sure of itself may vote better.
+   Only repeats can tell that from noise.
+6. **Lower learning rates hurt both models,** so lr stays 1e-4 and the
+   backbone keeps the full rate.
+
+So no change has counted, and there is nothing to combine yet. By the rule
+from 2026-11-05 ("anything closer gets repeated before it is believed"), the
+top team run of each model gets repeated with seeds 1 and 2. That is four
+runs, about 24 GPU-hours (T07 took about 9.5 hours, T18 about 3.8), and they
+are the "three seeds of the best recipes" step as well:
+
+```bash
+python -m src.experiments.run --exp T07_c06_balanced T18_f02_ls005 --split grouped --seeds 1 2
+python -m tools.ensemble --score --stream T07_c06_balanced --stream T18_f02_ls005
+```
+
+If the tuned pair beats 87.06 with three runs each, those recipes replace
+the baselines, and then the order above carries on with `--tta flip`. If it
+does not, the baselines stay and the new runs are tried as extra members.
+
 ## Day 41 — Ensembles and test-time augmentation
 
 *Built early, with first results: see "Built 2026-11-06" above.*

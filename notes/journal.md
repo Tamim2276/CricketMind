@@ -4048,3 +4048,26 @@ optical flow (W01). Every one lowered the equal vote (86.68, 86.36, 86.42
 against 87.06), and fitted weights gave them 0.05 to 0.10, which is close to
 switching them off. Even motion makes the same mistakes here, so the ensemble
 stays C06 and F02.
+
+## 2026-11-15 — Family T finished: no change counts yet
+
+All 26 tuning runs finished on 2026-11-13, each one change from C06 or F02,
+and each stopped early. None reached its mark alone. The best C06 run was
+class balancing (T07, 85.79, against a mark of 86.15), and the best F02 run
+was weight decay (T23, 83.68, against 84.47). The lower learning rates hurt
+both models, so lr stays 1e-4.
+
+In the team, a few looked better: T07 gained 0.98 beside F02's runs, and F02
+with label smoothing 0.05 (T18) gained 0.93 beside C06's, though it lost a
+little alone. Then I checked how far luck goes. C06's own three runs differ
+by 0.61 (SD) in the team, and the best of 13 runs that change nothing would
+be expected about 1.0 above the mean, which is where T07 sits. Paired one to
+one, the best tuned pair (T07 with T25) scored 86.87, inside the 85.09 to
+86.93 that the baseline seeds already give. Added as extra members, the
+tuned runs lift the vote from 87.06 to 87.13 or 87.25, a few clips.
+
+So nothing is proven, and there is nothing to combine yet. One pattern is
+worth a second look: label smoothing and class balancing make F02 worse alone
+but better in the vote, and balancing helps both. Next, T07 and T18 get
+seeds 1 and 2, about a day of GPU, and their three-run pair is compared with
+the baseline's 87.06.
