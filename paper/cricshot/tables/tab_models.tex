@@ -1,0 +1,95 @@
+% The options behind the architecture figures, with the experiments that use
+% them. Needs \usepackage{booktabs}. \input this file where the tables belong,
+% or paste the tables in: Springer wants a single .tex file at submission.
+
+\begin{table}[ht]
+\centering
+\caption{Image backbones of the frame models (Fig.~\ref{fig:frame_models}),
+and how each one was used. A frozen backbone runs once and its frame vectors
+are stored; a fine-tuned one trains with the head.}
+\label{tab:image_backbones}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Backbone & Frozen & Fine-tuned end to end \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{CNNs, pretrained on ImageNet}} \\
+EfficientNetV2-S  & A01--A14, D01--D06, P01 & B01, F01--F05, R01--R03 \\
+EfficientNetV2-B3 & -- & B02 \\
+Xception          & -- & B03 \\
+ConvNeXt-T        & P02 & B04 \\
+MobileNetV3-L     & -- & B05 \\
+ResNet-50         & -- & B06 \\
+RegNetY-16GF      & -- & B07 \\
+\multicolumn{3}{@{}l}{\textit{Vision transformers}} \\
+Swin-T, ImageNet  & -- & B08 \\
+CLIP ViT-B/16$^{a}$ & P05, V09 & -- \\
+DINOv2-B$^{b}$ & V10 & -- \\
+\bottomrule
+\end{tabular}
+\\[2pt]{\footnotesize $^{a}$ trained on 400\,M image--text pairs;\quad
+$^{b}$ self-supervised, no labels.}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{Temporal heads of the frame models, grouped by how they treat the
+order of the 15 frames. Each is followed by the same classifier: BatchNorm,
+FC 1,024 with ReLU, FC 15.}
+\label{tab:temporal_heads}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Temporal head & Experiments \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{Recurrent: read the frames in order}} \\
+GRU-128, last state & A03, B01--B08, R01--R03 \\
+GRU-64 / BiGRU-128 & A04 / A05 \\
+LSTM-64 / BiLSTM-64 & A06 / A07 \\
+GRU-128 after a LayerNorm & A13 \\
+GRU-128 on averaged feature maps & A14 \\
+GRU-128 with attention over its steps & F05 \\
+\multicolumn{2}{@{}l}{\textit{Attention: each frame attends to all 15}} \\
+Transformer, 2 layers, 4 heads & A08, F02 \\
+Transformer, 4 layers, 8 heads & A09 \\
+\multicolumn{2}{@{}l}{\textit{Convolution over time}} \\
+Dilated temporal convolution, rates 1, 2, 4 & A10 \\
+\multicolumn{2}{@{}l}{\textit{Pooling: frame order ignored}} \\
+Mean / max over frames & A01 / A02 \\
+Attention pooling & A11 \\
+NetVLAD, 8 learned centres & A12 \\
+\multicolumn{2}{@{}l}{\textit{No temporal head: the frame vectors averaged}} \\
+One linear layer (a probe) & P01, P02, P05 \\
+MLP, 1,024 hidden & V09, V10 \\
+Logistic regression, RBF SVM, random forest, & D01--D06 \\
+\quad XGBoost, 10-NN, MLP & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{Video backbones (Fig.~\ref{fig:video_models}a), the input each one
+takes, and how it was used. Our 15 frames become 16 by repeating the middle
+one and 8 by keeping every other one.}
+\label{tab:video_backbones}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Backbone & Frames & Size (px) & Fine-tuned, & Frozen, & Frozen, \\
+ & & & new linear & MLP & one linear \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{3D CNNs, Kinetics-400}} \\
+R3D-18 & 15 & 112 & C02 & V01 & P03 \\
+MC3-18 & 15 & 112 & -- & V02 & -- \\
+R(2+1)D-18 & 15 & 112 & C01 & V03 & -- \\
+S3D & 15 & 224 & -- & V04 & -- \\
+I3D-R50 & 8 & 224 & C03 & -- & -- \\
+SlowFast-R50 & 32 + 8$^{a}$ & 224 & C04 & -- & -- \\
+X3D-M & 16 & 224 & C05 & -- & -- \\
+\multicolumn{6}{@{}l}{\textit{Video transformers, Kinetics-400}} \\
+MViTv2-S & 16 & 224 & C06 & V06 & -- \\
+Swin3D-T & 15 & 224 & C07 & V05 & -- \\
+VideoMAE-B & 16 & 224 & C08 & V07 & P04 \\
+TimeSformer-B & 8 & 224 & -- & V08 & -- \\
+\bottomrule
+\end{tabular}
+\\[2pt]{\footnotesize $^{a}$ SlowFast reads the clip twice: 32 frames on its fast path, 8 on its slow one.}
+\end{table}

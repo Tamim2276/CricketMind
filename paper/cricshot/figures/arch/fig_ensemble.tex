@@ -1,73 +1,66 @@
-% Figure: the final system, as chosen on val: C06 and F02, three runs each,
-% every clip seen as filmed and mirrored, then an equal vote.
-% If the repeats change the members, edit the lines below.
+% Figure: the final system, as chosen on val, drawn like the ViT paper's
+% Figure 1. If the repeats change the members, edit the lines below.
 % Build: pdflatex fig_ensemble.tex
-\documentclass[border=2pt]{standalone}
+\documentclass[border=3pt]{standalone}
 \input{archstyle}
 
-\newcommand{\memberA}{C06}
-\newcommand{\memberAinfo}{MViTv2-S video transformer, fine-tuned}
-\newcommand{\memberB}{F02}
-\newcommand{\memberBinfo}{multi-scale EfficientNetV2-S, transformer head}
-\newcommand{\runs}{3 runs: seeds 42, 1, 2}
+\newcommand{\memberA}{C06: MViTv2-S}
+\newcommand{\memberAinfo}{video transformer, fine-tuned}
+\newcommand{\memberB}{F02: multi-scale EfficientNetV2-S}
+\newcommand{\memberBinfo}{with a 2-layer transformer head}
+\newcommand{\runs}{3 runs: seeds 42, 1 and 2}
 
 \begin{document}
-\begin{tikzpicture}[
-  model/.style={pre, text width=2.5cm, align=center},
-  avg/.style={op, text width=2.1cm, font=\scriptsize}]
+\begin{tikzpicture}
+\def\P{0.56}\def\X{2.3}\def\W{0.5cm}
 
-% ---- the clip, and its two views ----
-\clipdeck{clip}{0.8,0}{1.35cm}
-\node[anchor=south, inner sep=2pt, align=center] at ([yshift=1mm]clip.north)
-  {Clip\\[-1pt]{\scriptsize\color{note}15\by224\by224\by3}};
+% the clip as filmed and mirrored, every second frame shown
+\foreach \t in {1,...,8} {
+  \pgfmathtruncatemacro{\k}{2*\t-1}
+  \ifnum\k<10 \edef\nm{0\k}\else\edef\nm{\k}\fi
+  \node[frame] (a\t) at ({\X+(\t-1)*\P}, 0) {\includegraphics[width=\W]{img/crop\nm.jpg}};
+  \node[frame] (m\t) at ({\X+(\t+8)*\P}, 0) {\reflectbox{\includegraphics[width=\W]{img/crop\nm.jpg}}};
+}
+\node[side, anchor=east] at ([xshift=-2.5mm]a1.west) {Clip,\\two views};
+\node[size, anchor=north] at ($(a1.south)!0.5!(a8.south)$) {as filmed};
+\node[size, anchor=north] at ($(m1.south)!0.5!(m8.south)$) {mirrored};
 
-\node[frame, anchor=south] (v1) at (3.45,0.32)
-  {\includegraphics[width=1.05cm]{img/crop08.jpg}};
-\node[size, anchor=north, inner sep=0.5pt] (l1) at (v1.south) {as filmed};
-\node[frame, anchor=north] (v2) at (3.45,-0.18)
-  {\reflectbox{\includegraphics[width=1.05cm]{img/crop08.jpg}}};
-\node[size, anchor=north, inner sep=0.5pt] (l2) at (v2.south) {mirrored};
-\begin{scope}[on background layer]
-  \node[group, fit=(v1)(l1)(v2)(l2), inner sep=3pt] (views) {};
-\end{scope}
-\node[grouplabel, anchor=south] at (views.north) {two views};
-\draw[flow] (clip.east |- views.west) -- (views.west);
+\node[op, fit={([xshift=-0.5mm, yshift=8mm]a1.north west)([xshift=0.5mm, yshift=16mm]m8.north east)},
+  inner sep=0pt] (views) {};
+\node at (views) {every run scores both views, all 15 frames};
+\foreach \t in {1,...,8} {
+  \draw[up] (a\t.north) -- (a\t.north |- views.south);
+  \draw[up] (m\t.north) -- (m\t.north |- views.south);
+}
 
-% ---- the two members ----
-\node[model, anchor=west] (a) at ($(views.east)+(1.0,1.0)$)
-  {\textbf{\memberA}\\[0pt]{\scriptsize\memberAinfo}\\[1pt]
-   {\scriptsize\color{note}\runs}};
-\node[model, anchor=west] (b) at ($(views.east)+(1.0,-1.0)$)
-  {\textbf{\memberB}\\[0pt]{\scriptsize\memberBinfo}\\[1pt]
-   {\scriptsize\color{note}\runs}};
-\draw[flow] (views.east) -- ++(0.45,0) |- (a.west);
-\draw[flow] (views.east) -- ++(0.45,0) |- (b.west);
+% the two members, side by side
+\coordinate (mid) at ($(views.north west)!0.5!(views.north east)$);
+\node[encoder, anchor=south west, minimum width=4.6cm, minimum height=1.45cm, align=center]
+  (A) at ([yshift=8mm]views.north west)
+  {\memberA\\[-1pt]{\footnotesize\color{note}\memberAinfo}\\[-2pt]{\footnotesize\color{note}\runs}};
+\node[encoder, anchor=south east, minimum width=4.6cm, minimum height=1.45cm, align=center]
+  (B) at ([yshift=8mm]views.north east)
+  {\memberB\\[-1pt]{\footnotesize\color{note}\memberBinfo}\\[-2pt]{\footnotesize\color{note}\runs}};
+\foreach \s in {-1.6,0,1.6} {
+  \draw[up] ([xshift=\s cm]A.south |- views.north) -- ([xshift=\s cm]A.south);
+  \draw[up] ([xshift=\s cm]B.south |- views.north) -- ([xshift=\s cm]B.south);
+}
 
-\node[avg, right=0.6cm of a] (ma)
-  {\textbf{\footnotesize Average}\\of 6 answers:\\3~runs~\by~2~views\\[1pt]
-   = \textit{p}\textsubscript{C06}};
-\node[avg, right=0.6cm of b] (mb)
-  {\textbf{\footnotesize Average}\\of 6 answers:\\3~runs~\by~2~views\\[1pt]
-   = \textit{p}\textsubscript{F02}};
-\draw[flow] (a) -- (ma);
-\draw[flow] (b) -- (mb);
+\node[tokB, minimum width=2.6cm, minimum height=5.5mm, font=\footnotesize, anchor=south]
+  (pa) at ([yshift=6mm]A.north) {average of 6 answers: \textit{p}\textsubscript{C06}};
+\node[tokB, minimum width=2.6cm, minimum height=5.5mm, font=\footnotesize, anchor=south]
+  (pb) at ([yshift=6mm]B.north) {average of 6 answers: \textit{p}\textsubscript{F02}};
+\draw[up] (A) -- (pa);
+\draw[up] (B) -- (pb);
 
-% ---- the vote ----
-\node[op, text width=1.6cm, font=\scriptsize, anchor=west]
-  (vote) at ($(ma.east)!0.5!(mb.east)+(0.95,0)$)
-  {\textbf{\footnotesize Equal vote}\\[1pt]
-   \textonehalf\,\textit{p}\textsubscript{C06} +
-   \textonehalf\,\textit{p}\textsubscript{F02}};
-\draw[flow] (ma.east) -- ++(0.45,0) |- ([yshift=1.5mm]vote.west);
-\draw[flow] (mb.east) -- ++(0.45,0) |- ([yshift=-1.5mm]vote.west);
-\node[right=0.55cm of vote, align=center, inner sep=1pt] (out)
-  {\textbf{Cover}\\\textbf{Drive}\\[-1pt]{\scriptsize\color{note}highest of 15}};
-\draw[flow] (vote) -- (out);
-
-% ---- legend ----
-\node[legend, anchor=north, align=center] at ($(current bounding box.south)+(0,-2mm)$)
-  {\swatch{preEdge}{preFill}~trained networks, weights fixed here\quad
-   \swatch{opEdge}{white}~no weights\\
-   chosen on val before test was read};
+\node[head, anchor=south, text width=3.2cm] (vote) at ([yshift=11mm]mid |- pa.north)
+  {Equal vote\\[-1pt]{\footnotesize \textonehalf\,\textit{p}\textsubscript{C06} +
+   \textonehalf\,\textit{p}\textsubscript{F02}}};
+\draw[up] (pa.north) -- ++(0,0.45) -| ([xshift=-7mm]vote.south);
+\draw[up] (pb.north) -- ++(0,0.45) -| ([xshift=7mm]vote.south);
+\node[answer, anchor=east] (out) at ([xshift=-1.1cm]vote.west) {\shots};
+\draw[up] (vote.west) -- (out.east);
+\node[sidenote, anchor=west, align=left, text width=3.6cm] at ([xshift=6mm]vote.east)
+  {Chosen on the validation set before the test set was read.};
 \end{tikzpicture}
 \end{document}

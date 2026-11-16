@@ -1,0 +1,89 @@
+% !TEX root = ../main.tex
+\section{Methodology}\label{sec:method}
+
+\subsection{Preprocessing}\label{sec:preprocessing}
+
+% Steps 1-6 of the pipeline figure, one paragraph.
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_pipeline.pdf}
+  \caption{Preprocessing. Every clip becomes 15 frames of
+  224\,$\times$\,224 px centred on the striker. Steps 1--6 run once per clip;
+  only step 2 has learned weights, the dataset authors' YOLO11x-seg detector,
+  kept frozen. The example is a validation Cover Drive (vid533\_0): 28 broadcast
+  frames, 24 after removing repeats, 15 in the camera shot with the most
+  detections. The boxes are the ones the pipeline produced on frame 8.}
+  \label{fig:pipeline}
+\end{figure}
+
+\subsection{Frame models}\label{sec:frame_models}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_frame_models.pdf}
+  \caption{Frame models. One image backbone turns each of the 15 frames into a
+  vector, a temporal head reads the 15 vectors, and a classifier scores the 15
+  shots. The backbones are listed in Table~\ref{tab:image_backbones} and the
+  heads in Table~\ref{tab:temporal_heads}.}
+  \label{fig:frame_models}
+\end{figure}
+
+\input{tables/tab_models}
+
+\subsection{Video models}\label{sec:video_models}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_video_models.pdf}
+  \caption{Video models. (a)~The clip is resampled to the input its
+  Kinetics-400 weights expect, and the backbone reads space and time together
+  (Table~\ref{tab:video_backbones}). (b)~R3D-18 reads motion instead of colour:
+  optical flow from RAFT-small (W01) or frame differences (W05). The tiles are
+  the real flow fields and differences of the example clip.}
+  \label{fig:video_models}
+\end{figure}
+
+\subsection{Pose and bat tracks}\label{sec:pose}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_pose_tracks.pdf}
+  \caption{The batter's body and the bat instead of pixels. (a)~MediaPipe's 33
+  joints per frame, read by a GRU (E01) or a graph network whose edges are the
+  bones (E02). (b)~E04: each pose frame takes what it needs from the RGB frames
+  through cross-attention. (c)~W02--W04: the bat and ball tracks from the
+  dataset authors' detector. Every extractor is frozen; only the heads train.
+  The skeletons and bat boxes are the ones the models read.}
+  \label{fig:pose}
+\end{figure}
+
+\subsection{The multi-scale hybrid (F02)}\label{sec:f02}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_f02.pdf}
+  \caption{F02, the multi-scale hybrid. (a)~Each frame passes through the same
+  multi-scale EfficientNetV2-S and a linear layer; a learned position is added;
+  two transformer encoder layers mix the 15 frames, and their mean goes to the
+  classifier. (b)~One encoder layer. (c)~Inside the frame encoder: the maps
+  after stages 3 and 5 are normalised, pooled to the last 7\,$\times$\,7 grid
+  and stacked with it. 40.4\,M weights, half of them new. F01 is the same
+  encoder under GRU-128.}
+  \label{fig:f02}
+\end{figure}
+
+\subsection{Final ensemble}\label{sec:ensemble}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_ensemble.pdf}
+  \caption{The final system, chosen on the validation set before the test set
+  was read. The three runs of C06 and of F02 score the clip as filmed and
+  mirrored; each model's six answers are averaged, and the two models vote with
+  equal weight.}
+  \label{fig:ensemble}
+\end{figure}
+
+\subsection{Training and implementation}\label{sec:training}
+
+% Optimiser, schedule, augmentation, label smoothing, seeds, hardware (Arc B580 / CUDA).

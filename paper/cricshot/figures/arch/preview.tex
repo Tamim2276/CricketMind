@@ -1,64 +1,67 @@
-% Every architecture figure on its own page, with a draft caption.
-% Build the figures first, then: pdflatex preview.tex
+% Every architecture figure and the model tables, at Springer's single-column
+% text width (31 pc, about 13.1 cm), with draft captions.
+% Build the figures first, then: pdflatex preview.tex (twice, for the numbers)
 % In the paper: \includegraphics[width=\textwidth]{figures/arch/fig_f02.pdf}
-\documentclass[11pt]{article}
-\usepackage[a4paper, margin=2cm]{geometry}
+\documentclass[10pt]{article}
+\usepackage[a4paper, textwidth=31pc, textheight=194mm]{geometry}
 \usepackage[T1]{fontenc}
-\usepackage{lmodern}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
 \usepackage{graphicx}
+\usepackage{booktabs}
 \usepackage[labelfont=bf, font=small]{caption}
 \pagestyle{empty}
 
-\newcommand{\fig}[2]{%
+\newcommand{\fig}[3]{%
   \begin{figure}[p]
     \centering
-    \includegraphics[width=\linewidth, height=0.8\textheight, keepaspectratio]{#1}
-    \caption{#2}
+    \includegraphics[width=\linewidth, height=0.82\textheight, keepaspectratio]{#1}
+    \caption{#2}\label{#3}
   \end{figure}
   \clearpage}
 
 \begin{document}
 
 \fig{fig_pipeline.pdf}{Preprocessing. Every clip becomes 15 frames of
-224\,$\times$\,224 px centred on the striker. Steps 1--6 run once per clip,
-before any model; only step 2 has learned weights, the dataset authors'
-YOLO11x-seg detector, kept frozen. The example is a validation Cover Drive
-(vid533\_0): 28 broadcast frames, 24 after removing repeated frames, and 15
-in the camera shot with the most detections. The boxes are the ones the
-pipeline produced on frame 8.}
+224\,$\times$\,224 px centred on the striker. Steps 1--6 run once per clip;
+only step 2 has learned weights, the dataset authors' YOLO11x-seg detector,
+kept frozen. The example is a validation Cover Drive (vid533\_0): 28 broadcast
+frames, 24 after removing repeats, 15 in the camera shot with the most
+detections. The boxes are the ones the pipeline produced on frame 8.}{fig:pipeline}
 
-\fig{fig_frame_models.pdf}{Frame models. An image backbone describes each
-frame on its own, a temporal head reads the 15 frame vectors, and a classifier
-gives a score for each of the 15 shots. The tables open up the two boxes:
-(a)~every backbone, frozen or fine-tuned, with the experiments that use it;
-(b)~how a frame becomes one vector; (c)~every temporal head, grouped by how it
-treats time; (d)~the models that replace head and classifier. Frozen backbones
-run once and their frame vectors are stored.}
+\fig{fig_frame_models.pdf}{Frame models. One image backbone turns each of the
+15 frames into a vector, a temporal head reads the 15 vectors, and a classifier
+scores the 15 shots. The backbones are listed in Table~\ref{tab:image_backbones}
+and the heads in Table~\ref{tab:temporal_heads}.}{fig:frame_models}
 
 \fig{fig_video_models.pdf}{Video models. (a)~The clip is resampled to the
-frame count, size and colours the Kinetics-400 weights were trained on; the
-backbone sees space and time together, and a new classifier reads its clip
-vector. The table gives each backbone's input and the three ways it was used.
-(b)~R3D-18 reads motion instead of colour: optical flow (W01) or frame
-differences (W05). F03 averages C02 and W01.}
+input its Kinetics-400 weights expect, and the backbone reads space and time
+together (Table~\ref{tab:video_backbones}). (b)~R3D-18 reads motion instead of
+colour: optical flow from RAFT-small (W01) or frame differences (W05). The
+tiles are the real flow fields and differences of the example
+clip.}{fig:video_models}
 
-\fig{fig_pose_tracks.pdf}{Pose and object tracks instead of pixels. (a)~The
-33 MediaPipe joints of every frame, read by a GRU (E01) or a graph network
-(E02). (b)~The pose beside the pixels: each pose frame draws on the RGB frames
-through cross-attention (E04), or the answers of an RGB model and a pose model
-are averaged (E03). (c)~Bat and ball tracks from the dataset authors' detector
-(W02--W04). Every extractor is frozen; only the heads train.}
+\fig{fig_pose_tracks.pdf}{The batter's body and the bat instead of pixels.
+(a)~MediaPipe's 33 joints per frame, read by a GRU (E01) or a graph network
+whose edges are the bones (E02). (b)~E04: each pose frame takes what it needs
+from the RGB frames through cross-attention. (c)~W02--W04: the bat and ball
+tracks from the dataset authors' detector. Every extractor is frozen; only the
+heads train. The skeletons and bat boxes are the ones the models
+read.}{fig:pose}
 
-\fig{fig_f02.pdf}{F02 in full. Each frame passes through EfficientNetV2-S; the
-maps after stages 3 and 5 are normalised, pooled to the last 7\,$\times$\,7 grid
-and stacked with it, giving 1,504 channels, or 73,696 numbers per frame. A
-linear layer shrinks each frame to 256, a learned position is added, two
-pre-norm transformer encoder layers mix the 15 frames, and their mean goes to
-the classifier. 40.4\,M weights, half of them new.}
+\fig{fig_f02.pdf}{F02, the multi-scale hybrid. (a)~Each frame passes through
+the same multi-scale EfficientNetV2-S and a linear layer; a learned position is
+added; two transformer encoder layers mix the 15 frames, and their mean goes
+to the classifier. (b)~One encoder layer. (c)~Inside the frame encoder: the
+maps after stages 3 and 5 are normalised, pooled to the last 7\,$\times$\,7
+grid and stacked with it. 40.4\,M weights, half of them new. F01 is the same
+encoder under GRU-128.}{fig:f02}
 
 \fig{fig_ensemble.pdf}{The final system, chosen on the validation set before
-the test set was read. The three runs of C06 and of F02 each score the clip as
+the test set was read. The three runs of C06 and of F02 score the clip as
 filmed and mirrored; each model's six answers are averaged, and the two models
-vote with equal weight.}
+vote with equal weight.}{fig:ensemble}
+
+\input{../../tables/tab_models}
 
 \end{document}

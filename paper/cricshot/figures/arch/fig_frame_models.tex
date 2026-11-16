@@ -1,112 +1,43 @@
-% Figure: the frame-model template. Families A, B, D, F, P, R and V09-V10.
+% Figure: the frame-model template, drawn like the ViT paper's Figure 1.
+% Families A, B, D, F, P, R and V09-V10; the options are in the model tables.
 % Build: pdflatex fig_frame_models.tex
-\documentclass[border=2pt]{standalone}
+\documentclass[border=3pt]{standalone}
 \input{archstyle}
 
 \begin{document}
 \begin{tikzpicture}
+\def\P{0.56}\def\X{2.3}\def\W{0.5cm}
 
-% ---- the template, left to right ----
-\clipdeck{clip}{0.8,0}{1.35cm}
-\node[anchor=south, inner sep=2pt, align=center] at ([yshift=1mm]clip.north)
-  {Clip\\[-1pt]{\scriptsize\color{note}15 frames}};
+\tilerow{f}{crop}{15}{\X}{0}{\P}{\W}
+\node[side, anchor=east] at ([xshift=-2.5mm]f1.west) {Clip,\\15 frames};
 
-\node[pre, text width=2.15cm, right=1.05cm of clip] (bb)
-  {\textbf{Image backbone}\\[1pt]
-   {\scriptsize EfficientNetV2-S or one of 9 others}};
-\node[op, text width=1.75cm, right=1.5cm of bb] (pool)
-  {\textbf{Frame vector}\\[1pt]
-   {\scriptsize the map flattened or averaged}};
-\begin{scope}[on background layer]
-  \node[group, fit=(bb)(pool), inner sep=5pt] (each) {};
-\end{scope}
-\node[grouplabel, anchor=south] at (each.north)
-  {each frame on its own; the same weights for all 15};
+\node[embed, fit={([xshift=-0.5mm, yshift=8mm]f1.north west)([xshift=0.5mm, yshift=20.5mm]f15.north east)},
+  inner sep=0pt] (bb) {};
+\node[align=center] at (bb) {Image backbone: EfficientNetV2-S or one of 9 others\\[-1pt]
+  {\footnotesize\color{note}the same weights for all 15 frames}\\[-2pt]
+  {\footnotesize\color{note}frozen in A, D, P, V;\enspace fine-tuned in B, F, R}};
+\foreach \t in {1,...,15} {
+  \draw[up] (f\t.north) -- (f\t.north |- bb.south);
+  \vtok{v\t}{$(f\t.north |- bb.north)+(0,0.95)$}{\t}
+  \draw[up] (v\t-s |- bb.north) -- (v\t-s);
+}
+\node[side, anchor=east] at ([xshift=-2.5mm]v1.west) {Frame vector\\{\footnotesize\mdseries 62,720 or 1,280}};
 
-\node[new, text width=1.7cm, right=1.25cm of each] (head)
-  {\textbf{Temporal head}\\[1pt]
-   {\scriptsize reads the 15 frame vectors}};
-\node[new, text width=1.85cm, right=0.55cm of head] (cls)
-  {\textbf{Classifier}\\[1pt]
-   {\scriptsize BatchNorm\\FC 1,024, ReLU\\FC 15}};
-\node[right=0.45cm of cls, align=center, inner sep=1pt] (out)
-  {\textbf{Cover}\\\textbf{Drive}\\[-1pt]{\scriptsize\color{note}top score}};
+\node[encoder, fit={([yshift=8mm]v1.north west)([yshift=20.5mm]v15.north east)},
+  inner sep=0pt] (th) {};
+\node[align=center] at (th) {Temporal head\\[-1pt]
+  {\footnotesize\color{note}GRU, LSTM, transformer, temporal convolution,}\\[-2pt]
+  {\footnotesize\color{note}attention pooling, NetVLAD, mean or max}};
+\foreach \t in {1,...,15} \draw[up] (v\t-n) -- (v\t-n |- th.south);
 
-\draw[flow] (clip.east |- bb.west) -- node[dim] {224\sq} (bb.west);
-\draw[flow] (bb) -- node[dim] {7\by7\by\textit{C}} (pool);
-\draw[flow] (each.east |- head.west) -- node[dim] {15\by\textit{D}} (head);
-\draw[flow] (head) -- (cls);
-\draw[flow] (cls) -- (out);
+\node[head, anchor=south, text width=3.1cm] (cls) at ([xshift=2.1cm, yshift=6mm]th.north west)
+  {Classifier\\[-1pt]{\footnotesize BatchNorm, FC 1,024,\\ReLU, FC 15}};
+\draw[up] (cls.south |- th.north) -- (cls.south);
+\node[answer, anchor=east] (out) at ([xshift=-8mm]cls.west) {\shots};
+\draw[up] (cls.west) -- (out.east);
 
-% ---- (a) what the backbone can be ----
-\card{cb}{0,-2.2}{preFill}{preEdge}{(a)\enspace Image backbones}{%
-\cardtable{l P{2.35cm} P{2.65cm}}{%
-\rowcolor{white} & \frozen\ frozen: frame vectors stored once
-  & \trained\ fine-tuned end to end\\ \cardrule
-\grouprow{3}{CNNs, pretrained on ImageNet}
-EfficientNetV2-S & A01--A14, D01--D06, P01 & B01, F01--F05, R01--R03\\
-EfficientNetV2-B3 & & B02\\
-Xception & & B03\\
-ConvNeXt-T & P02 & B04\\
-MobileNetV3-L & & B05\\
-ResNet-50 & & B06\\
-RegNetY-16GF & & B07\\
-\grouprow{3}{Vision transformers}
-Swin-T, ImageNet & & B08\\
-CLIP ViT-B/16\textsuperscript{1} & P05, V09 & \\
-DINOv2-B\textsuperscript{2} & V10 &
-}}
-\node[size, anchor=north west] (fn) at ([yshift=-0.5mm]cb.south west)
-  {\textsuperscript{1}\,400 M image--text pairs\quad
-   \textsuperscript{2}\,self-supervised, no labels};
-
-% ---- (b) what a frame vector is ----
-\card{cv}{$(fn.south west)+(0,-0.3)$}{white}{opEdge}{(b)\enspace Frame vector}{%
-\cardtable{P{4.85cm} l}{%
-\rowcolor{white} for EfficientNetV2-S & experiments\\ \cardrule
-7\by7\by1,280 map, flattened: 62,720 & A, B, F, R\\
-the same map, averaged: 1,280 & A14, D, P, V\\
-plus two inner stages, flattened: 73,696 & F01, F02\\
-plus the frame again at 112 px & F04
-}}
-
-% ---- (c) what the head can be ----
-\card{ch}{8.2,-2.2}{newFill}{newEdge}{(c)\enspace Temporal heads}{%
-\cardtable{l l}{%
-\rowcolor{white} & experiments\\ \cardrule
-\grouprow{2}{Recurrent: read the frames in order}
-GRU-128, last state & A03, B01--B08, R01--R03\\
-GRU-64\,/\,BiGRU-128 & A04\,/\,A05\\
-LSTM-64\,/\,BiLSTM-64 & A06\,/\,A07\\
-GRU-128 after a LayerNorm & A13\\
-GRU-128 on averaged maps & A14\\
-GRU-128, attention over steps & F05\\
-\grouprow{2}{Attention: each frame looks at all 15}
-Transformer, 2 layers \by\ 4 heads & A08, F02\\
-Transformer, 4 layers \by\ 8 heads & A09\\
-\grouprow{2}{Convolution over time}
-Dilated, rates 1, 2, 4 & A10\\
-\grouprow{2}{Pooling: frame order ignored}
-Mean\,/\,max over frames & A01\,/\,A02\\
-Attention pooling & A11\\
-NetVLAD, 8 learned centres & A12
-}}
-
-% ---- (d) or no head at all ----
-\card{cx}{$(ch.south west)+(0,-0.35)$}{newFill}{newEdge}
-  {(d)\enspace Or, in place of head and classifier}{%
-\cardtable{P{4.55cm} l}{%
-\rowcolor{white} on the frame vectors averaged over time & experiments\\ \cardrule
-One linear layer, a probe & P01, P02, P05\\
-MLP, 1,024 hidden & V09, V10\\
-Logistic regression, RBF SVM, random forest, XGBoost, 10-NN, MLP & D01--D06
-}}
-
-\zoomto{bb}{cb}{preFill}
-\zoomto{head}{ch}{newFill}
-
-% ---- legend ----
-\node[legend, anchor=north] at ($(current bounding box.south)+(0,-1.5mm)$)
-  {\archlegend\qquad \textit{C}: channels\quad \textit{D}: frame-vector length};
+\node[sidenote, anchor=north east, align=left, text width=4.4cm] at ([yshift=-1mm]th.north east |- cls.north)
+  {P, V and D have no temporal head: the 15 frame vectors are averaged and
+   read by one linear layer, an MLP or a classical model.};
 \end{tikzpicture}
 \end{document}

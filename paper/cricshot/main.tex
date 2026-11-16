@@ -1,0 +1,50 @@
+% CricShot paper, Springer Nature (sn-jnl). Each section lives in sections/.
+% Build: latexmk main.tex   (or Ctrl+Alt+B in VS Code with LaTeX Workshop)
+% To submit as ONE file: latexpand --expand-bbl main.bbl main.tex > submit.tex
+\documentclass[pdflatex,sn-mathphys-num]{sn-jnl}
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{url}
+\usepackage{hyperref}
+
+\graphicspath{{figures/arch/}{figures/results/}}
+
+\begin{document}
+
+\title[Cricket shot classification]{Cricket Shot Classification on CricShot10k}
+
+% TODO: authors and affiliation
+\author*[1]{\fnm{First} \sur{Author}}\email{author@example.com}
+\author[1]{\fnm{Second} \sur{Author}}
+\affil*[1]{\orgdiv{Department of Computer Science and Engineering},
+  \orgname{Military Institute of Science and Technology},
+  \orgaddress{\city{Dhaka}, \country{Bangladesh}}}
+
+\abstract{TODO: write last. Problem, data, method, the one headline number, why it matters.}
+
+\keywords{cricket, shot classification, video understanding, transformers, ensemble}
+
+\maketitle
+
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_dataset}
+\input{sections/04_methodology}
+\input{sections/05_results}
+\input{sections/06_discussion}
+\input{sections/07_conclusion}
+\input{sections/declarations}
+\input{sections/appendix}
+
+\bibliography{references}
+
+\end{document}
