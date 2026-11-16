@@ -4071,3 +4071,17 @@ worth a second look: label smoothing and class balancing make F02 worse alone
 but better in the vote, and balancing helps both. Next, T07 and T18 get
 seeds 1 and 2, about a day of GPU, and their three-run pair is compared with
 the baseline's 87.06.
+
+## 2026-11-16 — The repeats: T07 and T18 do not count
+
+Seeds 1 and 2 of T07 and T18 finished. Alone, they came in lower than seed
+42: T07 at 85.40 and 84.96, T18 at 82.66 and 82.22, all under their marks.
+Together, three runs each, the equal vote scored 86.93, against the
+baseline's 87.06. So the tuned recipes do not replace C06 and F02, and the
++0.98 from yesterday was luck, as the spread of the baseline seeds
+suggested. One check is left before moving on: the new runs as extra
+members beside the baselines, then flip TTA.
+
+Meanwhile the paper got a home: paper/cricshot/main.tex on Springer's class,
+one file per section, with the six figures and the model tables already in
+the methodology.

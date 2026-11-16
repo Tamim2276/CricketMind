@@ -5955,6 +5955,35 @@ If the tuned pair beats 87.06 with three runs each, those recipes replace
 the baselines, and then the order above carries on with `--tta flip`. If it
 does not, the baselines stay and the new runs are tried as extra members.
 
+**Result 2026-11-16: the repeats do not count.** Seeds 1 and 2 finished.
+Alone, every run sits under its mark:
+
+| Run | Seed 42 | Seed 1 | Seed 2 | Mark |
+|---|---|---|---|---|
+| T07, C06 class-balanced | 85.79 | 85.40 | 84.96 | 86.15 |
+| T18, F02 label smoothing 0.05 | 83.17 | 82.66 | 82.22 | 84.47 |
+
+Together, three runs each (`tools.ensemble --score`):
+
+| Combination | Val | Against 87.06 |
+|---|---|---|
+| G01 equal vote | 86.93 | -0.13 |
+| G02 weights, held out | 86.87 | -0.19 |
+| G02 weights, all val (flatters) | 87.13 | +0.07 |
+| G04 stacking, held out | 86.30 | -0.76 |
+
+The tuned pair loses to the baseline pair, so C06 and F02 stay as they
+are, and T07's +0.98 was the luck the 2026-11-15 note warned about. Last,
+the rule above: the new runs as extra members, six runs a model, then
+`--tta flip`.
+
+```bash
+python -m tools.ensemble --stream C06_mvitv2_s --stream T07_c06_balanced --stream F02_multiscale_tf --stream T18_f02_ls005
+```
+
+They count only if the equal vote clears 87.06 by more than a few clips;
+two extra runs per model already gave 87.13 on 2026-11-15.
+
 ## Day 41 — Ensembles and test-time augmentation
 
 *Built early, with first results: see "Built 2026-11-06" above.*
