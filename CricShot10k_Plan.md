@@ -5984,6 +5984,24 @@ python -m tools.ensemble --stream C06_mvitv2_s --stream T07_c06_balanced --strea
 They count only if the equal vote clears 87.06 by more than a few clips;
 two extra runs per model already gave 87.13 on 2026-11-15.
 
+As extra members they do not count either:
+
+| Four streams, three runs each | Val |
+|---|---|
+| G01 equal vote | 86.93 |
+| G02 weights, held out | 86.42 |
+| G02 weights, all val (flatters; F02 weighted 0.00) | 87.70 |
+| G04 stacking, held out | 87.00 |
+
+So Family T is closed: the final team is C06 and F02 as they were, three
+seeds each, and next is flip TTA on that pair.
+
+**Flip TTA, 2026-11-16:** `tools.ensemble --tta flip --score` gives C06
+86.36 and F02 85.47 alone, and the equal vote **87.38**, the same as on
+2026-11-06. Weights fitted on all of val land on 0.50 and 0.50, so equal
+vote with flip (G01 --tta flip) is val's pick. What is left before test is
+read once: Grad-CAM, then `tools.final save`, then `tools.final test`.
+
 ## Day 41 — Ensembles and test-time augmentation
 
 *Built early, with first results: see "Built 2026-11-06" above.*

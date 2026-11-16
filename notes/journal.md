@@ -4079,8 +4079,14 @@ Seeds 1 and 2 of T07 and T18 finished. Alone, they came in lower than seed
 Together, three runs each, the equal vote scored 86.93, against the
 baseline's 87.06. So the tuned recipes do not replace C06 and F02, and the
 +0.98 from yesterday was luck, as the spread of the baseline seeds
-suggested. One check is left before moving on: the new runs as extra
-members beside the baselines, then flip TTA.
+suggested. The last check was the new runs as extra members beside the
+baselines, six runs a model: the equal vote gave 86.93 again, and held out
+neither fitted weights (86.42) nor stacking (87.00) did better. Family T is
+closed; the team stays C06 and F02, and flip TTA is next.
+
+Flip TTA on that pair gave 87.38, the same as ten days ago, and the weights
+fitted on val came out at exactly half each, so the equal vote with flip is
+the final system on val.
 
 Meanwhile the paper got a home: paper/cricshot/main.tex on Springer's class,
 one file per section, with the six figures and the model tables already in
