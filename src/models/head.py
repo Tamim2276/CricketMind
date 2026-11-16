@@ -248,7 +248,7 @@ class MLPHead(nn.Module):
 POOLS = ("mean", "max")
 
 WIDTH = 256         # every new head shrinks a frame to this first
-FRAMES = 15         # the most frames a clip has
+FRAMES = 15         # frames per clip, unless a run rebuilt them longer
 CLUSTERS = 8        # NetVLAD's learned centres
 
 
@@ -351,14 +351,15 @@ class TransformerHead(_Tail):
 
     def __init__(self, in_dim: int, num_classes: int = NUM_CLASSES,
                  layers: int = 2, attn_heads: int = 4, dense: int = DENSE,
-                 dropout: float = 0.0):
+                 dropout: float = 0.0, frames: int = FRAMES):
         super().__init__()
         if WIDTH % attn_heads:
             raise ValueError(f"attn_heads must divide {WIDTH}, got {attn_heads}")
         self.in_dim = in_dim
+        self.frames = frames
         self.proj = nn.Linear(in_dim, WIDTH)
-        # one learned vector per frame slot, or frame 1 and 15 look the same
-        self.pos = nn.Parameter(torch.zeros(1, FRAMES, WIDTH))
+        # one learned vector per frame slot, or the first and last look the same
+        self.pos = nn.Parameter(torch.zeros(1, frames, WIDTH))
         nn.init.normal_(self.pos, std=0.02)
         layer = nn.TransformerEncoderLayer(
             d_model=WIDTH, nhead=attn_heads, dim_feedforward=2 * WIDTH,
@@ -370,8 +371,8 @@ class TransformerHead(_Tail):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         _check_frames(x, self.in_dim)
         frames = x.shape[1]
-        if frames > FRAMES:
-            raise ValueError(f"at most {FRAMES} frames, got {frames}")
+        if frames > self.frames:
+            raise ValueError(f"at most {self.frames} frames, got {frames}")
         h = self.proj(x) + self.pos[:, :frames]
         # torch's fused eval path misses XPU autocast and mixes bf16 with
         # fp32, so it is off for this call only

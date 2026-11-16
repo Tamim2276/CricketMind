@@ -6002,6 +6002,33 @@ seeds each, and next is flip TTA on that pair.
 vote with flip (G01 --tta flip) is val's pick. What is left before test is
 read once: Grad-CAM, then `tools.final save`, then `tools.final test`.
 
+**Before saving: F02 on 20 frames (T27), built 2026-11-16.** The median clip
+keeps 22 frames after the crop (manifest: 91.5% keep 15 or more, 69.1% keep
+20, 35.3% keep 24), so 15 throws about a third of the swing away. 20 gives
+most clips real frames and few repeats.
+
+- `TransformerHead` takes `frames` (default 15, so every old checkpoint
+  loads as before); the config key is `frames`, read by `video_gru`.
+- `video_gru`'s data check counts against the original `data/processed/box`,
+  so a half-finished rebuild cannot start a run.
+- Checked: the pipeline rebuilt 5 clips at 15 frames byte for byte the same
+  as the stored ones; at 20 they keep the same first and last frame.
+- Memory, F02 at batch 4 on random clips: 15 frames 5.37 GB (46%), 20 frames
+  7.12 GB (61%), 1.37x the time a batch. Batch 4 stays, so only the frames
+  change.
+- Disk: about 28 GB; seg and replica moved to an external drive to make room
+  (needed again only to rerun those families).
+
+```bash
+python -m src.preprocess.build_dataset --frames 20 --variants box --out data/processed_f20
+python -m src.experiments.run --exp T27_f02_frames20 --split grouped
+python -m src.experiments.run --exp T27_f02_frames20 --split grouped --seeds 1 2
+python -m tools.ensemble --score --tta flip --stream C06_mvitv2_s --stream T27_f02_frames20
+```
+
+T27 counts only if C06 with it beats 87.38 (C06 with F02, flip) by more than
+a few clips. Then it replaces F02 in the final save; if not, F02 stays.
+
 ## Day 41 — Ensembles and test-time augmentation
 
 *Built early, with first results: see "Built 2026-11-06" above.*

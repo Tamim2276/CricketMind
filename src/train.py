@@ -74,6 +74,7 @@ DEFAULTS = {
     "colour_jitter": 0.0,     # brightness, contrast, saturation +- this
     "random_crop": 0.0,       # keep at least this share of the area, e.g. 0.9
     "time_jitter": 0,         # a frame may swap with one this far away
+    "frames": 15,             # frames per clip; more needs a rebuilt processed folder
     "label_smoothing": 0.0,   # the share of each target spread over all classes
     "class_balanced": False,  # a rare class's mistakes cost more
     "optimizer": "adam",

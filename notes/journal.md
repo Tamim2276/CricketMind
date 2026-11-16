@@ -4091,3 +4091,16 @@ the final system on val.
 Meanwhile the paper got a home: paper/cricshot/main.tex on Springer's class,
 one file per section, with the six figures and the model tables already in
 the methodology.
+
+## 2026-11-16 — F02 on 20 frames: built and checked
+
+The last step before the test set is read: give F02 more of each shot. The
+manifest says the median clip keeps 22 frames after the crop, and we sampled
+15, so a third of the swing was thrown away. 20 frames gives most clips real
+frames. The transformer head's position table was fixed at 15; it now takes
+the frame count from the config, 15 by default, so every old run is
+untouched. Five clips rebuilt at 15 frames came out byte for byte the same as
+the stored ones, and F02 at 20 frames fits the card at batch 4 (61% of
+memory, about 6 hours a run). The seg and replica clips went to an external
+drive to make room. The run is T27, and it counts only if it lifts the final
+vote past 87.38.

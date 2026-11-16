@@ -426,6 +426,10 @@ ENTRIES = [
           "a mildly different box each time"),
     _tune("T26_f02_time", "tune_f02", {"time_jitter": 1},
           "frames moved by one"),
+    # the median clip keeps 22 frames after the crop; 15 threw a third away
+    _tune("T27_f02_frames20", "tune_f02",
+          {"frames": 20, "processed": "data/processed_f20"},
+          "20 frames a clip instead of 15: more of the swing, nothing else"),
 ]
 
 _ID = re.compile(r"^([A-Z])\d\d_[a-z0-9_]+$")

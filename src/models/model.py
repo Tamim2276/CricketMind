@@ -9,7 +9,7 @@ the tensor along:
 import torch.nn as nn
 
 from src.models.encoder import DEFAULT_BACKBONE, DEFAULT_SIZE, FrameEncoder
-from src.models.head import (DENSE, HIDDEN, NUM_CLASSES, GRUAttnHead,
+from src.models.head import (DENSE, FRAMES, HIDDEN, NUM_CLASSES, GRUAttnHead,
                              GRUHead, TransformerHead)
 
 __all__ = ["ShotModel", "build_model"]
@@ -36,7 +36,7 @@ def build_model(num_classes: int = NUM_CLASSES,
                 grad_checkpoint: bool = False,
                 drop_path=None, scales: str = "global", extra_size=None,
                 head: str = "gru", layers: int = 1,
-                attn_heads: int = 4) -> ShotModel:
+                attn_heads: int = 4, frames: int = FRAMES) -> ShotModel:
     """The default stack. The head is sized from the encoder, never hardcoded.
 
     `pool="flatten"` reproduces the authors: the GRU sees the whole 7x7 grid
@@ -49,7 +49,7 @@ def build_model(num_classes: int = NUM_CLASSES,
     if head == "transformer":
         tail = TransformerHead(encoder.out_dim, num_classes, layers=layers,
                                attn_heads=attn_heads, dense=dense,
-                               dropout=dropout)
+                               dropout=dropout, frames=frames)
     elif head == "gru_attn":
         tail = GRUAttnHead(encoder.out_dim, num_classes, hidden, dense,
                            dropout, keras_dense=keras_dense)

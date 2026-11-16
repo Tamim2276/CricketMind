@@ -10,7 +10,7 @@ Reads `data/processed/<variant>/*.npy`. Flip is an image transform here, done
 once per clip by `ClipFlip`.
 """
 from src.data.augment import build_transform
-from src.data.dataset import CricShotDataset
+from src.data.dataset import PROCESSED, CricShotDataset
 from src.models.model import build_model
 
 NAME = "video_gru"
@@ -20,7 +20,7 @@ READS = ("variant", "processed", "flip", "backbone", "pretrained", "freeze",
          "hidden", "dense", "dropout", "pool", "keras_dense",
          "grad_checkpoint", "drop_path", "same_clips_as", "scales",
          "extra_size", "head", "layers", "attn_heads", "colour_jitter",
-         "random_crop", "time_jitter")
+         "random_crop", "time_jitter", "frames")
 
 # the heads an end-to-end run can end in (Family F adds the last two)
 HEADS = ("gru", "transformer", "gru_attn")
@@ -76,7 +76,8 @@ def _present(cfg):
     with open(os.path.join(cfg["split"], "train.csv"), encoding="utf-8") as fh:
         for row in csv.DictReader(fh):
             rel = row["clip"].replace("/", os.sep)[:-4] + ".npy"
-            if not os.path.exists(os.path.join(cfg["processed"], "box", rel)):
+            # the original box clips, so a half-built rebuild cannot pass
+            if not os.path.exists(os.path.join(PROCESSED, "box", rel)):
                 continue
             want += 1
             if os.path.exists(os.path.join(cfg["processed"], cfg["variant"],
@@ -115,4 +116,5 @@ def model(cfg, train_set, num_classes):
                        grad_checkpoint=cfg["grad_checkpoint"],
                        drop_path=cfg["drop_path"], scales=cfg["scales"],
                        extra_size=cfg["extra_size"], head=cfg["head"],
-                       layers=cfg["layers"], attn_heads=cfg["attn_heads"])
+                       layers=cfg["layers"], attn_heads=cfg["attn_heads"],
+                       frames=cfg["frames"])
