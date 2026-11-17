@@ -6,7 +6,7 @@
 % Steps 1-6 of the pipeline figure, one paragraph.
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{fig_pipeline.pdf}
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{fig_pipeline.pdf}
   \caption{Preprocessing. Every clip becomes 15 frames of
   224\,$\times$\,224 px centred on the striker. Steps 1--6 run once per clip;
   only step 2 has learned weights, the dataset authors' YOLO11x-seg detector,
@@ -20,7 +20,7 @@
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{fig_frame_models.pdf}
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{fig_frame_models.pdf}
   \caption{Frame models. One image backbone turns each of the 15 frames into a
   vector, a temporal head reads the 15 vectors, and a classifier scores the 15
   shots. The backbones are listed in Table~\ref{tab:image_backbones} and the
@@ -34,7 +34,7 @@
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{fig_video_models.pdf}
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{fig_video_models.pdf}
   \caption{Video models. (a)~The clip is resampled to the input its
   Kinetics-400 weights expect, and the backbone reads space and time together
   (Table~\ref{tab:video_backbones}). (b)~R3D-18 reads motion instead of colour:
@@ -47,7 +47,7 @@
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{fig_pose_tracks.pdf}
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{fig_pose_tracks.pdf}
   \caption{The batter's body and the bat instead of pixels. (a)~MediaPipe's 33
   joints per frame, read by a GRU (E01) or a graph network whose edges are the
   bones (E02). (b)~E04: each pose frame takes what it needs from the RGB frames
@@ -61,7 +61,7 @@
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{fig_f02.pdf}
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{fig_f02.pdf}
   \caption{F02, the multi-scale hybrid. (a)~Each frame passes through the same
   multi-scale EfficientNetV2-S and a linear layer; a learned position is added;
   two transformer encoder layers mix the 15 frames, and their mean goes to the
@@ -76,7 +76,7 @@
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{fig_ensemble.pdf}
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{fig_ensemble.pdf}
   \caption{The final system, chosen on the validation set before the test set
   was read. The three runs of C06 and of F02 score the clip as filmed and
   mirrored; each model's six answers are averaged, and the two models vote with
