@@ -22,9 +22,8 @@ INK = "#2b2a28"
 MUTED = "#6b6a66"
 
 
-def confusion_figure(report, path):
-    classes = report["classes"]
-    matrix = np.array(report["confusion"])
+def draw_matrix(ax, matrix, classes, count_size, label_size,
+                show_x=True, show_y=True):
     n = len(classes)
 
     # colour is the share of each true class, so small classes read the same
@@ -34,8 +33,6 @@ def confusion_figure(report, path):
         if total:
             shares[i] = matrix[i] / total
 
-    plt.rcParams["font.family"] = "serif"
-    fig, ax = plt.subplots(figsize=(5.1, 4.9))
     ax.imshow(shares, cmap="Blues", vmin=0, vmax=1)
 
     for i in range(n):
@@ -48,14 +45,20 @@ def confusion_figure(report, path):
             else:
                 colour = INK
             ax.text(j, i, str(count), ha="center", va="center",
-                    fontsize=5.5, color=colour)
+                    fontsize=count_size, color=colour)
 
     ax.set_xticks(range(n))
     ax.set_yticks(range(n))
-    ax.set_xticklabels(classes, rotation=55, ha="right", fontsize=6.5)
-    ax.set_yticklabels(classes, fontsize=6.5)
-    ax.set_xlabel("Predicted", fontsize=7.5, color=MUTED)
-    ax.set_ylabel("True", fontsize=7.5, color=MUTED)
+    if show_x:
+        ax.set_xticklabels(classes, rotation=55, ha="right", fontsize=label_size)
+        ax.set_xlabel("Predicted", fontsize=label_size + 1, color=MUTED)
+    else:
+        ax.set_xticklabels([])
+    if show_y:
+        ax.set_yticklabels(classes, fontsize=label_size)
+        ax.set_ylabel("True", fontsize=label_size + 1, color=MUTED)
+    else:
+        ax.set_yticklabels([])
     ax.tick_params(length=0)
     for side in ax.spines.values():
         side.set_visible(False)
@@ -66,7 +69,65 @@ def confusion_figure(report, path):
     ax.grid(which="minor", color="white", linewidth=0.6)
     ax.tick_params(which="minor", length=0)
 
+
+def confusion_figure(report, path):
+    plt.rcParams["font.family"] = "serif"
+    fig, ax = plt.subplots(figsize=(5.1, 4.9))
+    draw_matrix(ax, np.array(report["confusion"]), report["classes"],
+                count_size=5.5, label_size=6.5)
     fig.tight_layout()
+    fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+def stream_confusion(stream, classes):
+    """A member's test matrix: its three seeds averaged on the clip and its
+    mirror, as it votes in the final system."""
+    folder = os.path.join("experiments", "G01_final__grouped", "test_probs")
+    names = [stream + "__grouped", stream + "__grouped__seed1",
+             stream + "__grouped__seed2"]
+    total = None
+    labels = None
+    for name in names:
+        data = np.load(os.path.join(folder, name + ".npz"))
+        probs = (data["probs_plain"] + data["probs_flip"]) / 2
+        if total is None:
+            total = probs
+        else:
+            total = total + probs
+        labels = data["labels"]
+    preds = total.argmax(axis=1)
+    matrix = np.zeros((len(classes), len(classes)), dtype=int)
+    for true, pred in zip(labels, preds):
+        matrix[true, pred] += 1
+    return matrix
+
+
+def members_figure(report, path):
+    classes = report["classes"]
+    with open(os.path.join("experiments", "B01_effnetv2s__grouped",
+                           "report_test.json"), encoding="utf-8") as fh:
+        baseline = json.load(fh)
+
+    panels = [
+        ("(a) Original CNN–GRU (B01)", np.array(baseline["confusion"])),
+        ("(b) MViTv2-S (C06)", stream_confusion("C06_mvitv2_s", classes)),
+        ("(c) F02", stream_confusion("F02_multiscale_tf", classes)),
+        ("(d) Final system", np.array(report["confusion"])),
+    ]
+
+    plt.rcParams["font.family"] = "serif"
+    fig, axes = plt.subplots(2, 2, figsize=(6.6, 7.0))
+    for k in range(4):
+        title, matrix = panels[k]
+        ax = axes[k // 2][k % 2]
+        draw_matrix(ax, matrix, classes, count_size=3.6, label_size=5,
+                    show_x=(k >= 2), show_y=(k % 2 == 0))
+        accuracy = np.trace(matrix) / matrix.sum() * 100
+        ax.set_title(f"{title}, {accuracy:.2f}%", fontsize=6.5, color=INK,
+                     loc="left")
+
+    fig.tight_layout(w_pad=0.6, h_pad=0.8)
     fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
 
@@ -342,6 +403,7 @@ def main():
     os.makedirs(FIG_DIR, exist_ok=True)
 
     confusion_figure(report, os.path.join(FIG_DIR, "fig_confusion.pdf"))
+    members_figure(report, os.path.join(FIG_DIR, "fig_confusion_members.pdf"))
     per_class_table(report, os.path.join(TAB_DIR, "tab_per_class.tex"))
     all_results_table(report, os.path.join(TAB_DIR, "tab_all_results.tex"))
 

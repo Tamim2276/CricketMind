@@ -34,9 +34,11 @@
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.9\textwidth]{fig_confusion.pdf}
-  \caption{Confusion matrix of the final system on the grouped test set
-  (1,970 clips). Numbers are clip counts; the shade is the share of each true
-  class, so small classes read on the same scale.}
+  \includegraphics[width=\textwidth]{fig_confusion_members.pdf}
+  \caption{Confusion matrices on the grouped test set (1,970 clips), from the
+  original CNN--GRU to the final system. (a) B01, one run. (b, c) The two
+  members, each as it votes: three seeds averaged on the clip and its mirror
+  image. (d) Their equal vote. Numbers are clip counts; the shade is the share
+  of each true class, so small classes read on the same scale.}
   \label{fig:confusion}
 \end{figure}
