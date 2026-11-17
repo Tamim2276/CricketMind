@@ -6043,6 +6043,12 @@ first seed was luck again, as with T18. More frames gave no gain, so the
 frame count is not the limit. The final system stays **G01 --tta flip = 87.38**.
 Next: `tools.final save G01 --tta flip`, then `tools.final test` once.
 
+**Test, read once 2026-11-17: G01_final__grouped scores 84.82% top-1, macro-F1
+0.843 on grouped test (1,970 clips).** C06 alone 83.76, F02 alone 82.49. Val
+for the same system was 87.38, so test sits 2.6 points lower, as expected after
+choosing everything on val. The vote beats its best member by 1.06. Test is
+now spent: nothing changes after this.
+
 ## Day 41 — Ensembles and test-time augmentation
 
 *Built early, with first results: see "Built 2026-11-06" above.*

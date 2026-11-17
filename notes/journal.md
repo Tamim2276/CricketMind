@@ -4112,3 +4112,12 @@ F02's 83.39. The vote with C06 and flip is 87.19, below 87.38. The good first
 seed fell back on the repeats, the same shape as T18. More frames do not help
 F02, so it stays on 15 and the final system is the C06 + F02 equal vote with
 flip, 87.38 on val. Nothing is left to try before the test set.
+
+## 2026-11-17 — Test read once: 84.82
+
+The final system (C06 + F02, three seeds each, equal vote with flip) was saved
+as G01_final__grouped and read on grouped test once: top-1 84.82, macro-F1
+0.843 on 1,970 clips. C06 alone scores 83.76 and F02 alone 82.49, so the vote
+adds 1.06 over its best member. Val said 87.38; test is 2.6 lower, which is
+the cost of picking everything on val. Test is spent. What is left is the
+paper: Results can now be filled in from report_test.json.
