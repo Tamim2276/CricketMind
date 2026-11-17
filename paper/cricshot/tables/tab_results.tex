@@ -1,0 +1,59 @@
+% Main results on the grouped split. Numbers from experiments/results.jsonl,
+% each run's report_test.json and experiments/G01_final__grouped.
+
+\begin{table}[ht]
+\centering
+\caption{The best model of each family on the grouped split, chosen by
+validation accuracy. Single runs, no test-time augmentation, except the final
+system. Test was read once, after every choice was made on validation.}
+\label{tab:main_results}
+\small
+\begin{tabular}{@{}llccc@{}}
+\toprule
+ & & Val & \multicolumn{2}{c}{Test} \\
+\cmidrule(l){4-5}
+Family & Best model & top-1 (\%) & top-1 (\%) & macro-F1 \\
+\midrule
+\multicolumn{5}{@{}l}{\textit{Frozen backbones}} \\
+Classical classifiers & Logistic regression (D01) & 45.70 & 41.02 & 0.394 \\
+Linear probe & VideoMAE-B (P04) & 56.98 & 52.64 & 0.487 \\
+Frame temporal head & Transformer (A09) & 70.11 & 69.59 & 0.688 \\
+Video backbone, MLP & VideoMAE-B (V07) & 67.18 & 62.74 & 0.619 \\
+\multicolumn{5}{@{}l}{\textit{Pose, bat and motion}} \\
+Pose alone & Keypoint GRU (E01) & 65.71 & 63.50 & 0.614 \\
+Bat, ball, pose & Track fusion (W04) & 70.24 & 68.12 & 0.671 \\
+RGB with pose & Late fusion (E03) & 73.49 & 72.59 & 0.719 \\
+Motion & Frame differences (W05) & 78.59 & 75.03 & 0.734 \\
+\multicolumn{5}{@{}l}{\textit{Fine-tuned end to end}} \\
+Original CNN--GRU & EfficientNetV2-S (B01) & 77.69 & 75.23 & 0.731 \\
+Image backbone, GRU & ConvNeXt-T (B04) & 81.52 & 79.75 & 0.786 \\
+Multi-scale hybrid & F02 & 83.43 & 81.22 & 0.802 \\
+Video backbone & MViTv2-S (C06) & 84.51 & 82.13 & 0.819 \\
+\midrule
+\textbf{Final system} & C06 + F02, flip & \textbf{87.38} & \textbf{84.82} & \textbf{0.843} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{The final system and its two members. A single run is the mean and
+standard deviation of three seeds, without augmentation. A member with flip
+averages its three seeds on the clip and its mirror image.}
+\label{tab:final_system}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & Val & \multicolumn{2}{c}{Test} \\
+\cmidrule(l){3-4}
+ & top-1 (\%) & top-1 (\%) & macro-F1 \\
+\midrule
+MViTv2-S (C06), single run & 85.06 $\pm$ 0.54 & 82.47 $\pm$ 0.39 & -- \\
+F02, single run            & 83.39 $\pm$ 0.04 & 80.47 $\pm$ 0.76 & -- \\
+\addlinespace
+MViTv2-S (C06), 3 seeds with flip & 86.36 & 83.76 & 0.835 \\
+F02, 3 seeds with flip            & 85.47 & 82.49 & 0.816 \\
+\addlinespace
+\textbf{Equal vote of both, with flip} & \textbf{87.38} & \textbf{84.82} & \textbf{0.843} \\
+\bottomrule
+\end{tabular}
+\end{table}
