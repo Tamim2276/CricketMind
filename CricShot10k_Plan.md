@@ -6029,6 +6029,20 @@ python -m tools.ensemble --score --tta flip --stream C06_mvitv2_s --stream T27_f
 T27 counts only if C06 with it beats 87.38 (C06 with F02, flip) by more than
 a few clips. Then it replaces F02 in the final save; if not, F02 stays.
 
+**Result 2026-11-17: T27 does not count, F02 stays on 15 frames.**
+
+| run | val top-1 |
+|---|---|
+| T27 seed 42 | 83.94 |
+| T27 seed 1 | 82.09 |
+| T27 seed 2 | 82.79 |
+| T27 mean | 82.94 (F02's mean is 83.39) |
+
+With flip, C06 + T27 equal vote is **87.19** against 87.38 for C06 + F02. The
+first seed was luck again, as with T18. More frames gave no gain, so the
+frame count is not the limit. The final system stays **G01 --tta flip = 87.38**.
+Next: `tools.final save G01 --tta flip`, then `tools.final test` once.
+
 ## Day 41 — Ensembles and test-time augmentation
 
 *Built early, with first results: see "Built 2026-11-06" above.*

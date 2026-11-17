@@ -4104,3 +4104,11 @@ the stored ones, and F02 at 20 frames fits the card at batch 4 (61% of
 memory, about 6 hours a run). The seg and replica clips went to an external
 drive to make room. The run is T27, and it counts only if it lifts the final
 vote past 87.38.
+
+## 2026-11-17 — F02 on 20 frames: no gain
+
+Three seeds of T27 scored 83.94, 82.09 and 82.79, a mean of 82.94 against
+F02's 83.39. The vote with C06 and flip is 87.19, below 87.38. The good first
+seed fell back on the repeats, the same shape as T18. More frames do not help
+F02, so it stays on 15 and the final system is the C06 + F02 equal vote with
+flip, 87.38 on val. Nothing is left to try before the test set.
