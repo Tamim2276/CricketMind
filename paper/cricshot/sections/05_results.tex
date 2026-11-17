@@ -7,6 +7,8 @@
 
 \input{tables/tab_results}
 
+\input{tables/tab_all_results}
+
 \subsection{Metrics}
 
 % Accuracy, macro-F1, per-class recall (equations).
@@ -23,4 +25,18 @@
 
 \subsection{Error analysis}
 
-% Confusion matrix, hardest class pairs.
+% Most common mistakes on test (true -> predicted): Lofted Offside -> Lofted
+% Legside 22, Pull -> Hook 19, Hook -> Pull 19, Down The Wicket -> Lofted
+% Offside 14, Lofted Legside -> Lofted Offside 12, Upper Cut -> Square Cut 10.
+% All are neighbouring shots; Grad-CAM shows the same pairs.
+
+\input{tables/tab_per_class}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{fig_confusion.pdf}
+  \caption{Confusion matrix of the final system on the grouped test set
+  (1,970 clips). Numbers are clip counts; the shade is the share of each true
+  class, so small classes read on the same scale.}
+  \label{fig:confusion}
+\end{figure}
