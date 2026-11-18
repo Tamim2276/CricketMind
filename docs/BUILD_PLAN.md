@@ -31,7 +31,13 @@ over, the next session starts where it stopped. The order is the plan, and no st
    more.
 5. **New Phase 5b: a basic Streamlit page** (2 days), so the system has a face you can show.
    It only calls the FastAPI service; it never loads a model itself.
-6. **Total: about 51 days**, not 45.
+6. **New Phase 5c: trust and what-ifs** (4 days). With every chance, the service also gives a
+   range and an "unusual state" warning; and it answers two what-if questions: what it takes to
+   become favourite, and how much the next ball matters.
+7. **Phase 7 gets a fifth day** for the warning rate over time, and **Phase 9 measures** whether
+   warnings rose in 2023 before the Brier score got worse. If they did, the system can notice a
+   change without waiting for results.
+8. **Total: about 56 days**, not 45.
 
 ---
 
@@ -46,18 +52,19 @@ over, the next session starts where it stopped. The order is the plan, and no st
 | 4 | The gate and the model registry | 19–20 | A worse model is refused, and the refusal recorded |
 | 5 | FastAPI service; Docker; Docker Compose | 21–24 | `docker compose up`, then a prediction from the container |
 | 5b | A basic Streamlit page that calls the service | 25–26 | A past match's win-probability line, drawn live in the browser |
-| 6 | GitHub Actions | 27–29 | A pull request runs it all |
-| 6b | AWS: the image registry (ECR) and a server (EC2) | 30–32 | A prediction from AWS; a rollback to the previous image |
-| 7 | Monitoring: prediction logs, drift, Brier once results are known | 33–36 | A drift report for a known change |
-| 8 | The retraining loop and rollback | 37–39 | New data in, a new champion or a recorded refusal out |
-| 9 | The season replay (the experiment) | 40–44 | Results by season, with uncertainty |
-| 10 | Review | 45–46 | Nothing unsupported |
-| 11 | The paper | 47–51 | A draft for the supervisor |
+| 5c | Trust and what-ifs: a range, an "unusual state" warning, two what-if answers | 27–30 | All four show on the page for any match state |
+| 6 | GitHub Actions | 31–33 | A pull request runs it all |
+| 6b | AWS: the image registry (ECR) and a server (EC2) | 34–36 | A prediction from AWS; a rollback to the previous image |
+| 7 | Monitoring: prediction logs, drift, the warning rate, Brier once results are known | 37–41 | A drift report for a known change |
+| 8 | The retraining loop and rollback | 42–44 | New data in, a new champion or a recorded refusal out |
+| 9 | The season replay (the experiment) | 45–49 | Results by season, with uncertainty |
+| 10 | Review | 50–51 | Nothing unsupported |
+| 11 | The paper | 52–56 | A draft for the supervisor |
 
 **Milestones:** a baseline with honest numbers (Day 13) · a model rebuilt by one command
-(Day 18) · a prediction from a container (Day 24) · the Streamlit page working (Day 26) · a
-prediction from AWS (Day 32) · the
-replay's results (Day 44) · the draft (Day 51).
+(Day 18) · a prediction from a container (Day 24) · the Streamlit page working (Day 26) · trust
+and what-ifs on the page (Day 30) · a prediction from AWS (Day 36) · the replay's results
+(Day 49) · the draft (Day 56).
 
 ## Jobs for you outside a session
 
@@ -65,7 +72,7 @@ Big downloads and sign-ups. Do them when the power is steady.
 
 - **Before Day 22:** install Docker Desktop. It is a large download, it needs WSL 2, and the
   computer restarts.
-- **Before Day 30:** create an AWS account, once your supervisor has said whose account it is and
+- **Before Day 34:** create an AWS account, once your supervisor has said whose account it is and
   what the budget is.
 
 ---
@@ -259,7 +266,7 @@ every chance it shows comes with the model version that made it.
 
 **Day 26: a past match, ball by ball**
 - Build: a small sample of real matches saved as one file (credited to Cricsheet; the same
-  matches become the CI fixtures on Day 28). You pick a match; the page asks the service for the
+  matches become the CI fixtures on Day 32). You pick a match; the page asks the service for the
   chance at every ball of the chase and draws it as a line, with wickets marked. A small
   Dockerfile for the page, and a third service in `docker-compose.yml`.
 - Learn: why the line should fall when a wicket goes, and what a flat or jumpy line would tell
@@ -267,21 +274,63 @@ every chance it shows comes with the model version that made it.
 - Done when (**milestone**): `docker compose up` brings up the service, MLflow and the page, and
   the line for a past match draws in your browser.
 
-### Phase 6 — GitHub Actions (Days 27–29)
+### Phase 5c — Trust and what-ifs (Days 27–30)
 
-**Day 27: lint and tests on GitHub**
+Four extras with every chance. The service works them out in tested Python; the Streamlit page
+only shows them. For example:
+
+> Chasing side: **62%** (55–69%) · ⚠ Few past matches looked like this, so trust it less.
+> To become favourite: **12 off the next over**. Next ball: six 71% · dot 58% · wicket 48%.
+
+**Day 27: the range**
+- Build: several copies of the model, each trained on a different resample of the training
+  matches, saved with the model in MLflow so they travel with every version. `/predict` returns
+  the range of their answers next to the chance.
+- Learn: why models trained on slightly different data disagree, and why they disagree most
+  where data is thin.
+- Done when: the range shows on the page. Whether it really is wider for rare match states is
+  checked and recorded, whatever the answer.
+
+**Day 28: the "unusual state" warning**
+- Build: a summary of the training balls (how many fell in each box of runs needed, balls left
+  and wickets in hand), saved with the model. For each prediction, the service counts how many
+  training balls looked like this one; too few, and it adds a warning. The cut-off comes from
+  seasons before 2023 only, and goes in `docs/decisions.md` before it is used.
+- Learn: what "out of distribution" means: asking a model about something it has rarely seen.
+- Done when: a test shows a rare made-up state gets a warning and a common one doesn't.
+
+**Day 29: "what it takes"**
+- Build: a `POST /what-if` endpoint, part one: the fewest runs off the next over that make the
+  chasing side favourite (50% or more), found by asking the model "what if" for each possible
+  total. If the side is already favourite, how few runs keep it there. Shown on the page.
+- Learn: asking a model hypothetical questions; why a tree model can wobble (more runs don't
+  always give a higher chance), and what we do about it.
+- Done when: tests pass on a few match states checked by hand.
+
+**Day 30: "how much the next ball matters"**
+- Build: `POST /what-if`, part two: the chance after each possible next ball (dot, one, two,
+  four, six, wicket), and the gap between the best and the worst. Shown on the page as small
+  bars. The idea exists already (baseball's "leverage", and the arXiv preprint in the brief),
+  so the paper cites it rather than claiming it.
+- Learn: why a ball in the last over usually matters more than one in the fifth.
+- Done when (**milestone**): the range, the warning and both what-ifs show on the page for any
+  match state.
+
+### Phase 6 — GitHub Actions (Days 31–33)
+
+**Day 31: lint and tests on GitHub**
 - Build: a workflow that runs ruff and pytest on every push to `cricket-mlops` and every pull
   request into it.
 - Learn: what CI (continuous integration) is, and how to read a failed run.
 - Done when: a push shows a green tick on GitHub.
 
-**Day 28: a tiny pipeline in CI**
+**Day 32: a tiny pipeline in CI**
 - Build: a handful of real match files kept as test fixtures (credited to Cricsheet). CI runs
   load → check → features → train → gate on them in a minute or two.
 - Learn: why CI uses small fixture data, not the full snapshot.
 - Done when: the tiny pipeline passes in CI.
 
-**Day 29: the image build, and a pull request**
+**Day 33: the image build, and a pull request**
 - Build: CI builds the Docker image and runs a security scan (for example `pip-audit` on the
   packages). Then a real pull request: you push a short-lived branch without switching
   (`git push origin HEAD:ci-check`) and open a PR from it into `cricket-mlops` on GitHub.
@@ -289,143 +338,153 @@ every chance it shows comes with the model version that made it.
   history from this branch.
 - Done when: a pull request runs it all.
 
-### Phase 6b — AWS (Days 30–32)
+### Phase 6b — AWS (Days 34–36)
 
-Needed before Day 30: an AWS account, and your supervisor's answer on whose account it is and
+Needed before Day 34: an AWS account, and your supervisor's answer on whose account it is and
 what the budget is.
 
-**Day 30: AWS, safely, and the image registry**
+**Day 34: AWS, safely, and the image registry**
 - Build: a budget alarm first. A separate login for daily work (never the root account). An ECR
   repository. GitHub Actions pushes the image there, tagged with the git commit. It signs in
   with a short-lived token (OIDC), so no AWS key is ever stored in the public repo.
 - Learn: what IAM, a region, ECR and OIDC are.
 - Done when: the image appears in ECR after a push.
 
-**Day 31: a server on EC2**
+**Day 35: a server on EC2**
 - Build: a small EC2 instance that pulls the image and runs the service, with only the service's
   port open (and the Streamlit page's port, so the demo works there too). An S3 remote added for
   DVC, as the paper has.
 - Learn: what a cloud server is, and what a security group does.
 - Done when: a prediction comes from AWS, over the internet.
 
-**Day 32: deploy, roll back, switch off**
+**Day 36: deploy, roll back, switch off**
 - Build: a deploy script that runs any image tag, so rolling back means running the previous
   tag. Steps to stop and to tear down. The cost so far recorded in `docs/numbers.md`.
 - Learn: rollback by image tag, and how cloud cost builds up.
 - Done when (**milestone**): a prediction from AWS, and a rollback to the previous image that
   works. The server is stopped whenever it isn't in use.
 
-### Phase 7 — Monitoring (Days 33–36)
+### Phase 7 — Monitoring (Days 37–41)
 
-**Day 33: the prediction log**
-- Build: each prediction stored with its input, output, model version and time. Results are
-  joined in once the match ends.
+**Day 37: the prediction log**
+- Build: each prediction stored with its input, output, range, warning, model version and time.
+  Results are joined in once the match ends.
 - Learn: why cricket suits monitoring: the true answer is known within hours.
 - Done when: a query shows predictions next to their results.
 
-**Day 34: input drift, our own way**
+**Day 38: input drift, our own way**
 - Build: PSI and the KS test, written by us, on features like the required run rate. The
   thresholds come from seasons before 2023 only, and are written down before any 2023 data is
   looked at.
 - Learn: drift, and what PSI and KS measure, each with a small example.
 - Done when: the tests give the expected answers on made-up data.
 
-**Day 35: performance drift**
+**Day 39: performance drift**
 - Build: the Brier score and calibration error over a rolling window of finished matches.
 - Learn: input drift versus performance drift, and why we want both.
 - Done when: a chart shows Brier match by match.
 
-**Day 36: a drift report for a known change**
-- Build: a report for IPL 2022 → 2023 (the Impact Player rule), using the pre-set thresholds.
-  The same comparison in Evidently, to check our numbers against a library.
+**Day 40: the warning rate over time**
+- Build: over a rolling window of matches, the share of predictions that carried a warning and
+  the average width of the range, drawn next to input drift and the Brier score.
+- Learn: a warning on single balls versus a drift test on a whole season, and which might see a
+  change sooner.
+- Done when: a chart shows the warning rate match by match.
+
+**Day 41: a drift report for a known change**
+- Build: a report for IPL 2022 → 2023 (the Impact Player rule), using the pre-set thresholds,
+  with the warning rate beside it. The same comparison in Evidently, to check our numbers
+  against a library.
 - Learn: how to read a drift report.
 - Done when: a drift report for a known change.
 
-### Phase 8 — Retraining and rollback (Days 37–39)
+### Phase 8 — Retraining and rollback (Days 42–44)
 
-**Day 37: new matches only**
+**Day 42: new matches only**
 - Build: ingestion that fetches from Cricsheet only the matches we don't have yet, checks them,
   and makes a new DVC data version.
 - Learn: this is the cricket version of the paper's API polling.
 - Done when: running it twice brings nothing new the second time.
 
-**Day 38: the loop**
+**Day 43: the loop**
 - Build: new data or drift → retrain → gate → a new champion or a recorded refusal. Where the
   timer lives is settled first (see "Still open").
 - Learn: how the pieces from Phases 1–7 join into one loop.
 - Done when: new data in, a new champion or a recorded refusal out.
 
-**Day 39: rollback**
+**Day 44: rollback**
 - Build: if the champion does worse on finished matches than the one before it, the alias moves
   back and the previous image is redeployed, with the reason recorded.
 - Learn: rollback as a normal, tested step, not an emergency.
 - Done when: a test forces a rollback, and the rollback is recorded.
 
-### Phase 9 — The season replay (Days 40–44)
+### Phase 9 — The season replay (Days 45–49)
 
-**Day 40: the rules, written first**
+**Day 45: the rules, written first**
 - Build: `docs/replay_rules.md`: the training start, policies A–D, the drift tests and their
-  thresholds, the promotion rule, how "reacting" to 2023 is counted, the comparison league and
-  why it was chosen, and how a difference is called real. Committed before any replay code
-  runs, so git shows the order.
+  thresholds, the promotion rule, how "reacting" to 2023 is counted, how we judge whether the
+  warning rate rose before the Brier score got worse, the comparison league and why it was
+  chosen, and how a difference is called real. Committed before any replay code runs, so git
+  shows the order.
 - Learn: writing the test before the run, and why it makes the result believable.
 - Done when: the rules are committed.
 
-**Day 41: the replay engine**
+**Day 46: the replay engine**
 - Build: `replay/`. Matches are fed in date order; each policy predicts, sees the results, and
   decides whether to retrain. It saves after every season, so a power cut loses little.
 - Learn: how to act out years of a live system on a laptop.
 - Done when: a short replay over two seasons gives the expected output.
 
-**Day 42: policies A and B on the IPL**
+**Day 47: policies A and B on the IPL**
 - Build: "never retrain" and "retrain on a timetable", over the full IPL. You run it, and it
   resumes after a cut.
 - Done when: both runs finish and are logged.
 
-**Day 43: policies C and D, then the comparison league**
+**Day 48: policies C and D, then the comparison league**
 - Build: "retrain on drift" and "recency-weighted" on the IPL. Then all four policies on the
   comparison league, with the same rules.
 - Done when: all the runs finish and are logged.
 
-**Day 44: results**
+**Day 49: results**
 - Build: for each policy, season by season: Brier score, calibration error, matches taken to
-  react after 2023, retrains and rollbacks, each with a bootstrap interval. Figures made by
-  script.
+  react after 2023, retrains and rollbacks, each with a bootstrap interval. Then how many
+  matches into 2023 the warning rate rose, against how many the Brier score took. Figures made
+  by script.
 - Learn: how to say a difference is real, or that it isn't.
 - Done when (**milestone**): results by season, with uncertainty. Whatever they show is
   reported.
 
-### Phase 10 — Review (Days 45–46)
+### Phase 10 — Review (Days 50–51)
 
-**Day 45: every number traced**
+**Day 50: every number traced**
 - Build: each number in `docs/numbers.md` checked against the run or script that made it. All
   figures rebuilt by one script. A rebuild from clean.
 - Done when: nothing is unsupported.
 
-**Day 46: limitations and the repo**
+**Day 51: limitations and the repo**
 - Build: `docs/limitations.md` reviewed. The brief's web leads either confirmed on our data or
   dropped. A README on how to rebuild any model. Credits (Cricsheet, the GreenAirOps paper). A
   licence chosen for the code.
 - Done when: a stranger could rebuild a model from the README.
 
-### Phase 11 — The paper (Days 47–51)
+### Phase 11 — The paper (Days 52–56)
 
-**Day 47: the venue and the outline**
+**Day 52: the venue and the outline**
 - Build: the venue's rules (length, format, deadline, and whether reviewers must not know who
   the authors are). An outline, and the list of figures and tables.
 - Done when: your supervisor agrees with the outline.
 
-**Day 48: the system**
+**Day 53: the system**
 - Write: the pipeline and how it is built, in our own words and figures. The GreenAirOps paper
   is cited, never copied.
 
-**Day 49: the experiment and the results**
+**Day 54: the experiment and the results**
 - Write: the replay's design and results. Every number comes from `docs/numbers.md`.
 
-**Day 50: introduction, related work, limitations**
+**Day 55: introduction, related work, limitations**
 - Write: from `docs/literature.md` (updated) and `docs/limitations.md`.
 
-**Day 51: the full draft**
+**Day 56: the full draft**
 - Build: every number checked once more against `docs/numbers.md`. A reproducibility statement.
   The draft goes to your supervisor.
 - Done when: a draft.
@@ -437,7 +496,7 @@ what the budget is.
 | Question | Needed by | Note |
 |---|---|---|
 | Has your supervisor agreed that live win probability is the right choice? (Section 10, Q2) | Day 4 | The plan assumes yes. |
-| Which venue? Its length, format and deadline | A short list by Day 3; the choice by Day 47 | A deadline may change the pace. |
+| Which venue? Its length, format and deadline | A short list by Day 3; the choice by Day 52 | A deadline may change the pace. |
 | Does the venue hide the authors from reviewers? | Before the paper links the repo | A public repo with your name on it would break that. |
-| Whose AWS account, and what budget? | Day 30 | The budget alarm comes first. |
-| Where does the retraining timer live? | Day 38 | GitHub runs timed workflows only from the repo's default branch, `main`, and ours isn't `main`. Options: (a) give this project its own GitHub repo; (b) retrain whenever new data is pushed; (c) a timer on your laptop or on AWS. **I suggest (a):** timed workflows then just work, and the paper's code link shows only this project. |
+| Whose AWS account, and what budget? | Day 34 | The budget alarm comes first. |
+| Where does the retraining timer live? | Day 43 | GitHub runs timed workflows only from the repo's default branch, `main`, and ours isn't `main`. Options: (a) give this project its own GitHub repo; (b) retrain whenever new data is pushed; (c) a timer on your laptop or on AWS. **I suggest (a):** timed workflows then just work, and the paper's code link shows only this project. |
