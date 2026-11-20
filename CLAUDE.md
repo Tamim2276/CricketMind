@@ -6,7 +6,8 @@ game changes, does a pipeline that detects drift and retrains keep the model hon
 one left alone or retrained on a timetable? We copy the GreenAirOps paper's pipeline shape and
 add the experiment that paper lacks.
 
-- Brief: `docs/PROJECT_BRIEF.md`. Plan, day by day: `docs/BUILD_PLAN.md`.
+- Brief: `docs/PROJECT_BRIEF.md`. Schedule: `docs/BUILD_PLAN_10_DAYS.md` (10 days). Each step
+  in detail: `docs/BUILD_PLAN.md` (its "Day 1–56" are steps 1–56).
 - Paper: `docs/papers/greenairops.pdf` (CC BY-NC-ND 4.0: cite it, never copy its text or figures).
 - Settled 2026-11-18: a separate paper; deployed on AWS; men's T20, all leagues, with the IPL as
   the main case; the GitHub repo is public. Open points are listed at the end of the plan.

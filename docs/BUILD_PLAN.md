@@ -3,6 +3,9 @@
 Live T20 win probability, built as an MLOps system, plus a season replay that measures whether
 drift monitoring and retraining help.
 
+> **2026-11-20:** the schedule is now [the 10-day plan](BUILD_PLAN_10_DAYS.md). This file keeps
+> the detail of each step: its "Day 1" to "Day 56" are steps 1–56 there.
+
 Made on 2026-11-18 from Section 8 of [the brief](PROJECT_BRIEF.md), after settling Section 10.
 **One day = one session of about 4–5 hours.** The days are a guide, not a deadline: if a day runs
 over, the next session starts where it stopped. The order is the plan, and no step is skipped.
